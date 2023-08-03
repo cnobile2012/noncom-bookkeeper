@@ -39,18 +39,18 @@ class MenuBar:
         self.SetMenuBar(self.global_menubar)
 
 
-class BaseScreen(MenuBar, wx.Frame):
+class BaseFrame(MenuBar, wx.Frame):
 
     def __init__(self, *args, **kwargs):
         super().__init__(parent=None, **kwargs)
         self.panal_0 = wx.Panel(self)
 
 
-class ScreenFactory(BaseSystemData):
+class FrameFactory(BaseSystemData):
     """
-    Parse the config data and create the screens.
+    Parse the config data and create the frames.
     """
-    screens = {}
+    frames = {}
     __class_names = {}
 
     def __init__(self):
@@ -66,23 +66,23 @@ class ScreenFactory(BaseSystemData):
     def parse(self):
         meta = self.config.get('meta')
 
-        for screen in meta.get('screens'):
+        for frame in meta.get('frames'):
             try:
-                self.setup_frame(screen)
+                self.setup_frame(frame)
             except Exception as e:
                 self._log.critical("Critical error, cannot start application "
                                    "please contact the developer for help, %s",
                                    str(e), exc_info=True)
-                # *** TODO *** This needs to be shown on the screen if detected.
+                # *** TODO *** This needs to be shown on the frame if detected.
 
-        return self.screens[screen], self.__class_names
+        return self.frames[frame], self.__class_names
 
-    def setup_frame(self, screen):
-        class_name = f"{screen.capitalize()}Screen"
-        self.__class_names[screen] = class_name
-        frame_kwargs = self.config.get(screen, {}).get('meta')
+    def setup_frame(self, frame):
+        class_name = f"{frame.capitalize()}Frame"
+        self.__class_names[frame] = class_name
+        frame_kwargs = self.config.get(frame, {}).get('meta')
         klass = StringIO()
-        klass.write(f"class {class_name}(BaseScreen):\n")
+        klass.write(f"class {class_name}(BaseFrame):\n")
         klass.write("    def __init__(self, *args, **kwargs):\n")
         klass.write("        super().__init__(*args, **kwargs)\n")
         # The line below permits us to grab a vairable dynamically.
@@ -105,7 +105,7 @@ class ScreenFactory(BaseSystemData):
         self.second_sizer = None
 
         # Create all the sizers.
-        for sizer, value in self.config.get(screen, {}).get('sizers').items():
+        for sizer, value in self.config.get(frame, {}).get('sizers').items():
             if value[0] == 'BoxSizer':
                 self.box_sizer(klass, sizer, value)
             elif value[0] == 'FlexGridSizer':
@@ -113,7 +113,7 @@ class ScreenFactory(BaseSystemData):
 
         # Create all the widgets.
         for widget, value in self.config.get(
-            screen, {}).get('widgets').items():
+            frame, {}).get('widgets').items():
             if value[0] == 'StaticText':
                 self.static_text(klass, widget, value)
             elif value[0] == 'TextCtrl':
@@ -124,7 +124,7 @@ class ScreenFactory(BaseSystemData):
 
         klass.write(f"        self.SetSizer({self.main_sizer})\n")
         klass.write("        self.Layout()\n")
-        self.screens[screen] = klass.getvalue()
+        self.frames[frame] = klass.getvalue()
         klass.close()
 
     def box_sizer(self, klass, sizer, value):
