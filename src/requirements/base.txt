@@ -1,6 +1,0 @@
-# Non-Com Financial
-
-wxPython
-appdirs
-tomlkit
-#varname

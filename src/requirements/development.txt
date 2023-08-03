@@ -1,8 +1,0 @@
-# Include the bare minimum.
--r base.txt
-
-#coverage
-
-ipython
-
-#Sphinx
