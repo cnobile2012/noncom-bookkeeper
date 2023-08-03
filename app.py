@@ -24,8 +24,8 @@ if __name__ == "__main__":
     else:
         print("TOML doc:")
         klass, names = sf.parse()
-        print(klass)
-        pprint(names)
+        print(klass)  # *** TODO *** Remove later
+        pprint(names) # *** TODO *** Remove later
         # Try to run display.
         app = wx.App()
 

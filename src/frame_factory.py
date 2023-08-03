@@ -4,6 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
+import sys
 from io import StringIO
 
 from .config import BaseSystemData
@@ -18,25 +19,91 @@ class MenuBar:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.global_menubar = wx.MenuBar()
-        menu = wx.Menu()
-        menu.Append(wx.ID_ANY, "Load", "")
-        menu.Append(wx.ID_ANY, "Save", "")
-        menu.Append(wx.ID_ANY, "Save As", "")
-        menu.AppendSeparator()
-        menu.Append(wx.ID_ANY, "Close", "")
-        menu.Append(wx.ID_ANY, "Exit", "")
-        self.global_menubar.Append(menu, "File")
-        menu = wx.Menu()
-        self.global_menubar.Append(menu, "Edit")
-        menu = wx.Menu()
-        self.global_menubar.Append(menu, "Windows")
-        menu = wx.Menu()
-        menu.Append(wx.ID_ANY, "Manual", "")
-        menu.Append(wx.ID_ANY, "Releases", "")
-        menu.Append(wx.ID_ANY, "About", "")
-        self.global_menubar.Append(menu, "Help")
-        self.SetMenuBar(self.global_menubar)
+        self.create_menu()
+
+    def create_menu(self):
+        bind_map = {}
+        self.menubar = wx.MenuBar()
+        file_menu = wx.Menu()
+        load_item = file_menu.Append(wx.ID_ANY, "Load\tCTRL+L",
+                                     "Load something")
+        bind_map.setdefault('load', [self.file_picker, load_item])
+
+        save_item = file_menu.Append(wx.ID_ANY, "Save", "")
+        bind_map.setdefault('save', [self.file_save, save_item])
+
+        save_as_item = file_menu.Append(wx.ID_ANY, "Save As", "")
+        bind_map.setdefault('save_as', [self.file_save_as, save_as_item])
+
+        file_menu.AppendSeparator()
+        close_item = file_menu.Append(wx.ID_ANY, "Close", "")
+        bind_map.setdefault('close', [self.file_close, close_item])
+
+        exit_item = file_menu.Append(wx.ID_ANY, "Exit", "")
+        bind_map.setdefault('exit', [self.app_exit, exit_item])
+
+        self.menubar.Append(file_menu, "&File")
+        edit_menu = wx.Menu()
+        self.menubar.Append(edit_menu, "&Edit")
+        win_menu = wx.Menu()
+        self.menubar.Append(win_menu, "&Windows")
+        help_menu = wx.Menu()
+        manual_item = help_menu.Append(wx.ID_ANY, "Manual", "")
+        bind_map.setdefault('manual', [self.app_manual, manual_item])
+
+        releases_item = help_menu.Append(wx.ID_ANY, "Releases", "")
+        bind_map.setdefault('releases', [self.app_releases, releases_item])
+
+        about_item = help_menu.Append(wx.ID_ANY, "About", "")
+        bind_map.setdefault('about', [self.app_about, about_item])
+
+        self.menubar.Append(help_menu, "&Help")
+        [self.Bind(event=wx.EVT_MENU, handler=handler, source=source)
+         for handler, source in bind_map.values()]
+        self.SetMenuBar(self.menubar)
+
+    def file_picker(self, event):
+        title = "Open config file for editing."
+        wildcard = "TOML Config File (*.toml)|*.toml"
+
+        with wx.FileDialog(self, title, wildcard=wildcard,
+                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dlg:
+            if dlg.ShowModal() != wx.ID_CANCEL:
+                # Proceed loading the file chosen by the user.
+                fullpath = dlg.GetPath()
+
+                try:
+                    with open(fullpath, 'r') as file:
+                        self.load_file(fullpath)
+                except IOError:
+                    wx.LogError("Cannot open file '%s'." % fullpath)
+
+    def file_save(self, event):
+        pass
+
+    def file_save_as(self, event):
+        pass
+
+    def file_close(self, event):
+        pass
+
+    def app_exit(self, event):
+        # *** TODO *** We need to check for unsaved files.
+        sys.exit(0)
+
+    def app_manual(self, event):
+        pass
+
+    def app_releases(self, event):
+        pass
+
+    def app_about(self, event):
+        pass
+
+    def load_file(self, fullpath):
+        pass
+
+
 
 
 class BaseFrame(MenuBar, wx.Frame):
@@ -75,6 +142,7 @@ class FrameFactory(BaseSystemData):
                                    str(e), exc_info=True)
                 # *** TODO *** This needs to be shown on the frame if detected.
 
+        # *** TODO *** Remove later
         return self.frames[frame], self.__class_names
 
     def setup_frame(self, frame):
