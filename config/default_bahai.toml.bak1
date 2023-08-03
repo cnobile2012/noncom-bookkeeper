@@ -1,0 +1,87 @@
+# -*- coding: utf-8 -*-
+#
+# data/default_bahai.toml
+#
+# This file provides data for the definition of fields used used on
+# the specified pages.
+#
+# TOML field definitions: https://toml.io/en/v1.0.0
+#
+# Noncommercial Bookkeeper fields
+# ===============================
+# display, report, both
+# col01, col02, col03, col04 (Number of columns)
+# sp1-2, sp1-3, sp1-4, sp2-3, sp2-4, sp3-4 (Span columns)
+#
+# justification indicators: l+, c+ r+ (default is l+)
+# FSD                     : Fiscal start date
+#
+
+[meta]
+screens = ['budget',]
+
+[budget]
+
+[budget.meta]
+columns = ["col01", "col02", "col03", "col04", "col01-02", "col01-03",
+           "col01-04", "col02-03", "col02-04", "col03-04"]
+catagories = ["header", "cash", "income", "expenses", "cash_balance", "info"]
+
+
+[budget.header]
+field01 = ["both", {col01-04="The Spiritual Assembly of the Bahá'ís of +ref"}]
+field02 = []
+field03 = ["report", {col01="Baha'i Month of (+ref)", col02="formula"}]
+field04 = ["both", {col02="Annual Budget", col03="Year-to-Date Actual", col04="Monthly Budget"}]
+field05 = []
+
+[budget.cash]
+field01 = ["both", {col01-02="BEGGING CASH BALANCE AS OF:", col03="FSD"}]
+field02 = ["both", {col01="Cash in Bank", col03="0.00"}]
+field03 = ["both", {col01="OCS Holding", col03="0.00"}]
+field04 = ["both", {col01="Total Cash", col03="field02 + field03"}]
+field05 = []
+
+[budget.income]
+field01 = ["both", {col01="INCOME"}]
+field02 = ["both", {col01="Monetary Contributions", col02="0.00", col03="ref", col04="ytd / 19"}]
+field03 = ["both", {col01="MISC", col03="TBD"}]
+field04 = ["both", {col01="Other", col03="TBD"}]
+field05 = ["both", {col01="Contributed Expenses", col03="TBD"}]
+field06 = ["both", {col01="Total Income", col02="field02", col03="field02..field05"}]
+field07 = ["both", {col01="Earmarked Contributions Received", col03="TBD"}]
+field08 = []
+
+[budget.expenses]
+field01 = ["both", {col01="EXPENSES"}]
+field02 = ["both", {col01="National Bahá'í Fund", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field03 = ["both", {col01="Regional Facilities Fund", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field04 = ["both", {col01="Continental Bahá'í Fund", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field05 = ["both", {col01="Bahá’í International Fund", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field06 = ["both", {col01="Shrine of Abdu'l-Bahá", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field07 = ["both", {col01="Administration", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field08 = ["both", {col01="Scholarships", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field09 = ["both", {col01="Education", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field10 = ["both", {col01="Teaching", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field11 = ["both", {col01="Proclamation", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field12 = ["both", {col01="Area Teaching Committee", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field13 = ["both", {col01="Regional Bahá’í Center", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field14 = ["both", {col01="Regional Facilities Fund", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field15 = ["both", {col01="Other Funds", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field16 = ["both", {col01="Other-Misc", col02="0.00", col03="TBD", col04="col02 / 19"}]
+field17 = ["boot", {col01="Total Expenses", col02="field02..field16", col03="TBD", col04="col02 / 19"}]
+field18 = ["both", {col01="Earmarked Contribution Paid", col03="TBD"}]
+field19 = []
+
+[budget.cash_balance]
+field01 = ["both", {col01="ENDING CASH BALANCE AS OF >>>", col03="TBD", col04="fields.cash.field04 + fields.income.field06 - fields.income.field07 - fields.expenses.field17 - fields.expenses.field18"}]
+field02 = []
+
+[budget.info]
+field01 = ["both", {col01="Additional Information"}]
+field02 = ["report", {col01="r+Total Outstanding Bills:", col02="TBD"}]
+field03 = ["both", {col01="r+Total Membership:", col02="0"}]
+field04 = ["report", {col01="r+Participation:", col02="TBD", col03="% Participation:", col04="col01 / field03 * 100"}]
+field05 = ["report", {col01="Number of Monthly Goals Won:", col02="TBD"}]
+field06 = []
+field07 = ["report", {col01="Treasurer", col02="TBD"}]

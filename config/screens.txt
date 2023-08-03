@@ -1,0 +1,26 @@
+# Column type allocations of various screens.
+
+# Config
+
+
+
+
+# Budget Screen
+
+=========================================================================
+|                            Organization Name                          |
+|-----------------------------------------------------------------------|
+|      col01      |      col02      |      col03      |      col04      |
+|-----------------------------------------------------------------------|
+|      Title      |      Date                                           |
+|      Title      |                                                     |
+|    Row Name     |                 |      Value      |                 |
+|    Row Name     |                 |     Formula     |                 |
+|    Row Name     |      Value      |     Formula     |     Formula     |
+|    Row Name     |     Formula     |     Formula     |                 |
+|    Row Name     |     Formula     |     Formula     |     Formula     |
+|    Row Name     |                                                     |
+|    Row Name     |     Formula     |                                   |
+|    Row Name     |      Value      |                                   |
+|    Row Name     |     Formula     |      Text       |     Formula     |
+=========================================================================

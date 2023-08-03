@@ -1,0 +1,62 @@
+#
+# data/default_bahai.toml
+#
+# This file provides data for the definition of fields used used on
+# the specified pages.
+#
+# TOML field definitions: https://toml.io/en/v1.0.0
+#
+# Noncommercial Bookkeeper fields
+# ===============================
+# title                   : Category name
+# name                    : Row name (can also be a date)
+# Field Types (ftype)     : annual, ytd, monthly
+# value types             : value, formula, ref
+# justification indicators: l+, c+ r+ (default is l+)
+#
+
+[budget]
+
+[budget.cash]
+field01 = {title = "BEGGING CASH BALANCE AS OF:", ftype = {annual = {ref = "Fiscal start date"}}}
+field02 = {name = "Cash in Bank", ftype = {ytd = {value = "0.00"}}}
+field03 = {name = "OCS Holding", ftype = {ytd = {value = "0.00"}}}
+field04 = {name = "Total Cash", ftype = {ytd = {formula = "field02 + field03"}}}
+
+[budget.income]
+field01 = {title = "INCOME"}
+field02 = {name = "Monetary Contributions", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "ytd / 19"}}}
+field03 = {name = "MISC", ftype = {ytd = {ref = "TBD"}}}
+field04 = {name = "Other", ftype = {ytd = {ref = "TBD"}}}
+field05 = {name = "Contributed Expenses", ftype = {ytd = {ref = "TBD"}}}
+field06 = {name = "Total Income", ftype = {annual = {ref = "field02"}, ytd = {formula = "field02..field05"}}}
+field07 = {name = "Earmarked Contributions Received", ftype = {ytd = {ref = "TBD"}}}
+
+[budget.expenses]
+field01 = {title = "EXPENSES"}
+field02 = {name = "National Bahá'í Fund", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field03 = {name = "Regional Facilities Fund", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field04 = {name = "Continental Bahá'í Fund", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field05 = {name = "Bahá’í International Fund", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field06 = {name = "Shrine of Abdu'l-Bahá", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field07 = {name = "Administration", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field08 = {name = "Scholarships", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field09 = {name = "Education", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field10 = {name = "Teaching", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field11 = {name = "Proclamation", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field12 = {name = "Area Teaching Committee", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field13 = {name = "Regional Bahá’í Center", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field14 = {name = "Regional Facilities Fund", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field15 = {name = "Other Funds", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field16 = {name = "Other-Misc", ftype = {annual = {value = "0.00"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field17 = {name = "Total Expenses", ftype = {annual = {formula = "field02..field16"}, ytd = {ref = "TBD"}, monthly = {formula = "annual / 19"}}}
+field18 = {name = "Earmarked Contribution Paid", ftype = {ytd = {ref = "TBD"}}}
+
+[budget.cash_balance]
+field01 = {title = "ENDING CASH BALANCE AS OF >>>", name = {ref = "TBD"}, ytd = {formula = "fields.cash.field04 + fields.income.field06 - fields.income.field07 - fields.expenses.field17 - fields.expenses.field18"}}
+
+[budget.info]
+field01 = {title = "Additional Information"}
+field02 = {title = "r+Total Outstanding Bills:", name = {formula = "TBD"}}
+field03 = {title = "r+Total Membership:", name = {value = "0"}}
+field04 = {title = "r+Participation:", name = {formula = "TBD", annual = "% Participation:", ytd = ""}}

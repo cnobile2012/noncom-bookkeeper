@@ -1,0 +1,207 @@
+# -*- coding: utf-8 -*-
+#
+# src/screen_factory.py
+#
+__docformat__ = "restructuredtext en"
+
+from io import StringIO
+
+from .config import BaseSystemData
+
+import wx
+# https://pwwang.github.io/python-varname/
+#from varname import varname, nameof
+
+
+class MenuBar:
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.global_menubar = wx.MenuBar()
+        menu = wx.Menu()
+        menu.Append(wx.ID_ANY, "Load", "")
+        menu.Append(wx.ID_ANY, "Save", "")
+        menu.Append(wx.ID_ANY, "Save As", "")
+        menu.AppendSeparator()
+        menu.Append(wx.ID_ANY, "Close", "")
+        menu.Append(wx.ID_ANY, "Exit", "")
+        self.global_menubar.Append(menu, "File")
+        menu = wx.Menu()
+        self.global_menubar.Append(menu, "Edit")
+        menu = wx.Menu()
+        self.global_menubar.Append(menu, "Windows")
+        menu = wx.Menu()
+        menu.Append(wx.ID_ANY, "Manual", "")
+        menu.Append(wx.ID_ANY, "Releases", "")
+        menu.Append(wx.ID_ANY, "About", "")
+        self.global_menubar.Append(menu, "Help")
+        self.SetMenuBar(self.global_menubar)
+
+
+class BaseScreen(MenuBar, wx.Frame):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(parent=None, **kwargs)
+        self.panal_0 = wx.Panel(self)
+
+
+class ScreenFactory(BaseSystemData):
+    """
+    Parse the config data and create the screens.
+    """
+    screens = {}
+    __class_names = {}
+
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def class_name_keys(self):
+        return self.__class_names.keys()
+
+    def get_class_name(self, key):
+        return self.__class_names.get(key)
+
+    def parse(self):
+        meta = self.config.get('meta')
+
+        for screen in meta.get('screens'):
+            try:
+                self.setup_frame(screen)
+            except Exception as e:
+                self._log.critical("Critical error, cannot start application "
+                                   "please contact the developer for help, %s",
+                                   str(e), exc_info=True)
+                # *** TODO *** This needs to be shown on the screen if detected.
+
+        return self.screens[screen], self.__class_names
+
+    def setup_frame(self, screen):
+        class_name = f"{screen.capitalize()}Screen"
+        self.__class_names[screen] = class_name
+        frame_kwargs = self.config.get(screen, {}).get('meta')
+        klass = StringIO()
+        klass.write(f"class {class_name}(BaseScreen):\n")
+        klass.write("    def __init__(self, *args, **kwargs):\n")
+        klass.write("        super().__init__(*args, **kwargs)\n")
+        # The line below permits us to grab a vairable dynamically.
+        #klass.write("        local_vars = locals()\n")
+        title = frame_kwargs.get('title')
+        klass.write(f"        self.SetTitle('{title}')\n")
+        self.bg_color = frame_kwargs.get('bg_color')
+        klass.write(f"        bg_color = {self.bg_color}\n")
+        klass.write("        self.SetBackgroundColour(wx.Colour("
+                    f"*{self.bg_color}))\n")
+        self.fg_color = frame_kwargs.get('fg_color')
+        klass.write(f"        fg_color = {self.fg_color}\n")
+        self.tc_bg_color = frame_kwargs.get('tc_bg_color')
+        klass.write(f"        tc_bg_color = {self.tc_bg_color}\n")
+        font = frame_kwargs.get('font')
+        klass.write(f"        font = {font}\n")
+        size = frame_kwargs.get('size')
+        klass.write(f"        self.SetSize(*{size})\n")
+        self.main_sizer = None
+        self.second_sizer = None
+
+        # Create all the sizers.
+        for sizer, value in self.config.get(screen, {}).get('sizers').items():
+            if value[0] == 'BoxSizer':
+                self.box_sizer(klass, sizer, value)
+            elif value[0] == 'FlexGridSizer':
+                self.flex_grid_sizer(klass, sizer, value)
+
+        # Create all the widgets.
+        for widget, value in self.config.get(
+            screen, {}).get('widgets').items():
+            if value[0] == 'StaticText':
+                self.static_text(klass, widget, value)
+            elif value[0] == 'TextCtrl':
+                self.text_ctrl(klass, widget, value)
+
+
+
+        klass.write(f"        self.SetSizer({self.main_sizer})\n")
+        klass.write("        self.Layout()\n")
+        self.screens[screen] = klass.getvalue()
+        klass.close()
+
+    def box_sizer(self, klass, sizer, value):
+        self.main_sizer = sizer
+        klass.write(f"        {sizer} = wx.BoxSizer(wx.{value[1].upper()})\n")
+
+    def flex_grid_sizer(self, klass, sizer, value):
+        self.second_sizer = sizer
+        s_dict = self._find_dict(value)
+        grid = s_dict.get('grid')
+        klass.write(f"        {sizer} = wx.FlexGridSizer(*{grid})\n")
+        win, prop, flag, border = self._fix_add_args(s_dict.get('add'))
+        klass.write(f"        {self.main_sizer}.Add({win}, {prop}, "
+                    f"{flag}, {border})\n")
+
+    def static_text(self, klass, widget, value):
+        w_dict = self._find_dict(value)
+        parent, id, label = w_dict.get('args')
+        klass.write(f"        {widget} = wx.StaticText("
+                    f"{parent}, wx.{id}, '{label}')\n")
+        min_size = w_dict.get('min')
+        klass.write(f"        {widget}.SetMinSize({min_size})\n")
+        klass.write(f"        {widget}.SetForegroundColour("
+                    "wx.Colour(*fg_color))\n")
+        ps, fam, style, weight, ul, fn = w_dict.get('font')
+        fam = self._fix_wx_arg(fam)
+        style = self._fix_wx_arg(style)
+        weight = self._fix_wx_arg(weight)
+        klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
+                    f"{style}, {weight}, {ul}, '{fn}'))\n")
+
+        if w_dict.get('focus', False):
+            klass.write(f"        {widget}.SetFocus()\n")
+
+        win, prop, flag, border = self._fix_add_args(w_dict.get('add'))
+        klass.write(f"        {self.second_sizer}.Add({win}, {prop}, "
+                    f"{flag}, {border})\n")
+
+    def text_ctrl(self, klass, widget, value):
+        t_dict = self._find_dict(value)
+        parent, id, label = t_dict.get('args')
+        klass.write(f"        {widget} = wx.TextCtrl("
+                    f"{parent}, wx.{id}, '{label}')\n")
+        min_size = t_dict.get('min')
+        klass.write(f"        {widget}.SetMinSize({min_size})\n")
+        klass.write(f"        {widget}.SetBackgroundColour("
+                    "wx.Colour(*tc_bg_color))\n")
+        klass.write(f"        {widget}.SetForegroundColour("
+                    "wx.Colour(*fg_color))\n")
+        win, prop, flag, border = self._fix_add_args(t_dict.get('add'))
+        klass.write(f"        {self.second_sizer}.Add({win}, {prop}, "
+                    f"{flag}, {border})\n")
+
+
+
+
+    def _fix_add_args(self, value):
+        add = []
+
+        for idx, v in enumerate(value):
+            if idx == 2:
+                tmp = v.replace(' ', '').split('|')
+                tmp = ' | '.join([f'wx.{flag}' for flag in tmp])
+                add.append(eval(tmp))
+            else:
+                add.append(v)
+
+        return add
+
+    def _fix_wx_arg(self, value):
+        return f"wx.{value}"
+
+    def _find_dict(self, value):
+        for item in value:
+            if isinstance(item, dict):
+                break
+            else:
+                item = {}
+
+        return item
+
+
