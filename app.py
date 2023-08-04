@@ -4,7 +4,7 @@ from pprint import pprint
 
 from src.config import TomlConfig
 from src.ncb import CheckAppData
-from src.frame_factory import FrameFactory, BaseFrame
+from src.panel_factory import PanelFactory, BasePanel
 
 import wx
 
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     import sys
 
     cad = CheckAppData()
-    sf = FrameFactory()
+    sf = PanelFactory()
     tc = TomlConfig()
     frames = {}
     status = 0
