@@ -25,38 +25,46 @@ class MenuBar:
         bind_map = {}
         self.menubar = wx.MenuBar()
         file_menu = wx.Menu()
-        load_item = file_menu.Append(wx.ID_ANY, "Load\tCTRL+L",
-                                     "Load something")
-        bind_map.setdefault('load', [self.file_picker, load_item])
-
-        save_item = file_menu.Append(wx.ID_ANY, "Save", "")
+        # Open TOML config file.
+        load_item = file_menu.Append(wx.ID_OPEN, "&Open\tCTRL+O",
+                                     "Open TOML configuration file.")
+        bind_map.setdefault('open', [self.file_picker, load_item])
+        # Save TOML config file.
+        save_item = file_menu.Append(wx.ID_SAVE, "&Save\tCTRL+S",
+                                     "Save TOML configuration file.")
         bind_map.setdefault('save', [self.file_save, save_item])
-
-        save_as_item = file_menu.Append(wx.ID_ANY, "Save As", "")
+        # Save As TOML config file.
+        save_as_item = file_menu.Append(
+            wx.ID_SAVEAS, "Save As\tCTRL+A",
+            "Save as a different name a TONL configuration file.")
         bind_map.setdefault('save_as', [self.file_save_as, save_as_item])
-
         file_menu.AppendSeparator()
-        close_item = file_menu.Append(wx.ID_ANY, "Close", "")
+        # Close current frame.
+        close_item = file_menu.Append(wx.ID_CLOSE, "&Close\tCTRL+C",
+                                      "Close the current frame.")
         bind_map.setdefault('close', [self.file_close, close_item])
-
-        exit_item = file_menu.Append(wx.ID_ANY, "Exit", "")
+        # Exit application.
+        exit_item = file_menu.Append(wx.ID_EXIT, "&Exit\tCTRL+E",
+                                     "Exit this application.")
         bind_map.setdefault('exit', [self.app_exit, exit_item])
-
         self.menubar.Append(file_menu, "&File")
         edit_menu = wx.Menu()
         self.menubar.Append(edit_menu, "&Edit")
         win_menu = wx.Menu()
         self.menubar.Append(win_menu, "&Windows")
         help_menu = wx.Menu()
-        manual_item = help_menu.Append(wx.ID_ANY, "Manual", "")
+        # Open online manual.
+        manual_item = help_menu.Append(wx.ID_ANY, "&Manual\tCTRL+M",
+                                       "Open an online manual.")
         bind_map.setdefault('manual', [self.app_manual, manual_item])
-
-        releases_item = help_menu.Append(wx.ID_ANY, "Releases", "")
+        # Open online release schedule.
+        releases_item = help_menu.Append(wx.ID_ANY, "&Releases\tCTRL+R",
+                                         "Open the online release page.")
         bind_map.setdefault('releases', [self.app_releases, releases_item])
-
-        about_item = help_menu.Append(wx.ID_ANY, "About", "")
+        # Open an about screen.
+        about_item = help_menu.Append(wx.ID_ABOUT, "&About\tCTRL+A",
+                                      "Display the about screen.")
         bind_map.setdefault('about', [self.app_about, about_item])
-
         self.menubar.Append(help_menu, "&Help")
         [self.Bind(event=wx.EVT_MENU, handler=handler, source=source)
          for handler, source in bind_map.values()]
@@ -77,6 +85,8 @@ class MenuBar:
                         self.load_file(fullpath)
                 except IOError:
                     wx.LogError("Cannot open file '%s'." % fullpath)
+
+        dlg.Destroy()
 
     def file_save(self, event):
         pass
@@ -153,7 +163,7 @@ class FrameFactory(BaseSystemData):
         klass.write(f"class {class_name}(BaseFrame):\n")
         klass.write("    def __init__(self, *args, **kwargs):\n")
         klass.write("        super().__init__(*args, **kwargs)\n")
-        # The line below permits us to grab a vairable dynamically.
+        # The line below permits us to grab a variable dynamically.
         #klass.write("        local_vars = locals()\n")
         title = frame_kwargs.get('title')
         klass.write(f"        self.SetTitle('{title}')\n")
