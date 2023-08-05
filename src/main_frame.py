@@ -5,8 +5,12 @@
 __docformat__ = "restructuredtext en"
 
 import sys
+from pprint import pprint
 
 import wx
+
+from .config import BaseSystemData
+from src.panel_factory import PanelFactory, BasePanel
 
 
 class MenuBar:
@@ -110,9 +114,33 @@ class MenuBar:
 
 class MainFrame(MenuBar, wx.Frame):
     """
-    This frame is the main frame of the application.
+    The main frame of the application.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(parent=None, **kwargs)
+    def __init__(self, parent=None,
+                 id=wx.ID_ANY,
+                 pos=wx.DefaultPosition,
+                 size=wx.Size(800, 800),
+                 style=wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL):
+        super().__init__(parent, id=id, pos=pos, size=size, style=style)
+        self.SetTitle('Main Screen')
+        self.SetBackgroundColour(wx.Colour(128, 128, 128))
+        self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
+        box_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(box_sizer)
+        self.Layout()
+        self.Center(wx.BOTH)
 
+        sf = PanelFactory()
+        panels = {}
+        print("TOML doc:")
+        klass, names = sf.parse()
+        print(klass)  # *** TODO *** Remove later
+        pprint(names) # *** TODO *** Remove later
+
+        for key in sf.class_name_keys:
+            klass_name = sf.get_class_name(key)
+            exec(klass)
+            panels[key] = eval(klass_name)(self, size=size)
+
+        panels['config'].Show()

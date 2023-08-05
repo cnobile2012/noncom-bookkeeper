@@ -13,7 +13,7 @@
 #
 
 [meta]
-frames = ['config',]
+panels = ['config',]
 
 [config]
 
@@ -23,7 +23,6 @@ bg_color = [129, 143, 74]
 fg_color = [50, 50, 204]
 tc_bg_color = [176, 192, 177]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
-size = [440, 260]
 
 [config.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']

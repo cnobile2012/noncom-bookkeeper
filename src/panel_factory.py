@@ -13,21 +13,20 @@ import wx.adv
 # https://pwwang.github.io/python-varname/
 #from varname import varname, nameof
 
-from .main_frame import MenuBar
 
+class BasePanel(wx.Panel):
 
-class BasePanel(MenuBar, wx.Frame):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(parent=None, **kwargs)
-        self.panel_0 = wx.Panel(self)
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+        self._parent = parent
+        self._size = kwargs.get('size', (400, 400))
 
 
 class PanelFactory(BaseSystemData):
     """
-    Parse the config data and create the frames.
+    Parse the config data and create the panels.
     """
-    frames = {}
+    panels = {}
     __class_names = {}
 
     def __init__(self):
@@ -41,49 +40,46 @@ class PanelFactory(BaseSystemData):
         return self.__class_names.get(key)
 
     def parse(self):
-        meta = self.config.get('meta')
+        panels = self.config.get('meta', {}).get('panels')
 
-        for frame in meta.get('frames'):
+        for panel in panels:
             try:
-                self.setup_frame(frame)
+                self.setup_panel(panel)
             except Exception as e:
                 self._log.critical("Critical error, cannot start application "
                                    "please contact the developer for help, %s",
                                    str(e), exc_info=True)
-                # *** TODO *** This needs to be shown on the frame if detected.
+                # *** TODO *** This needs to be shown on the panel if detected.
 
         # *** TODO *** Remove later
-        return self.frames[frame], self.__class_names
+        return self.panels[panel], self.__class_names
 
-    def setup_frame(self, frame):
-        class_name = f"{frame.capitalize()}Panel"
-        self.__class_names[frame] = class_name
-        frame_kwargs = self.config.get(frame, {}).get('meta')
+    def setup_panel(self, panel):
+        class_name = f"{panel.capitalize()}Panel"
+        self.__class_names[panel] = class_name
+        panel_kwargs = self.config.get(panel, {}).get('meta')
         klass = StringIO()
         klass.write(f"class {class_name}(BasePanel):\n")
-        klass.write("    def __init__(self, *args, **kwargs):\n")
-        klass.write("        super().__init__(*args, **kwargs)\n")
-        # The line below permits us to grab a variable dynamically.
-        #klass.write("        local_vars = locals()\n")
-        title = frame_kwargs.get('title')
-        klass.write(f"        self.SetTitle('{title}')\n")
-        self.bg_color = frame_kwargs.get('bg_color')
+        klass.write("    def __init__(self, parent, **kwargs):\n")
+        klass.write("        super().__init__(parent, **kwargs)\n")
+        title = panel_kwargs.get('title')
+        klass.write(f"        self._parent.SetTitle('{title}')\n")
+        self.bg_color = panel_kwargs.get('bg_color')
         klass.write(f"        bg_color = {self.bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
                     f"*{self.bg_color}))\n")
-        self.fg_color = frame_kwargs.get('fg_color')
+        self.fg_color = panel_kwargs.get('fg_color')
         klass.write(f"        fg_color = {self.fg_color}\n")
-        self.tc_bg_color = frame_kwargs.get('tc_bg_color')
+        self.tc_bg_color = panel_kwargs.get('tc_bg_color')
         klass.write(f"        tc_bg_color = {self.tc_bg_color}\n")
-        font = frame_kwargs.get('font')
+        font = panel_kwargs.get('font')
         klass.write(f"        font = {font}\n")
-        size = frame_kwargs.get('size')
-        klass.write(f"        self.SetSize(*{size})\n")
+        klass.write("        self.SetSize(*self._size)\n")
         self.main_sizer = None
         self.second_sizer = None
 
         # Create all the sizers.
-        for sizer, value in self.config.get(frame, {}).get('sizers').items():
+        for sizer, value in self.config.get(panel, {}).get('sizers').items():
             if value[0] == 'BoxSizer':
                 self.box_sizer(klass, sizer, value)
             elif value[0] == 'FlexGridSizer':
@@ -91,7 +87,7 @@ class PanelFactory(BaseSystemData):
 
         # Create all the widgets.
         for widget, value in self.config.get(
-            frame, {}).get('widgets').items():
+            panel, {}).get('widgets').items():
             if value[0] == 'StaticText':
                 self.static_text(klass, widget, value)
             elif value[0] == 'TextCtrl':
@@ -102,7 +98,7 @@ class PanelFactory(BaseSystemData):
 
         klass.write(f"        self.SetSizer({self.main_sizer})\n")
         klass.write("        self.Layout()\n")
-        self.frames[frame] = klass.getvalue()
+        self.panels[panel] = klass.getvalue()
         klass.close()
 
     def box_sizer(self, klass, sizer, value):
