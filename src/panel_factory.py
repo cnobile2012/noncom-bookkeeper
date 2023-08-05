@@ -98,6 +98,7 @@ class PanelFactory(BaseSystemData):
 
         klass.write(f"        self.SetSizer({self.main_sizer})\n")
         klass.write("        self.Layout()\n")
+        klass.write("        self.Hide()\n")
         self.panels[panel] = klass.getvalue()
         klass.close()
 

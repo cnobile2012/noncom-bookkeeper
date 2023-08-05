@@ -47,9 +47,23 @@ class MenuBar:
         bind_map.setdefault('exit', [self.app_exit, exit_item])
         self.menubar.Append(file_menu, "&File")
         edit_menu = wx.Menu()
+        # Edit configuration.
+        conf_item = edit_menu.Append(wx.ID_ANY, "&Configuration\tCTRL+F",
+                                     "Edit basic organization configuration.")
+        bind_map.setdefault('config', [self.edit_config, conf_item])
+        # Hide all panels.
+        hide_item = edit_menu.Append(wx.ID_ANY, "&Close All\tCTRL+L",
+                                     "Close all panels.")
+        bind_map.setdefault('hide', [self.edit_hide_all, hide_item])
+
         self.menubar.Append(edit_menu, "&Edit")
-        win_menu = wx.Menu()
-        self.menubar.Append(win_menu, "&Windows")
+        tool_menu = wx.Menu()
+        # Show all short cuts.
+        short_item = tool_menu.Append(wx.ID_ANY, "&Short Cuts\tCTRL+H",
+                                      "Show the short cut screen.")
+        bind_map.setdefault('short', [self.tool_short_cuts, short_item])
+
+        self.menubar.Append(tool_menu, "&Tools")
         help_menu = wx.Menu()
         # Open online manual.
         manual_item = help_menu.Append(wx.ID_ANY, "&Manual\tCTRL+M",
@@ -60,7 +74,7 @@ class MenuBar:
                                          "Open the online release page.")
         bind_map.setdefault('releases', [self.app_releases, releases_item])
         # Open an about screen.
-        about_item = help_menu.Append(wx.ID_ABOUT, "&About\tCTRL+A",
+        about_item = help_menu.Append(wx.ID_ABOUT, "&About\tCTRL+B",
                                       "Display the about screen.")
         bind_map.setdefault('about', [self.app_about, about_item])
         self.menubar.Append(help_menu, "&Help")
@@ -99,6 +113,22 @@ class MenuBar:
         # *** TODO *** We need to check for unsaved files.
         sys.exit(0)
 
+    def edit_config(self, event):
+        self._hide_all_panels()
+        self.panels['config'].Show()
+
+
+
+    def edit_hide_all(self, event):
+        self._hide_all_panels()
+
+    def _hide_all_panels(self):
+        [panel.Hide() for panel in self.panels.values() if panel.IsShown()]
+
+    def tool_short_cuts(self, event):
+        pass
+
+
     def app_manual(self, event):
         pass
 
@@ -132,7 +162,7 @@ class MainFrame(MenuBar, wx.Frame):
         self.Center(wx.BOTH)
 
         sf = PanelFactory()
-        panels = {}
+        self.panels = {}
         print("TOML doc:")
         klass, names = sf.parse()
         print(klass)  # *** TODO *** Remove later
@@ -141,6 +171,5 @@ class MainFrame(MenuBar, wx.Frame):
         for key in sf.class_name_keys:
             klass_name = sf.get_class_name(key)
             exec(klass)
-            panels[key] = eval(klass_name)(self, size=size)
+            self.panels[key] = eval(klass_name)(self, size=size)
 
-        panels['config'].Show()
