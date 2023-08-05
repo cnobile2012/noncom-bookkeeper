@@ -13,13 +13,13 @@
 #
 
 [meta]
-panels = ['config',]
+panels = ['config', 'budget']
 
 [config]
 
 [config.meta]
 title = 'Organization Information'
-bg_color = [129, 143, 74]
+bg_color = [50, 153, 204]
 fg_color = [50, 50, 204]
 tc_bg_color = [176, 192, 177]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
@@ -40,3 +40,15 @@ widget_5 = ['TextCtrl', 'fg_color', 'bg_color', {args=['self', 'ID_ANY', ''], mi
 
 widget_6 = ['StaticText', 'fg_color', {args=['self', 'ID_ANY', 'Start of Fiscal Year:'], min=[172, 23], font=[12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], focus=false, add=['widget_6', 0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
 widget_7 = ['DatePickerCtrl', 'fg_color', 'bg_color', {args=['self', 'ID_ANY'], min=[115, 32], add=['widget_7', 0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+
+[budget]
+
+[budget.meta]
+title = "Yearly Budget Worksheet"
+#"The Spiritual Assembly of the Bahá'ís of <placeholder>"
+bg_color = [129, 143, 74]
+fg_color = [50, 50, 204]
+tc_bg_color = [176, 192, 177]
+font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
+
+

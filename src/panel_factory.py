@@ -26,7 +26,7 @@ class PanelFactory(BaseSystemData):
     """
     Parse the config data and create the panels.
     """
-    panels = {}
+    __panels = {}
     __class_names = {}
 
     def __init__(self):
@@ -36,8 +36,11 @@ class PanelFactory(BaseSystemData):
     def class_name_keys(self):
         return self.__class_names.keys()
 
-    def get_class_name(self, key):
-        return self.__class_names.get(key)
+    def get_class_name(self, panel):
+        return self.__class_names.get(panel)
+
+    def get_panel_code(self, panel):
+        return self.__panels.get(panel)
 
     def parse(self):
         panels = self.config.get('meta', {}).get('panels')
@@ -51,9 +54,6 @@ class PanelFactory(BaseSystemData):
                                    str(e), exc_info=True)
                 # *** TODO *** This needs to be shown on the panel if detected.
 
-        # *** TODO *** Remove later
-        return self.panels[panel], self.__class_names
-
     def setup_panel(self, panel):
         class_name = f"{panel.capitalize()}Panel"
         self.__class_names[panel] = class_name
@@ -63,7 +63,7 @@ class PanelFactory(BaseSystemData):
         klass.write("    def __init__(self, parent, **kwargs):\n")
         klass.write("        super().__init__(parent, **kwargs)\n")
         title = panel_kwargs.get('title')
-        klass.write(f"        self._parent.SetTitle('{title}')\n")
+        klass.write(f"        self._parent.SetTitle('''{title}''')\n")
         self.bg_color = panel_kwargs.get('bg_color')
         klass.write(f"        bg_color = {self.bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
@@ -79,7 +79,8 @@ class PanelFactory(BaseSystemData):
         self.second_sizer = None
 
         # Create all the sizers.
-        for sizer, value in self.config.get(panel, {}).get('sizers').items():
+        for sizer, value in self.config.get(
+            panel, {}).get('sizers', {}).items():
             if value[0] == 'BoxSizer':
                 self.box_sizer(klass, sizer, value)
             elif value[0] == 'FlexGridSizer':
@@ -87,7 +88,7 @@ class PanelFactory(BaseSystemData):
 
         # Create all the widgets.
         for widget, value in self.config.get(
-            panel, {}).get('widgets').items():
+            panel, {}).get('widgets', {}).items():
             if value[0] == 'StaticText':
                 self.static_text(klass, widget, value)
             elif value[0] == 'TextCtrl':
@@ -95,11 +96,12 @@ class PanelFactory(BaseSystemData):
             elif value[0] == 'DatePickerCtrl':
                 self.date_picker_ctrl(klass, widget, value)
 
+        if self.main_sizer:
+            klass.write(f"        self.SetSizer({self.main_sizer})\n")
 
-        klass.write(f"        self.SetSizer({self.main_sizer})\n")
         klass.write("        self.Layout()\n")
         klass.write("        self.Hide()\n")
-        self.panels[panel] = klass.getvalue()
+        self.__panels[panel] = klass.getvalue()
         klass.close()
 
     def box_sizer(self, klass, sizer, value):

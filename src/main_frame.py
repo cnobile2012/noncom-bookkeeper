@@ -51,6 +51,10 @@ class MenuBar:
         conf_item = edit_menu.Append(wx.ID_ANY, "&Configuration\tCTRL+F",
                                      "Edit basic organization configuration.")
         bind_map.setdefault('config', [self.edit_config, conf_item])
+        # Edit yearly budget.
+        budget_item = edit_menu.Append(wx.ID_ANY, "&Budget\tCTRL+B",
+                                       "Edit yearly budget.")
+        bind_map.setdefault('budget', [self.edit_budget, budget_item])
         # Hide all panels.
         hide_item = edit_menu.Append(wx.ID_ANY, "&Close All\tCTRL+L",
                                      "Close all panels.")
@@ -117,13 +121,17 @@ class MenuBar:
         self._hide_all_panels()
         self.panels['config'].Show()
 
+    def edit_budget(self, event):
+        self._hide_all_panels()
+        self.panels['budget'].Show()
+
 
 
     def edit_hide_all(self, event):
         self._hide_all_panels()
 
     def _hide_all_panels(self):
-        [panel.Hide() for panel in self.panels.values() if panel.IsShown()]
+        [obj.Hide() for obj in self.panels.values() if obj.IsShown()]
 
     def tool_short_cuts(self, event):
         pass
@@ -160,16 +168,23 @@ class MainFrame(MenuBar, wx.Frame):
         self.SetSizer(box_sizer)
         self.Layout()
         self.Center(wx.BOTH)
+        self.__panel_classes = {}
 
         sf = PanelFactory()
-        self.panels = {}
-        print("TOML doc:")
-        klass, names = sf.parse()
-        print(klass)  # *** TODO *** Remove later
-        pprint(names) # *** TODO *** Remove later
+        sf.parse()
+        panel_names = sf.class_name_keys
+        print("Panal Names:") # *** TODO *** Remove later
+        pprint(panel_names)   # *** TODO *** Remove later
 
-        for key in sf.class_name_keys:
-            klass_name = sf.get_class_name(key)
-            exec(klass)
-            self.panels[key] = eval(klass_name)(self, size=size)
+        for panel in panel_names:
+            code = sf.get_panel_code(panel)
 
+            if code:
+                print(code)   # *** TODO *** Remove later
+                exec(code)
+                class_name = sf.get_class_name(panel)
+                self.__panel_classes[panel] = eval(class_name)(self, size=size)
+
+    @property
+    def panels(self):
+        return self.__panel_classes
