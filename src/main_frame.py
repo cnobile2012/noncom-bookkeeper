@@ -5,15 +5,21 @@
 __docformat__ = "restructuredtext en"
 
 import sys
-from pprint import pprint
+from pprint import pprint # *** TODO *** Remove later
 
 import wx
 
 from .config import BaseSystemData
-from src.panel_factory import PanelFactory, BasePanel
+from .panel_factory import PanelFactory, BasePanel
+from .tools import ShortCuts
 
 
 class MenuBar:
+    """
+    Dynamic menu bar.
+    """
+
+    __item_map = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -24,9 +30,11 @@ class MenuBar:
         self.menubar = wx.MenuBar()
         file_menu = wx.Menu()
         # Open TOML config file.
-        load_item = file_menu.Append(wx.ID_OPEN, "&Open\tCTRL+O",
-                                     "Open TOML configuration file.")
-        bind_map.setdefault('open', [self.file_picker, load_item])
+        self.set_menu_item(
+            'open', ("&Open\tCTRL+O", "Open TOML configuration file."))
+        open_item = file_menu.Append(wx.ID_OPEN, self.get_menu_item('open'),
+                                     self.get_menu_help('open'))
+        bind_map.setdefault('open', [self.file_picker, open_item])
         # Save TOML config file.
         save_item = file_menu.Append(wx.ID_SAVE, "&Save\tCTRL+S",
                                      "Save TOML configuration file.")
@@ -42,9 +50,9 @@ class MenuBar:
                                       "Close the current frame.")
         bind_map.setdefault('close', [self.file_close, close_item])
         # Exit application.
-        exit_item = file_menu.Append(wx.ID_EXIT, "&Exit\tCTRL+E",
-                                     "Exit this application.")
-        bind_map.setdefault('exit', [self.app_exit, exit_item])
+        quit_item = file_menu.Append(wx.ID_EXIT, "&Quit\tCTRL+Q",
+                                     "Quit this application.")
+        bind_map.setdefault('exit', [self.app_quit, quit_item])
         self.menubar.Append(file_menu, "&File")
         edit_menu = wx.Menu()
         # Edit configuration.
@@ -78,13 +86,26 @@ class MenuBar:
                                          "Open the online release page.")
         bind_map.setdefault('releases', [self.app_releases, releases_item])
         # Open an about screen.
-        about_item = help_menu.Append(wx.ID_ABOUT, "&About\tCTRL+B",
+        about_item = help_menu.Append(wx.ID_ABOUT, "&About\tCTRL+T",
                                       "Display the about screen.")
         bind_map.setdefault('about', [self.app_about, about_item])
         self.menubar.Append(help_menu, "&Help")
         [self.Bind(event=wx.EVT_MENU, handler=handler, source=source)
          for handler, source in bind_map.values()]
         self.SetMenuBar(self.menubar)
+
+    @property
+    def menu_items(self):
+        return self.__item_map
+
+    def get_menu_item(self, name):
+        return self.__item_map.get(name)[0]
+
+    def get_menu_help(self, name):
+        return self.__item_map.get(name)[1]
+
+    def set_menu_item(self, name, value):
+        self.__item_map[name] = value
 
     def file_picker(self, event):
         title = "Open config file for editing."
@@ -113,17 +134,21 @@ class MenuBar:
     def file_close(self, event):
         pass
 
-    def app_exit(self, event):
+    def app_quit(self, event):
         # *** TODO *** We need to check for unsaved files.
         sys.exit(0)
 
     def edit_config(self, event):
         self._hide_all_panels()
-        self.panels['config'].Show()
+        panel = self.panels['config']
+        panel.Show()
+        self.parent.SetTitle(panel.title)
 
     def edit_budget(self, event):
         self._hide_all_panels()
-        self.panels['budget'].Show()
+        panel = self.panels['budget']
+        panel.Show()
+        self.parent.SetTitle(panel.title)
 
 
 
@@ -132,9 +157,11 @@ class MenuBar:
 
     def _hide_all_panels(self):
         [obj.Hide() for obj in self.panels.values() if obj.IsShown()]
+        self.SetTitle(self.title)
 
     def tool_short_cuts(self, event):
-        pass
+        sc = ShortCuts(self.parent)
+
 
 
     def app_manual(self, event):
@@ -154,6 +181,7 @@ class MainFrame(MenuBar, wx.Frame):
     """
     The main frame of the application.
     """
+    title = 'Main Screen'
 
     def __init__(self, parent=None,
                  id=wx.ID_ANY,
@@ -161,7 +189,7 @@ class MainFrame(MenuBar, wx.Frame):
                  size=wx.Size(800, 800),
                  style=wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL):
         super().__init__(parent, id=id, pos=pos, size=size, style=style)
-        self.SetTitle('Main Screen')
+        self.SetTitle(self.title)
         self.SetBackgroundColour(wx.Colour(128, 128, 128))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
         box_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -188,3 +216,7 @@ class MainFrame(MenuBar, wx.Frame):
     @property
     def panels(self):
         return self.__panel_classes
+
+    @property
+    def parent(self):
+        return self

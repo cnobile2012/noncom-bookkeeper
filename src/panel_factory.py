@@ -18,7 +18,6 @@ class BasePanel(wx.Panel):
 
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
-        self._parent = parent
         self._size = kwargs.get('size', (400, 400))
 
 
@@ -63,7 +62,7 @@ class PanelFactory(BaseSystemData):
         klass.write("    def __init__(self, parent, **kwargs):\n")
         klass.write("        super().__init__(parent, **kwargs)\n")
         title = panel_kwargs.get('title')
-        klass.write(f"        self._parent.SetTitle('''{title}''')\n")
+        klass.write(f"        self.title = '''{title}'''\n")
         self.bg_color = panel_kwargs.get('bg_color')
         klass.write(f"        bg_color = {self.bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
