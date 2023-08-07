@@ -139,6 +139,14 @@ class MenuBar:
     def edit_config(self, event):
         self._hide_all_panels()
         panel = self.panels['config']
+        self._set_panel(panel)
+
+    def edit_budget(self, event):
+        self._hide_all_panels()
+        panel = self.panels['budget']
+        self._set_panel(panel)
+
+    def _set_panel(self, panel):
         self.sizer.Detach(panel)
         size = self.parent.GetSize()
         panel.SetSize(*size)
@@ -146,15 +154,6 @@ class MenuBar:
         panel.Show()
         self.parent.SetTitle(panel.title)
 
-    def edit_budget(self, event):
-        self._hide_all_panels()
-        panel = self.panels['budget']
-        self.sizer.Detach(panel)
-        size = self.parent.GetSize()
-        panel.SetSize(*size)
-        self.sizer.Add(panel, 1, wx.EXPAND)
-        panel.Show()
-        self.parent.SetTitle(panel.title)
 
 
 
