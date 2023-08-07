@@ -18,7 +18,6 @@ class BasePanel(wx.Panel):
 
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
-        self._size = kwargs.get('size', (400, 400))
 
 
 class PanelFactory(BaseSystemData):
@@ -73,7 +72,6 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        tc_bg_color = {self.tc_bg_color}\n")
         font = panel_kwargs.get('font')
         klass.write(f"        font = {font}\n")
-        klass.write("        self.SetSize(*self._size)\n")
         self.main_sizer = None
         self.second_sizer = None
 

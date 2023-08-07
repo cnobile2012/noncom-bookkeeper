@@ -18,6 +18,8 @@ class MenuBar:
     """
     Dynamic menu bar.
     """
+    __short_cut = None
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -137,12 +139,20 @@ class MenuBar:
     def edit_config(self, event):
         self._hide_all_panels()
         panel = self.panels['config']
+        self.sizer.Detach(panel)
+        size = self.parent.GetSize()
+        panel.SetSize(*size)
+        self.sizer.Add(panel, 1, wx.EXPAND)
         panel.Show()
         self.parent.SetTitle(panel.title)
 
     def edit_budget(self, event):
         self._hide_all_panels()
         panel = self.panels['budget']
+        self.sizer.Detach(panel)
+        size = self.parent.GetSize()
+        panel.SetSize(*size)
+        self.sizer.Add(panel, 1, wx.EXPAND)
         panel.Show()
         self.parent.SetTitle(panel.title)
 
@@ -156,7 +166,8 @@ class MenuBar:
         self.SetTitle(self.title)
 
     def tool_short_cuts(self, event):
-        sc = ShortCuts(self.parent)
+        if not self.__short_cut:
+            self.__short_cut = ShortCuts(self.parent)
 
 
 
@@ -188,7 +199,7 @@ class MainFrame(MenuBar, wx.Frame):
         self.SetTitle(self.title)
         self.SetBackgroundColour(wx.Colour(128, 128, 128))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
-        box_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.__box_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Status Bar
         status_widths = [-1, -1, -1, -1]
@@ -204,7 +215,7 @@ class MainFrame(MenuBar, wx.Frame):
             frame_statusbar.SetStatusText(status, idx)
         # End Status Bar
 
-        self.SetSizer(box_sizer)
+        self.SetSizer(self.__box_sizer)
         self.Layout()
         self.Center(wx.BOTH)
         self.__panel_classes = {}
@@ -231,6 +242,10 @@ class MainFrame(MenuBar, wx.Frame):
     @property
     def parent(self):
         return self
+
+    @property
+    def sizer(self):
+        return self.__box_sizer
 
     def add_status(self, key, status):
         self.frame_statusbar_fields[key] = status

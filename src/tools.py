@@ -20,6 +20,24 @@ class ShortCuts(wx.Frame):
         old_style = self.GetWindowStyle()
         self.SetWindowStyle(old_style | wx.STAY_ON_TOP)
         sizer = wx.BoxSizer(wx.VERTICAL)
+        text = self.create_list(parent)
+        short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, text)
+        short_cut_text.SetFont(wx.Font(
+            10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
+            wx.FONTWEIGHT_NORMAL, 0, "Courier Prime"))
+        sizer.Add(short_cut_text, 1, wx.ALL|wx.EXPAND|wx.LEFT|wx.RIGHT, 6)
+        dismiss = wx.Button(self, id=wx.ID_OK, label="&Dismiss")
+        dismiss.Bind(wx.EVT_BUTTON, self.close_frame)
+        sizer.Add(dismiss, 0, wx.ALL|wx.ALIGN_CENTER,5)
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+        self.CenterOnParent(dir=wx.BOTH)
+        self.Show()
+
+    def close_frame(self, event):
+        self.Destroy()
+
+    def create_list(self, parent):
         text = ""
 
         for drop in parent.menu_items:
@@ -39,20 +57,4 @@ class ShortCuts(wx.Frame):
                         sc = sre.group('sc')
                         text += f"\t{name:<15}{sc}\t{help}\n"
 
-            text.strip()
-
-        short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, text)
-        short_cut_text.SetFont(wx.Font(
-            10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
-            wx.FONTWEIGHT_NORMAL, 0, "Courier Prime"))
-        sizer.Add(short_cut_text, 1, wx.ALL|wx.EXPAND|wx.LEFT|wx.RIGHT, 6)
-        dismiss = wx.Button(self, id=wx.ID_OK, label="&Dismiss")
-        dismiss.Bind(wx.EVT_BUTTON, self.close_frame)
-        sizer.Add(dismiss, 0, wx.ALL|wx.ALIGN_CENTER,5)
-        self.SetSizer(sizer)
-        sizer.Fit(self)
-        self.CenterOnParent(dir=wx.BOTH)
-        self.Show()
-
-    def close_frame(self, event):
-        self.Destroy()
+        return text.strip()
