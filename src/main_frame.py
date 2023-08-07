@@ -20,7 +20,6 @@ class MenuBar:
     """
     __short_cut = None
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__item_map = OrderedDict([
@@ -138,27 +137,39 @@ class MenuBar:
 
     def edit_config(self, event):
         self._hide_all_panels()
-        panel = self.panels['config']
-        self._set_panel(panel)
+        self.panel = self.panels['config']
+
+        #self.menu_item_toggle(drop, name)
+
+        self._set_panel()
 
     def edit_budget(self, event):
         self._hide_all_panels()
-        panel = self.panels['budget']
-        self._set_panel(panel)
+        self.panel = self.panels['budget']
 
-    def _set_panel(self, panel):
-        self.sizer.Detach(panel)
+        #self.menu_item_toggle(drop, name)
+
+        self._set_panel()
+
+
+
+    def _set_panel(self):
+        self.sizer.Detach(self.panel)
         size = self.parent.GetSize()
-        panel.SetSize(*size)
-        self.sizer.Add(panel, 1, wx.EXPAND)
-        panel.Show()
-        self.parent.SetTitle(panel.title)
+        self.panel.SetSize(*size)
+        self.sizer.Add(self.panel, 1, wx.EXPAND)
+        self.panel.Show()
+        self.parent.SetTitle(self.panel.title)
 
-
-
+        if self.__short_cut:
+            self._update_short_cuts(self.panel.background_color)
 
     def edit_hide_all(self, event):
         self._hide_all_panels()
+        self.panel = None
+
+        if self.__short_cut:
+            self._update_short_cuts(self.parent_bg_color)
 
     def _hide_all_panels(self):
         [obj.Hide() for obj in self.panels.values() if obj.IsShown()]
@@ -167,6 +178,19 @@ class MenuBar:
     def tool_short_cuts(self, event):
         if not self.__short_cut:
             self.__short_cut = ShortCuts(self.parent)
+
+        if self.panel:
+            color = self.panel.background_color
+        else:
+            color = self.parent_bg_color
+
+        self._update_short_cuts(color)
+
+    def _update_short_cuts(self, color):
+        self.__short_cut.set_text(self.parent)
+        self.__short_cut.SetBackgroundColour(wx.Colour(*color))
+
+
 
 
 
@@ -188,6 +212,7 @@ class MainFrame(MenuBar, wx.Frame):
     The main frame of the application.
     """
     title = 'Main Screen'
+    __active_panel = None
 
     def __init__(self, parent=None,
                  id=wx.ID_ANY,
@@ -196,7 +221,8 @@ class MainFrame(MenuBar, wx.Frame):
                  style=wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL):
         super().__init__(parent, id=id, pos=pos, size=size, style=style)
         self.SetTitle(self.title)
-        self.SetBackgroundColour(wx.Colour(128, 128, 128))
+        self.parent_bg_color = (128, 128, 128)
+        self.SetBackgroundColour(wx.Colour(*self.parent_bg_color))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
         self.__box_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -237,6 +263,14 @@ class MainFrame(MenuBar, wx.Frame):
     @property
     def panels(self):
         return self.__panel_classes
+
+    @property
+    def panel(self):
+        return self.__active_panel
+
+    @panel.setter
+    def panel(self, value):
+        self.__active_panel = value
 
     @property
     def parent(self):

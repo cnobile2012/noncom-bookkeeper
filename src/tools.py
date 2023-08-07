@@ -14,23 +14,25 @@ class ShortCuts(wx.Frame):
     This dialog displayes the list of short cuts used in the menu bar.
     """
     REGEX = re.compile(r"^&(?P<name>[\w ]+)\t(?P<sc>\w+\+\w)$")
+    short_cut_text = None
 
     def __init__(self, parent, title="Short Cuts"):
         super().__init__(parent, title=title)
         old_style = self.GetWindowStyle()
         self.SetWindowStyle(old_style | wx.STAY_ON_TOP)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        text = self.create_list(parent)
-        short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, text)
-        short_cut_text.SetFont(wx.Font(
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, "")
+        self.set_text(parent)
+        self.short_cut_text.SetFont(wx.Font(
             10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_NORMAL, 0, "Courier Prime"))
-        sizer.Add(short_cut_text, 1, wx.ALL|wx.EXPAND|wx.LEFT|wx.RIGHT, 6)
+        self.sizer.Add(self.short_cut_text, 1,
+                       wx.ALL|wx.EXPAND|wx.LEFT|wx.RIGHT, 6)
         dismiss = wx.Button(self, id=wx.ID_OK, label="&Dismiss")
         dismiss.Bind(wx.EVT_BUTTON, self.close_frame)
-        sizer.Add(dismiss, 0, wx.ALL|wx.ALIGN_CENTER,5)
-        self.SetSizer(sizer)
-        sizer.Fit(self)
+        self.sizer.Add(dismiss, 0, wx.ALL|wx.ALIGN_CENTER,5)
+        self.SetSizer(self.sizer)
+        self.sizer.Fit(self)
         self.CenterOnParent(dir=wx.BOTH)
         self.Show()
 
@@ -58,3 +60,7 @@ class ShortCuts(wx.Frame):
                         text += f"\t{name:<15}{sc}\t{help}\n"
 
         return text.strip()
+
+    def set_text(self, parent):
+        text = self.create_list(parent)
+        self.short_cut_text.SetLabel(text)
