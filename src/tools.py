@@ -13,25 +13,33 @@ class ShortCuts(wx.Dialog):
     """
     This dialog displayes the list of short cuts used in the menu bar.
     """
-    REGEX = re.compile(r"^&(?P<name>\w+)\t(?P<sc>\w+\+\w)$")
+    REGEX = re.compile(r"^&(?P<name>[\w ]+)\t(?P<sc>\w+\+\w)$")
 
     def __init__(self, parent, title="Short Cuts"):
         super().__init__(parent, title=title)
         sizer = wx.BoxSizer(wx.VERTICAL)
         text = ""
 
-        for item, item_help in parent.menu_items.items():
-            print(f"POOP: {item}--{item_help}")
-            sre = self.REGEX.search(item)
-            print(sre)
+        for drop in parent.menu_items:
+            name, sc, obj, inner = parent.menu_items[drop]
+            text += f"{name.replace('&', '')}:\t{sc}\n"
 
-            if sre:
-                name = sre.group('name')
-                sc = sre.group('sc').replace('+', ' ')
-                text += f"{name}:\t{sc}\t{item_help}\n"
+            for key in inner:
+                if 'separator' in key: continue
+                id, item, help, cb, flag = inner[key]
+                sre = self.REGEX.search(item)
 
-        short_cut_text = wx.TextCtrl(self, style=wx.TE_MULTILINE)
-        short_cut_text.WriteText(text)
-        sizer.Add(short_cut_text, 1, wx.ALL|wx.EXPAND)
+                if sre:
+                    name = sre.group('name') + ':'
+                    sc = sre.group('sc')
+                    text += f"\t{name:<15}{sc}\t{help}\n"
+
+        short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, text)
+        short_cut_text.SetFont(wx.Font(
+            10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
+            wx.FONTWEIGHT_NORMAL, 0, "Courier Prime"))
+        sizer.Add(short_cut_text, 1, wx.ALL|wx.EXPAND|wx.LEFT|wx.RIGHT, 6)
+        but_sizer = self.CreateSeparatedButtonSizer(wx.OK)
+        sizer.Add(but_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.BOTTOM, 6)
         self.SetSizer(sizer)
-        self.Show()
+        sizer.Fit(self)
