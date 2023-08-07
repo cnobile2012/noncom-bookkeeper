@@ -22,17 +22,22 @@ class ShortCuts(wx.Dialog):
 
         for drop in parent.menu_items:
             name, sc, obj, inner = parent.menu_items[drop]
-            text += f"{name.replace('&', '')}:\t{sc}\n"
+            text += f"\n{name.replace('&', '')}:\t{sc}\n"
+            text += "-------------\n"
 
             for key in inner:
                 if 'separator' in key: continue
                 id, item, help, cb, flag = inner[key]
-                sre = self.REGEX.search(item)
 
-                if sre:
-                    name = sre.group('name') + ':'
-                    sc = sre.group('sc')
-                    text += f"\t{name:<15}{sc}\t{help}\n"
+                if flag:
+                    sre = self.REGEX.search(item)
+
+                    if sre:
+                        name = sre.group('name') + ':'
+                        sc = sre.group('sc')
+                        text += f"\t{name:<15}{sc}\t{help}\n"
+
+            text.strip()
 
         short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, text)
         short_cut_text.SetFont(wx.Font(
