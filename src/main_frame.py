@@ -156,11 +156,8 @@ class MenuBar:
         self.SetTitle(self.title)
 
     def tool_short_cuts(self, event):
-        with ShortCuts(self.parent) as sc:
-            if sc.ShowModal() != wx.ID_CANCEL:
-                pass
+        sc = ShortCuts(self.parent)
 
-        sc.Destroy()
 
 
     def app_manual(self, event):
