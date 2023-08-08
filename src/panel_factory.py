@@ -96,6 +96,8 @@ class PanelFactory(BaseSystemData):
                 self.text_ctrl(klass, widget, value)
             elif value[0] == 'DatePickerCtrl':
                 self.date_picker_ctrl(klass, widget, value)
+            elif value[0] == 'StaticLine':
+                self.static_line(klass, widget, value)
 
         if self.main_sizer:
             klass.write(f"        self.SetSizer({self.main_sizer})\n")
@@ -114,9 +116,10 @@ class PanelFactory(BaseSystemData):
         dict_ = self._find_dict(value)
         grid = dict_.get('grid')
         klass.write(f"        {sizer} = wx.FlexGridSizer(*{grid})\n")
-        win, prop, flag, border = self._fix_add_args(dict_.get('add'))
+        win, prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
         klass.write(f"        {self.main_sizer}.Add({win}, {prop}, "
-                    f"{flag}, {border})\n")
+                    f"{flags}, {border})\n")
 
     def static_text(self, klass, widget, value):
         dict_ = self._find_dict(value)
@@ -124,22 +127,29 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        {widget} = wx.StaticText("
                     f"{parent}, wx.{id}, '{label}')\n")
         min_size = dict_.get('min')
-        klass.write(f"        {widget}.SetMinSize({min_size})\n")
+
+        if min_size:
+            klass.write(f"        {widget}.SetMinSize({min_size})\n")
+
         klass.write(f"        {widget}.SetForegroundColour("
                     "wx.Colour(*fg_color))\n")
-        ps, fam, style, weight, ul, fn = dict_.get('font')
-        fam = self._fix_wx_arg(fam)
-        style = self._fix_wx_arg(style)
-        weight = self._fix_wx_arg(weight)
-        klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
-                    f"{style}, {weight}, {ul}, '{fn}'))\n")
+        font = dict_.get('font')
+
+        if font:
+            ps, fam, style, weight, ul, fn = font
+            fam = self._fix_flags(fam)
+            style = self._fix_flags(style)
+            weight = self._fix_flags(weight)
+            klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
+                        f"{style}, {weight}, {ul}, '{fn}'))\n")
 
         if dict_.get('focus', False):
             klass.write(f"        {widget}.SetFocus()\n")
 
-        win, prop, flag, border = self._fix_add_args(dict_.get('add'))
+        win, prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
         klass.write(f"        {self.second_sizer}.Add({win}, {prop}, "
-                    f"{flag}, {border})\n")
+                    f"{flags}, {border})\n")
 
     def text_ctrl(self, klass, widget, value):
         dict_ = self._find_dict(value)
@@ -155,9 +165,10 @@ class PanelFactory(BaseSystemData):
                     "wx.Colour(*tc_bg_color))\n")
         klass.write(f"        {widget}.SetForegroundColour("
                     "wx.Colour(*fg_color))\n")
-        win, prop, flag, border = self._fix_add_args(dict_.get('add'))
+        win, prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
         klass.write(f"        {self.second_sizer}.Add({win}, {prop}, "
-                    f"{flag}, {border})\n")
+                    f"{flags}, {border})\n")
 
     def date_picker_ctrl(self, klass, widget, value):
         dict_ = self._find_dict(value)
@@ -173,27 +184,19 @@ class PanelFactory(BaseSystemData):
                     "wx.Colour(*tc_bg_color))\n")
         klass.write(f"        {widget}.SetForegroundColour("
                     "wx.Colour(*fg_color))\n")
-        win, prop, flag, border = self._fix_add_args(dict_.get('add'))
+        win, prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
         klass.write(f"        {self.second_sizer}.Add({win}, {prop}, "
-                    f"{flag}, {border})\n")
+                    f"{flags}, {border})\n")
 
+    def static_line(klass, widget, value):
+        panel, flags = value
+        flags = self._fix_flags(flags)
+        klass.write(f"        wx.StaticLine({panel}, {flags})")
 
-
-    def _fix_add_args(self, value):
-        add = []
-
-        for idx, v in enumerate(value):
-            if idx == 2:
-                tmp = v.replace(' ', '').split('|')
-                tmp = ' | '.join([f'wx.{flag}' for flag in tmp])
-                add.append(eval(tmp))
-            else:
-                add.append(v)
-
-        return add
-
-    def _fix_wx_arg(self, value):
-        return f"wx.{value}"
+    def _fix_flags(self, flags):
+        flag_list = flags.replace(' ', '').split('|')
+        return  ' | '.join([f"wx.{flag}" for flag in flag_list])
 
     def _find_dict(self, value):
         for item in value:
@@ -203,5 +206,4 @@ class PanelFactory(BaseSystemData):
                 item = {}
 
         return item
-
 
