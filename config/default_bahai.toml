@@ -26,20 +26,20 @@ font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
 
 [config.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['FlexGridSizer', {grid=[4, 2, 0, 2], add=['sizer_1', 0, 'EXPAND', 0]}]
+sizer_1 = ['FlexGridSizer', {grid=[4, 2, 0, 2], add=[0, 'EXPAND', 0]}]
 
 [config.widgets]
-widget_0 = ['StaticText', 'fg_color', {args=['self', 'ID_ANY', 'Organization Name:'], min=[172, 23], font=[12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], focus=true, add=['widget_0', 0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-widget_1 = ['TextCtrl', 'fg_color', 'bg_color', {args=['self', 'ID_ANY', ''], min=[250, 32], add=['widget_1', 0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_0 = ['StaticText', {args=['self', 'ID_ANY', 'Organization Name:'], min=[172, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
+widget_1 = ['TextCtrl', {args=['self', 'ID_ANY', ''], min=[250, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
-widget_2 = ['StaticText', 'fg_color', {args=['self', 'ID_ANY', 'Total Membership:'], min=[172, 23], font=[12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], focus=false, add=['widget_2', 0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-widget_3 = ['TextCtrl', 'fg_color', 'bg_color', {args=['self', 'ID_ANY', ''], min=[50, 32], add=['widget_3', 0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_2 = ['StaticText', {args=['self', 'ID_ANY', 'Total Membership:'], min=[172, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
+widget_3 = ['TextCtrl', {args=['self', 'ID_ANY', ''], min=[50, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
-widget_4 = ['StaticText', 'fg_color', {args=['self', 'ID_ANY', 'Treasurer:'], min=[150, 23], font=[12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], focus=false, add=['widget_4', 0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-widget_5 = ['TextCtrl', 'fg_color', 'bg_color', {args=['self', 'ID_ANY', ''], min=[250, 32], add=['widget_5', 0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_4 = ['StaticText', {args=['self', 'ID_ANY', 'Treasurer:'], min=[150, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
+widget_5 = ['TextCtrl', {args=['self', 'ID_ANY', ''], min=[250, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
-widget_6 = ['StaticText', 'fg_color', {args=['self', 'ID_ANY', 'Start of Fiscal Year:'], min=[172, 23], font=[12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], focus=false, add=['widget_6', 0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-widget_7 = ['DatePickerCtrl', 'fg_color', 'bg_color', {args=['self', 'ID_ANY'], min=[115, 32], add=['widget_7', 0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_6 = ['StaticText', {args=['self', 'ID_ANY', 'Start of Fiscal Year:'], min=[172, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
+widget_7 = ['DatePickerCtrl', {args=['self', 'ID_ANY'], min=[115, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
 [budget]
 
@@ -50,5 +50,12 @@ bg_color = [129, 143, 74]
 fg_color = [50, 50, 204]
 tc_bg_color = [176, 192, 177]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
+blank_line = [[0, 0], 0, 0, 0]
 
+[budget.sizers]
+sizer_0 = ['BoxSizer', 'VERTICAL']
+sizer_1 = ['FlexGridSizer', {grid=[14, 4, 2, 2], add=[1, 'EXPAND', 0]}]
 
+[budget.widgets]
+widget_0 = 'blank'
+widget_1 = ['StaticText', {args=['self', 'ID_ANY', 'Annual\nBudget'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]

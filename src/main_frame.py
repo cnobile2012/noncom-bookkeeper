@@ -248,8 +248,8 @@ class MainFrame(MenuBar, wx.Frame):
         sf = PanelFactory()
         sf.parse()
         panel_names = sf.class_name_keys
-        print("Panal Names:") # *** TODO *** Remove later
-        pprint(panel_names)   # *** TODO *** Remove later
+        print("Panal Names: ", end='') # *** TODO *** Remove later
+        pprint(panel_names)            # *** TODO *** Remove later
 
         for panel in panel_names:
             code = sf.get_panel_code(panel)
