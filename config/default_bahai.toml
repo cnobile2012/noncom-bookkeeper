@@ -50,12 +50,18 @@ bg_color = [129, 143, 74]
 fg_color = [50, 50, 204]
 tc_bg_color = [176, 192, 177]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
-blank_line = [[0, 0], 0, 0, 0]
+sizer_span = [[0, 0], 0, 0, 0]
 
 [budget.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['FlexGridSizer', {grid=[14, 4, 2, 2], add=[1, 'EXPAND', 0]}]
+sizer_1 = ['FlexGridSizer', {grid=[14, 4, 2, 2], add=[1, 'EXPAND', 2]}]
 
 [budget.widgets]
-widget_0 = 'blank'
+widget_0 = 'sizer_span'
 widget_1 = ['StaticText', {args=['self', 'ID_ANY', 'Annual\nBudget'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_2 = ['StaticText', {args=['self', 'ID_ANY', 'Year-to-Date\nActual'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_3 = ['StaticText', {args=['self', 'ID_ANY', 'Monthly\nBudget'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_4 = ['StaticText', {args=['self', 'ID_ANY', 'BEGGING CASH BALANCE AS OF:'], font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ""], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_5 = ['StaticText', {args=['self', 'ID_ANY', ''], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+
+

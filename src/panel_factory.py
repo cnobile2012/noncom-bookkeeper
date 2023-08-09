@@ -80,7 +80,7 @@ class PanelFactory(BaseSystemData):
         weight = self._fix_flags(weight)
         klass.write(f"        font = [{ps}, {fam}, {style}, {weight}, "
                     f"{ul}, {fn}]\n")
-        self.blank = panel_kwargs.get('blank_line')
+        self.span = panel_kwargs.get('sizer_span')
         self.main_sizer = None
         self.second_sizer = None
 
@@ -103,6 +103,8 @@ class PanelFactory(BaseSystemData):
                 self.date_picker_ctrl(klass, widget, value)
             elif value[0] == 'StaticLine':
                 self.static_line(klass, widget, value)
+            elif value == 'sizer_span':
+                self.sizer_span(klass)
             elif value == "blank":
                 self.blank_line(klass)
 
@@ -205,16 +207,19 @@ class PanelFactory(BaseSystemData):
         flags = self._fix_flags(flags)
         klass.write(f"        {widget} = wx.StaticLine({panel}, {flags})")
 
+    def sizer_span(self, klass):
+        if self.span:
+            klass.write(f"        {self.second_sizer}.Add(*{self.span})\n")
+
     def blank_line(self, klass):
-        if self.blank:
-            klass.write(f"        {self.second_sizer}.Add(*{self.blank})\n")
+        pass
 
 
 
 
     def _fix_flags(self, flags):
         flag_list = flags.replace(' ', '').split('|')
-        return  ' | '.join([f"wx.{flag}" for flag in flag_list])
+        return  ' | '.join([f"wx.{flag.upper()}" for flag in flag_list])
 
     def _find_dict(self, value):
         for item in value:
