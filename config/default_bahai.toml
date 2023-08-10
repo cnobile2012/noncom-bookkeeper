@@ -23,33 +23,36 @@ bg_color = [50, 153, 204]
 fg_color = [50, 50, 204]
 tc_bg_color = [176, 192, 177]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
+locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í Group of "}
 
 [config.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['FlexGridSizer', {grid=[4, 2, 0, 2], add=[0, 'EXPAND', 0]}]
+sizer_1 = ['FlexGridSizer', {grid=[5, 2, 0, 2], add=[0, 'EXPAND', 0]}]
 
 [config.widgets]
-widget_0 = ['StaticText', {args=['self', 'ID_ANY', 'Organization Name:'], min=[172, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-widget_1 = ['TextCtrl', {args=['self', 'ID_ANY', ''], min=[250, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_0 = ['RadioBox', {args=['self', 'ID_ANY', 'Locality Prefix'], choices=['LSA', 'Group'], dim=1, style='RA_SPECIFY_ROWS', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], tip="Choose if your community is an LSA or a group.", focus=true, select=0, add=[0, 0, 0], callback='locality_prefix', update='widget_1'}]
+widget_1 = ['StaticText', {args=['self', 'ID_ANY', ''], style='ALIGN_LEFT', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, ''], min=[248, 32], wrap=240, add=[0, 'EXPAND | RIGHT | TOP', 6], bg_color='tc_bg_color', instance=true}]
 
-widget_2 = ['StaticText', {args=['self', 'ID_ANY', 'Total Membership:'], min=[172, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-widget_3 = ['TextCtrl', {args=['self', 'ID_ANY', ''], min=[50, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_2 = ['StaticText', {args=['self', 'ID_ANY', 'Locale Name:'], min=[172, 23], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], update='widget_1'}]
+widget_3 = ['TextCtrl', {args=['self', 'ID_ANY', ''], min=[250, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
-widget_4 = ['StaticText', {args=['self', 'ID_ANY', 'Treasurer:'], min=[150, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-widget_5 = ['TextCtrl', {args=['self', 'ID_ANY', ''], min=[250, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_4 = ['StaticText', {args=['self', 'ID_ANY', 'Total Membership:'], min=[172, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
+widget_5 = ['TextCtrl', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[50, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
-widget_6 = ['StaticText', {args=['self', 'ID_ANY', 'Start of Fiscal Year:'], min=[172, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-widget_7 = ['DatePickerCtrl', {args=['self', 'ID_ANY'], min=[115, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_6 = ['StaticText', {args=['self', 'ID_ANY', 'Treasurer:'], min=[150, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
+widget_7 = ['TextCtrl', {args=['self', 'ID_ANY', ''], min=[250, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+
+widget_8 = ['StaticText', {args=['self', 'ID_ANY', 'Start of Fiscal Year:'], min=[172, 23], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
+widget_9 = ['DatePickerCtrl', {args=['self', 'ID_ANY'], min=[115, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
 [budget]
 
 [budget.meta]
 title = "Yearly Budget Worksheet"
-#"The Spiritual Assembly of the Bahá'ís of <placeholder>"
 bg_color = [129, 143, 74]
 fg_color = [50, 50, 204]
 tc_bg_color = [176, 192, 177]
-font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
+font = [10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, '']
 sizer_span = [[0, 0], 0, 0, 0]
 
 [budget.sizers]
@@ -57,11 +60,25 @@ sizer_0 = ['BoxSizer', 'VERTICAL']
 sizer_1 = ['FlexGridSizer', {grid=[14, 4, 2, 2], add=[1, 'EXPAND', 2]}]
 
 [budget.widgets]
-widget_0 = 'sizer_span'
-widget_1 = ['StaticText', {args=['self', 'ID_ANY', 'Annual\nBudget'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
-widget_2 = ['StaticText', {args=['self', 'ID_ANY', 'Year-to-Date\nActual'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
-widget_3 = ['StaticText', {args=['self', 'ID_ANY', 'Monthly\nBudget'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
-widget_4 = ['StaticText', {args=['self', 'ID_ANY', 'BEGGING CASH BALANCE AS OF:'], font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ""], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
-widget_5 = ['StaticText', {args=['self', 'ID_ANY', ''], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_00 = 'sizer_span'
+widget_01 = ['StaticText', {args=['self', 'ID_ANY', 'Annual\nBudget'], style='ALIGN_CENTER_HORIZONTAL', min=[100, 38], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_02 = ['StaticText', {args=['self', 'ID_ANY', 'Year-to-Date\nActual'], style='ALIGN_CENTER_HORIZONTAL', min=[100, 38], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_03 = ['StaticText', {args=['self', 'ID_ANY', 'Monthly\nBudget'], style='ALIGN_CENTER_HORIZONTAL', min=[100, 38], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_04 = ['StaticText', {args=['self', 'ID_ANY', 'BEGGING CASH BALANCE AS OF:'], font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ""], min=[-1, 20], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_05 = ['StaticText', {args=['self', 'ID_ANY', 'TBD'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER | ALL', 2]}]
+widget_06 = 'sizer_span'
+widget_07 = 'sizer_span'
+widget_08 = 'sizer_span'
+widget_09 = 'sizer_span'
+widget_10 = 'sizer_span'
+widget_11 = 'sizer_span'
+widget_12 = ['StaticText', {args=['self', 'ID_ANY', 'Cash in Bank'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_13 = 'sizer_span'
+widget_14 = ['TextCtrl', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_15 = 'sizer_span'
+widget_16 = ['StaticText', {args=['self', 'ID_ANY', 'OCS Holdings'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_17 = 'sizer_span'
+widget_18 = ['TextCtrl', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_19 = 'sizer_span'
 
 

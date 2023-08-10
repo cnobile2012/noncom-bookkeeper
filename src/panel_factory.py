@@ -23,6 +23,19 @@ class BasePanel(wx.Panel):
     def background_color(self):
         return self.bg_color
 
+    def locality_prefix(self, update):
+        def do_event(event):
+            rb = event.GetEventObject()
+            self._locality_prefix(rb, update)
+
+        return do_event
+
+    def _locality_prefix(self, rb, update):
+        selection = rb.GetStringSelection()
+        text = self.locale_prefix[selection.lower()]
+        prefix_widget = getattr(self, update)
+        prefix_widget.SetLabel(text)
+
 
 class PanelFactory(BaseSystemData):
     """
@@ -81,6 +94,11 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        font = [{ps}, {fam}, {style}, {weight}, "
                     f"{ul}, {fn}]\n")
         self.span = panel_kwargs.get('sizer_span')
+        locale_prefix = panel_kwargs.get('locale_prefix')
+
+        if locale_prefix:
+             klass.write(f"        self.locale_prefix = {locale_prefix}\n")
+
         self.main_sizer = None
         self.second_sizer = None
 
@@ -95,7 +113,9 @@ class PanelFactory(BaseSystemData):
         # Create all the widgets.
         for widget, value in self.config.get(
             panel, {}).get('widgets', {}).items():
-            if value[0] == 'StaticText':
+            if value[0] == 'RadioBox':
+                self.radio_box(klass, widget, value)
+            elif value[0] == 'StaticText':
                 self.static_text(klass, widget, value)
             elif value[0] == 'TextCtrl':
                 self.text_ctrl(klass, widget, value)
@@ -118,7 +138,8 @@ class PanelFactory(BaseSystemData):
 
     def box_sizer(self, klass, sizer, value):
         self.main_sizer = sizer
-        klass.write(f"        {sizer} = wx.BoxSizer(wx.{value[1].upper()})\n")
+        flag = self._fix_flags(value[1])
+        klass.write(f"        {sizer} = wx.BoxSizer({flag})\n")
 
     def flex_grid_sizer(self, klass, sizer, value):
         self.second_sizer = sizer
@@ -130,6 +151,39 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        {self.main_sizer}.Add({sizer}, {prop}, "
                     f"{flags}, {border})\n")
 
+    def radio_box(self, klass, widget, value):
+        dict_ = self._find_dict(value)
+        parent, id, label = dict_.get('args')
+        style = dict_.get('style', 0)
+        style = style if style == 0 else self._fix_flags(style)
+        choices = dict_.get('choices', [])
+        callback = dict_.get('callback')
+        dim = dict_.get('dim', 0)
+        update = dict_.get('update')
+        klass.write(f"        {widget} = wx.RadioBox("
+                    f"{parent}, wx.{id}, '{label}', style={style}, "
+                    f"choices={choices}, majorDimension={dim})\n")
+        tip = dict_.get('tip', "")
+
+        if tip:
+            klass.write(f"        {widget}.SetToolTip('{tip}')\n")
+
+        if dict_.get('focus', False):
+            klass.write(f"        {widget}.SetFocus()\n")
+
+        select = dict_.get('select', 0)
+        klass.write(f"        {widget}.SetSelection({select})\n")
+        prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
+        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
+                    f"{flags}, {border})\n")
+
+        if callback:
+            klass.write(f"        {widget}.Bind(wx.EVT_RADIOBOX, "
+                        f"self.{callback}('{update}'))\n")
+            klass.write("        wx.CallLater(1000, "
+                        f"self._locality_prefix, *({widget}, '{update}'))\n")
+
     def static_text(self, klass, widget, value):
         dict_ = self._find_dict(value)
         parent, id, label = dict_.get('args')
@@ -138,13 +192,19 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        {widget} = wx.StaticText("
                     f"{parent}, wx.{id}, '{label}', style={style})\n")
         min_size = dict_.get('min')
+        font = dict_.get('font')
+        wrap = dict_.get('wrap')
+        bg_color = dict_.get('bg_color')
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
+        if bg_color:
+            klass.write(f"        {widget}.SetBackgroundColour("
+                    f"wx.Colour(*{bg_color}))\n")
+
         klass.write(f"        {widget}.SetForegroundColour("
                     "wx.Colour(*fg_color))\n")
-        font = dict_.get('font')
 
         if font:
             ps, fam, style, weight, ul, fn = font
@@ -159,16 +219,24 @@ class PanelFactory(BaseSystemData):
         if dict_.get('focus', False):
             klass.write(f"        {widget}.SetFocus()\n")
 
+        if wrap:
+            klass.write(f"        {widget}.Wrap({wrap})\n")
+
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags)
         klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
                     f"{flags}, {border})\n")
 
+        if dict_.get('instance'):
+            klass.write(f"        self.{widget} = {widget}\n")
+
     def text_ctrl(self, klass, widget, value):
         dict_ = self._find_dict(value)
         parent, id, label = dict_.get('args')
+        style = dict_.get('style', 0)
+        style = style if style == 0 else self._fix_flags(style)
         klass.write(f"        {widget} = wx.TextCtrl("
-                    f"{parent}, wx.{id}, '{label}')\n")
+                    f"{parent}, wx.{id}, '{label}', style={style})\n")
         min_size = dict_.get('min')
 
         if min_size:
@@ -178,6 +246,10 @@ class PanelFactory(BaseSystemData):
                     "wx.Colour(*tc_bg_color))\n")
         klass.write(f"        {widget}.SetForegroundColour("
                     "wx.Colour(*fg_color))\n")
+
+        if dict_.get('focus', False):
+            klass.write(f"        {widget}.SetFocus()\n")
+
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags)
         klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
@@ -218,8 +290,13 @@ class PanelFactory(BaseSystemData):
 
 
     def _fix_flags(self, flags):
-        flag_list = flags.replace(' ', '').split('|')
-        return  ' | '.join([f"wx.{flag.upper()}" for flag in flag_list])
+        if isinstance(flags, int):
+            item = flags
+        else:
+            flag_list = flags.replace(' ', '').split('|')
+            item = ' | '.join([f"wx.{flag.upper()}" for flag in flag_list])
+
+        return item
 
     def _find_dict(self, value):
         for item in value:
@@ -229,4 +306,3 @@ class PanelFactory(BaseSystemData):
                 item = {}
 
         return item
-
