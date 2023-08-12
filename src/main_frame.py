@@ -53,6 +53,10 @@ class MenuBar:
                            "Show the short cut screen.",
                            'tool_short_cuts', True]),
                 ])]),
+            ('reports', ['&Reports', 'ALT+R', wx.Menu(), OrderedDict([
+                ('budget', [wx.ID_ANY, "&Budget Worksheet\tCTRL+W",
+                           "Yearly budget report.", 'report_budget', True]),
+                ])]),
             ('help', ['&Help', 'ALT+H', wx.Menu(), OrderedDict([
                 ('manual', [wx.ID_ANY, "&Manual\tCTRL+M",
                             "Open an online manual.", 'app_manual', True]),
@@ -191,6 +195,9 @@ class MenuBar:
         self.__short_cut.SetBackgroundColour(wx.Colour(*color))
 
 
+
+    def report_budget(self, event):
+        pass
 
 
 

@@ -44,8 +44,9 @@ class ShortCuts(wx.Frame):
 
         for drop in parent.menu_items:
             name, sc, obj, inner = parent.menu_items[drop]
-            text += f"\n{name.replace('&', '')}:\t{sc}\n"
-            text += "-------------\n"
+            name = name.replace('&', '') + ':'
+            text += f"\n{name:<9}{sc}\n"
+            text += "--------------\n"
 
             for key in inner:
                 if 'separator' in key: continue
@@ -57,7 +58,7 @@ class ShortCuts(wx.Frame):
                     if sre:
                         name = sre.group('name') + ':'
                         sc = sre.group('sc')
-                        text += f"\t{name:<15}{sc}\t{help}\n"
+                        text += f"\t{name:<18}{sc:<7}{help}\n"
 
         return text.strip()
 

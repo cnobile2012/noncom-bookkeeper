@@ -62,9 +62,12 @@ sizer_1 = ['FlexGridSizer', {grid=[14, 4, 2, 2], add=[1, 'EXPAND', 2]}]
 [budget.widgets]
 widget_00 = 'sizer_span'
 widget_01 = ['StaticText', {args=['self', 'ID_ANY', 'Annual\nBudget'], style='ALIGN_CENTER_HORIZONTAL', min=[100, 38], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+
 widget_02 = ['StaticText', {args=['self', 'ID_ANY', 'Year-to-Date\nActual'], style='ALIGN_CENTER_HORIZONTAL', min=[100, 38], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
 widget_03 = ['StaticText', {args=['self', 'ID_ANY', 'Monthly\nBudget'], style='ALIGN_CENTER_HORIZONTAL', min=[100, 38], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+
 widget_04 = ['StaticText', {args=['self', 'ID_ANY', 'BEGGING CASH BALANCE AS OF:'], font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ""], min=[-1, 20], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+
 widget_05 = ['StaticText', {args=['self', 'ID_ANY', 'TBD'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER | ALL', 2]}]
 widget_06 = 'sizer_span'
 widget_07 = 'sizer_span'
@@ -75,10 +78,13 @@ widget_11 = 'sizer_span'
 widget_12 = ['StaticText', {args=['self', 'ID_ANY', 'Cash in Bank'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
 widget_13 = 'sizer_span'
 widget_14 = ['TextCtrl', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+
 widget_15 = 'sizer_span'
 widget_16 = ['StaticText', {args=['self', 'ID_ANY', 'OCS Holdings'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
 widget_17 = 'sizer_span'
 widget_18 = ['TextCtrl', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+
 widget_19 = 'sizer_span'
-
-
+widget_20 = ['StaticText', {args=['self', 'ID_ANY', 'Total Cash'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_21 = 'sizer_span'
+widget_22 = ['StaticText', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER | RIGHT | TOP', 6]}]
