@@ -294,14 +294,21 @@ class PanelFactory(BaseSystemData):
         return item
 
     def _set_colors(self, klass, widget, value):
-        if 'bg_color' in value and self._bg_color:
+        has_bgc = 'bg_color' in value
+        has_abgc = 'alt_bg_color' in value
+        has_fg = 'fg_color' in value
+        assert not (has_bgc and has_abgc), \
+               print(f"Error: Cannot set both 'bg_color' and 'alt_bg_color' "
+                     f"in '{widget}'")
+
+        if has_bgc and self._bg_color:
             klass.write(f"        {widget}.SetBackgroundColour("
                         f"wx.Colour(*{self._bg_color}))\n")
 
-        if 'alt_bg_color' in value and self._alt_bg_color:
+        if has_abgc and self._alt_bg_color:
             klass.write(f"        {widget}.SetBackgroundColour("
                         f"wx.Colour(*{self._alt_bg_color}))\n")
 
-        if 'fg_color' in value and self._fg_color:
+        if has_fg and self._fg_color:
             klass.write(f"        {widget}.SetForegroundColour("
                         f"wx.Colour(*{self._fg_color}))\n")
