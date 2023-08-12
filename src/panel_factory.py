@@ -21,7 +21,7 @@ class BasePanel(wx.Panel):
 
     @property
     def background_color(self):
-        return self.bg_color
+        return self._bg_color
 
     def locality_prefix(self, update):
         def do_event(event):
@@ -79,14 +79,14 @@ class PanelFactory(BaseSystemData):
         klass.write("        super().__init__(parent, **kwargs)\n")
         title = panel_kwargs.get('title')
         klass.write(f"        self.title = '''{title}'''\n")
-        self.bg_color = panel_kwargs.get('bg_color')
-        klass.write(f"        self.bg_color = {self.bg_color}\n")
+        self._bg_color = panel_kwargs.get('bg_color')
+        klass.write(f"        self._bg_color = {self._bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
-                    f"*{self.bg_color}))\n")
-        self.fg_color = panel_kwargs.get('fg_color')
-        klass.write(f"        fg_color = {self.fg_color}\n")
-        self.tc_bg_color = panel_kwargs.get('tc_bg_color')
-        klass.write(f"        tc_bg_color = {self.tc_bg_color}\n")
+                    f"*{self._bg_color}))\n")
+        self._fg_color = panel_kwargs.get('fg_color')
+        klass.write(f"        self._fg_color = {self._fg_color}\n")
+        self._alt_bg_color = panel_kwargs.get('alt_bg_color')
+        klass.write(f"        self_alt_bg_color = {self._alt_bg_color}\n")
         ps, fam, style, weight, ul, fn = panel_kwargs.get('font')
         fam = self._fix_flags(fam)
         style = self._fix_flags(style)
@@ -194,17 +194,10 @@ class PanelFactory(BaseSystemData):
         min_size = dict_.get('min')
         font = dict_.get('font')
         wrap = dict_.get('wrap')
-        bg_color = dict_.get('bg_color')
+        self._set_colors(klass, widget, value)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
-
-        if bg_color:
-            klass.write(f"        {widget}.SetBackgroundColour("
-                    f"wx.Colour(*{bg_color}))\n")
-
-        klass.write(f"        {widget}.SetForegroundColour("
-                    "wx.Colour(*fg_color))\n")
 
         if font:
             ps, fam, style, weight, ul, fn = font
@@ -238,14 +231,10 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        {widget} = wx.TextCtrl("
                     f"{parent}, wx.{id}, '{label}', style={style})\n")
         min_size = dict_.get('min')
+        self._set_colors(klass, widget, value)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
-
-        klass.write(f"        {widget}.SetBackgroundColour("
-                    "wx.Colour(*tc_bg_color))\n")
-        klass.write(f"        {widget}.SetForegroundColour("
-                    "wx.Colour(*fg_color))\n")
 
         if dict_.get('focus', False):
             klass.write(f"        {widget}.SetFocus()\n")
@@ -261,14 +250,11 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        {widget} = wx.adv.DatePickerCtrl("
                     f"{parent}, wx.{id})\n")
         min_size = dict_.get('min')
+        self._set_colors(klass, widget, value)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        klass.write(f"        {widget}.SetBackgroundColour("
-                    "wx.Colour(*tc_bg_color))\n")
-        klass.write(f"        {widget}.SetForegroundColour("
-                    "wx.Colour(*fg_color))\n")
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags)
         klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
@@ -306,3 +292,16 @@ class PanelFactory(BaseSystemData):
                 item = {}
 
         return item
+
+    def _set_colors(self, klass, widget, value):
+        if 'bg_color' in value and self._bg_color:
+            klass.write(f"        {widget}.SetBackgroundColour("
+                        f"wx.Colour(*{self._bg_color}))\n")
+
+        if 'alt_bg_color' in value and self._alt_bg_color:
+            klass.write(f"        {widget}.SetBackgroundColour("
+                        f"wx.Colour(*{self._alt_bg_color}))\n")
+
+        if 'fg_color' in value and self._fg_color:
+            klass.write(f"        {widget}.SetForegroundColour("
+                        f"wx.Colour(*{self._fg_color}))\n")
