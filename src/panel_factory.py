@@ -34,7 +34,7 @@ class BasePanel(wx.Panel):
         selection = rb.GetStringSelection()
         text = self.locale_prefix[selection.lower()]
         prefix_widget = getattr(self, update)
-        prefix_widget.SetLabel(text)
+        prefix_widget.SetValue(text)
 
 
 class PanelFactory(BaseSystemData):
@@ -80,13 +80,11 @@ class PanelFactory(BaseSystemData):
         title = panel_kwargs.get('title')
         klass.write(f"        self.title = '''{title}'''\n")
         self._bg_color = panel_kwargs.get('bg_color')
-        klass.write(f"        self._bg_color = {self._bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
                     f"*{self._bg_color}))\n")
-        self._fg_color = panel_kwargs.get('fg_color')
-        klass.write(f"        self._fg_color = {self._fg_color}\n")
-        self._alt_bg_color = panel_kwargs.get('alt_bg_color')
-        klass.write(f"        self_alt_bg_color = {self._alt_bg_color}\n")
+        self._w_bg_color_1 = panel_kwargs.get('w_bg_color_1')
+        self._w_bg_color_2 = panel_kwargs.get('w_bg_color_2')
+        self._w_fg_color_1 = panel_kwargs.get('w_fg_color_1')
         ps, fam, style, weight, ul, fn = panel_kwargs.get('font')
         fam = self._fix_flags(fam)
         style = self._fix_flags(style)
@@ -163,10 +161,22 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        {widget} = wx.RadioBox("
                     f"{parent}, wx.{id}, '{label}', style={style}, "
                     f"choices={choices}, majorDimension={dim})\n")
+        self._set_colors(klass, widget, value)
+        font = dict_.get('font')
         tip = dict_.get('tip', "")
 
         if tip:
             klass.write(f"        {widget}.SetToolTip('{tip}')\n")
+
+        if font:
+            ps, fam, style, weight, ul, fn = font
+            fam = self._fix_flags(fam)
+            style = self._fix_flags(style)
+            weight = self._fix_flags(weight)
+            klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
+                        f"{style}, {weight}, {ul}, '{fn}'))\n")
+        else:
+            klass.write(f"        {widget}.SetFont(wx.Font(*font))\n")
 
         if dict_.get('focus', False):
             klass.write(f"        {widget}.SetFocus()\n")
@@ -244,6 +254,9 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
                     f"{flags}, {border})\n")
 
+        if dict_.get('instance'):
+            klass.write(f"        self.{widget} = {widget}\n")
+
     def date_picker_ctrl(self, klass, widget, value):
         dict_ = self._find_dict(value)
         parent, id = dict_.get('args')
@@ -294,21 +307,32 @@ class PanelFactory(BaseSystemData):
         return item
 
     def _set_colors(self, klass, widget, value):
+        """
+        Sets the background and/or foreground color. Also raise an
+        assertion error if more than one of either has been specified.
+        """
         has_bgc = 'bg_color' in value
-        has_abgc = 'alt_bg_color' in value
-        has_fg = 'fg_color' in value
-        assert not (has_bgc and has_abgc), \
-               print(f"Error: Cannot set both 'bg_color' and 'alt_bg_color' "
-                     f"in '{widget}'")
+        has_bgc1 = 'w_bg_color_1' in value
+        has_bgc2 = 'w_bg_color_2' in value
+        bg = [x for x in (has_bgc, has_bgc1, has_bgc2) if x]
+        assert -1 < len(bg) < 2, print("Error: Cannot set more than one "
+                                       f"background color in '{widget}'")
+        has_fgc1 = 'w_fg_color_1' in value
+        fg = [x for x in (has_fgc1,) if x]
+        assert -1 < len(fg) < 2, print("Error: Cannot set more than one "
+                                       f"foreground color in '{widget}'")
 
         if has_bgc and self._bg_color:
             klass.write(f"        {widget}.SetBackgroundColour("
                         f"wx.Colour(*{self._bg_color}))\n")
-
-        if has_abgc and self._alt_bg_color:
+        elif has_bgc1 and self._w_bg_color_1:
             klass.write(f"        {widget}.SetBackgroundColour("
-                        f"wx.Colour(*{self._alt_bg_color}))\n")
+                        f"wx.Colour(*{self._w_bg_color_1}))\n")
+        elif has_bgc2 and self._w_bg_color_2:
+            klass.write(f"        {widget}.SetBackgroundColour("
+                        f"wx.Colour(*{self._w_bg_color_2}))\n")
 
-        if has_fg and self._fg_color:
+        if has_fgc1 and self._w_fg_color_1:
             klass.write(f"        {widget}.SetForegroundColour("
-                        f"wx.Colour(*{self._fg_color}))\n")
+                        f"wx.Colour(*{self._w_fg_color_1}))\n")
+
