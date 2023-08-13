@@ -162,21 +162,11 @@ class PanelFactory(BaseSystemData):
                     f"{parent}, wx.{id}, '{label}', style={style}, "
                     f"choices={choices}, majorDimension={dim})\n")
         self._set_colors(klass, widget, value)
-        font = dict_.get('font')
+        self._set_font(klass, widget, dict_)
         tip = dict_.get('tip', "")
 
         if tip:
             klass.write(f"        {widget}.SetToolTip('{tip}')\n")
-
-        if font:
-            ps, fam, style, weight, ul, fn = font
-            fam = self._fix_flags(fam)
-            style = self._fix_flags(style)
-            weight = self._fix_flags(weight)
-            klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
-                        f"{style}, {weight}, {ul}, '{fn}'))\n")
-        else:
-            klass.write(f"        {widget}.SetFont(wx.Font(*font))\n")
 
         if dict_.get('focus', False):
             klass.write(f"        {widget}.SetFocus()\n")
@@ -205,19 +195,10 @@ class PanelFactory(BaseSystemData):
         font = dict_.get('font')
         wrap = dict_.get('wrap')
         self._set_colors(klass, widget, value)
+        self._set_font(klass, widget, dict_)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
-
-        if font:
-            ps, fam, style, weight, ul, fn = font
-            fam = self._fix_flags(fam)
-            style = self._fix_flags(style)
-            weight = self._fix_flags(weight)
-            klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
-                        f"{style}, {weight}, {ul}, '{fn}'))\n")
-        else:
-            klass.write(f"        {widget}.SetFont(wx.Font(*font))\n")
 
         if dict_.get('focus', False):
             klass.write(f"        {widget}.SetFocus()\n")
@@ -336,3 +317,15 @@ class PanelFactory(BaseSystemData):
             klass.write(f"        {widget}.SetForegroundColour("
                         f"wx.Colour(*{self._w_fg_color_1}))\n")
 
+    def _set_font(self, klass, widget, dict_):
+        font = dict_.get('font')
+
+        if font:
+            ps, fam, style, weight, ul, fn = font
+            fam = self._fix_flags(fam)
+            style = self._fix_flags(style)
+            weight = self._fix_flags(weight)
+            klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
+                        f"{style}, {weight}, {ul}, '{fn}'))\n")
+        else:
+            klass.write(f"        {widget}.SetFont(wx.Font(*font))\n")
