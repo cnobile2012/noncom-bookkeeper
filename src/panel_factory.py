@@ -16,9 +16,9 @@ import wx.adv
 
 class BasePanel(wx.Panel):
 
-    def __init__(self, parent, id=wx.ID_ANY,
-                 style=wx.NO_BORDER | wx.TAB_TRAVERSAL, **kwargs):
-        super().__init__(parent, id=id, style=style, **kwargs)
+    def __init__(self, parent, id=wx.ID_ANY, **kwargs):
+        kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
+        super().__init__(parent, id=id, **kwargs)
 
     @property
     def background_color(self):
@@ -81,10 +81,12 @@ class PanelFactory(BaseSystemData):
         title = panel_kwargs.get('title')
         klass.write(f"        self.title = '''{title}'''\n")
         self._bg_color = panel_kwargs.get('bg_color')
+        klass.write(f"        self._bg_color = {self._bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
                     f"*{self._bg_color}))\n")
         self._w_bg_color_1 = panel_kwargs.get('w_bg_color_1')
         self._w_bg_color_2 = panel_kwargs.get('w_bg_color_2')
+        self._w_bg_color_3 = panel_kwargs.get('w_bg_color_3')
         self._w_fg_color_1 = panel_kwargs.get('w_fg_color_1')
         ps, fam, style, weight, ul, fn = panel_kwargs.get('font')
         fam = self._fix_flags(fam)
@@ -188,10 +190,11 @@ class PanelFactory(BaseSystemData):
     def static_text(self, klass, widget, value):
         dict_ = self._find_dict(value)
         parent, id, label = dict_.get('args')
+        label = f"'''{label}'''"
         style = dict_.get('style', 0)
         style = style if style == 0 else self._fix_flags(style)
         klass.write(f"        {widget} = wx.StaticText("
-                    f"{parent}, wx.{id}, '{label}', style={style})\n")
+                    f"{parent}, wx.{id}, {label}, style={style})\n")
         min_size = dict_.get('min')
         font = dict_.get('font')
         wrap = dict_.get('wrap')
@@ -218,10 +221,11 @@ class PanelFactory(BaseSystemData):
     def text_ctrl(self, klass, widget, value):
         dict_ = self._find_dict(value)
         parent, id, label = dict_.get('args')
+        label = f"'''{label}'''"
         style = dict_.get('style', 0)
         style = style if style == 0 else self._fix_flags(style)
         klass.write(f"        {widget} = wx.TextCtrl("
-                    f"{parent}, wx.{id}, '{label}', style={style})\n")
+                    f"{parent}, wx.{id}, {label}, style={style})\n")
         min_size = dict_.get('min')
         self._set_colors(klass, widget, value)
 
@@ -255,10 +259,16 @@ class PanelFactory(BaseSystemData):
         klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
                     f"{flags}, {border})\n")
 
-    def static_line(klass, widget, value):
-        panel, flags = value
+    def static_line(self, klass, widget, value):
+        dict_ = self._find_dict(value)
+        parent, flags = dict_.get('args')
         flags = self._fix_flags(flags)
-        klass.write(f"        {widget} = wx.StaticLine({panel}, {flags})")
+        klass.write(f"        {widget} = wx.StaticLine({parent}, {flags})\n")
+        self._set_colors(klass, widget, value)
+        prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
+        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
+                    f"{flags}, {border})\n")
 
     def sizer_span(self, klass):
         if self.span:
@@ -296,7 +306,8 @@ class PanelFactory(BaseSystemData):
         has_bgc = 'bg_color' in value
         has_bgc1 = 'w_bg_color_1' in value
         has_bgc2 = 'w_bg_color_2' in value
-        bg = [x for x in (has_bgc, has_bgc1, has_bgc2) if x]
+        has_bgc3 = 'w_bg_color_3' in value
+        bg = [x for x in (has_bgc, has_bgc1, has_bgc2, has_bgc3) if x]
         assert -1 < len(bg) < 2, print("Error: Cannot set more than one "
                                        f"background color in '{widget}'")
         has_fgc1 = 'w_fg_color_1' in value
@@ -313,6 +324,9 @@ class PanelFactory(BaseSystemData):
         elif has_bgc2 and self._w_bg_color_2:
             klass.write(f"        {widget}.SetBackgroundColour("
                         f"wx.Colour(*{self._w_bg_color_2}))\n")
+        elif has_bgc3 and self._w_bg_color_3:
+            klass.write(f"        {widget}.SetBackgroundColour("
+                        f"wx.Colour(*{self._w_bg_color_3}))\n")
 
         if has_fgc1 and self._w_fg_color_1:
             klass.write(f"        {widget}.SetForegroundColour("

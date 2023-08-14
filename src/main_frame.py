@@ -8,6 +8,7 @@ from collections import OrderedDict
 from pprint import pprint # *** TODO *** Remove later
 
 import wx
+from wx.lib.inspection import InspectionTool
 
 from .config import BaseSystemData
 from .panel_factory import PanelFactory, BasePanel
@@ -19,6 +20,7 @@ class MenuBar:
     Dynamic menu bar.
     """
     __short_cut = None
+    __inspection = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -52,6 +54,9 @@ class MenuBar:
                 ('short', [wx.ID_ANY, "&Short Cuts\tCTRL+H",
                            "Show the short cut screen.",
                            'tool_short_cuts', True]),
+                ('inspection', [wx.ID_ANY, "&Inspection\tCTRL+I",
+                           "Show the WX inspection tool.",
+                           'tool_inspection', True]),
                 ])]),
             ('reports', ['&Reports', 'ALT+R', wx.Menu(), OrderedDict([
                 ('budget', [wx.ID_ANY, "&Budget Worksheet\tCTRL+W",
@@ -194,6 +199,15 @@ class MenuBar:
         self.__short_cut.set_text(self.parent)
         self.__short_cut.SetBackgroundColour(wx.Colour(*color))
 
+    def tool_inspection(self, event):
+        if not self.__inspection:
+            self.__inspection = InspectionTool()
+            self.__inspection.Show()
+        else:
+            self.__inspection.Destroy()
+            self.__inspection = None
+
+
 
 
     def report_budget(self, event):
@@ -231,6 +245,7 @@ class MainFrame(MenuBar, wx.Frame):
         self.parent_bg_color = (128, 128, 128)
         self.SetBackgroundColour(wx.Colour(*self.parent_bg_color))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
+        #self.SetIcon(wx.Icon("icons/wxwin.ico"))
         self.__box_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Status Bar
