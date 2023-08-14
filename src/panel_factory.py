@@ -16,8 +16,9 @@ import wx.adv
 
 class BasePanel(wx.Panel):
 
-    def __init__(self, parent, **kwargs):
-        super().__init__(parent, **kwargs)
+    def __init__(self, parent, id=wx.ID_ANY,
+                 style=wx.NO_BORDER | wx.TAB_TRAVERSAL, **kwargs):
+        super().__init__(parent, id=id, style=style, **kwargs)
 
     @property
     def background_color(self):

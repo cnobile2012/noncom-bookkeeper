@@ -31,7 +31,7 @@ sizer_1 = ['FlexGridSizer', {grid=[5, 2, 0, 2], add=[0, 'EXPAND', 0]}]
 
 [config.widgets]
 widget_0 = ['RadioBox', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Locality Prefix'], choices=['LSA', 'Group'], dim=1, style='RA_SPECIFY_ROWS', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], tip="Choose if your community is an LSA or a group.", focus=true, select=0, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], callback='locality_prefix', update='widget_1'}]
-widget_1 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, ''], min=[260, 32], wrap=240, add=[0, 'ALIGN_BOTTOM | RIGHT', 6], instance=true}]
+widget_1 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, ''], min=[260, 32], wrap=240, add=[0, 'ALIGN_BOTTOM | RIGHT | TOP', 6], instance=true}]
 
 widget_2 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Locale Name:'], min=[172, 23], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], update='widget_1'}]
 widget_3 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[260, 32], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
@@ -67,7 +67,7 @@ widget_01 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Annual\nBud
 widget_02 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Year-to-Date\nActual'], style='ALIGN_CENTER_HORIZONTAL', min=[100, 38], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
 widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monthly\nBudget'], style='ALIGN_CENTER_HORIZONTAL', min=[100, 38], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
 
-widget_04 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'BEGGING CASH BALANCE AS OF:'], font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ""], min=[-1, 20], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_04 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'BEGGING CASH BALANCE AS OF:'], font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ""], min=[-1, 20], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 
 widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'TBD'], style='ALIGN_CENTER_HORIZONTAL', add=[0, 'ALIGN_CENTER | ALL', 2]}]
 widget_06 = 'sizer_span'
@@ -76,16 +76,16 @@ widget_08 = 'sizer_span'
 widget_09 = 'sizer_span'
 widget_10 = 'sizer_span'
 widget_11 = 'sizer_span'
-widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Cash in Bank'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Cash in Bank'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 widget_13 = 'sizer_span'
 widget_14 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
 widget_15 = 'sizer_span'
-widget_16 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'OCS Holdings'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_16 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'OCS Holdings'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 widget_17 = 'sizer_span'
 widget_18 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
 widget_19 = 'sizer_span'
-widget_20 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Total Cash'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 2]}]
+widget_20 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Total Cash'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 widget_21 = 'sizer_span'
 widget_22 = ['StaticText', 'w_bg_color_2', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[94, 30], add=[0, 'ALIGN_CENTER | RIGHT | TOP', 6]}]
