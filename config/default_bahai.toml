@@ -65,7 +65,7 @@ widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Rollover fr
 widget_01 = 'sizer_span'
 
 widget_02 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT', 6]}]
-widget_03 = 'sizer_span'
+widget_03 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 6]}]
 
 widget_04 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Cash in Bank'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 widget_05 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
@@ -77,7 +77,7 @@ widget_08 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Income'], f
 widget_09 = 'sizer_span'
 
 widget_10 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT', 6]}]
-widget_11 = 'sizer_span'
+widget_11 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 6]}]
 
 widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monetary Contributions'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 widget_13 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
@@ -86,7 +86,7 @@ widget_14 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Expenses'],
 widget_15 = 'sizer_span'
 
 widget_16 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT', 6]}]
-widget_17 = 'sizer_span'
+widget_17 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 6]}]
 
 widget_18 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í International Fund"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 widget_19 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
@@ -134,7 +134,7 @@ widget_46 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Additional 
 widget_47 = 'sizer_span'
 
 widget_48 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT', 6]}]
-widget_49 = 'sizer_span'
+widget_49 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 6]}]
 
 widget_50 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Outstanding Bills"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 widget_51 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]

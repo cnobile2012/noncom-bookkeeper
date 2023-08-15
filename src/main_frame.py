@@ -169,6 +169,7 @@ class MenuBar:
         self.sizer.Add(self.panel, 1, wx.EXPAND)
         self.panel.Show()
         self.parent.SetTitle(self.panel.title)
+        self.parent.Layout() # This kind of fixes the disapearing scrollbars.
 
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
@@ -238,7 +239,7 @@ class MainFrame(MenuBar, wx.Frame):
     def __init__(self, parent=None,
                  id=wx.ID_ANY,
                  pos=wx.DefaultPosition,
-                 size=wx.Size(800, 800),
+                 size=wx.Size(500, 800),
                  style=wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL):
         super().__init__(parent, id=id, pos=pos, size=size, style=style)
         self.SetTitle(self.title)

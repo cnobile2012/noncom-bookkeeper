@@ -14,11 +14,12 @@ import wx.adv
 #from varname import varname, nameof
 
 
-class BasePanel(wx.Panel):
+class BasePanel(wx.ScrolledWindow):
 
     def __init__(self, parent, id=wx.ID_ANY, **kwargs):
         kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
         super().__init__(parent, id=id, **kwargs)
+        self.SetScrollRate(10, 10)
 
     @property
     def background_color(self):
