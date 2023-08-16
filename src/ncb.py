@@ -9,7 +9,7 @@ import logging
 import shutil
 
 from . import Logger
-from .config import Settings, TomlConfig
+from .config import TomlPanelConfig, TomlAppConfig
 
 
 # appname: NC-Bookkeeper
@@ -27,33 +27,21 @@ from .config import Settings, TomlConfig
 # 1.2.2 -- If yes, open General Ledger.
 
 
-class CheckAppData(Settings):
+class CheckPanelConfig(TomlPanelConfig):
     """
-    Check that all the .config, .cache/../log directories are created
-    and have valid files in them where necessary.
+    Check that the panel config file has valid data. Copy the default
+    config to the user directory id necessary.
     """
-
-    ## print(
-    ##     f"appname: {dirs.appname}\nappauthor: {dirs.appauthor}\n"
-    ##     f"user_data_dir: {dirs.user_data_dir}\n"
-    ##     f"user_config_dir: {dirs.user_config_dir}\n"
-    ##     f"user_cache_dir: {dirs.user_cache_dir}\n"
-    ##     f"user_log_dir: {dirs.user_log_dir}\n"
-    ##     #f"dir: {dir(dirs)}\n"
-    ##     )
 
     def __init__(self, *args, level=logging.WARNING, **kwargs):
         super().__init__()
-        self._log = logging.getLogger(self.logger_name)
 
     @property
     def has_valid_data(self):
         """
         Does the static data exist and is the data valid?
         """
-        uc_type = self.check_config_files()
-        ud_type = self.check_data_files()
-        return ud_type and uc_type
+        return self.check_config_files()
 
     def check_config_files(self):
         """
@@ -64,12 +52,21 @@ class CheckAppData(Settings):
         if not os.path.exists(fname):
             shutil.copy2(self.local_config_fullpath, fname)
 
-        tc = TomlConfig()
-        return tc.is_valid
+        return self.is_valid
 
-    def check_data_files(self):
-        """
-        Data will be database files.
-        """
 
-        return True # For now until I've written the DB code.
+class CheckAppConfig(TomlAppConfig):
+    """
+    Check that the app config file has valid data. Create a new one
+    if necessary.
+    """
+
+    def __init__(self, *args, level=logging.WARNING, **kwargs):
+        super().__init__()
+
+    @property
+    def has_valid_data(self):
+        """
+        Does the static data exist and is the data valid?
+        """
+        return self.is_valid

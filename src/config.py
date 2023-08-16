@@ -7,11 +7,12 @@ __docformat__ = "restructuredtext en"
 import os
 import logging
 import shutil
+from datetime import datetime
 from appdirs import AppDirs
 
 from .exceptions import InvalidTomlException
 
-import tomlkit
+import tomlkit as tk
 
 
 class Settings(AppDirs):
@@ -35,11 +36,13 @@ class Settings(AppDirs):
     def __init__(self):
         super().__init__(appname=self.app_name,
                          appauthor=self.primary_developer)
-        # The two lines below read an environment variable whicj is used
-        # during the app build process.
+        # The two lines below read an environment variable which is used
+        # during the app build process. The default is to use the Baha'i
+        # configuration.
         value = os.environ.get('NCB_TYPE', 'bahai')
         self.__user_toml = self._CONFIG_FILES['user'][value]
         self.__local_toml = self._CONFIG_FILES['local'][value]
+        self.__app_toml = 'nc-bookkeeper.toml'
 
     def create_dirs(self):
         if not os.path.exists(self.user_data_dir):
@@ -104,6 +107,10 @@ class Settings(AppDirs):
         return os.path.join(self.user_config_dir, self.__user_toml)
 
     @property
+    def user_app_config_fullpath(self):
+        return os.path.join(self.user_config_dir, self.__app_toml)
+
+    @property
     def user_log_fullpath(self):
         return os.path.join(self.user_log_dir, self.logfile_name)
 
@@ -117,7 +124,7 @@ class BaseSystemData(Settings):
     This base class writes and reads config files and is used
     in all the types of config subclasses.
     """
-    SYS_FILES = {'data': None, 'config': None}
+    SYS_FILES = {'data': None, 'panel_config': None, 'app_config': None}
 
     def __init__(self):
         super().__init__()
@@ -132,41 +139,57 @@ class BaseSystemData(Settings):
     ##     self.SYS_FILES['data'] = value
 
     @property
-    def config(self):
-        return self.SYS_FILES.get('config')
+    def panel_config(self):
+        return self.SYS_FILES.get('panel_config')
 
-    @config.setter
-    def config(self, value):
-        self.SYS_FILES['config'] = value
+    @panel_config.setter
+    def panel_config(self, value):
+        self.SYS_FILES['panel_config'] = value
 
-    def parse_toml(self):
+    @property
+    def app_config(self):
+        return self.SYS_FILES.get('app_config')
+
+    @app_config.setter
+    def app_config(self, value):
+        self.SYS_FILES['app_config'] = value
+
+    def parse_toml(self, file_list):
         raw_doc = None
         errors = []
-        # The order of the tuple below is important.
-        user_local = ('user_config_fullpath', 'local_config_fullpath')
 
-        for file_type in user_local:
-            with open(getattr(self, file_type),'r') as f:
-                raw_doc = f.read()
+        for file_type in file_list:
+            fname = getattr(self, file_type)
 
             try:
-                doc = tomlkit.parse(raw_doc)
-            except tomlkit.exceptions.TOMLKitError as e:
-                self._log.error("TOML error: %s", str(e))
+                with open(fname, 'r') as f:
+                    raw_doc = f.read()
+            except FileNotFoundError as e:
                 errors.append(file_type)
-                continue
+                self._log.error("Error: cannot find file '%s'.", fname)
             else:
-                if 'user_config' in file_type:
-                    self.config = doc
-                elif self.config is None and 'local_config' in file_type:
-                    # Executed only on first run.
-                    self.config = doc
+                try:
+                    doc = tk.parse(raw_doc)
+                except tk.exceptions.TOMLKitError as e:
+                    self._log.error("TOML error: %s", str(e))
+                    errors.append(file_type)
+                else:
+                    if 'user_config' in file_type:
+                        self.panel_config = doc
+                    elif (self.panel_config is None
+                          and 'local_config' in file_type):
+                        # Executed only on first run.
+                        self.panel_config = doc
+                    elif (self.app_config is None
+                          and 'user_app_config' in file_type):
+                        self.app_config = doc
 
         return errors
 
-class TomlConfig(BaseSystemData):
+
+class TomlPanelConfig(BaseSystemData):
     """
-    Read and write the TOML config file.
+    Read and write the TOML panel config file.
     """
     _shared_state = {}
 
@@ -176,8 +199,15 @@ class TomlConfig(BaseSystemData):
 
     @property
     def is_valid(self):
+        """
+        Test the panel config file that it can be parsed and that it exists.
+        This property can return True or False.
+        """
         ret = True
-        errors = self.parse_toml()
+        # The order of the tuple below is important.
+        file_list = ('user_config_fullpath',
+                      'local_config_fullpath')
+        errors = self.parse_toml(file_list)
 
         for error in errors:
             if error == 'user_config_fullpath':
@@ -186,7 +216,7 @@ class TomlConfig(BaseSystemData):
                 bad_file = f'{fname}.bad'
                 shutil.copy2(fname, bad_file)
                 shutil.copy2(self.local_config_fullpath, fname)
-                msg = ("Found an invalid config file and reverted "
+                msg = ("Found an invalid panel config file and reverted "
                        "to the default version. The original bad file has "
                        f"been backed up to {bad_file}.")
                 self._log.warning(msg)
@@ -199,6 +229,94 @@ class TomlConfig(BaseSystemData):
                 ret = False
 
         return ret
+
+
+class TomlAppConfig(BaseSystemData):
+    """
+    Read and write the TOML app config file.
+    """
+    _shared_state = {}
+
+    def __init__(self):
+        self.__dict__ = self._shared_state
+        super().__init__()
+
+    @property
+    def is_valid(self):
+        """
+        Test the app config file that it can be parsed and that it exists.
+        This property always returns True.
+        """
+        ret = True
+        file_list = ('user_app_config_fullpath',)
+        errors = self.parse_toml(file_list)
+
+        for error in errors:
+            if error == 'user_app_config_fullpath':
+                fname = self.user_app_config_fullpath
+
+                if os.path.exists(fname):
+                    # Backup bad file then recreate the file.
+                    bad_file = f'{fname}.bad'
+                    shutil.move(fname, bad_file)
+                    msg = ("Found an invalid app config file, a new one "
+                       "will be created. The original bad file has "
+                       f"been backed up to {bad_file}.")
+                    self._log.warning(msg)
+                    # *** TODO *** This needs to be shown on the screen
+                    #              if detected.
+                else:
+                    msg = (f"The file {getattr(self, error)} could not be "
+                           f"found. It will be created.")
+                    self._log.warning(msg)
+                    # *** TODO *** This needs to be shown on the screen
+                    #              if detected.
+
+                self.create_app_config()
+
+        return ret
+
+    def create_app_config(self):
+        doc = tk.document()
+        # Create header
+        doc.add(tk.comment(""))
+        doc.add(
+            tk.comment("Noncommercial Bookkeeper application config file."))
+        doc.add(tk.comment(""))
+        doc.add(tk.comment(f"Date Created: {datetime.now()}"))
+        doc.add(tk.comment(""))
+        doc.add(tk.nl())
+        # Create app size
+        app_size = tk.table()
+        app_size.add('size', [500, 800])
+        doc.add('app_size', app_size)
+        data = tk.dumps(doc)
+
+        try:
+            with open(self.user_app_config_fullpath, 'w') as f:
+                f.write(data)
+        except Exception as e:
+            msg = (f"Could not create the {self.user_app_config_fullpath} "
+                   f"file, {str(s)}")
+            self._log.critical(msg)
+            # *** TODO *** This needs to be shown on the screen if detected.
+
+    def update_app_config(self, table, key, value):
+        doc = self.app_config
+        item_table = doc.get(table)
+
+        if item_table:
+            item_key = item_table.get(key)
+
+            if item_key:
+                doc[table][key] = value
+            else:
+                item_table.add(key, value)
+        else:
+            item_table = tk.table()
+            item_table.add(key, value)
+            doc.add(table, item_table)
+
 
 class Database(BaseSystemData):
     pass

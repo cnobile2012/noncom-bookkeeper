@@ -205,7 +205,6 @@ class MenuBar:
             self.__inspection = InspectionTool()
             self.__inspection.Show()
         else:
-            self.__inspection.Destroy()
             self.__inspection = None
 
 
@@ -235,6 +234,7 @@ class MainFrame(MenuBar, wx.Frame):
     """
     title = 'Main Screen'
     __active_panel = None
+    __sys_data = BaseSystemData()
 
     def __init__(self, parent=None,
                  id=wx.ID_ANY,
@@ -271,8 +271,6 @@ class MainFrame(MenuBar, wx.Frame):
         sf = PanelFactory()
         sf.parse()
         panel_names = sf.class_name_keys
-        print("Panal Names: ", end='') # *** TODO *** Remove later
-        pprint(panel_names)            # *** TODO *** Remove later
 
         for panel in panel_names:
             code = sf.get_panel_code(panel)

@@ -60,7 +60,7 @@ class PanelFactory(BaseSystemData):
         return self.__panels.get(panel)
 
     def parse(self):
-        panels = self.config.get('meta', {}).get('panels')
+        panels = self.panel_config.get('meta', {}).get('panels')
 
         for panel in panels:
             try:
@@ -74,7 +74,7 @@ class PanelFactory(BaseSystemData):
     def setup_panel(self, panel):
         class_name = f"{panel.capitalize()}Panel"
         self.__class_names[panel] = class_name
-        panel_kwargs = self.config.get(panel, {}).get('meta')
+        panel_kwargs = self.panel_config.get(panel, {}).get('meta')
         klass = StringIO()
         klass.write(f"class {class_name}(BasePanel):\n")
         klass.write("    def __init__(self, parent, **kwargs):\n")
@@ -105,7 +105,7 @@ class PanelFactory(BaseSystemData):
         self.second_sizer = None
 
         # Create all the sizers.
-        for sizer, value in self.config.get(
+        for sizer, value in self.panel_config.get(
             panel, {}).get('sizers', {}).items():
             if value[0] == 'BoxSizer':
                 self.box_sizer(klass, sizer, value)
@@ -113,7 +113,7 @@ class PanelFactory(BaseSystemData):
                 self.flex_grid_sizer(klass, sizer, value)
 
         # Create all the widgets.
-        for widget, value in self.config.get(
+        for widget, value in self.panel_config.get(
             panel, {}).get('widgets', {}).items():
             if value[0] == 'RadioBox':
                 self.radio_box(klass, widget, value)

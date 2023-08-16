@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from src.main_frame import MainFrame
-from src.ncb import CheckAppData
+from src.ncb import CheckPanelConfig, CheckAppConfig
 
 import wx
 
@@ -9,13 +9,17 @@ import wx
 if __name__ == "__main__":
     import sys
 
-    cad = CheckAppData()
+    cpd = CheckPanelConfig()
+    cad = CheckAppConfig()
     status = 0
 
-    if not cad.has_valid_data:
+    if not cpd.has_valid_data:
         status = 1
         print(f"Invalid data, see log file, exit status {status}")
-    else:
+
+    cad.has_valid_data
+
+    if status == 0:
         # Try to run display.
         app = wx.App()
         mf = MainFrame()
