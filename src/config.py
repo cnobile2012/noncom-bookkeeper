@@ -290,16 +290,20 @@ class TomlAppConfig(BaseSystemData):
         app_size = tk.table()
         app_size.add('size', [500, 800])
         doc.add('app_size', app_size)
-        data = tk.dumps(doc)
+        self._write_file(tk.dumps(doc))
 
-        try:
-            with open(self.user_app_config_fullpath, 'w') as f:
-                f.write(data)
-        except Exception as e:
-            msg = (f"Could not create the {self.user_app_config_fullpath} "
-                   f"file, {str(s)}")
-            self._log.critical(msg)
-            # *** TODO *** This needs to be shown on the screen if detected.
+    def get_value(self, table, key):
+        doc = self.app_config
+        item_table = doc.get(table)
+
+        if item_table:
+            item_key = item_table.get(key)
+
+            if item_key:
+                return doc[table][key]
+
+        self._log.error("Could not find the table '%s' or key: %s in %s.",
+                        table, key, self.user_app_config_fullpath)
 
     def update_app_config(self, table, key, value):
         doc = self.app_config
@@ -316,6 +320,18 @@ class TomlAppConfig(BaseSystemData):
             item_table = tk.table()
             item_table.add(key, value)
             doc.add(table, item_table)
+
+        self._write_file(tk.dumps(doc))
+
+    def _write_file(self, data):
+        try:
+            with open(self.user_app_config_fullpath, 'w') as f:
+                f.write(data)
+        except Exception as e:
+            msg = (f"Could not create the {self.user_app_config_fullpath} "
+                   f"file, {str(s)}")
+            self._log.critical(msg)
+            # *** TODO *** This needs to be shown on the screen if detected.
 
 
 class Database(BaseSystemData):

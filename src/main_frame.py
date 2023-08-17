@@ -5,12 +5,13 @@
 __docformat__ = "restructuredtext en"
 
 from collections import OrderedDict
+from datetime import datetime, timedelta
 from pprint import pprint # *** TODO *** Remove later
 
 import wx
 from wx.lib.inspection import InspectionTool
 
-from .config import BaseSystemData
+from .config import TomlAppConfig
 from .panel_factory import PanelFactory, BasePanel
 from .tools import ShortCuts
 
@@ -234,20 +235,22 @@ class MainFrame(MenuBar, wx.Frame):
     """
     title = 'Main Screen'
     __active_panel = None
-    __sys_data = BaseSystemData()
 
     def __init__(self, parent=None,
                  id=wx.ID_ANY,
                  pos=wx.DefaultPosition,
-                 size=wx.Size(500, 800),
                  style=wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL):
-        super().__init__(parent, id=id, pos=pos, size=size, style=style)
+        super().__init__(parent, id=id, pos=pos, style=style)
+        self._tac = TomlAppConfig()
+        size = wx.Size(500, 800)
+        self.set_size(size)
         self.SetTitle(self.title)
         self.parent_bg_color = (128, 128, 128)
         self.SetBackgroundColour(wx.Colour(*self.parent_bg_color))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
         #self.SetIcon(wx.Icon("icons/wxwin.ico"))
         self.__box_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.setup_resize_event()
 
         # Status Bar
         status_widths = [-1, -1, -1, -1]
@@ -280,6 +283,27 @@ class MainFrame(MenuBar, wx.Frame):
                 exec(code)
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = eval(class_name)(self, size=size)
+
+    def set_size(self, size):
+        value = self._tac.get_value('app_size', 'size')
+        self.SetSize(value if value else size)
+
+    def setup_resize_event(self):
+        self.__resized_time = datetime.now()
+        self.__resized = False
+        self.Bind(wx.EVT_SIZE,self.on_size)
+        self.Bind(wx.EVT_IDLE,self.on_idle)
+
+    def on_size(self, event):
+        if datetime.now() > (self.__resized_time + timedelta(seconds=0.5)):
+            self.__resized_time = datetime.now()
+            self.__resized = True
+
+    def on_idle(self, event):
+        if self.__resized:
+            size = self.GetSize()
+            self._tac.update_app_config('app_size', 'size', list(size))
+            self.__resized = False
 
     @property
     def panels(self):
