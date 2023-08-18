@@ -69,12 +69,12 @@ class MenuBar:
                                            'tool_inspection', None,
                                            True, None]),
                            ('separator_1', []),
-                           ('reset', [wx.ID_ANY, "&Reset\tCTRL+S",
+                           ('reset', [wx.ID_ANY, "Reset",
                                       "Reset some default settings.",
                                       None, wx.Menu(), True, OrderedDict([
                                           ('window_size', [
                                               wx.ID_ANY,
-                                              "&Window Size\tCTRL+W",
+                                              "&Window Size\tALT+W",
                                               "Reset default window size.",
                                               'tool_reset_window',
                                               None, True, None]),
@@ -306,6 +306,7 @@ class MainFrame(MenuBar, wx.Frame):
     """
     title = 'Main Screen'
     __active_panel = None
+    __panel_classes = {}
 
     def __init__(self, parent=None,
                  id=wx.ID_ANY,
@@ -341,8 +342,6 @@ class MainFrame(MenuBar, wx.Frame):
         self.SetSizer(self.__box_sizer)
         self.Layout()
         self.Center(wx.BOTH)
-        self.__panel_classes = {}
-
         sf = PanelFactory()
         sf.parse()
         panel_names = sf.class_name_keys
@@ -376,6 +375,10 @@ class MainFrame(MenuBar, wx.Frame):
             size = self.GetSize()
             self._tac.update_app_config('app_size', 'size', list(size))
             self.__resized = False
+
+            for panel in self.panels.values():
+                panel.SetSize(size)
+                panel.Layout()
 
     @property
     def panels(self):

@@ -273,6 +273,7 @@ class TomlAppConfig(BaseSystemData):
                     #              if detected.
 
                 self.create_app_config()
+                self.parse_toml(file_list)
 
         return ret
 
