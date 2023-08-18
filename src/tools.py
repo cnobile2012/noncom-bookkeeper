@@ -4,7 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
-import re
+from io import StringIO
 
 import wx
 
@@ -13,7 +13,6 @@ class ShortCuts(wx.Frame):
     """
     This dialog displayes the list of short cuts used in the menu bar.
     """
-    REGEX = re.compile(r"^&(?P<name>[\w ]+)\t(?P<sc>\w+\+\w)$")
     short_cut_text = None
 
     def __init__(self, parent, title="Short Cuts"):
@@ -40,27 +39,31 @@ class ShortCuts(wx.Frame):
         self.Destroy()
 
     def create_list(self, parent):
-        text = ""
-
-        for drop in parent.menu_items:
-            name, sc, obj, inner = parent.menu_items[drop]
-            name = name.replace('&', '') + ':'
-            text += f"\n{name:<9}{sc}\n"
-            text += "--------------\n"
-
-            for key in inner:
-                if 'separator' in key: continue
-                id, item, help, cb, flag = inner[key]
-
-                if flag:
-                    sre = self.REGEX.search(item)
-
-                    if sre:
-                        name = sre.group('name') + ':'
-                        sc = sre.group('sc')
-                        text += f"\t{name:<18}{sc:<7}{help}\n"
-
+        buff = StringIO()
+        self.__recurse_menu(parent.menu_items, buff)
+        text = buff.getvalue()
+        buff.close()
         return text.strip()
+
+    def __recurse_menu(self, map_, buff, indent=''):
+        for item in map_:
+            values = map_[item]
+            if len(values) == 0: continue # seperator
+            id, nk, disc, cb, mo, tf, od = values
+            if not tf: continue
+            name, tab, key = nk.partition('\t')
+            name = name.replace('&', '') + ':'
+
+            if not id and nk and not cb and mo and tf and od:
+                buff.write(f"\n{name:<9}{key:<7}{disc}\n")
+                buff.write("--------------\n")
+                self.__recurse_menu(od, buff)
+            elif id and nk and cb and not mo and tf and not od:
+                buff.write(f"\t{indent}{name:<18}{key:<7}{disc}\n")
+            elif id and nk and not cb and mo and tf and od:
+                buff.write(f"\t{name:<18}{key:<7}{disc}\n")
+                buff.write("\t--------------\n")
+                self.__recurse_menu(od, buff, indent='\t')
 
     def set_text(self, parent):
         text = self.create_list(parent)

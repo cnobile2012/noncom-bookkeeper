@@ -4,6 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
+import logging
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from pprint import pprint # *** TODO *** Remove later
@@ -26,80 +27,148 @@ class MenuBar:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__item_map = OrderedDict([
-            ('file', ['&File', 'ALT+F', wx.Menu(), OrderedDict([
-                ('open', [wx.ID_OPEN, "&Open\tCTRL+O",
-                          "Open TOML configuration file.",
-                          'file_picker', False]),
-                ('save', [wx.ID_SAVE, "&Save\tCTRL+S",
-                          "Save TOML configuration file.",
-                          'file_save', False]),
-                ('save_as', [wx.ID_SAVEAS, "&Save As\tCTRL+A",
-                             "Save a TOML configuration file with a "
-                             "different name.", 'file_save_as', False]),
-                ('separator_0', None),
-                ('close', [wx.ID_CLOSE, "&Close\tCTRL+C",
-                           "Close the current frame.", 'file_close', True]),
-                ('quit', [wx.ID_EXIT, "&Quit\tCTRL+Q",
-                          "Quit this application.", 'app_quit', True]),
-                ])]),
-            ('edit', ["&Edit", 'ALT+E', wx.Menu(), OrderedDict([
-                ('conf', [wx.ID_ANY, "&Configuration\tCTRL+F",
-                          "Edit basic organization configuration.",
-                          'edit_config', True]),
-                ('budget', [wx.ID_ANY, "&Budget\tCTRL+B",
-                            "Edit yearly budget.", 'edit_budget', True]),
-                ('hide', [wx.ID_ANY, "&Close All\tCTRL+L",
-                          "Close all panels.", 'edit_hide_all', True]),
-                ])]),
-            ('tools', ['&Tools', 'ALT+T', wx.Menu(), OrderedDict([
-                ('short', [wx.ID_ANY, "&Short Cuts\tCTRL+H",
-                           "Show the short cut screen.",
-                           'tool_short_cuts', True]),
-                ('inspection', [wx.ID_ANY, "&Inspection\tCTRL+I",
-                           "Show the WX inspection tool.",
-                           'tool_inspection', True]),
-                ])]),
-            ('reports', ['&Reports', 'ALT+R', wx.Menu(), OrderedDict([
-                ('budget', [wx.ID_ANY, "&Budget Worksheet\tCTRL+W",
-                           "Yearly budget report.", 'report_budget', True]),
-                ])]),
-            ('help', ['&Help', 'ALT+H', wx.Menu(), OrderedDict([
-                ('manual', [wx.ID_ANY, "&Manual\tCTRL+M",
-                            "Open an online manual.", 'app_manual', True]),
-                ('releases', [wx.ID_ANY, "&Releases\tCTRL+R",
-                            "Open the online release page.",
-                              'app_manual', True]),
-                ('about', [wx.ID_ABOUT, "&About\tCTRL+T",
-                           "Display the about screen.", 'app_about', True]),
-                ])]),
+            ('file', [None, '&File\tALT+F', "File and App operations.",
+                      None, wx.Menu(), True, OrderedDict([
+                          ('open', [wx.ID_OPEN, '&Open\tCTRL+O',
+                                    "Open TOML configuration file.",
+                                    'file_picker', None,  False, None]),
+                          ('save', [wx.ID_SAVE, "&Save\tCTRL+S",
+                                    "Save TOML configuration file.",
+                                    'file_save', None, False, None]),
+                          ('save_as', [wx.ID_SAVEAS, "&Save As\tCTRL+A",
+                                       "Save a TOML configuration file with "
+                                       "a different name.", 'file_save_as',
+                                       None, False, None]),
+                          ('separator_0', []),
+                          ('close', [wx.ID_CLOSE, "&Close\tCTRL+C",
+                                     "Close the current frame.",
+                                     'file_close', None, True, None]),
+                          ('quit', [wx.ID_EXIT, "&Quit\tCTRL+Q",
+                                    "Quit this application.",
+                                    'app_quit', None, True, None]),
+                          ])]),
+            ('edit', [None, '&Edit\tALT+E', "Screen editing operations.",
+                      None, wx.Menu(), True, OrderedDict([
+                          ('conf', [wx.ID_ANY, "&Configuration\tCTRL+F",
+                                    "Edit basic organization configuration.",
+                                    'edit_config', None, True, None]),
+                          ('budget', [wx.ID_ANY, "&Budget\tCTRL+B",
+                                      "Edit yearly budget.",
+                                      'edit_budget', None, True, None]),
+                          ('hide', [wx.ID_ANY, "&Close All\tCTRL+L",
+                                    "Close all panels.",
+                                    'edit_hide_all', None, True, None]),
+                          ])]),
+            ('tools', [None, '&Tools\tALT+T', "Various tool that can be used.",
+                       None, wx.Menu(), True, OrderedDict([
+                           ('short', [wx.ID_ANY, "&Short Cuts\tCTRL+H",
+                                      "Show the short cut screen.",
+                                      'tool_short_cuts', None, True, None]),
+                           ('inspection', [wx.ID_ANY, "&Inspection\tCTRL+I",
+                                           "Show the WX inspection tool.",
+                                           'tool_inspection', None,
+                                           True, None]),
+                           ('separator_1', []),
+                           ('reset', [wx.ID_ANY, "&Reset\tCTRL+S",
+                                      "Reset some default settings.",
+                                      None, wx.Menu(), True, OrderedDict([
+                                          ('window_size', [
+                                              wx.ID_ANY,
+                                              "&Window Size\tCTRL+W",
+                                              "Reset default window size.",
+                                              'tool_reset_window',
+                                              None, True, None]),
+                                          ])]),
+                           ])]),
+            ('reports', [None, '&Reports\tALT+R', "Print reports.",
+                         None, wx.Menu(), True, OrderedDict([
+                             ('budget', [wx.ID_ANY,
+                                         "&Budget Worksheet\tCTRL+W",
+                                         "Yearly budget report.",
+                                         'report_budget', None, True, None]),
+                             ])]),
+            ('help', [None, '&Help\tALT+H', "Documentation",
+                      None, wx.Menu(), True, OrderedDict([
+                          ('manual', [wx.ID_ANY, "&Manual\tCTRL+M",
+                                      "Open an online manual.",
+                                      'app_manual', None, True, None]),
+                          ('releases', [wx.ID_ANY, "&Releases\tCTRL+R",
+                                        "Open the online release page.",
+                                        'app_manual', None, True, None]),
+                          ('about', [wx.ID_ABOUT, "&About\tCTRL+T",
+                                     "Display the about screen.",
+                                     'app_about', None, True, None]),
+                          ])]),
             ])
         self.create_menu()
 
     def create_menu(self):
+        """
+        Create a drop down menu based on the data structure below.
+        <id|None>  = wx ID
+        <name|key> = Name and key code.
+        disc       = Description
+        <cb|None>  = callback
+        <mo|None>  = Menu object
+        <t|f>      = True or False
+        <od|None>  = OrderedDict
+
+        OrderedDict([
+            (item, [None, <name|key>, disc, None, mo, <t|f>, OrderedDict([
+                (item, [id, <name|key>, disc, cb, None, <t|f>, None]),
+                (seperator, []),
+                (item, [id, <name|key>, disc, cb, mo, <t|f>, OrderedDict([
+                    (item, [id, <name|key>, disc, cb, None, <t|f>, None]),
+                    (item, [id, <name|key>, disc, cb, None, <t|f>, None]),
+                ])]),
+            ])]),
+            (item, [None, <name|key>, disc, None, mo, <t|f>, OrderedDict([
+                (item, [id, <name|key>, disc, cb, None, <t|f>, None]),
+                (seperator, []),
+                (item, [id, <name|key>, disc, cb, mo, <t|f>, OrderedDict([
+                    (item, [id, <name|key>, disc, cb, None, <t|f>, None]),
+                    (item, [id, <name|key>, disc, cb, None, <t|f>, None]),
+                ])]),
+            ])]),
+        ])
+        """
         bind_map = {}
-        self.menubar = wx.MenuBar()
-
-        for drop in self.__item_map:
-            used = 0
-            item, sc, obj, inner = self.__item_map[drop]
-            self.menubar.Append(obj, item)
-
-            for key in inner:
-                if 'separator' in key:
-                    if used != 0: obj.AppendSeparator()
-                    continue
-
-                id, item, help, callback, display = inner[key]
-
-                if display:
-                    menu_item =  obj.Append(id, item, help)
-                    bind_map.setdefault(
-                        key, [getattr(self, callback), menu_item])
-                    used += 1
-
+        menu = wx.MenuBar()
+        self.__recurse_menu(self.__item_map, bind_map, menu)
         [self.Bind(event=wx.EVT_MENU, handler=handler, source=source)
          for handler, source in bind_map.values()]
-        self.SetMenuBar(self.menubar)
+        self.SetMenuBar(menu)
+
+    def __recurse_menu(self, map_, bind_map, menu):
+        for item in map_:
+            used = 0
+            values = map_[item]
+            v_size = len(values)
+
+            try:
+                assert v_size in (0, 7), f"Item '{item}' is wrong length."
+
+                if v_size == 0:
+                    if used != 0: menu.AppendSeparator()
+                else:
+                    id, nk, disc, cb, mo, tf, od = values
+
+                    if not id and nk and not cb and mo and tf and od:
+                        name, tab, key = nk.partition('\t')
+                        menu.Append(mo, name)
+                        self.__recurse_menu(od, bind_map, menu=mo)
+                    elif id and nk and cb and not mo and tf and not od:
+                        menu_item = menu.Append(id, nk, disc)
+                        bind_map.setdefault(nk, [getattr(self, cb), menu_item])
+                        used += 1
+                    elif id and nk and not cb and mo and tf and od:
+                        menu_item = menu.Append(id, nk, mo, disc)
+                        bind_map.setdefault(nk, [None, menu_item])
+                        used += 1
+                        self.__recurse_menu(od, bind_map, menu=mo)
+            except Exception as e:
+                self._log.error("One of the menu items failed: %s, %s",
+                                values, menu, exc_info=True)
 
     @property
     def menu_items(self):
@@ -208,8 +277,10 @@ class MenuBar:
         else:
             self.__inspection = None
 
-
-
+    def tool_reset_window(self, event):
+        tac = TomlAppConfig()
+        size = tac.get_value('app_size', 'size')
+        self.set_size(size, 'default')
 
     def report_budget(self, event):
         pass
@@ -240,9 +311,10 @@ class MainFrame(MenuBar, wx.Frame):
                  id=wx.ID_ANY,
                  pos=wx.DefaultPosition,
                  style=wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL):
-        super().__init__(parent, id=id, pos=pos, style=style)
         self._tac = TomlAppConfig()
-        size = wx.Size(500, 800)
+        self._log = logging.getLogger(self._tac.logger_name)
+        super().__init__(parent, id=id, pos=pos, style=style)
+        size = (500, 800)
         self.set_size(size)
         self.SetTitle(self.title)
         self.parent_bg_color = (128, 128, 128)
@@ -284,9 +356,9 @@ class MainFrame(MenuBar, wx.Frame):
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = eval(class_name)(self, size=size)
 
-    def set_size(self, size):
-        value = self._tac.get_value('app_size', 'size')
-        self.SetSize(value if value else size)
+    def set_size(self, size, key='size'):
+        value = self._tac.get_value('app_size', key)
+        self.SetSize(wx.Size(value if value else size))
 
     def setup_resize_event(self):
         self.__resized_time = datetime.now()

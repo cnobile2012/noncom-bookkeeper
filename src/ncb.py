@@ -33,7 +33,7 @@ class CheckPanelConfig(TomlPanelConfig):
     config to the user directory id necessary.
     """
 
-    def __init__(self, *args, level=logging.WARNING, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__()
 
     @property
@@ -61,7 +61,7 @@ class CheckAppConfig(TomlAppConfig):
     if necessary.
     """
 
-    def __init__(self, *args, level=logging.WARNING, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__()
 
     @property
