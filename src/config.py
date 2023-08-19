@@ -187,6 +187,23 @@ class BaseSystemData(Settings):
         return errors
 
 
+class TomlMetaData(BaseSystemData):
+    """
+    Get the META data from the TOML panel config file.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def panels(self):
+        return self.panel_config.get('meta', {}).get('panels')
+
+    @property
+    def months(self):
+        return self.panel_config.get('meta', {}).get('months')
+
+
 class TomlPanelConfig(BaseSystemData):
     """
     Read and write the TOML panel config file.

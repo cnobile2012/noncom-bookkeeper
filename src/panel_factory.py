@@ -6,7 +6,7 @@ __docformat__ = "restructuredtext en"
 
 from io import StringIO
 
-from .config import BaseSystemData
+from .config import TomlMetaData
 
 import wx
 import wx.adv
@@ -39,7 +39,7 @@ class BasePanel(wx.ScrolledWindow):
         prefix_widget.SetValue(text)
 
 
-class PanelFactory(BaseSystemData):
+class PanelFactory(TomlMetaData):
     """
     Parse the config data and create the panels.
     """
@@ -60,9 +60,7 @@ class PanelFactory(BaseSystemData):
         return self.__panels.get(panel)
 
     def parse(self):
-        panels = self.panel_config.get('meta', {}).get('panels')
-
-        for panel in panels:
+        for panel in self.panels:
             try:
                 self.setup_panel(panel)
             except Exception as e:
