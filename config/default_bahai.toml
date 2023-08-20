@@ -12,7 +12,7 @@
 #
 
 [meta]
-panels = ['config', 'budget']
+panels = ['config', 'budget', 'month']
 months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimát',
           'Kamál', "Asmá'", "'Izzat", 'Mashíyyat', "'Ilm", 'Qudrat', 'Qawl',
           'Masá’il', 'Sharaf', 'Sulṭán', 'Mulk', 'Ayyám-i-Há', "'Alá'"]
@@ -21,7 +21,7 @@ months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimá
 
 [config.meta]
 title = 'Organization Information'
-bg_color = [50, 153, 204]
+bg_color = [0, 255, 255]
 w_bg_color_1 = [176, 192, 177]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
@@ -145,3 +145,36 @@ widget_51 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_52 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Membership (Biginning of Year)"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6]}]
 widget_53 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
 
+[month]
+
+[month.meta]
+title = 'Monthly Specific Settings'
+bg_color = [255, 255, 0]
+w_bg_color_1 = [176, 192, 177]
+w_fg_color_1 = [50, 50, 204]
+font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
+sizer_span = [[0, 0], 0, 0, 0]
+
+[month.sizers]
+sizer_0 = ['BoxSizer', 'VERTICAL']
+sizer_1 = ['FlexGridSizer', {grid=[13, 2, 0, 2], add=[0, 'EXPAND', 0]}]
+
+[month.widgets]
+widget_0 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Choose Current Month:'], min=[172, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
+widget_1 = ['ComboBox', {args=['self', 'ID_ANY', 'Choose Current Month:']}]
+widget_2 = 'sizer_span'
+widget_3 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated monthly.'], min=[172, 23], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], update='widget_1'}]
+
+# Choose current month (Month to choose)
+
+# Required each month
+# -------------------
+# Participation
+# Outstanding Bills
+# End of Month Cash on Hand
+
+# May not change often or at all
+# ------------------------------
+# Total Membership
+# Treasurer
+# Locality Prefix

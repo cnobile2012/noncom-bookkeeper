@@ -55,6 +55,9 @@ class MenuBar:
                           ('budget', [wx.ID_ANY, "&Budget\tCTRL+B",
                                       "Edit yearly budget.",
                                       'edit_budget', None, True, None]),
+                          ('month', [wx.ID_ANY, "&Month\tCTRL+M",
+                                      "Edit monthy data.",
+                                      'edit_month', None, True, None]),
                           ('hide', [wx.ID_ANY, "&Close All\tCTRL+L",
                                     "Close all panels.",
                                     'edit_hide_all', None, True, None]),
@@ -89,7 +92,7 @@ class MenuBar:
                              ])]),
             ('help', [None, '&Help\tALT+H', "Documentation",
                       None, wx.Menu(), True, OrderedDict([
-                          ('manual', [wx.ID_ANY, "&Manual\tCTRL+M",
+                          ('manual', [wx.ID_ANY, "&Manual\tCTRL+N",
                                       "Open an online manual.",
                                       'app_manual', None, True, None]),
                           ('releases', [wx.ID_ANY, "&Releases\tCTRL+R",
@@ -230,7 +233,13 @@ class MenuBar:
 
         self._set_panel()
 
+    def edit_month(self, event):
+        self._hide_all_panels()
+        self.panel = self.panels['month']
 
+        #self.menu_item_toggle(drop, name)
+
+        self._set_panel()
 
     def _set_panel(self):
         self.sizer.Detach(self.panel)
