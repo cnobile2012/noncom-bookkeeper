@@ -156,8 +156,8 @@ class PanelFactory(TomlMetaData):
     def grid_bag_sizer(self, klass, sizer, value):
         self.second_sizer = sizer
         dict_ = self._find_dict(value)
-        grid = dict_.get('grid')
-        klass.write(f"        {sizer} = wx.GridBagSizer(*{grid})\n")
+        gap = dict_.get('gap')
+        klass.write(f"        {sizer} = wx.GridBagSizer(*{gap})\n")
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags)
         klass.write(f"        {self.main_sizer}.Add({sizer}, {prop}, "

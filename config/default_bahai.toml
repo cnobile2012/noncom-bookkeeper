@@ -153,13 +153,11 @@ bg_color = [255, 255, 0, 180]
 w_bg_color_1 = [176, 192, 177]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
-sizer_span = [[0, 0], 0, 0, 0]
 locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
 
 [month.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-#sizer_1 = ['FlexGridSizer', {grid=[13, 2, 0, 2], add=[0, 'EXPAND', 0]}]
-sizer_1 = ['GridBagSizer', {grid=[2, 2], add=[1, 'EXPAND | ALL', 10]}]
+sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'EXPAND | ALL', 10]}]
 
 [month.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated monthly.'], min=[-1, 23], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[0, 0], span=[1, 2]}]
