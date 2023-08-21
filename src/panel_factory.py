@@ -187,10 +187,7 @@ class PanelFactory(TomlMetaData):
 
         select = dict_.get('select', 0)
         klass.write(f"        {widget}.SetSelection({select})\n")
-        prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
-        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
-                    f"{flags}, {border})\n")
+        self._set_add_to_sizer(klass, widget, value)
 
         if callback:
             klass.write(f"        {widget}.Bind(wx.EVT_RADIOBOX, "
@@ -221,12 +218,7 @@ class PanelFactory(TomlMetaData):
         if wrap:
             klass.write(f"        {widget}.Wrap({wrap})\n")
 
-        prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
-        #pos = dict_.get('pos')
-        #size = dict_.get('size')
-        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
-                    f"{flags}, {border})\n")
+        self._set_add_to_sizer(klass, widget, value)
 
         if dict_.get('instance'):
             klass.write(f"        self.{widget} = {widget}\n")
@@ -248,10 +240,7 @@ class PanelFactory(TomlMetaData):
         if dict_.get('focus', False):
             klass.write(f"        {widget}.SetFocus()\n")
 
-        prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
-        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
-                    f"{flags}, {border})\n")
+        self._set_add_to_sizer(klass, widget, value)
 
         if dict_.get('instance'):
             klass.write(f"        self.{widget} = {widget}\n")
@@ -267,10 +256,7 @@ class PanelFactory(TomlMetaData):
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
-        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
-                    f"{flags}, {border})\n")
+        self._set_add_to_sizer(klass, widget, value)
 
     def choice_combo_box(self, klass, widget, value):
         dict_ = self._find_dict(value)
@@ -297,10 +283,7 @@ class PanelFactory(TomlMetaData):
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
-        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
-                    f"{flags}, {border})\n")
+        self._set_add_to_sizer(klass, widget, value)
 
     def static_line(self, klass, widget, value):
         dict_ = self._find_dict(value)
@@ -308,17 +291,11 @@ class PanelFactory(TomlMetaData):
         flags = self._fix_flags(flags)
         klass.write(f"        {widget} = wx.StaticLine({parent}, {flags})\n")
         self._set_colors(klass, widget, value)
-        prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
-        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
-                    f"{flags}, {border})\n")
+        self._set_add_to_sizer(klass, widget, value)
 
     def sizer_span(self, klass):
         if self.span:
             klass.write(f"        {self.second_sizer}.Add(*{self.span})\n")
-
-
-
 
 
 
@@ -386,3 +363,20 @@ class PanelFactory(TomlMetaData):
                         f"{style}, {weight}, {ul}, '{fn}'))\n")
         else:
             klass.write(f"        {widget}.SetFont(wx.Font(*font))\n")
+
+    def _set_add_to_sizer(self, klass, widget, value):
+        """
+        Sets the widget to the sizer add.
+        """
+        dict_ = self._find_dict(value)
+        prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
+        pos = dict_.get('pos')
+        span = dict_.get('span')
+
+        if pos and span:
+            klass.write(f"        {self.second_sizer}.Add({widget}, {pos}, "
+                        f"{span}, {flags}, {border})\n")
+        else:
+            klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
+                        f"{flags}, {border})\n")

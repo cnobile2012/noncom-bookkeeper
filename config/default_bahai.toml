@@ -21,7 +21,7 @@ months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimá
 
 [config.meta]
 title = 'Organization Information'
-bg_color = [0, 255, 255]
+bg_color = [0, 255, 255, 180]
 w_bg_color_1 = [176, 192, 177]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
@@ -149,43 +149,43 @@ widget_53 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 
 [month.meta]
 title = 'Monthly Specific Settings'
-bg_color = [255, 255, 0]
+bg_color = [255, 255, 0, 180]
 w_bg_color_1 = [176, 192, 177]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
 sizer_span = [[0, 0], 0, 0, 0]
+locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
 
 [month.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['FlexGridSizer', {grid=[13, 2, 0, 2], add=[0, 'EXPAND', 0]}]
-#sizer_1 = ['GridBagSizer', {grid=[5, 5], add=[1, 'EXPAND | ALL', 10]}]
+#sizer_1 = ['FlexGridSizer', {grid=[13, 2, 0, 2], add=[0, 'EXPAND', 0]}]
+sizer_1 = ['GridBagSizer', {grid=[2, 2], add=[1, 'EXPAND | ALL', 10]}]
 
 [month.widgets]
-widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated monthly.'], min=[-1, 23], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 6], pos=[0, 0], size=[1, 7]}]
-widget_01 = 'sizer_span'
+widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated monthly.'], min=[-1, 23], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[0, 0], span=[1, 2]}]
 
-widget_02 = ['StaticLine', 'w_fg_color_1', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6]}]
-widget_03 = 'sizer_span'
+widget_01 = ['StaticLine', 'w_fg_color_1', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6], pos=[1, 0], span=[1, 2]}]
 
-#widget_04 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'], style='TE_READONLY', min=[196, 23], add=[0, 'ALIGN_BOTTOM | LEFT | TOP', 6]}]
-#widget_05 = 'sizer_span'
+widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'], style='TE_READONLY', min=[196, 23], add=[0, 'ALIGN_BOTTOM | LEFT | TOP', 6], pos=[2, 0], span=[1, 1]}]
 
-#widget_06 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Participation'], min=[-1, 23], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], update='widget_1'}]
-#widget_07 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6]}]
+widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Participation:'], min=[-1, 23], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], update='widget_1', pos=[3, 0], span=[1, 1]}]
+widget_07 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1]}]
 
+widget_08 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Outstanding Bills:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1]}]
+widget_09 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1]}]
 
-#widget_0 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Choose Current Month:'], min=[172, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6]}]
-#widget_03 = ['StaticLine', 'w_fg_color_1', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT', 6]}]
+widget_10 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'End of Month Cash on Hand:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1]}]
+widget_11 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1]}]
 
+widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields do not change ofter and the\ndefaults can be accepted.'], min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[7, 0], span=[1, 2]}]
 
-# Required each month
-# -------------------
-# Participation
-# Outstanding Bills
-# End of Month Cash on Hand
+widget_13 = ['StaticLine', 'w_fg_color_1', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6], pos=[8, 0], span=[1, 2]}]
 
-# May not change often or at all
-# ------------------------------
-# Total Membership
-# Treasurer
-# Locality Prefix
+widget_14 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Treasurer:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[9, 0], span=[1, 1]}]
+widget_15 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[9, 1], span=[1, 1]}]
+
+widget_16 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Total Membership:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[10, 0], span=[1, 1]}]
+widget_17 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[10, 1], span=[1, 1]}]
+
+widget_18 = ['RadioBox', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Locality Prefix'], choices=['LSA', 'Group'], dim=1, style='RA_SPECIFY_ROWS', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], tip="Choose if your community is an LSA or a group.", focus=true, select=0, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], pos=[11, 0], span=[1, 1], callback='locality_prefix', update='widget_19'}]
+widget_19 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, ''], min=[260, 32], wrap=240, add=[0, 'ALIGN_BOTTOM | RIGHT | TOP', 6], pos=[11, 1], span=[1, 1], instance=true}]

@@ -306,8 +306,8 @@ class TomlAppConfig(BaseSystemData):
         doc.add(tk.nl())
         # Create app size
         app_size = tk.table()
-        app_size.add('default', [500, 800])
-        app_size.add('size', [500, 800])
+        app_size.add('default', [530, 800])
+        app_size.add('size', [530, 800])
         doc.add('app_size', app_size)
         self._write_file(tk.dumps(doc))
 
