@@ -148,20 +148,14 @@ class PanelFactory(TomlMetaData):
         dict_ = self._find_dict(value)
         grid = dict_.get('grid')
         klass.write(f"        {sizer} = wx.FlexGridSizer(*{grid})\n")
-        prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
-        klass.write(f"        {self.main_sizer}.Add({sizer}, {prop}, "
-                    f"{flags}, {border})\n")
+        self._set_add_to_sizer(klass, sizer, value)
 
     def grid_bag_sizer(self, klass, sizer, value):
         self.second_sizer = sizer
         dict_ = self._find_dict(value)
         gap = dict_.get('gap')
         klass.write(f"        {sizer} = wx.GridBagSizer(*{gap})\n")
-        prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
-        klass.write(f"        {self.main_sizer}.Add({sizer}, {prop}, "
-                    f"{flags}, {border})\n")
+        self._set_add_to_sizer(klass, sizer, value)
 
     def radio_box(self, klass, widget, value):
         dict_ = self._find_dict(value)
@@ -368,6 +362,7 @@ class PanelFactory(TomlMetaData):
         """
         Sets the widget to the sizer add.
         """
+        sizer = self.main_sizer if 'Sizer' in value[0] else self.second_sizer
         dict_ = self._find_dict(value)
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags)
@@ -375,8 +370,8 @@ class PanelFactory(TomlMetaData):
         span = dict_.get('span')
 
         if pos and span:
-            klass.write(f"        {self.second_sizer}.Add({widget}, {pos}, "
+            klass.write(f"        {sizer}.Add({widget}, {pos}, "
                         f"{span}, {flags}, {border})\n")
         else:
-            klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
+            klass.write(f"        {sizer}.Add({widget}, {prop}, "
                         f"{flags}, {border})\n")
