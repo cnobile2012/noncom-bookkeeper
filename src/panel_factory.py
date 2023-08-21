@@ -109,6 +109,8 @@ class PanelFactory(TomlMetaData):
                 self.box_sizer(klass, sizer, value)
             elif value[0] == 'FlexGridSizer':
                 self.flex_grid_sizer(klass, sizer, value)
+            elif value[0] == 'GridBagSizer':
+                self.grid_bag_sizer(klass, sizer, value)
 
         # Create all the widgets.
         for widget, value in self.panel_config.get(
@@ -121,12 +123,12 @@ class PanelFactory(TomlMetaData):
                 self.text_ctrl(klass, widget, value)
             elif value[0] == 'DatePickerCtrl':
                 self.date_picker_ctrl(klass, widget, value)
+            elif value[0] in ('Choice', 'ComboBox'):
+                self.choice_combo_box(klass, widget, value)
             elif value[0] == 'StaticLine':
                 self.static_line(klass, widget, value)
             elif value == 'sizer_span':
                 self.sizer_span(klass)
-            elif value == "blank":
-                self.blank_line(klass)
 
         if self.main_sizer:
             klass.write(f"        self.SetSizer({self.main_sizer})\n")
@@ -146,6 +148,16 @@ class PanelFactory(TomlMetaData):
         dict_ = self._find_dict(value)
         grid = dict_.get('grid')
         klass.write(f"        {sizer} = wx.FlexGridSizer(*{grid})\n")
+        prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
+        klass.write(f"        {self.main_sizer}.Add({sizer}, {prop}, "
+                    f"{flags}, {border})\n")
+
+    def grid_bag_sizer(self, klass, sizer, value):
+        self.second_sizer = sizer
+        dict_ = self._find_dict(value)
+        grid = dict_.get('grid')
+        klass.write(f"        {sizer} = wx.GridBagSizer(*{grid})\n")
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags)
         klass.write(f"        {self.main_sizer}.Add({sizer}, {prop}, "
@@ -194,11 +206,11 @@ class PanelFactory(TomlMetaData):
         style = style if style == 0 else self._fix_flags(style)
         klass.write(f"        {widget} = wx.StaticText("
                     f"{parent}, wx.{id}, {label}, style={style})\n")
-        min_size = dict_.get('min')
         font = dict_.get('font')
         wrap = dict_.get('wrap')
         self._set_colors(klass, widget, value)
         self._set_font(klass, widget, dict_)
+        min_size = dict_.get('min')
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
@@ -211,6 +223,8 @@ class PanelFactory(TomlMetaData):
 
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags)
+        #pos = dict_.get('pos')
+        #size = dict_.get('size')
         klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
                     f"{flags}, {border})\n")
 
@@ -225,8 +239,8 @@ class PanelFactory(TomlMetaData):
         style = style if style == 0 else self._fix_flags(style)
         klass.write(f"        {widget} = wx.TextCtrl("
                     f"{parent}, wx.{id}, {label}, style={style})\n")
-        min_size = dict_.get('min')
         self._set_colors(klass, widget, value)
+        min_size = dict_.get('min')
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
@@ -247,8 +261,38 @@ class PanelFactory(TomlMetaData):
         parent, id = dict_.get('args')
         klass.write(f"        {widget} = wx.adv.DatePickerCtrl("
                     f"{parent}, wx.{id})\n")
-        min_size = dict_.get('min')
         self._set_colors(klass, widget, value)
+        min_size = dict_.get('min')
+
+        if min_size:
+            klass.write(f"        {widget}.SetMinSize({min_size})\n")
+
+        prop, flags, border = dict_.get('add')
+        flags = self._fix_flags(flags)
+        klass.write(f"        {self.second_sizer}.Add({widget}, {prop}, "
+                    f"{flags}, {border})\n")
+
+    def choice_combo_box(self, klass, widget, value):
+        dict_ = self._find_dict(value)
+        args = dict_.get('args')
+        parent, id = dict_.get('args')
+        widget_type = value[0]
+        months = [f"{idx:>2} {month}"
+                  for idx, month in enumerate(self.months, start=1)]
+
+        if widget_type == 'ComboBox':
+            first = 'Choose Current Month'
+            months.insert(0, first)
+            label = f"value='''{first}''',"
+        else:
+            label = ''
+
+        style = dict_.get('style', 0)
+        style = style if style == 0 else self._fix_flags(style)
+        klass.write(f"        {widget} = wx.{widget_type}({parent}, wx.{id}, "
+                    f"{label} choices={months}, style={style})\n")
+        self._set_colors(klass, widget, value)
+        min_size = dict_.get('min')
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
@@ -273,8 +317,7 @@ class PanelFactory(TomlMetaData):
         if self.span:
             klass.write(f"        {self.second_sizer}.Add(*{self.span})\n")
 
-    def blank_line(self, klass):
-        pass
+
 
 
 
