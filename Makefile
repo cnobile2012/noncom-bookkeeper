@@ -26,7 +26,7 @@ all	: tar
 #----------------------------------------------------------------------
 tar	: clean
 	@(cd ..; tar -czvf $(PACKAGE_DIR).tar.gz --exclude=".git" \
-          $(PACKAGE_DIR))
+          --exclude="__pycache__" $(BASE_DIR))
 
 .PHONY	: tests
 tests	: clean

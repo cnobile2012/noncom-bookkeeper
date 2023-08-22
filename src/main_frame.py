@@ -15,6 +15,7 @@ from wx.lib.inspection import InspectionTool
 from .config import TomlAppConfig
 from .panel_factory import PanelFactory, BasePanel
 from .tools import ShortCuts
+from .settings import Paths
 
 
 class MenuBar:
@@ -62,7 +63,15 @@ class MenuBar:
                                     "Close all panels.",
                                     'edit_hide_all', None, True, None]),
                           ])]),
-            ('tools', [None, '&Tools\tALT+T', "Various tool that can be used.",
+            ('reports', [None, '&Reports\tALT+R', "Print reports.",
+                         None, wx.Menu(), True, OrderedDict([
+                             ('budget', [wx.ID_ANY,
+                                         "&Budget Worksheet\tCTRL+W",
+                                         "Yearly budget report.",
+                                         'report_budget', None, True, None]),
+                             ])]),
+            ('tools', [None, '&Tools\tALT+T',
+                       "Various tool to help with productivity.",
                        None, wx.Menu(), True, OrderedDict([
                            ('short', [wx.ID_ANY, "&Short Cuts\tCTRL+H",
                                       "Show the short cut screen.",
@@ -83,13 +92,13 @@ class MenuBar:
                                               None, True, None]),
                                           ])]),
                            ])]),
-            ('reports', [None, '&Reports\tALT+R', "Print reports.",
-                         None, wx.Menu(), True, OrderedDict([
-                             ('budget', [wx.ID_ANY,
-                                         "&Budget Worksheet\tCTRL+W",
-                                         "Yearly budget report.",
-                                         'report_budget', None, True, None]),
-                             ])]),
+            ('settings', [None, '&Settings\tALT+S', "Application settings",
+                          None, wx.Menu(), True, OrderedDict([
+                              ('paths', [wx.ID_ANY,
+                                         "&Application Paths\tCTRL+P",
+                                         "Show the application paths.",
+                                         'settings_paths', None, True, None]),
+                              ])]),
             ('help', [None, '&Help\tALT+H', "Documentation",
                       None, wx.Menu(), True, OrderedDict([
                           ('manual', [wx.ID_ANY, "&Manual\tCTRL+N",
@@ -264,6 +273,9 @@ class MenuBar:
         [obj.Hide() for obj in self.panels.values() if obj.IsShown()]
         self.SetTitle(self.title)
 
+    def report_budget(self, event):
+        pass
+
     def tool_short_cuts(self, event):
         if not self.__short_cut:
             self.__short_cut = ShortCuts(self.parent)
@@ -291,10 +303,13 @@ class MenuBar:
         size = tac.get_value('app_size', 'size')
         self.set_size(size, 'default')
 
-    def report_budget(self, event):
-        pass
+    def settings_paths(self, event):
+        if 'paths' not in self.panels:
+            self.set_panel('paths', Paths(self.parent))
 
-
+        self._hide_all_panels()
+        self.panel = self.panels['paths']
+        self._set_panel()
 
     def app_manual(self, event):
         pass
@@ -317,8 +332,7 @@ class MainFrame(MenuBar, wx.Frame):
     __active_panel = None
     __panel_classes = {}
 
-    def __init__(self, parent=None,
-                 id=wx.ID_ANY,
+    def __init__(self, parent=None, id=wx.ID_ANY,
                  pos=wx.DefaultPosition,
                  style=wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL):
         self._tac = TomlAppConfig()
@@ -362,7 +376,7 @@ class MainFrame(MenuBar, wx.Frame):
                 print(code)   # *** TODO *** Remove later
                 exec(code)
                 class_name = sf.get_class_name(panel)
-                self.__panel_classes[panel] = eval(class_name)(self, size=size)
+                self.__panel_classes[panel] = eval(class_name)(self)
 
     def set_size(self, size, key='size'):
         value = self._tac.get_value('app_size', key)
@@ -392,6 +406,9 @@ class MainFrame(MenuBar, wx.Frame):
     @property
     def panels(self):
         return self.__panel_classes
+
+    def set_panel(self, name, panel):
+        self.__panel_classes[name] = panel
 
     @property
     def panel(self):
