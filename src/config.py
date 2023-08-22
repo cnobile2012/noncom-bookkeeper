@@ -33,7 +33,7 @@ class Settings(AppDirs):
                               'generic': 'generic.toml'}}
     _ALREADY_RUN = False
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__(appname=self.app_name,
                          appauthor=self.primary_developer)
         # The two lines below read an environment variable which is used
@@ -126,8 +126,8 @@ class BaseSystemData(Settings):
     """
     SYS_FILES = {'data': None, 'panel_config': None, 'app_config': None}
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._log = logging.getLogger(self.logger_name)
 
     ## @property
@@ -192,8 +192,8 @@ class TomlMetaData(BaseSystemData):
     Get the META data from the TOML panel config file.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     @property
     def panels(self):
@@ -210,9 +210,9 @@ class TomlPanelConfig(BaseSystemData):
     """
     _shared_state = {}
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.__dict__ = self._shared_state
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     @property
     def is_valid(self):
@@ -254,9 +254,9 @@ class TomlAppConfig(BaseSystemData):
     """
     _shared_state = {}
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.__dict__ = self._shared_state
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     @property
     def is_valid(self):

@@ -16,8 +16,8 @@ class Bootstrap(Settings):
     Bootstrap the app. We create the directories that we need.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.create_dirs()
 
 

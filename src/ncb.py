@@ -34,7 +34,7 @@ class CheckPanelConfig(TomlPanelConfig):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     @property
     def has_valid_data(self):
@@ -62,7 +62,7 @@ class CheckAppConfig(TomlAppConfig):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     @property
     def has_valid_data(self):

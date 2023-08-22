@@ -3,7 +3,7 @@
 # config/default_bahai.toml
 #
 # This file provides data for the definition of fields used on
-# the specified screens.
+# the specified panels.
 #
 # TOML field definitions: https://toml.io/en/v1.0.0
 #
@@ -175,7 +175,7 @@ widget_09 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_10 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'End of Month Cash on Hand:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1]}]
 widget_11 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1]}]
 
-widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields do not change ofter and the\ndefaults can be accepted.'], min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[7, 0], span=[1, 2]}]
+widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields do not change often and the\ndefaults can be accepted.'], min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[7, 0], span=[1, 2]}]
 
 widget_13 = ['StaticLine', 'w_fg_color_1', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6], pos=[8, 0], span=[1, 2]}]
 
