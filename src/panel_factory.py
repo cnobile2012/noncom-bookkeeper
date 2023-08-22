@@ -355,8 +355,6 @@ class PanelFactory(TomlMetaData):
             weight = self._fix_flags(weight)
             klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
                         f"{style}, {weight}, {ul}, '{fn}'))\n")
-        else:
-            klass.write(f"        {widget}.SetFont(wx.Font(*font))\n")
 
     def _set_add_to_sizer(self, klass, widget, value):
         """
