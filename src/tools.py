@@ -55,13 +55,13 @@ class ShortCuts(wx.Frame):
             name = name.replace('&', '') + ':'
 
             if not id and nk and not cb and mo and tf and od:
-                buff.write(f"\n{name:<9}{key:<7}{disc}\n")
+                buff.write(f"\n{name:<11}{key:<7}{disc}\n")
                 buff.write("--------------\n")
                 self.__recurse_menu(od, buff)
             elif id and nk and cb and not mo and tf and not od:
-                buff.write(f"\t{indent}{name:<18}{key:<7}{disc}\n")
+                buff.write(f"\t{indent}{name:<20}{key:<7}{disc}\n")
             elif id and nk and not cb and mo and tf and od:
-                buff.write(f"\t{name:<18}{key:<7}{disc}\n")
+                buff.write(f"\t{name:<20}{key:<7}{disc}\n")
                 buff.write("\t--------------\n")
                 self.__recurse_menu(od, buff, indent='\t')
 
