@@ -21,6 +21,7 @@ class ShortCuts(wx.Frame):
         self.SetWindowStyle(old_style | wx.STAY_ON_TOP)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, "")
+        self.short_cut_text.SetForegroundColour(wx.Colour(50, 50, 204))
         self.set_text(parent)
         self.short_cut_text.SetFont(wx.Font(
             10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,

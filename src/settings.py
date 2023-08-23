@@ -20,7 +20,8 @@ class Paths(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.title = '''Application Paths'''
-        self.SetBackgroundColour(wx.Colour(159, 159, 95))
+        self._bg_color = [159, 159, 95]
+        self.SetBackgroundColour(wx.Colour(*self._bg_color))
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
         grid_sizer = wx.FlexGridSizer(4, 2, 0, 2) # rows, cols, vgap, hgap
@@ -33,12 +34,12 @@ class Paths(wx.Panel):
         widget_1 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_data_fullpath,
                                style=wx.TE_READONLY)
         widget_1.SetBackgroundColour(wx.Colour(159, 159, 95))
-        widget_1.SetForegroundColour(wx.Colour(*[50, 50, 204]))
+        widget_1.SetForegroundColour(wx.Colour(50, 50, 204))
         widget_1.SetMinSize([400, -1])
         grid_sizer.Add(widget_1, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
         widget_2 = wx.StaticText(self, wx.ID_ANY, "Panel Path:")
-        widget_2.SetForegroundColour(wx.Colour(*[50, 50, 204]))
+        widget_2.SetForegroundColour(wx.Colour(50, 50, 204))
         widget_2.SetMinSize([-1, -1])
         grid_sizer.Add(widget_2, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
         widget_3 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_config_fullpath,
@@ -70,3 +71,7 @@ class Paths(wx.Panel):
         widget_7.SetForegroundColour(wx.Colour(50, 50, 204))
         widget_7.SetMinSize([400, -1])
         grid_sizer.Add(widget_7, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+
+    @property
+    def background_color(self):
+        return self._bg_color

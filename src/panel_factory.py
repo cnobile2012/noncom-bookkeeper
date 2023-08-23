@@ -82,7 +82,7 @@ class PanelFactory(TomlMetaData):
         self._bg_color = panel_kwargs.get('bg_color')
         klass.write(f"        self._bg_color = {self._bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
-                    f"*{self._bg_color}))\n")
+                    f"*self._bg_color))\n")
         self._w_bg_color_1 = panel_kwargs.get('w_bg_color_1')
         self._w_bg_color_2 = panel_kwargs.get('w_bg_color_2')
         self._w_bg_color_3 = panel_kwargs.get('w_bg_color_3')
