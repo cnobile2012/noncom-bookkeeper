@@ -21,8 +21,8 @@ months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimá
 
 [config.meta]
 title = 'Organization Information'
-bg_color = [0, 255, 255, 180]
-w_bg_color_1 = [176, 192, 177]
+bg_color = [154, 200, 235]
+w_bg_color_1 = [222, 237, 230]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
 locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
@@ -51,8 +51,8 @@ widget_9 = ['DatePickerCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID
 
 [budget.meta]
 title = "Yearly Budget Worksheet"
-bg_color = [129, 143, 74]
-w_bg_color_1 = [176, 192, 177]
+bg_color = [204, 212, 191]
+w_bg_color_1 = [222, 237, 230]
 w_bg_color_2 = [0, 204, 255]
 w_bg_color_3 = [50, 50, 204]
 w_fg_color_1 = [50, 50, 204]
@@ -149,8 +149,8 @@ widget_53 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 
 [month.meta]
 title = 'Monthly Specific Settings'
-bg_color = [255, 255, 0, 180]
-w_bg_color_1 = [176, 192, 177]
+bg_color = [247, 246, 207]
+w_bg_color_1 = [222, 237, 230]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
 locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
