@@ -149,6 +149,7 @@ class MenuBar:
         self.__recurse_menu(self.__item_map, bind_map, menu)
         [self.Bind(event=wx.EVT_MENU, handler=handler, source=source)
          for handler, source in bind_map.values()]
+        self.Bind(wx.EVT_MENU_HIGHLIGHT_ALL, self.mouse_over)
         self.SetMenuBar(menu)
 
     def __recurse_menu(self, map_, bind_map, menu):
@@ -166,14 +167,17 @@ class MenuBar:
                     id, nk, disc, cb, mo, tf, od = values
 
                     if not id and nk and not cb and mo and tf and od:
+                        # Top level menu item.
                         name, tab, key = nk.partition('\t')
                         menu.Append(mo, name)
                         self.__recurse_menu(od, bind_map, menu=mo)
                     elif id and nk and cb and not mo and tf and not od:
+                        # Normal menu item.
                         menu_item = menu.Append(id, nk, disc)
                         bind_map.setdefault(nk, [getattr(self, cb), menu_item])
                         used += 1
                     elif id and nk and not cb and mo and tf and od:
+                        # Submenu
                         menu_item = menu.Append(id, nk, mo, disc)
                         bind_map.setdefault(nk, [None, menu_item])
                         used += 1
@@ -323,6 +327,16 @@ class MenuBar:
     def load_file(self, fullpath):
         pass
 
+    def mouse_over(self, event):
+        id = event.GetMenuId()
+        item = self.GetMenuBar().FindItemById(id)
+
+        if item:
+            text = item.GetItemLabelText()
+            help_ = item.GetHelp()
+
+        event.Skip()
+
 
 class MainFrame(MenuBar, wx.Frame):
     """
@@ -349,17 +363,19 @@ class MainFrame(MenuBar, wx.Frame):
         self.setup_resize_event()
 
         # Status Bar
-        status_widths = [-1, -1, -1, -1]
+        status_widths = [-1, -1, -1]
         frame_statusbar = self.CreateStatusBar(len(status_widths),
                                                wx.STB_DEFAULT_STYLE)
         frame_statusbar.SetStatusWidths(status_widths)
         # statusbar fields
-        self.frame_statusbar_fields = {'temp0': "frame_statusbar_0",
-                                       'temp1': "frame_statusbar_1"}
+        ## self.frame_statusbar_fields = {
+        ##     'temp0': "frame_statusbar_0",
+        ##     'temp1': "frame_statusbar_1"
+        ##     }
 
-        for idx, key in enumerate(self.frame_statusbar_fields.keys()):
-            status = self.frame_statusbar_fields.get(key)
-            frame_statusbar.SetStatusText(status, idx)
+        ## for idx, key in enumerate(self.frame_statusbar_fields.keys()):
+        ##     status = self.frame_statusbar_fields.get(key)
+        ##     frame_statusbar.SetStatusText(status, idx)
         # End Status Bar
 
         self.SetSizer(self.__box_sizer)

@@ -29,7 +29,7 @@ locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá
 
 [config.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['FlexGridSizer', {grid=[5, 2, 0, 2], add=[0, 'EXPAND', 0]}]
+sizer_1 = ['FlexGridSizer', {grid=[5, 2, 0, 2], add=[0, 'CENTER', 0]}]
 
 [config.widgets]
 widget_0 = ['RadioBox', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Locality Prefix'], choices=['LSA', 'Group'], dim=1, style='RA_SPECIFY_ROWS', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], tip="Choose if your community is an LSA or a group.", focus=true, select=0, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], callback='locality_prefix', update='widget_1'}]
@@ -61,7 +61,7 @@ sizer_span = [[0, 0], 0, 0, 0]
 
 [budget.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['FlexGridSizer', {grid=[27, 2, 0, 2], add=[0, 'EXPAND', 0]}]
+sizer_1 = ['FlexGridSizer', {grid=[27, 2, 0, 2], add=[0, 'CENTER', 0]}]
 
 [budget.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Rollover from Last Year'], font=[12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ""], min=[-1, 20], add=[0, 'ALIGN_CENTER_VERTICAL | ALL', 6]}]
@@ -157,7 +157,7 @@ locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá
 
 [month.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'EXPAND | ALL', 10]}]
+sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
 
 [month.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated monthly.'], min=[-1, 23], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[0, 0], span=[1, 2]}]

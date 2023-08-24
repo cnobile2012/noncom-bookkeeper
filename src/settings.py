@@ -27,7 +27,7 @@ class Paths(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
         grid_sizer = wx.FlexGridSizer(4, 2, 0, 2) # rows, cols, vgap, hgap
-        sizer.Add(grid_sizer, 0, wx.EXPAND, 0)
+        sizer.Add(grid_sizer, 0, wx.CENTER, 0)
 
         widget_0 = wx.StaticText(self, wx.ID_ANY, "Data Path:")
         widget_0.SetForegroundColour(wx.Colour(50, 50, 204))
