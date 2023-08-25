@@ -12,14 +12,14 @@
 #
 
 [meta]
-panels = ['config', 'budget', 'month']
+panels = ['configuration', 'budget', 'month']
 months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimát',
           'Kamál', "Asmá'", "'Izzat", 'Mashíyyat', "'Ilm", 'Qudrat', 'Qawl',
           'Masá’il', 'Sharaf', 'Sulṭán', 'Mulk', 'Ayyám-i-Há', "'Alá'"]
 
-[config]
+[configuration]
 
-[config.meta]
+[configuration.meta]
 title = 'Organization Information'
 bg_color = [154, 200, 235]
 w_bg_color_1 = [222, 237, 230]
@@ -27,11 +27,11 @@ w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
 locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
 
-[config.sizers]
+[configuration.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
 sizer_1 = ['FlexGridSizer', {grid=[5, 2, 0, 2], add=[0, 'CENTER', 0]}]
 
-[config.widgets]
+[configuration.widgets]
 widget_0 = ['RadioBox', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Locality Prefix'], choices=['LSA', 'Group'], dim=1, style='RA_SPECIFY_ROWS', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], tip="Choose if your community is an LSA or a group.", focus=true, select=0, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], callback='locality_prefix', update='widget_1'}]
 widget_1 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, ''], min=[260, 32], wrap=240, add=[0, 'ALIGN_BOTTOM | RIGHT | TOP', 6], instance=true}]
 

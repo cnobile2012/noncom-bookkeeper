@@ -15,7 +15,7 @@ from wx.lib.inspection import InspectionTool
 from .config import TomlAppConfig
 from .panel_factory import PanelFactory, BasePanel
 from .tools import ShortCuts
-from .settings import Paths
+from .settings import Paths, FieldEdit
 
 
 class MenuBar:
@@ -98,6 +98,10 @@ class MenuBar:
                                          "&Application Paths\tCTRL+P",
                                          "Show the application paths.",
                                          'settings_paths', None, True, None]),
+                              ('fields', [wx.ID_ANY,
+                                         "&Edit Fields\tCTRL+D",
+                                         "Edit fields on various screens.",
+                                         'settings_fields', None, True, None]),
                               ])]),
             ('help', [None, '&Help\tALT+H', "Documentation",
                       None, wx.Menu(), True, OrderedDict([
@@ -232,7 +236,7 @@ class MenuBar:
 
     def edit_config(self, event):
         self._hide_all_panels()
-        self.panel = self.panels['config']
+        self.panel = self.panels['configuration']
 
         #self.menu_item_toggle(drop, name)
 
@@ -314,6 +318,15 @@ class MenuBar:
         self._hide_all_panels()
         self.panel = self.panels['paths']
         self._set_panel()
+
+    def settings_fields(self, event):
+        if 'fields' not in self.panels:
+            self.set_panel('fields', FieldEdit(self.parent))
+
+        self._hide_all_panels()
+        self.panel = self.panels['fields']
+        self._set_panel()
+
 
     def app_manual(self, event):
         pass
