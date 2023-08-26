@@ -14,8 +14,8 @@ from wx.lib.inspection import InspectionTool
 
 from .config import TomlAppConfig
 from .panel_factory import PanelFactory, BasePanel
-from .tools import ShortCuts
-from .settings import Paths, FieldEdit
+from .tools import ShortCuts, FieldEdit
+from .settings import Paths
 
 
 class MenuBar:
@@ -80,6 +80,10 @@ class MenuBar:
                                            "Show the WX inspection tool.",
                                            'tool_inspection', None,
                                            True, None]),
+                           ('fields', [wx.ID_ANY,
+                                       "&Edit Fields\tCTRL+D",
+                                       "Edit fields on various screens.",
+                                       'tool_fields', None, True, None]),
                            ('separator_1', []),
                            ('reset', [wx.ID_ANY, "Reset",
                                       "Reset some default settings.",
@@ -98,10 +102,6 @@ class MenuBar:
                                          "&Application Paths\tCTRL+P",
                                          "Show the application paths.",
                                          'settings_paths', None, True, None]),
-                              ('fields', [wx.ID_ANY,
-                                         "&Edit Fields\tCTRL+D",
-                                         "Edit fields on various screens.",
-                                         'settings_fields', None, True, None]),
                               ])]),
             ('help', [None, '&Help\tALT+H', "Documentation",
                       None, wx.Menu(), True, OrderedDict([
@@ -311,20 +311,20 @@ class MenuBar:
         size = tac.get_value('app_size', 'size')
         self.set_size(size, 'default')
 
+    def tool_fields(self, event):
+        if 'fields' not in self.panels:
+            self.set_panel('fields', FieldEdit(self.parent))
+
+        self._hide_all_panels()
+        self.panel = self.panels['fields']
+        self._set_panel()
+
     def settings_paths(self, event):
         if 'paths' not in self.panels:
             self.set_panel('paths', Paths(self.parent))
 
         self._hide_all_panels()
         self.panel = self.panels['paths']
-        self._set_panel()
-
-    def settings_fields(self, event):
-        if 'fields' not in self.panels:
-            self.set_panel('fields', FieldEdit(self.parent))
-
-        self._hide_all_panels()
-        self.panel = self.panels['fields']
         self._set_panel()
 
 

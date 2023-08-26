@@ -5,8 +5,11 @@
 __docformat__ = "restructuredtext en"
 
 from io import StringIO
+from pprint import pprint # *** TODO *** Remove later
 
 import wx
+
+from .config import TomlMetaData
 
 
 class ShortCuts(wx.Frame):
@@ -69,3 +72,84 @@ class ShortCuts(wx.Frame):
     def set_text(self, parent):
         text = self.create_list(parent)
         self.short_cut_text.SetLabel(text)
+
+
+class FieldEdit(wx.Panel):
+    """
+    Add or remove fields in various panels.
+    """
+    tmd = TomlMetaData()
+
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.parent = parent
+        self.title = '''Add/Remove Fields'''
+        self._bg_color = [232, 213, 149]
+        w_bg_color = [222, 237, 230]
+        w_fg_color_0 = [50, 50, 204]
+        w_fg_color_1 = [197, 75, 108]
+        self.SetBackgroundColour(wx.Colour(*self._bg_color))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(sizer)
+        grid_sizer = wx.GridBagSizer(2, 2) # vgap, hgap
+        sizer.Add(grid_sizer,10, wx.CENTER | wx.ALL, 10)
+
+        widget_00 = wx.StaticText(self, wx.ID_ANY, self._description, style=0)
+        widget_00.SetForegroundColour(wx.Colour(*w_fg_color_1))
+        grid_sizer.Add(widget_00, (0, 0), (1, 2), wx.ALIGN_CENTER | wx.ALL, 6)
+
+        self.edit_names = self._edit_names
+        self.edit_names.insert(0, 'Choose the Page to Edit')
+        combo_box = wx.ComboBox(self, wx.ID_ANY, value=self.edit_names[0],
+                                choices=self.edit_names, style=wx.TE_READONLY)
+        combo_box.SetBackgroundColour(wx.Colour(*w_bg_color))
+        combo_box.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        combo_box.SetMinSize([196, 23])
+        self.Bind(wx.EVT_COMBOBOX, self.get_selection, combo_box)
+        grid_sizer.Add(combo_box, (1, 0), (1, 1),
+                       wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        self.panel_labels = []
+
+
+
+
+    def get_selection(self, event):
+        panel = event.GetString().lower()
+        names = {}
+
+        if self.edit_names[0] != panel:
+            names = self.tmd.panel_config.get(panel, {}).get('widgets', {})
+
+
+            pprint(names)
+
+    @property
+    def _description(self):
+        buff = StringIO()
+        buff.write("This page allows you to modify fields on various data ")
+        buff.write("entry pages.\nThis modification should only be done when ")
+        buff.write("this application is first\nrun. Modification of data ")
+        buff.write("afterwards may cause data to disappear\nfrom reports.\n")
+        value = buff.getvalue()
+        buff.close()
+        return value
+
+    @property
+    def _edit_names(self):
+        item_list = self.parent.menu_items.get('edit', [])
+        item_names = []
+
+        if item_list: # Just incase the list is empty.
+
+            for item in item_list[-1].values():
+                if item: # Just incase we find a separator.
+                    name, tab, key = item[1].partition('\t')
+                    if "Close All" in name: continue
+                    item_names.append(name.lstrip('&'))
+
+        item_names.sort()
+        return item_names
+
+    @property
+    def background_color(self):
+        return self._bg_color

@@ -9,7 +9,7 @@ from pprint import pprint
 
 import wx
 
-from .config import Settings, TomlMetaData
+from .config import Settings
 
 
 class Paths(wx.Panel):
@@ -74,51 +74,6 @@ class Paths(wx.Panel):
         widget_7.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_7.SetMinSize([400, -1])
         grid_sizer.Add(widget_7, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-
-    @property
-    def background_color(self):
-        return self._bg_color
-
-
-class FieldEdit(wx.Panel):
-    """
-    Add or remove fields in various panels.
-    """
-    tmd = TomlMetaData()
-
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
-        self.parent = parent
-        self.title = '''Add/Remove Fields'''
-        self._bg_color = [178, 181, 185]
-        w_bg_color = [222, 237, 230]
-        w_fg_color = [50, 50, 204]
-        self.SetBackgroundColour(wx.Colour(*self._bg_color))
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(sizer)
-        grid_sizer = wx.FlexGridSizer(4, 2, 0, 2) # rows, cols, vgap, hgap
-        sizer.Add(grid_sizer, 0, wx.CENTER, 0)
-
-        #pprint(self._edit_names)
-        #pprint(self.tmd.panels)
-
-
-
-
-    @property
-    def _edit_names(self):
-        item_list = self.parent.menu_items.get('edit', [])
-        item_names = []
-
-        if item_list: # Just incase the list is empty.
-
-            for item in item_list[-1].values():
-                if item: # Just incase we find a separator.
-                    name, tab, key = item[1].partition('\t')
-                    if "Close All" in name: continue
-                    item_names.append(name.lstrip('&'))
-
-        return item_names
 
     @property
     def background_color(self):
