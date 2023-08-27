@@ -98,38 +98,61 @@ class FieldEdit(wx.Panel):
         widget_00.SetForegroundColour(wx.Colour(*w_fg_color_1))
         grid_sizer.Add(widget_00, (0, 0), (1, 2), wx.ALIGN_CENTER | wx.ALL, 6)
 
-        self.edit_names = self._edit_names
-        self.edit_names.insert(0, 'Choose the Page to Edit')
-        combo_box = wx.ComboBox(self, wx.ID_ANY, value=self.edit_names[0],
-                                choices=self.edit_names, style=wx.TE_READONLY)
+        edit_names = self._edit_names
+        edit_names.insert(0, 'Choose the Page to Edit')
+        combo_box = wx.ComboBox(self, wx.ID_ANY, value=edit_names[0],
+                                choices=edit_names, style=wx.TE_READONLY)
         combo_box.SetBackgroundColour(wx.Colour(*w_bg_color))
         combo_box.SetForegroundColour(wx.Colour(*w_fg_color_0))
         combo_box.SetMinSize([196, 23])
-        self.Bind(wx.EVT_COMBOBOX, self.get_selection, combo_box)
+        self.Bind(wx.EVT_COMBOBOX,
+                  self.selection_closure(edit_names), combo_box)
         grid_sizer.Add(combo_box, (1, 0), (1, 1),
                        wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-        self.panel_labels = []
 
 
 
 
-    def get_selection(self, event):
-        panel = event.GetString().lower()
-        names = {}
-
-        if self.edit_names[0] != panel:
-            names = self.tmd.panel_config.get(panel, {}).get('widgets', {})
 
 
-            pprint(names)
+
+    def selection_closure(self, edit_names):
+
+        def get_selection(event):
+            panel = event.GetString().lower()
+            panel_labels = []
+
+            if edit_names[0].lower() != panel:
+                items = self.tmd.panel_config.get(panel, {}).get('widgets', {})
+
+                for value in items.values():
+                    if (not isinstance(value, list)
+                        or value[0] != 'StaticText'): continue
+                    args = self._find_dict(value).get('args', [])
+
+                    #if args[2].endswith(':'):
+                    panel_labels.append(args[2])
+
+            pprint(panel_labels)
+
+        return get_selection
+
+    def _find_dict(self, value):
+        for item in value:
+            if isinstance(item, dict):
+                break
+            else:
+                item = {}
+
+        return item
 
     @property
     def _description(self):
         buff = StringIO()
-        buff.write("This page allows you to modify fields on various data ")
-        buff.write("entry pages.\nThis modification should only be done when ")
-        buff.write("this application is first\nrun. Modification of data ")
-        buff.write("afterwards may cause data to disappear\nfrom reports.\n")
+        buff.write("This page allows you to add or delete fields on various ")
+        buff.write("data entry pages.\nDeletetion of fields should only be ")
+        buff.write("done when this application is first\nrun. If done it ")
+        buff.write("afterwards may cause data to disappear from reports.")
         value = buff.getvalue()
         buff.close()
         return value
