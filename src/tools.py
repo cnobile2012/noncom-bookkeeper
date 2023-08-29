@@ -4,6 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
+import types
 from io import StringIO
 from pprint import pprint # *** TODO *** Remove later
 
@@ -83,6 +84,7 @@ class FieldEdit(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
+        self.panel = None
         self.title = '''Add/Remove Fields'''
         self._bg_color = [232, 213, 149]
         w_bg_color = [222, 237, 230]
@@ -92,7 +94,7 @@ class FieldEdit(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
         grid_sizer = wx.GridBagSizer(2, 2) # vgap, hgap
-        sizer.Add(grid_sizer,10, wx.CENTER | wx.ALL, 10)
+        sizer.Add(grid_sizer, 10, wx.CENTER | wx.ALL, 10)
 
         widget_00 = wx.StaticText(self, wx.ID_ANY, self._description, style=0)
         widget_00.SetForegroundColour(wx.Colour(*w_fg_color_1))
@@ -106,18 +108,12 @@ class FieldEdit(wx.Panel):
         combo_box.SetForegroundColour(wx.Colour(*w_fg_color_0))
         combo_box.SetMinSize([196, 23])
         self.Bind(wx.EVT_COMBOBOX,
-                  self.selection_closure(edit_names), combo_box)
+                  self.selection_closure(edit_names, sizer, w_fg_color_0),
+                  combo_box)
         grid_sizer.Add(combo_box, (1, 0), (1, 1),
                        wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-
-
-
-
-
-
-    def selection_closure(self, edit_names):
-
+    def selection_closure(self, edit_names, sizer, fg_color):
         def get_selection(event):
             panel = event.GetString().lower()
             panel_labels = []
@@ -129,13 +125,54 @@ class FieldEdit(wx.Panel):
                     if (not isinstance(value, list)
                         or value[0] != 'StaticText'): continue
                     args = self._find_dict(value).get('args', [])
-
-                    #if args[2].endswith(':'):
                     panel_labels.append(args[2])
 
-            pprint(panel_labels)
+            self._create_panel(sizer, panel_labels, fg_color)
 
         return get_selection
+
+    def _create_panel(self, sizer, panel_labels, fg_color):
+        if self.panel: self.panel.Destroy()
+        self.panel = wx.Panel(self)
+        self.panel.Layout()
+        sizer.Add(self.panel, 1, wx.EXPAND | wx.ALL, 6)
+        # Create sizers for new panel.
+        p_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(p_sizer)
+        p_grid_sizer = wx.GridBagSizer(2, 2) # vgap, hgap
+        p_sizer.Add(p_grid_sizer, 10, wx.EXPAND | wx.ALL, 10)
+        buff = StringIO()
+        buff.write("def created_panel(self, grid_sizer):\n")
+
+        for idx, label in enumerate(panel_labels):
+            widget = f"widget_{idx:02}"
+            buff.write(f"    {widget} = wx.StaticText(self.panel, "
+                       f"wx.ID_ANY, '''{label}''')\n")
+
+            if label.endswith(':'):
+                #print(f"Editable label: {label}")
+                buff.write(f"    {widget}.SetFont(wx.Font(10, "
+                           "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
+                           "wx.FONTWEIGHT_BOLD, 0, ''))\n")
+            else:
+                #print(f"Non-editable label: {label}")
+                buff.write(f"    {widget}.SetFont(wx.Font(12, "
+                           "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
+                           "wx.FONTWEIGHT_BOLD, 0, ''))\n")
+
+            buff.write(f"    {widget}.SetMinSize((-1, 23))\n")
+            buff.write(f"    {widget}.SetForegroundColour(wx.Colour("
+                       f"*{fg_color}))\n")
+            buff.write(f"    grid_sizer.Add({widget}, ({idx}, 0), (1, 1), "
+                       "wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | "
+                       "wx.TOP, 6)\n")
+
+        code = buff.getvalue()
+        buff.close()
+        print(code)
+        exec(code)
+        FieldEdit.created_panel = locals().get('created_panel')
+        self.created_panel(p_grid_sizer)
 
     def _find_dict(self, value):
         for item in value:
@@ -150,9 +187,9 @@ class FieldEdit(wx.Panel):
     def _description(self):
         buff = StringIO()
         buff.write("This page allows you to add or delete fields on various ")
-        buff.write("data entry pages.\nDeletetion of fields should only be ")
-        buff.write("done when this application is first\nrun. If done it ")
-        buff.write("afterwards may cause data to disappear from reports.")
+        buff.write("data entry pages.\nDeletion of fields should only be ")
+        buff.write("done when this application is first run.\nIf it is done ")
+        buff.write("afterwards data may disappear from reports.")
         value = buff.getvalue()
         buff.close()
         return value
@@ -163,7 +200,6 @@ class FieldEdit(wx.Panel):
         item_names = []
 
         if item_list: # Just incase the list is empty.
-
             for item in item_list[-1].values():
                 if item: # Just incase we find a separator.
                     name, tab, key = item[1].partition('\t')

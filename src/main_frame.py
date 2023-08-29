@@ -393,6 +393,7 @@ class MainFrame(MenuBar, wx.Frame):
 
         self.SetSizer(self.__box_sizer)
         self.Layout()
+        self.SetAutoLayout(True)
         self.Center(wx.BOTH)
         sf = PanelFactory()
         sf.parse()

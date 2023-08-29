@@ -5,7 +5,6 @@
 __docformat__ = "restructuredtext en"
 
 import logging
-from pprint import pprint
 
 import wx
 

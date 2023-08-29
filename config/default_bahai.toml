@@ -179,11 +179,11 @@ widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The followi
 
 widget_13 = ['StaticLine', 'w_fg_color_1', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6], pos=[8, 0], span=[1, 2]}]
 
-widget_14 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Treasurer:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[9, 0], span=[1, 1]}]
-widget_15 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[9, 1], span=[1, 1]}]
+widget_14 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Total Membership:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[9, 0], span=[1, 1]}]
+widget_15 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[50, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[9, 1], span=[1, 1]}]
 
-widget_16 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Total Membership:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[10, 0], span=[1, 1]}]
-widget_17 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[10, 1], span=[1, 1]}]
+widget_16 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Treasurer:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[10, 0], span=[1, 1]}]
+widget_17 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_LEFT', min=[260, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[10, 1], span=[1, 1]}]
 
 widget_18 = ['RadioBox', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Locality Prefix'], choices=['LSA', 'Group'], dim=1, style='RA_SPECIFY_ROWS', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, ''], tip="Choose if your community is an LSA or a group.", focus=true, select=0, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | TOP', 6], pos=[11, 0], span=[1, 1], callback='locality_prefix', update='widget_19'}]
 widget_19 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font=[10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, ''], min=[260, 32], wrap=240, add=[0, 'ALIGN_BOTTOM | RIGHT | TOP', 6], pos=[11, 1], span=[1, 1], instance=true}]
