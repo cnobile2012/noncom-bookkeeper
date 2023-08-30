@@ -94,10 +94,7 @@ class PanelFactory(TomlMetaData):
         klass.write(f"        font = [{ps}, {fam}, {style}, {weight}, "
                     f"{ul}, {fn}]\n")
         self.span = panel_kwargs.get('sizer_span')
-        locale_prefix = panel_kwargs.get('locale_prefix')
-
-        if locale_prefix:
-             klass.write(f"        self.locale_prefix = {locale_prefix}\n")
+        klass.write(f"        self.locale_prefix = {self.locale_prefix}\n")
 
         self.main_sizer = None
         self.second_sizer = None

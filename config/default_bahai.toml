@@ -16,6 +16,7 @@ panels = ['configuration', 'budget', 'month']
 months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimát',
           'Kamál', "Asmá'", "'Izzat", 'Mashíyyat', "'Ilm", 'Qudrat', 'Qawl',
           'Masá’il', 'Sharaf', 'Sulṭán', 'Mulk', 'Ayyám-i-Há', "'Alá'"]
+locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
 
 [configuration]
 
@@ -25,7 +26,6 @@ bg_color = [154, 200, 235]
 w_bg_color_1 = [222, 237, 230]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
-locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
 
 [configuration.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
@@ -153,7 +153,6 @@ bg_color = [247, 246, 207]
 w_bg_color_1 = [222, 237, 230]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
-locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
 
 [month.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']

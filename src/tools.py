@@ -75,7 +75,7 @@ class ShortCuts(wx.Frame):
         self.short_cut_text.SetLabel(text)
 
 
-class FieldEdit(wx.Panel):
+class FieldEdit(wx.ScrolledWindow):
     """
     Add or remove fields in various panels.
     """
@@ -84,6 +84,7 @@ class FieldEdit(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
+        self.SetScrollRate(10, 10)
         self.title = '''Add/Remove Fields'''
         self._bg_color = [232, 213, 149]
         w_bg_color = [222, 237, 230]
@@ -97,6 +98,8 @@ class FieldEdit(wx.Panel):
 
         desc = wx.StaticText(self, wx.ID_ANY, self._description, style=0)
         desc.SetForegroundColour(wx.Colour(*w_fg_color_1))
+        desc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                             wx.FONTWEIGHT_BOLD, 0, ''))
         grid_sizer.Add(desc, (0, 0), (1, 2), wx.ALIGN_CENTER | wx.ALL, 6)
 
         edit_names = self._edit_names
@@ -106,15 +109,17 @@ class FieldEdit(wx.Panel):
         combo_box.SetBackgroundColour(wx.Colour(*w_bg_color))
         combo_box.SetForegroundColour(wx.Colour(*w_fg_color_0))
         combo_box.SetMinSize([196, 23])
-        self.Bind(wx.EVT_COMBOBOX,
-                  self.selection_closure(
-                      edit_names, grid_sizer, w_fg_color_0, 2), combo_box)
+        kwargs = {'edit_names': edit_names, 'grid_sizer': grid_sizer,
+                  'w_fg_color_0': w_fg_color_0, 'w_fg_color_1': w_fg_color_1,
+                  'y_pos': 2}
+        self.Bind(wx.EVT_COMBOBOX, self.selection_closure(**kwargs), combo_box)
         grid_sizer.Add(combo_box, (1, 0), (1, 1),
                        wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-    def selection_closure(self, edit_names, grid_sizer, fg_color, y_pos):
+    def selection_closure(self, **kwargs):
         def get_selection(event):
             panel = event.GetString().lower()
+            edit_names = kwargs['edit_names']
             panel_labels = []
 
             if edit_names[0].lower() != panel:
@@ -126,11 +131,18 @@ class FieldEdit(wx.Panel):
                     args = self._find_dict(value).get('args', [])
                     panel_labels.append(args[2])
 
-            self._create_panel(grid_sizer, panel_labels, fg_color, y_pos)
+            kwargs['panel_labels'] = panel_labels
+            self._create_panel(**kwargs)
+            self.parent.Layout()
 
         return get_selection
 
-    def _create_panel(self, grid_sizer, panel_labels, fg_color, y_pos):
+    def _create_panel(self, **kwargs):
+        y_pos = kwargs['y_pos']
+        grid_sizer = kwargs['grid_sizer']
+        w_fg_color_0 = kwargs['w_fg_color_0']
+        w_fg_color_1 = kwargs['w_fg_color_1']
+        panel_labels = kwargs['panel_labels']
         num_items = grid_sizer.GetItemCount()
 
         for idx, child in enumerate(grid_sizer.GetChildren()):
@@ -148,26 +160,26 @@ class FieldEdit(wx.Panel):
                        f"wx.ID_ANY, '''{label}''')\n")
 
             if label.endswith(':'):
-                #print(f"Editable label: {label}")
                 buff.write(f"    {widget}.SetFont(wx.Font(10, "
                            "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                            "wx.FONTWEIGHT_BOLD, 0, ''))\n")
+                buff.write(f"    {widget}.SetForegroundColour(wx.Colour("
+                           f"*{w_fg_color_0}))\n")
             else:
-                #print(f"Non-editable label: {label}")
                 buff.write(f"    {widget}.SetFont(wx.Font(12, "
                            "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                            "wx.FONTWEIGHT_BOLD, 0, ''))\n")
+                buff.write(f"    {widget}.SetForegroundColour(wx.Colour("
+                           f"*{w_fg_color_1}))\n")
 
             buff.write(f"    {widget}.SetMinSize((-1, 23))\n")
-            buff.write(f"    {widget}.SetForegroundColour(wx.Colour("
-                       f"*{fg_color}))\n")
             buff.write(f"    grid_sizer.Add({widget}, ({idx + y_pos}, 0), "
                        "(1, 1), wx.ALIGN_CENTER_VERTICAL | wx.LEFT | "
                        "wx.RIGHT | wx.TOP, 6)\n")
 
         code = buff.getvalue()
         buff.close()
-        print(code)
+        print(code) # *** TODO *** Remove later
         exec(code)
         FieldEdit.created_panel = locals().get('created_panel')
         self.created_panel(grid_sizer)
