@@ -84,7 +84,6 @@ class FieldEdit(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        self.panel = None
         self.title = '''Add/Remove Fields'''
         self._bg_color = [232, 213, 149]
         w_bg_color = [222, 237, 230]
@@ -96,9 +95,9 @@ class FieldEdit(wx.Panel):
         grid_sizer = wx.GridBagSizer(2, 2) # vgap, hgap
         sizer.Add(grid_sizer, 10, wx.CENTER | wx.ALL, 10)
 
-        widget_00 = wx.StaticText(self, wx.ID_ANY, self._description, style=0)
-        widget_00.SetForegroundColour(wx.Colour(*w_fg_color_1))
-        grid_sizer.Add(widget_00, (0, 0), (1, 2), wx.ALIGN_CENTER | wx.ALL, 6)
+        desc = wx.StaticText(self, wx.ID_ANY, self._description, style=0)
+        desc.SetForegroundColour(wx.Colour(*w_fg_color_1))
+        grid_sizer.Add(desc, (0, 0), (1, 2), wx.ALIGN_CENTER | wx.ALL, 6)
 
         edit_names = self._edit_names
         edit_names.insert(0, 'Choose the Page to Edit')
@@ -108,12 +107,12 @@ class FieldEdit(wx.Panel):
         combo_box.SetForegroundColour(wx.Colour(*w_fg_color_0))
         combo_box.SetMinSize([196, 23])
         self.Bind(wx.EVT_COMBOBOX,
-                  self.selection_closure(edit_names, sizer, w_fg_color_0),
-                  combo_box)
+                  self.selection_closure(
+                      edit_names, grid_sizer, w_fg_color_0, 2), combo_box)
         grid_sizer.Add(combo_box, (1, 0), (1, 1),
                        wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-    def selection_closure(self, edit_names, sizer, fg_color):
+    def selection_closure(self, edit_names, grid_sizer, fg_color, y_pos):
         def get_selection(event):
             panel = event.GetString().lower()
             panel_labels = []
@@ -127,26 +126,25 @@ class FieldEdit(wx.Panel):
                     args = self._find_dict(value).get('args', [])
                     panel_labels.append(args[2])
 
-            self._create_panel(sizer, panel_labels, fg_color)
+            self._create_panel(grid_sizer, panel_labels, fg_color, y_pos)
 
         return get_selection
 
-    def _create_panel(self, sizer, panel_labels, fg_color):
-        if self.panel: self.panel.Destroy()
-        self.panel = wx.Panel(self)
-        self.panel.Layout()
-        sizer.Add(self.panel, 1, wx.EXPAND | wx.ALL, 6)
-        # Create sizers for new panel.
-        p_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.panel.SetSizer(p_sizer)
-        p_grid_sizer = wx.GridBagSizer(2, 2) # vgap, hgap
-        p_sizer.Add(p_grid_sizer, 10, wx.EXPAND | wx.ALL, 10)
+    def _create_panel(self, grid_sizer, panel_labels, fg_color, y_pos):
+        num_items = grid_sizer.GetItemCount()
+
+        for idx, child in enumerate(grid_sizer.GetChildren()):
+            if idx >= y_pos:
+                widget = child.GetWindow()
+                widget.SetForegroundColour(wx.Colour(*self._bg_color))
+
+        [grid_sizer.Remove(x) for x in range(num_items)[::-1] if x >= y_pos]
         buff = StringIO()
         buff.write("def created_panel(self, grid_sizer):\n")
 
         for idx, label in enumerate(panel_labels):
             widget = f"widget_{idx:02}"
-            buff.write(f"    {widget} = wx.StaticText(self.panel, "
+            buff.write(f"    {widget} = wx.StaticText(self, "
                        f"wx.ID_ANY, '''{label}''')\n")
 
             if label.endswith(':'):
@@ -163,16 +161,16 @@ class FieldEdit(wx.Panel):
             buff.write(f"    {widget}.SetMinSize((-1, 23))\n")
             buff.write(f"    {widget}.SetForegroundColour(wx.Colour("
                        f"*{fg_color}))\n")
-            buff.write(f"    grid_sizer.Add({widget}, ({idx}, 0), (1, 1), "
-                       "wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | "
-                       "wx.TOP, 6)\n")
+            buff.write(f"    grid_sizer.Add({widget}, ({idx + y_pos}, 0), "
+                       "(1, 1), wx.ALIGN_CENTER_VERTICAL | wx.LEFT | "
+                       "wx.RIGHT | wx.TOP, 6)\n")
 
         code = buff.getvalue()
         buff.close()
         print(code)
         exec(code)
         FieldEdit.created_panel = locals().get('created_panel')
-        self.created_panel(p_grid_sizer)
+        self.created_panel(grid_sizer)
 
     def _find_dict(self, value):
         for item in value:

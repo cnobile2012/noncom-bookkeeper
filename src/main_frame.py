@@ -409,6 +409,15 @@ class MainFrame(MenuBar, wx.Frame):
                 self.__panel_classes[panel] = eval(class_name)(self)
 
     def set_size(self, size, key='size'):
+        """
+        Sets the size of the Frame.
+
+        :param size: The size to set as (width, height).
+        :type size: Tuple or List
+        :param key: The key in the TOML config file. Can be 'size' or
+                    'default'. The default is 'size'.
+        :type key: str
+        """
         value = self._tac.get_value('app_size', key)
         self.SetSize(wx.Size(value if value else size))
 
