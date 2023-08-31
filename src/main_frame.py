@@ -361,7 +361,7 @@ class MainFrame(MenuBar, wx.Frame):
 
     def __init__(self, parent=None, id=wx.ID_ANY,
                  pos=wx.DefaultPosition,
-                 style=wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL):
+                 style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL):
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         super().__init__(parent, id=id, pos=pos, style=style)
@@ -394,7 +394,7 @@ class MainFrame(MenuBar, wx.Frame):
         self.SetSizer(self.__box_sizer)
         self.Layout()
         self.SetAutoLayout(True)
-        self.Center(wx.BOTH)
+        #self.Center()
         sf = PanelFactory()
         sf.parse()
         panel_names = sf.class_name_keys

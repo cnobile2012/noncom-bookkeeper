@@ -31,7 +31,7 @@ class ShortCuts(wx.Frame):
             10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_NORMAL, 0, "Courier Prime"))
         self.sizer.Add(self.short_cut_text, 1,
-                       wx.ALL|wx.EXPAND|wx.LEFT|wx.RIGHT, 6)
+                       wx.ALL | wx.EXPAND | wx.LEFT | wx.RIGHT, 6)
         dismiss = wx.Button(self, id=wx.ID_OK, label="&Dismiss")
         dismiss.Bind(wx.EVT_BUTTON, self.close_frame)
         self.sizer.Add(dismiss, 0, wx.ALL|wx.ALIGN_CENTER,5)
@@ -91,10 +91,14 @@ class FieldEdit(wx.ScrolledWindow):
         w_fg_color_0 = [50, 50, 204]
         w_fg_color_1 = [197, 75, 108]
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(sizer)
-        grid_sizer = wx.GridBagSizer(2, 2) # vgap, hgap
-        sizer.Add(grid_sizer, 10, wx.CENTER | wx.ALL, 10)
+
+        #sizer = wx.BoxSizer(wx.VERTICAL)
+        #self.SetSizer(sizer)
+
+        grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
+        self.SetSizer(grid_sizer)
+
+        #sizer.Add(grid_sizer, 10, wx.CENTER | wx.ALL, 10)
 
         desc = wx.StaticText(self, wx.ID_ANY, self._description, style=0)
         desc.SetForegroundColour(wx.Colour(*w_fg_color_1))
@@ -131,9 +135,8 @@ class FieldEdit(wx.ScrolledWindow):
                     args = self._find_dict(value).get('args', [])
                     panel_labels.append(args[2])
 
-            kwargs['panel_labels'] = panel_labels
-            self._create_panel(**kwargs)
-            self.parent.Layout()
+                kwargs['panel_labels'] = panel_labels
+                self._create_panel(**kwargs)
 
         return get_selection
 
