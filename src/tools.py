@@ -9,6 +9,7 @@ from io import StringIO
 from pprint import pprint # *** TODO *** Remove later
 
 import wx
+from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData
 
@@ -75,7 +76,8 @@ class ShortCuts(wx.Frame):
         self.short_cut_text.SetLabel(text)
 
 
-class FieldEdit(wx.ScrolledWindow):
+#class FieldEdit(wx.ScrolledWindow):
+class FieldEdit(ScrolledPanel):
     """
     Add or remove fields in various panels.
     """
@@ -91,14 +93,12 @@ class FieldEdit(wx.ScrolledWindow):
         w_fg_color_0 = [50, 50, 204]
         w_fg_color_1 = [197, 75, 108]
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
-
-        #sizer = wx.BoxSizer(wx.VERTICAL)
-        #self.SetSizer(sizer)
-
+        # Setup sizers.
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(sizer)
         grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
-        self.SetSizer(grid_sizer)
-
-        #sizer.Add(grid_sizer, 10, wx.CENTER | wx.ALL, 10)
+        sizer.Add(grid_sizer, 10, wx.CENTER | wx.ALL, 10)
+        self.Bind(wx.EVT_SIZE, self.resize_closure(sizer), self)
 
         desc = wx.StaticText(self, wx.ID_ANY, self._description, style=0)
         desc.SetForegroundColour(wx.Colour(*w_fg_color_1))
@@ -195,6 +195,20 @@ class FieldEdit(wx.ScrolledWindow):
                 item = {}
 
         return item
+
+    def resize_closure(self, sizer):
+        def on_size_change(event):
+            size = self.parent.GetSize()
+            self.SetSize(*size)
+            # Fit child elements
+            sizer.FitInside(self.parent)
+            # Resize layout
+            self.Layout()
+            # Resize scrolling
+            self.SetupScrolling(scrollIntoView=True, scrollToTop=False)
+            self.Refresh()
+
+        return on_size_change
 
     @property
     def _description(self):

@@ -10,11 +10,12 @@ from .config import TomlMetaData
 
 import wx
 import wx.adv
+from wx.lib.scrolledpanel import ScrolledPanel
 # https://pwwang.github.io/python-varname/
 #from varname import varname, nameof
 
 
-class BasePanel(wx.ScrolledWindow):
+class BasePanel(ScrolledPanel):
 
     def __init__(self, parent, id=wx.ID_ANY, **kwargs):
         kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
