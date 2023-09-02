@@ -151,6 +151,7 @@ widget_53 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 title = 'Monthly Specific Settings'
 bg_color = [247, 246, 207]
 w_bg_color_1 = [222, 237, 230]
+w_bg_color_2 = [50, 50, 204]
 w_fg_color_1 = [50, 50, 204]
 font = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
 
@@ -161,7 +162,7 @@ sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
 [month.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated monthly.'], min=[-1, 23], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[0, 0], span=[1, 2]}]
 
-widget_01 = ['StaticLine', 'w_fg_color_1', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6], pos=[1, 0], span=[1, 2]}]
+widget_01 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6], pos=[1, 0], span=[1, 2]}]
 
 widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'], style='TE_READONLY', min=[196, 23], add=[0, 'ALIGN_BOTTOM | LEFT | TOP', 6], pos=[2, 0], span=[1, 1]}]
 
@@ -176,7 +177,7 @@ widget_11 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 
 widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields do not change often and the\ndefaults can be accepted.'], min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[7, 0], span=[1, 2]}]
 
-widget_13 = ['StaticLine', 'w_fg_color_1', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6], pos=[8, 0], span=[1, 2]}]
+widget_13 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | LEFT | RIGHT | BOTTOM', 6], pos=[8, 0], span=[1, 2]}]
 
 widget_14 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Total Membership:'], min=[-1, 23], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[9, 0], span=[1, 1]}]
 widget_15 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[50, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[9, 1], span=[1, 1]}]

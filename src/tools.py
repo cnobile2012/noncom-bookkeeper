@@ -115,10 +115,27 @@ class FieldEdit(ScrolledPanel):
         combo_box.SetMinSize([196, 23])
         kwargs = {'edit_names': edit_names, 'grid_sizer': grid_sizer,
                   'w_fg_color_0': w_fg_color_0, 'w_fg_color_1': w_fg_color_1,
-                  'y_pos': 2}
+                  'y_pos': 4} # y_pos = number of hard coded fields.
         self.Bind(wx.EVT_COMBOBOX, self.selection_closure(**kwargs), combo_box)
         grid_sizer.Add(combo_box, (1, 0), (1, 1),
                        wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+
+        field_desc = wx.StaticText(self, wx.ID_ANY,
+                                   "Enter a new field name:", style=0)
+        field_desc.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        field_desc.SetFont(
+            wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                    wx.FONTWEIGHT_BOLD, 0, ''))
+        grid_sizer.Add(field_desc, (2, 0), (1, 1), wx.LEFT | wx.ALL, 6)
+        field_name = wx.TextCtrl(self,  wx.ID_ANY, "", style=wx.TE_LEFT)
+        field_name.SetBackgroundColour(wx.Colour(*w_bg_color))
+        field_name.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        field_name.SetMinSize((200, 23))
+        grid_sizer.Add(field_name, (2, 1), (1, 1), wx.LEFT | wx.ALL, 6)
+
+        line = wx.StaticLine(self, wx.ID_ANY)
+        line.SetBackgroundColour(wx.Colour(*w_fg_color_0))
+        grid_sizer.Add(line, (3, 0), (1, 2), wx.EXPAND | wx.LEFT | wx.BOTTOM, 6)
 
     def selection_closure(self, **kwargs):
         def get_selection(event):
@@ -205,7 +222,8 @@ class FieldEdit(ScrolledPanel):
             # Resize layout
             self.Layout()
             # Resize scrolling
-            self.SetupScrolling(scrollIntoView=True, scrollToTop=False)
+            #self.SetupScrolling(scrollIntoView=True, scrollToTop=False)
+            self.SetScrollbars(10, 10, *size)
             self.Refresh()
 
         return on_size_change
