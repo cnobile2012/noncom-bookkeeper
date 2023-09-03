@@ -135,16 +135,17 @@ class FieldEdit(ScrolledPanel):
 
         line = wx.StaticLine(self, wx.ID_ANY)
         line.SetBackgroundColour(wx.Colour(*w_fg_color_0))
-        grid_sizer.Add(line, (3, 0), (1, 2), wx.EXPAND | wx.LEFT | wx.BOTTOM, 6)
+        grid_sizer.Add(line, (3, 0), (1, 2), wx.EXPAND | wx.BOTTOM, 2)
 
     def selection_closure(self, **kwargs):
         def get_selection(event):
-            panel = event.GetString().lower()
             edit_names = kwargs['edit_names']
+            chosen = event.GetString().lower()
             panel_labels = []
 
-            if edit_names[0].lower() != panel:
-                items = self.tmd.panel_config.get(panel, {}).get('widgets', {})
+            if edit_names[0].lower() != chosen:
+                items = self.tmd.panel_config.get(
+                    chosen, {}).get('widgets', {})
 
                 for value in items.values():
                     if (not isinstance(value, list)
@@ -154,6 +155,8 @@ class FieldEdit(ScrolledPanel):
 
                 kwargs['panel_labels'] = panel_labels
                 self._create_panel(**kwargs)
+            else:
+                self._remove_widgets(**kwargs)
 
         return get_selection
 
@@ -163,14 +166,7 @@ class FieldEdit(ScrolledPanel):
         w_fg_color_0 = kwargs['w_fg_color_0']
         w_fg_color_1 = kwargs['w_fg_color_1']
         panel_labels = kwargs['panel_labels']
-        num_items = grid_sizer.GetItemCount()
-
-        for idx, child in enumerate(grid_sizer.GetChildren()):
-            if idx >= y_pos:
-                widget = child.GetWindow()
-                widget.SetForegroundColour(wx.Colour(*self._bg_color))
-
-        [grid_sizer.Remove(x) for x in range(num_items)[::-1] if x >= y_pos]
+        self._remove_widgets(**kwargs)
         buff = StringIO()
         buff.write("def created_panel(self, grid_sizer):\n")
 
@@ -180,12 +176,14 @@ class FieldEdit(ScrolledPanel):
                        f"wx.ID_ANY, '''{label}''')\n")
 
             if label.endswith(':'):
+                span = 1
                 buff.write(f"    {widget}.SetFont(wx.Font(10, "
                            "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                            "wx.FONTWEIGHT_BOLD, 0, ''))\n")
                 buff.write(f"    {widget}.SetForegroundColour(wx.Colour("
                            f"*{w_fg_color_0}))\n")
             else:
+                span = 2
                 buff.write(f"    {widget}.SetFont(wx.Font(12, "
                            "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                            "wx.FONTWEIGHT_BOLD, 0, ''))\n")
@@ -194,8 +192,9 @@ class FieldEdit(ScrolledPanel):
 
             buff.write(f"    {widget}.SetMinSize((-1, 23))\n")
             buff.write(f"    grid_sizer.Add({widget}, ({idx + y_pos}, 0), "
-                       "(1, 1), wx.ALIGN_CENTER_VERTICAL | wx.LEFT | "
+                       f"(1, {span}), wx.ALIGN_CENTER_VERTICAL | wx.LEFT | "
                        "wx.RIGHT | wx.TOP, 6)\n")
+            buff.write("    self.Layout()\n")
 
         code = buff.getvalue()
         buff.close()
@@ -203,6 +202,19 @@ class FieldEdit(ScrolledPanel):
         exec(code)
         FieldEdit.created_panel = locals().get('created_panel')
         self.created_panel(grid_sizer)
+
+    def _remove_widgets(self, **kwargs):
+        grid_sizer = kwargs['grid_sizer']
+        y_pos = kwargs['y_pos']
+        num_items = grid_sizer.GetItemCount()
+        children = grid_sizer.GetChildren()
+
+        for idx, child in enumerate(children):
+            if idx >= y_pos:
+                widget = child.GetWindow()
+                widget.SetForegroundColour(wx.Colour(*self._bg_color))
+
+        [grid_sizer.Remove(x) for x in range(num_items)[::-1] if x >= y_pos]
 
     def _find_dict(self, value):
         for item in value:
@@ -215,16 +227,16 @@ class FieldEdit(ScrolledPanel):
 
     def resize_closure(self, sizer):
         def on_size_change(event):
-            size = self.parent.GetSize()
-            self.SetSize(*size)
+            #size = self.GetSize()
+            #self.parent.SetSize(*size)
             # Fit child elements
-            sizer.FitInside(self.parent)
-            # Resize layout
-            self.Layout()
+            #sizer.FitInside(self.parent)
             # Resize scrolling
+            #r = self.GetScrollRange(wx.VERTICAL)
+            #self.Scroll(0, r)
             #self.SetupScrolling(scrollIntoView=True, scrollToTop=False)
-            self.SetScrollbars(10, 10, *size)
-            self.Refresh()
+            #self.Refresh()
+            self.Layout()
 
         return on_size_change
 
