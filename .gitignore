@@ -8,6 +8,7 @@ __pycache__/
 *#*#
 .DS_Store
 *.txt
+*.bak
 !LICENSE.txt
 !requirements/*.txt
 *.pdf

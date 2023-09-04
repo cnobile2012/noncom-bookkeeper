@@ -195,7 +195,8 @@ class FieldEdit(ScrolledPanel):
             grid_sizer.Add(
                 widget, (idx + y_pos, 0), (1, span),
                 wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.TOP, 6)
-            self.Layout()
+
+        self.Layout()
 
     def _remove_widgets(self, **kwargs):
         grid_sizer = kwargs['grid_sizer']
