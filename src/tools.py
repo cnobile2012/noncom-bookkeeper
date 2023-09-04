@@ -141,7 +141,7 @@ class FieldEdit(ScrolledPanel):
         def get_selection(event):
             edit_names = kwargs['edit_names']
             chosen = event.GetString().lower()
-            panel_labels = []
+            widget_labels = []
 
             if edit_names[0].lower() != chosen:
                 items = self.tmd.panel_config.get(
@@ -151,9 +151,9 @@ class FieldEdit(ScrolledPanel):
                     if (not isinstance(value, list)
                         or value[0] != 'StaticText'): continue
                     args = self._find_dict(value).get('args', [])
-                    panel_labels.append(args[2])
+                    widget_labels.append(args[2])
 
-                kwargs['panel_labels'] = panel_labels
+                kwargs['widget_labels'] = widget_labels
                 self._create_panel(**kwargs)
             else:
                 self._remove_widgets(**kwargs)
@@ -165,43 +165,37 @@ class FieldEdit(ScrolledPanel):
         grid_sizer = kwargs['grid_sizer']
         w_fg_color_0 = kwargs['w_fg_color_0']
         w_fg_color_1 = kwargs['w_fg_color_1']
-        panel_labels = kwargs['panel_labels']
+        widget_labels = kwargs['widget_labels']
         self._remove_widgets(**kwargs)
-        buff = StringIO()
-        buff.write("def created_panel(self, grid_sizer):\n")
 
-        for idx, label in enumerate(panel_labels):
-            widget = f"widget_{idx:02}"
-            buff.write(f"    {widget} = wx.StaticText(self, "
-                       f"wx.ID_ANY, '''{label}''')\n")
+        for idx, label in enumerate(widget_labels):
+            label = label.replace(r'\n', '\n')
+            widget = setattr(self, f"widget_{idx:02}", None)
+            widget = wx.StaticText(self, wx.ID_ANY, label)
 
             if label.endswith(':'):
                 span = 1
-                buff.write(f"    {widget}.SetFont(wx.Font(10, "
-                           "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
-                           "wx.FONTWEIGHT_BOLD, 0, ''))\n")
-                buff.write(f"    {widget}.SetForegroundColour(wx.Colour("
-                           f"*{w_fg_color_0}))\n")
+                weight = 10
+                color = w_fg_color_0
             else:
                 span = 2
-                buff.write(f"    {widget}.SetFont(wx.Font(12, "
-                           "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
-                           "wx.FONTWEIGHT_BOLD, 0, ''))\n")
-                buff.write(f"    {widget}.SetForegroundColour(wx.Colour("
-                           f"*{w_fg_color_1}))\n")
+                weight = 12
+                color = w_fg_color_1
 
-            buff.write(f"    {widget}.SetMinSize((-1, 23))\n")
-            buff.write(f"    grid_sizer.Add({widget}, ({idx + y_pos}, 0), "
-                       f"(1, {span}), wx.ALIGN_CENTER_VERTICAL | wx.LEFT | "
-                       "wx.RIGHT | wx.TOP, 6)\n")
-            buff.write("    self.Layout()\n")
+            if '\n' in label:
+                width = 46
+            else:
+                width = 23
 
-        code = buff.getvalue()
-        buff.close()
-        print(code) # *** TODO *** Remove later
-        exec(code)
-        FieldEdit.created_panel = locals().get('created_panel')
-        self.created_panel(grid_sizer)
+            widget.SetFont(wx.Font(
+                weight, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                wx.FONTWEIGHT_BOLD, 0, ''))
+            widget.SetForegroundColour(wx.Colour(*color))
+            widget.SetMinSize((-1, width))
+            grid_sizer.Add(
+                widget, (idx + y_pos, 0), (1, span),
+                wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.TOP, 6)
+            self.Layout()
 
     def _remove_widgets(self, **kwargs):
         grid_sizer = kwargs['grid_sizer']
