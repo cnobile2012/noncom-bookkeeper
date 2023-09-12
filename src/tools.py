@@ -96,7 +96,7 @@ class FieldEdit(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
         # Setup panels.
-        arg_dict = {'g_sizer': sizer, 'bg_color': self._bg_color,
+        arg_dict = {'parent_sizer': sizer, 'bg_color': self._bg_color,
                     'w_bg_color': w_bg_color, 'w_fg_color_0': w_fg_color_0,
                     'w_fg_color_1': w_fg_color_1}
         panel_top = self._panel_top(arg_dict)
@@ -192,8 +192,9 @@ class FieldEdit(wx.Panel):
                 widget, (idx, 0), (1, span),
                 wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
-        arg_dict['panel'] = panel
+        self.Bind(wx.EVT_SIZE, self.resize_closure(panel, grid_sizer))
         #print(f"Bottom panel size: {panel.GetSize()}")
+        arg_dict['panel'] = panel
         return panel
 
     def selection_closure(self, arg_dict):
@@ -216,34 +217,33 @@ class FieldEdit(wx.Panel):
                 self._create_widgets(arg_dict)
             else:
                 self._destroy_panel(arg_dict.get('panel'),
-                                    arg_dict.get('g_sizer'))
+                                    arg_dict.get('parent_sizer'))
 
         return get_selection
 
     def _create_widgets(self, arg_dict):
-        g_sizer = arg_dict['g_sizer']
+        parent_sizer = arg_dict['parent_sizer']
         panel = arg_dict.get('panel')
         # Destroy previous panel if it exists.
-        self._destroy_panel(panel, g_sizer)
+        self._destroy_panel(panel, parent_sizer)
         # Create new panel.
         panel = self._panel_bot(arg_dict)
-        g_sizer.Add(panel, 0, wx.EXPAND | wx.ALL, 6)
+        parent_sizer.Add(panel, 0, wx.EXPAND | wx.ALL, 6)
         wx.CallLater(100, panel.SetupScrolling, rate_x=10, rate_y=10)
-        self.Bind(wx.EVT_SIZE, self.resize_closure(g_sizer, panel))
 
-    def _destroy_panel(self, panel, g_sizer):
-        if g_sizer and panel:
-            g_sizer.Remove(1)
+    def _destroy_panel(self, panel, parent_sizer):
+        if panel and parent_sizer:
+            parent_sizer.Remove(1)
             panel.Destroy()
-            g_sizer.Layout()
+            parent_sizer.Layout()
 
-    def resize_closure(self, sizer, panel):
+    def resize_closure(self, panel, grid_sizer):
         def on_size_change(event):
-            width, height = sizer.GetMinSize()
-            panel.SetSizeHints(width, height)
-            #print(f"Sizer         width: {width}, height: {height}")
-            #width, height = panel.GetClientSize()
-            #print(f"Bottom Panel  width: {width}, height: {height}")
+            width, height = grid_sizer.GetSize()
+            #width, height = panel.GetSize()
+
+            if not width <= 1 or not height <= 1:
+                panel.SetSizeHints(width, height)
 
         return on_size_change
 
