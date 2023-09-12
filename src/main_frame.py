@@ -403,7 +403,7 @@ class MainFrame(MenuBar, wx.Frame):
             code = sf.get_panel_code(panel)
 
             if code:
-                print(code)   # *** TODO *** Remove later
+                #print(code)   # *** TODO *** Remove later
                 exec(code)
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = eval(class_name)(self)

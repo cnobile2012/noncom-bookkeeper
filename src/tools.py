@@ -22,11 +22,12 @@ class ShortCuts(wx.Frame):
 
     def __init__(self, parent, title="Short Cuts"):
         super().__init__(parent, title=title)
+        w_fg_color_0 = (50, 50, 204)
         old_style = self.GetWindowStyle()
         self.SetWindowStyle(old_style | wx.STAY_ON_TOP)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, "")
-        self.short_cut_text.SetForegroundColour(wx.Colour(50, 50, 204))
+        self.short_cut_text.SetForegroundColour(wx.Colour(*w_fg_color_0))
         self.set_text(parent)
         self.short_cut_text.SetFont(wx.Font(
             10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
@@ -76,8 +77,7 @@ class ShortCuts(wx.Frame):
         self.short_cut_text.SetLabel(text)
 
 
-#class FieldEdit(wx.ScrolledWindow):
-class FieldEdit(ScrolledPanel):
+class FieldEdit(wx.Panel):
     """
     Add or remove fields in various panels.
     """
@@ -86,92 +86,88 @@ class FieldEdit(ScrolledPanel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        self.SetScrollRate(10, 10)
         self.title = '''Add/Remove Fields'''
-        self._bg_color = [232, 213, 149]
-        w_bg_color = [222, 237, 230]
-        w_fg_color_0 = [50, 50, 204]
-        w_fg_color_1 = [197, 75, 108]
+        self._bg_color = (232, 213, 149)
+        w_bg_color = (222, 237, 230)
+        w_fg_color_0 = (50, 50, 204)
+        w_fg_color_1 = (197, 75, 108)
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
         # Setup sizers.
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
-        grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
-        sizer.Add(grid_sizer, 10, wx.CENTER | wx.ALL, 10)
-        self.Bind(wx.EVT_SIZE, self.resize_closure(sizer), self)
+        # Setup panels.
+        arg_dict = {'g_sizer': sizer, 'bg_color': self._bg_color,
+                    'w_bg_color': w_bg_color, 'w_fg_color_0': w_fg_color_0,
+                    'w_fg_color_1': w_fg_color_1}
+        panel_top = self._panel_top(arg_dict)
+        sizer.Add(panel_top, 0, wx.EXPAND | wx.ALL, 6)
 
-        desc = wx.StaticText(self, wx.ID_ANY, self._description, style=0)
+    def _panel_top(self, arg_dict):
+        panel = wx.Panel(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        panel.SetSizer(sizer)
+        grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
+        sizer.Add(grid_sizer, 0, wx.CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 6)
+        w_bg_color = arg_dict['w_bg_color']
+        w_fg_color_0 = arg_dict['w_fg_color_0']
+        w_fg_color_1 = arg_dict['w_fg_color_1']
+        desc = wx.StaticText(panel, wx.ID_ANY, self._description, style=0)
         desc.SetForegroundColour(wx.Colour(*w_fg_color_1))
         desc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD, 0, ''))
-        grid_sizer.Add(desc, (0, 0), (1, 2), wx.ALIGN_CENTER | wx.ALL, 6)
+        grid_sizer.Add(desc, (0, 0), (1, 3), wx.ALIGN_CENTER | wx.ALL, 6)
 
         edit_names = self._edit_names
+        arg_dict['edit_names'] = edit_names
         edit_names.insert(0, 'Choose the Page to Edit')
-        combo_box = wx.ComboBox(self, wx.ID_ANY, value=edit_names[0],
+        combo_box = wx.ComboBox(panel, wx.ID_ANY, value=edit_names[0],
                                 choices=edit_names, style=wx.TE_READONLY)
         combo_box.SetBackgroundColour(wx.Colour(*w_bg_color))
         combo_box.SetForegroundColour(wx.Colour(*w_fg_color_0))
-        combo_box.SetMinSize([196, 23])
-        kwargs = {'edit_names': edit_names, 'grid_sizer': grid_sizer,
-                  'w_fg_color_0': w_fg_color_0, 'w_fg_color_1': w_fg_color_1,
-                  'y_pos': 4} # y_pos = number of hard coded fields.
-        self.Bind(wx.EVT_COMBOBOX, self.selection_closure(**kwargs), combo_box)
+        combo_box.SetMinSize((196, 23))
+        self.Bind(wx.EVT_COMBOBOX, self.selection_closure(arg_dict), combo_box)
         grid_sizer.Add(combo_box, (1, 0), (1, 1),
                        wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-        field_desc = wx.StaticText(self, wx.ID_ANY,
-                                   "Enter a new field name:", style=0)
+        field_desc = wx.StaticText(panel, wx.ID_ANY, "Enter a new field name:",
+                                   style=0)
         field_desc.SetForegroundColour(wx.Colour(*w_fg_color_0))
         field_desc.SetFont(
             wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                     wx.FONTWEIGHT_BOLD, 0, ''))
-        grid_sizer.Add(field_desc, (2, 0), (1, 1), wx.LEFT | wx.ALL, 6)
-        field_name = wx.TextCtrl(self,  wx.ID_ANY, "", style=wx.TE_LEFT)
+        grid_sizer.Add(field_desc, (2, 0), (1, 1), wx.ALL, 6)
+
+        field_name = wx.TextCtrl(panel,  wx.ID_ANY, "", style=wx.TE_LEFT)
         field_name.SetBackgroundColour(wx.Colour(*w_bg_color))
         field_name.SetForegroundColour(wx.Colour(*w_fg_color_0))
         field_name.SetMinSize((200, 23))
-        grid_sizer.Add(field_name, (2, 1), (1, 1), wx.LEFT | wx.ALL, 6)
+        grid_sizer.Add(field_name, (2, 1), (1, 1), wx.ALL, 6)
+        add_button = wx.Button(panel,  wx.ID_ANY, "Add")
+        add_button.SetMinSize((50, 23))
+        add_button.SetBackgroundColour(wx.Colour(*w_bg_color))
+        add_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        add_button.Bind(wx.EVT_BUTTON, self.add_button)
+        grid_sizer.Add(add_button, (2, 2), (1, 1), wx.ALL, 6)
 
-        line = wx.StaticLine(self, wx.ID_ANY)
+        line = wx.StaticLine(panel, wx.ID_ANY)
         line.SetBackgroundColour(wx.Colour(*w_fg_color_0))
-        grid_sizer.Add(line, (3, 0), (1, 2), wx.EXPAND | wx.BOTTOM, 2)
+        grid_sizer.Add(line, (3, 0), (1, 3), wx.EXPAND, 0)
+        #print(f"Top panel size: {panel.GetSize()}")
+        return panel
 
-    def selection_closure(self, **kwargs):
-        def get_selection(event):
-            edit_names = kwargs['edit_names']
-            chosen = event.GetString().lower()
-            widget_labels = []
-
-            if edit_names[0].lower() != chosen:
-                items = self.tmd.panel_config.get(
-                    chosen, {}).get('widgets', {})
-
-                for value in items.values():
-                    if (not isinstance(value, list)
-                        or value[0] != 'StaticText'): continue
-                    args = self._find_dict(value).get('args', [])
-                    widget_labels.append(args[2])
-
-                kwargs['widget_labels'] = widget_labels
-                self._create_panel(**kwargs)
-            else:
-                self._remove_widgets(**kwargs)
-
-        return get_selection
-
-    def _create_panel(self, **kwargs):
-        y_pos = kwargs['y_pos']
-        grid_sizer = kwargs['grid_sizer']
-        w_fg_color_0 = kwargs['w_fg_color_0']
-        w_fg_color_1 = kwargs['w_fg_color_1']
-        widget_labels = kwargs['widget_labels']
-        self._remove_widgets(**kwargs)
+    def _panel_bot(self, arg_dict):
+        panel = ScrolledPanel(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        panel.SetSizer(sizer)
+        grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
+        sizer.Add(grid_sizer, 0, wx.CENTER | wx.ALL, 6)
+        w_fg_color_0 = arg_dict['w_fg_color_0']
+        w_fg_color_1 = arg_dict['w_fg_color_1']
+        widget_labels = arg_dict['widget_labels']
 
         for idx, label in enumerate(widget_labels):
             label = label.replace(r'\n', '\n')
-            widget = setattr(self, f"widget_{idx:02}", None)
-            widget = wx.StaticText(self, wx.ID_ANY, label)
+            widget = wx.StaticText(panel, wx.ID_ANY, label)
 
             if label.endswith(':'):
                 span = 1
@@ -193,23 +189,66 @@ class FieldEdit(ScrolledPanel):
             widget.SetForegroundColour(wx.Colour(*color))
             widget.SetMinSize((-1, width))
             grid_sizer.Add(
-                widget, (idx + y_pos, 0), (1, span),
-                wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.TOP, 6)
+                widget, (idx, 0), (1, span),
+                wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
-        self.Layout()
+        arg_dict['panel'] = panel
+        #print(f"Bottom panel size: {panel.GetSize()}")
+        return panel
 
-    def _remove_widgets(self, **kwargs):
-        grid_sizer = kwargs['grid_sizer']
-        y_pos = kwargs['y_pos']
-        num_items = grid_sizer.GetItemCount()
-        children = grid_sizer.GetChildren()
+    def selection_closure(self, arg_dict):
+        def get_selection(event):
+            edit_names = arg_dict['edit_names']
+            chosen = event.GetString().lower()
+            widget_labels = []
 
-        for idx, child in enumerate(children):
-            if idx >= y_pos:
-                widget = child.GetWindow()
-                widget.SetForegroundColour(wx.Colour(*self._bg_color))
+            if edit_names[0].lower() != chosen:
+                items = self.tmd.panel_config.get(
+                    chosen, {}).get('widgets', {})
 
-        [grid_sizer.Remove(x) for x in range(num_items)[::-1] if x >= y_pos]
+                for value in items.values():
+                    if (not isinstance(value, list)
+                        or value[0] != 'StaticText'): continue
+                    args = self._find_dict(value).get('args', [])
+                    widget_labels.append(args[2])
+
+                arg_dict['widget_labels'] = widget_labels
+                self._create_widgets(arg_dict)
+            else:
+                self._destroy_panel(arg_dict.get('panel'),
+                                    arg_dict.get('g_sizer'))
+
+        return get_selection
+
+    def _create_widgets(self, arg_dict):
+        g_sizer = arg_dict['g_sizer']
+        panel = arg_dict.get('panel')
+        # Destroy previous panel if it exists.
+        self._destroy_panel(panel, g_sizer)
+        # Create new panel.
+        panel = self._panel_bot(arg_dict)
+        g_sizer.Add(panel, 0, wx.EXPAND | wx.ALL, 6)
+        wx.CallLater(100, panel.SetupScrolling, rate_x=10, rate_y=10)
+        self.Bind(wx.EVT_SIZE, self.resize_closure(g_sizer, panel))
+
+    def _destroy_panel(self, panel, g_sizer):
+        if g_sizer and panel:
+            g_sizer.Remove(1)
+            panel.Destroy()
+            g_sizer.Layout()
+
+    def resize_closure(self, sizer, panel):
+        def on_size_change(event):
+            width, height = sizer.GetMinSize()
+            panel.SetSizeHints(width, height)
+            #print(f"Sizer         width: {width}, height: {height}")
+            #width, height = panel.GetClientSize()
+            #print(f"Bottom Panel  width: {width}, height: {height}")
+
+        return on_size_change
+
+    def add_button(self, event):
+        print("Not wriiten yet.")
 
     def _find_dict(self, value):
         for item in value:
@@ -219,21 +258,6 @@ class FieldEdit(ScrolledPanel):
                 item = {}
 
         return item
-
-    def resize_closure(self, sizer):
-        def on_size_change(event):
-            #size = self.GetSize()
-            #self.parent.SetSize(*size)
-            # Fit child elements
-            #sizer.FitInside(self.parent)
-            # Resize scrolling
-            #r = self.GetScrollRange(wx.VERTICAL)
-            #self.Scroll(0, r)
-            #self.SetupScrolling(scrollIntoView=True, scrollToTop=False)
-            #self.Refresh()
-            self.Layout()
-
-        return on_size_change
 
     @property
     def _description(self):
@@ -251,9 +275,9 @@ class FieldEdit(ScrolledPanel):
         item_list = self.parent.menu_items.get('edit', [])
         item_names = []
 
-        if item_list: # Just incase the list is empty.
+        if item_list: # Just in case the list is empty.
             for item in item_list[-1].values():
-                if item: # Just incase we find a separator.
+                if item: # Just in case we find a separator.
                     name, tab, key = item[1].partition('\t')
                     if "Close All" in name: continue
                     item_names.append(name.lstrip('&'))
