@@ -146,7 +146,7 @@ class FieldEdit(wx.Panel):
         add_button.SetMinSize((50, 23))
         add_button.SetBackgroundColour(wx.Colour(*w_bg_color))
         add_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
-        add_button.Bind(wx.EVT_BUTTON, self.add_button)
+        add_button.Bind(wx.EVT_BUTTON, self.add_closuer(arg_dict))
         grid_sizer.Add(add_button, (2, 2), (1, 1), wx.ALL, 6)
 
         line = wx.StaticLine(panel, wx.ID_ANY)
@@ -195,6 +195,7 @@ class FieldEdit(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.resize_closure(panel, grid_sizer))
         #print(f"Bottom panel size: {panel.GetSize()}")
         arg_dict['panel'] = panel
+        arg_dict['grid_sizer'] = grid_sizer
         return panel
 
     def selection_closure(self, arg_dict):
@@ -240,15 +241,22 @@ class FieldEdit(wx.Panel):
     def resize_closure(self, panel, grid_sizer):
         def on_size_change(event):
             width, height = grid_sizer.GetSize()
-            #width, height = panel.GetSize()
 
             if not width <= 1 or not height <= 1:
                 panel.SetSizeHints(width, height)
 
         return on_size_change
 
-    def add_button(self, event):
-        print("Not wriiten yet.")
+    def add_closuer(self, arg_dict):
+        def add_button(event):
+            grid_sizer = arg_dict.get('grid_sizer')
+
+            if grid_sizer:
+                row_count = grid_sizer.GetRows()
+                print(f"Num of rows: {row_count}")
+                print(arg_dict['widget_labels'])
+
+        return add_button
 
     def _find_dict(self, value):
         for item in value:

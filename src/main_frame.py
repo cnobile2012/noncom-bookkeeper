@@ -265,7 +265,6 @@ class MenuBar:
         self.sizer.Add(self.panel, 1, wx.EXPAND)
         self.panel.Show()
         self.parent.SetTitle(self.panel.title)
-        self.parent.Layout() # This kind of fixes the disapearing scrollbars.
 
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
@@ -365,8 +364,6 @@ class MainFrame(MenuBar, wx.Frame):
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         super().__init__(parent, id=id, pos=pos, style=style)
-        size = (500, 800)
-        self.set_size(size)
         self.SetTitle(self.title)
         self.parent_bg_color = (128, 128, 128)
         self.SetBackgroundColour(wx.Colour(*self.parent_bg_color))
@@ -376,21 +373,23 @@ class MainFrame(MenuBar, wx.Frame):
         self.setup_resize_event()
 
         # Status Bar
-        status_widths = [-1, -1, -1]
-        frame_statusbar = self.CreateStatusBar(len(status_widths),
+        status_widths = [-1, -1]
+        self._statusbar = self.CreateStatusBar(len(status_widths),
                                                wx.STB_DEFAULT_STYLE)
-        frame_statusbar.SetStatusWidths(status_widths)
+        self._statusbar.SetStatusWidths(status_widths)
         # statusbar fields
-        ## self.frame_statusbar_fields = {
-        ##     'temp0': "frame_statusbar_0",
-        ##     'temp1': "frame_statusbar_1"
+        ## self.statusbar_fields = {
+        ##     'temp0': "statusbar_0",
+        ##     'temp1': "statusbar_1"
         ##     }
 
-        ## for idx, key in enumerate(self.frame_statusbar_fields.keys()):
-        ##     status = self.frame_statusbar_fields.get(key)
-        ##     frame_statusbar.SetStatusText(status, idx)
+        ## for idx, key in enumerate(self.statusbar_fields.keys()):
+        ##     status = self.statusbar_fields.get(key)
+        ##     statusbar.SetStatusText(status, idx)
         # End Status Bar
 
+        size = (500, 800)
+        self.set_size(size)
         self.SetSizer(self.__box_sizer)
         self.Layout()
         self.SetAutoLayout(True)
@@ -465,8 +464,12 @@ class MainFrame(MenuBar, wx.Frame):
     def sizer(self):
         return self.__box_sizer
 
+    @property
+    def statusbar_size(self):
+        return self._statusbar.GetSize()
+
     def add_status(self, key, status):
-        self.frame_statusbar_fields[key] = status
+        self.statusbar_fields[key] = status
 
     def remove_status(self, key):
-        self.frame_statusbar_fields.pop(key, None)
+        self.statusbar_fields.pop(key, None)

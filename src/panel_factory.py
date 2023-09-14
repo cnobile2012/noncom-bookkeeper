@@ -20,7 +20,6 @@ class BasePanel(ScrolledPanel):
     def __init__(self, parent, id=wx.ID_ANY, **kwargs):
         kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
         super().__init__(parent, id=id, **kwargs)
-        self.SetScrollRate(10, 10)
 
     @property
     def background_color(self):
@@ -131,7 +130,7 @@ class PanelFactory(TomlMetaData):
         if self.main_sizer:
             klass.write(f"        self.SetSizer({self.main_sizer})\n")
 
-        klass.write("        self.Layout()\n")
+        klass.write("        self.SetupScrolling(rate_x=10, rate_y=10)\n")
         klass.write("        self.Hide()\n")
         self.__panels[panel] = klass.getvalue()
         klass.close()

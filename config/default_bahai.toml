@@ -136,9 +136,9 @@ widget_43 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_44 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Membership (Biginning of Year):"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6], pos=[26, 0], span=[1, 1]}]
 widget_45 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 30], add=[0, 'ALIGN_CENTER_VERTICAL | RIGHT | TOP', 6], pos=[26, 1], span=[1, 1]}]
 
-widget_46 = ['StaticText', {args=['self', 'ID_ANY', ""], min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6], pos=[27, 1], span=[1, 2]}]
-widget_47 = ['StaticText', {args=['self', 'ID_ANY', ""], min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6], pos=[28, 1], span=[1, 2]}]
-widget_48 = ['StaticText', {args=['self', 'ID_ANY', ""], min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6], pos=[29, 1], span=[1, 2]}]
+#widget_46 = ['StaticText', {args=['self', 'ID_ANY', ""], min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6], pos=[27, 1], span=[1, 2]}]
+#widget_47 = ['StaticText', {args=['self', 'ID_ANY', ""], min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6], pos=[28, 1], span=[1, 2]}]
+#widget_48 = ['StaticText', {args=['self', 'ID_ANY', ""], min=[-1, 18], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT', 6], pos=[29, 1], span=[1, 2]}]
 
 [month]
 
