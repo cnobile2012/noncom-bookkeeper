@@ -12,6 +12,7 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData
+from .bases import BasePanel
 
 
 class ShortCuts(wx.Frame):
@@ -77,7 +78,7 @@ class ShortCuts(wx.Frame):
         self.short_cut_text.SetLabel(text)
 
 
-class FieldEdit(wx.Panel):
+class FieldEdit(BasePanel, wx.Panel):
     """
     Add or remove fields in various panels.
     """
@@ -100,6 +101,7 @@ class FieldEdit(wx.Panel):
                     'w_bg_color': w_bg_color, 'w_fg_color_0': w_fg_color_0,
                     'w_fg_color_1': w_fg_color_1}
         panel_top = self._panel_top(arg_dict)
+        arg_dict['panel_top'] = panel_top
         sizer.Add(panel_top, 0, wx.EXPAND | wx.ALL, 6)
 
     def _panel_top(self, arg_dict):
@@ -192,7 +194,8 @@ class FieldEdit(wx.Panel):
                 widget, (idx, 0), (1, span),
                 wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
-        self.Bind(wx.EVT_SIZE, self.resize_closure(panel, grid_sizer))
+        self.Bind(wx.EVT_SIZE, self.resize_closure(panel, grid_sizer,
+                                                   arg_dict['panel_top']))
         #print(f"Bottom panel size: {panel.GetSize()}")
         arg_dict['panel'] = panel
         arg_dict['grid_sizer'] = grid_sizer
@@ -230,6 +233,7 @@ class FieldEdit(wx.Panel):
         # Create new panel.
         panel = self._panel_bot(arg_dict)
         parent_sizer.Add(panel, 0, wx.EXPAND | wx.ALL, 6)
+        self._setup_sizer_height_correctly(arg_dict['grid_sizer'])
         wx.CallLater(100, panel.SetupScrolling, rate_x=10, rate_y=10)
 
     def _destroy_panel(self, panel, parent_sizer):
@@ -237,15 +241,6 @@ class FieldEdit(wx.Panel):
             parent_sizer.Remove(1)
             panel.Destroy()
             parent_sizer.Layout()
-
-    def resize_closure(self, panel, grid_sizer):
-        def on_size_change(event):
-            width, height = grid_sizer.GetSize()
-
-            if not width <= 1 or not height <= 1:
-                panel.SetSizeHints(width, height)
-
-        return on_size_change
 
     def add_closuer(self, arg_dict):
         def add_button(event):
@@ -257,6 +252,25 @@ class FieldEdit(wx.Panel):
                 print(arg_dict['widget_labels'])
 
         return add_button
+
+    def resize_closure(self, panel, grid_sizer, panel_top):
+        def on_size_change(event):
+            width, height = grid_sizer.GetMinSize()
+            tw, th = panel_top.GetSize()
+            height += self.parent.statusbar_size[1]
+            panel.SetSizeHints(tw, height)
+            mw, mh = self.GetSize()
+            bw, bh = panel.GetSize()
+            bh = mh - th
+            panel.SetSize(bw, bh)
+            panel.Refresh()
+            ## print(f"----------\nBottom Panel (SetSizeHints): {(tw, height)}")
+            ## print(f"Main Panel (GetSize): {self.GetSize()}")
+            ## print(f"Top Panel (GetSize): {panel_top.GetSize()}")
+            ## print(f"Bottom Panel (GetSize): {panel.GetSize()}")
+            ## print(f"Bottom Panel (SetSize): {(bw, bh)}")
+
+        return on_size_change
 
     def _find_dict(self, value):
         for item in value:
@@ -292,7 +306,3 @@ class FieldEdit(wx.Panel):
 
         item_names.sort()
         return item_names
-
-    @property
-    def background_color(self):
-        return self._bg_color

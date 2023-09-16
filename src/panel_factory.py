@@ -15,30 +15,6 @@ from wx.lib.scrolledpanel import ScrolledPanel
 #from varname import varname, nameof
 
 
-class BasePanel(ScrolledPanel):
-
-    def __init__(self, parent, id=wx.ID_ANY, **kwargs):
-        kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
-        super().__init__(parent, id=id, **kwargs)
-
-    @property
-    def background_color(self):
-        return self._bg_color
-
-    def locality_prefix(self, update):
-        def do_event(event):
-            rb = event.GetEventObject()
-            self._locality_prefix(rb, update)
-
-        return do_event
-
-    def _locality_prefix(self, rb, update):
-        selection = rb.GetStringSelection()
-        text = self.locale_prefix[selection.lower()]
-        prefix_widget = getattr(self, update)
-        prefix_widget.SetValue(text)
-
-
 class PanelFactory(TomlMetaData):
     """
     Parse the config data and create the panels.
@@ -74,7 +50,7 @@ class PanelFactory(TomlMetaData):
         self.__class_names[panel] = class_name
         panel_kwargs = self.panel_config.get(panel, {}).get('meta')
         klass = StringIO()
-        klass.write(f"class {class_name}(BasePanel):\n")
+        klass.write(f"class {class_name}(BaseGenerated):\n")
         klass.write("    def __init__(self, parent, **kwargs):\n")
         klass.write("        super().__init__(parent, **kwargs)\n")
         title = panel_kwargs.get('title')
@@ -130,6 +106,8 @@ class PanelFactory(TomlMetaData):
         if self.main_sizer:
             klass.write(f"        self.SetSizer({self.main_sizer})\n")
 
+        klass.write("        self._setup_sizer_height_correctly("
+                    f"{self.second_sizer})\n")
         klass.write("        self.SetupScrolling(rate_x=10, rate_y=10)\n")
         klass.write("        self.Hide()\n")
         self.__panels[panel] = klass.getvalue()

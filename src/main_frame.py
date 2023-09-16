@@ -12,8 +12,9 @@ from pprint import pprint # *** TODO *** Remove later
 import wx
 from wx.lib.inspection import InspectionTool
 
+from .bases import BaseGenerated
 from .config import TomlAppConfig
-from .panel_factory import PanelFactory, BasePanel
+from .panel_factory import PanelFactory
 from .tools import ShortCuts, FieldEdit
 from .settings import Paths
 
