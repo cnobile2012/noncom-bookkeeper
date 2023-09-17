@@ -6,7 +6,6 @@ __docformat__ = "restructuredtext en"
 
 import logging
 from collections import OrderedDict
-from datetime import datetime, timedelta
 from pprint import pprint # *** TODO *** Remove later
 
 import wx
@@ -422,24 +421,23 @@ class MainFrame(MenuBar, wx.Frame):
         self.SetSize(wx.Size(value if value else size))
 
     def setup_resize_event(self):
-        self.__resized_time = datetime.now()
         self.__resized = False
         self.Bind(wx.EVT_SIZE,self.on_size)
         self.Bind(wx.EVT_IDLE,self.on_idle)
 
     def on_size(self, event):
-        if datetime.now() > (self.__resized_time + timedelta(seconds=0.5)):
-            self.__resized_time = datetime.now()
-            self.__resized = True
+        self.__resized = True
 
     def on_idle(self, event):
         if self.__resized:
-            size = self.GetSize()
-            self._tac.update_app_config('app_size', 'size', list(size))
+            width, height = self.GetSize()
+            self._tac.update_app_config('app_size', 'size', (width, height))
             self.__resized = False
 
             for panel in self.panels.values():
-                panel.SetSize(size)
+                panel.SetSize((width, height))
+                height = height - self.parent.statusbar_size[1]
+                panel.SetSizeHints(width, height)
                 panel.Layout()
 
     @property

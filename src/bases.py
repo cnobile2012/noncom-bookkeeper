@@ -24,7 +24,7 @@ class BasePanel:
         window size.
         """
         width, height = sizer.GetMinSize()
-        height += self.parent.statusbar_size[1] + 6
+        height += self.parent.statusbar_size[1]
         sizer.SetMinSize((width, height))
 
 
