@@ -263,8 +263,8 @@ class MenuBar:
         size = self.parent.GetSize()
         self.panel.SetSize(*size)
         self.sizer.Add(self.panel, 1, wx.EXPAND)
-        self.panel.Show()
         self.parent.SetTitle(self.panel.title)
+        self.panel.Show()
 
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
@@ -422,8 +422,8 @@ class MainFrame(MenuBar, wx.Frame):
 
     def setup_resize_event(self):
         self.__resized = False
-        self.Bind(wx.EVT_SIZE,self.on_size)
-        self.Bind(wx.EVT_IDLE,self.on_idle)
+        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_IDLE, self.on_idle)
 
     def on_size(self, event):
         self.__resized = True
@@ -438,7 +438,6 @@ class MainFrame(MenuBar, wx.Frame):
                 panel.SetSize((width, height))
                 height = height - self.parent.statusbar_size[1]
                 panel.SetSizeHints(width, height)
-                panel.Layout()
 
     @property
     def panels(self):

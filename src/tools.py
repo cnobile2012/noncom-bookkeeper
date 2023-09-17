@@ -87,7 +87,7 @@ class FieldEdit(BasePanel, wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        self.title = '''Add/Remove Fields'''
+        self.title = "Add/Remove Fields"
         self._bg_color = (232, 213, 149)
         w_bg_color = (222, 237, 230)
         w_fg_color_0 = (50, 50, 204)
@@ -103,6 +103,33 @@ class FieldEdit(BasePanel, wx.Panel):
         panel_top = self._panel_top(arg_dict)
         arg_dict['panel_top'] = panel_top
         sizer.Add(panel_top, 0, wx.EXPAND | wx.ALL, 6)
+        # Fix panel size on resize.
+        self.__resized = False
+        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_IDLE, self.on_idle_closure(arg_dict))
+
+    def on_size(self, event):
+        event.Skip()
+        self.__resized = True
+
+    def on_idle_closure(self, arg_dict):
+        def on_idle(event):
+            if self.__resized:
+                self.__resized = False
+                size = self.parent.GetSize()
+                self.SetSize(size)
+                # Fix the bottom panel if exists.
+                panel_top = arg_dict.get('panel_top')
+                panel_bot = arg_dict.get('panel')
+                grid_sizer = arg_dict.get('grid_sizer')
+
+                if panel_top and panel_bot and grid_sizer:
+                    width, height = self.parent.GetSize()
+                    tw, th = panel_top.GetSize()
+                    height = height - th - self.parent.statusbar_size[1]
+                    panel_bot.SetSizeHints((width, height))
+
+        return on_idle
 
     def _panel_top(self, arg_dict):
         panel = wx.Panel(self)
@@ -194,8 +221,6 @@ class FieldEdit(BasePanel, wx.Panel):
                 widget, (idx, 0), (1, span),
                 wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
-        self.Bind(wx.EVT_SIZE, self.resize_closure(panel, grid_sizer,
-                                                   arg_dict['panel_top']))
         #print(f"Bottom panel size: {panel.GetSize()}")
         arg_dict['panel'] = panel
         arg_dict['grid_sizer'] = grid_sizer
@@ -252,25 +277,6 @@ class FieldEdit(BasePanel, wx.Panel):
                 print(arg_dict['widget_labels'])
 
         return add_button
-
-    def resize_closure(self, panel, grid_sizer, panel_top):
-        def on_size_change(event):
-            width, height = grid_sizer.GetMinSize()
-            tw, th = panel_top.GetSize()
-            height += self.parent.statusbar_size[1]
-            panel.SetSizeHints(tw, height)
-            mw, mh = self.GetSize()
-            bw, bh = panel.GetSize()
-            bh = mh - th
-            panel.SetSize(bw, bh)
-            panel.Refresh()
-            ## print(f"----------\nBottom Panel (SetSizeHints): {(tw, height)}")
-            ## print(f"Main Panel (GetSize): {self.GetSize()}")
-            ## print(f"Top Panel (GetSize): {panel_top.GetSize()}")
-            ## print(f"Bottom Panel (GetSize): {panel.GetSize()}")
-            ## print(f"Bottom Panel (SetSize): {(bw, bh)}")
-
-        return on_size_change
 
     def _find_dict(self, value):
         for item in value:

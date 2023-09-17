@@ -19,9 +19,8 @@ class BasePanel:
 
     def _setup_sizer_height_correctly(self, sizer):
         """
-        Add the height of the status bar to the GridBagSizer height
-        so that the call to SetupScrolling creates the correct virtual
-        window size.
+        Add the height of the status bar to the Sizer height so that the
+        call to SetupScrolling creates the correct virtual window size.
         """
         width, height = sizer.GetMinSize()
         height += self.parent.statusbar_size[1]
