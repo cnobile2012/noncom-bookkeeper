@@ -200,12 +200,11 @@ class MenuBar:
         """
         if list_:
             # Enable menu items.
-            [self._menu.Enable(id, value if list_ else not value)
-             for id, value in list_]
+            [self._menu.Enable(id, value) for id, value in list_]
         else:
             # Disable menu items.
-            item_ids = [id for id, value in self._current_menus]
-            [self._menu.FindItem(id)[0].Enable(False) for id in item_ids]
+            [self._menu.FindItem(id)[0].Enable(False)
+             for id, values in self._current_menus]
 
         self._current_menus = list_
 
