@@ -118,7 +118,7 @@ class FieldEdit(BasePanel, wx.Panel):
                 self.__resized = False
                 size = self.parent.GetSize()
                 self.SetSize(size)
-                # Fix the bottom panel if exists.
+                # Fix the bottom panel if it exists yet.
                 panel_top = arg_dict.get('panel_top')
                 panel_bot = arg_dict.get('panel')
                 grid_sizer = arg_dict.get('grid_sizer')

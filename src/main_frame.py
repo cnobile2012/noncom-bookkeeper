@@ -24,6 +24,7 @@ class MenuBar:
     """
     __short_cut = None
     __inspection = None
+    _current_menus = ()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,47 +51,44 @@ class MenuBar:
                           ])]),
             ('edit', [None, '&Edit\tALT+E', "Screen editing operations.",
                       None, wx.Menu(), True, OrderedDict([
-                          ('conf', [wx.ID_ANY, "&Configuration\tCTRL+F",
+                          ('conf', [200, "&Configuration\tCTRL+F",
                                     "Edit basic organization configuration.",
                                     'edit_config', None, True, None]),
-                          ('budget', [wx.ID_ANY, "&Budget\tCTRL+B",
+                          ('budget', [201, "&Budget\tCTRL+B",
                                       "Edit yearly budget.",
                                       'edit_budget', None, True, None]),
-                          ('month', [wx.ID_ANY, "&Month\tCTRL+M",
+                          ('month', [202, "&Month\tCTRL+M",
                                       "Edit monthy data.",
                                       'edit_month', None, True, None]),
-                          ('hide', [wx.ID_ANY, "&Close All\tCTRL+L",
+                          ('hide', [203, "&Close All\tCTRL+L",
                                     "Close all panels.",
                                     'edit_hide_all', None, True, None]),
                           ])]),
             ('reports', [None, '&Reports\tALT+R', "Print reports.",
                          None, wx.Menu(), True, OrderedDict([
-                             ('budget', [wx.ID_ANY,
-                                         "&Budget Worksheet\tCTRL+W",
+                             ('budget', [300, "&Budget Worksheet\tCTRL+W",
                                          "Yearly budget report.",
                                          'report_budget', None, True, None]),
                              ])]),
             ('tools', [None, '&Tools\tALT+T',
                        "Various tool to help with productivity.",
                        None, wx.Menu(), True, OrderedDict([
-                           ('short', [wx.ID_ANY, "&Short Cuts\tCTRL+H",
+                           ('short', [400, "&Short Cuts\tCTRL+H",
                                       "Show the short cut screen.",
                                       'tool_short_cuts', None, True, None]),
-                           ('inspection', [wx.ID_ANY, "&Inspection\tCTRL+I",
+                           ('inspection', [401, "&Inspection\tCTRL+I",
                                            "Show the WX inspection tool.",
                                            'tool_inspection', None,
                                            True, None]),
-                           ('fields', [wx.ID_ANY,
-                                       "&Edit Fields\tCTRL+D",
+                           ('fields', [402, "&Edit Fields\tCTRL+D",
                                        "Edit fields on various screens.",
                                        'tool_fields', None, True, None]),
                            ('separator_1', []),
-                           ('reset', [wx.ID_ANY, "Reset",
+                           ('reset', [403, "Reset",
                                       "Reset some default settings.",
                                       None, wx.Menu(), True, OrderedDict([
                                           ('window_size', [
-                                              wx.ID_ANY,
-                                              "&Window Size\tALT+W",
+                                              4031, "&Window Size\tALT+W",
                                               "Reset default window size.",
                                               'tool_reset_window',
                                               None, True, None]),
@@ -98,17 +96,16 @@ class MenuBar:
                            ])]),
             ('settings', [None, '&Settings\tALT+S', "Application settings",
                           None, wx.Menu(), True, OrderedDict([
-                              ('paths', [wx.ID_ANY,
-                                         "&Application Paths\tCTRL+P",
+                              ('paths', [500, "&Application Paths\tCTRL+P",
                                          "Show the application paths.",
                                          'settings_paths', None, True, None]),
                               ])]),
             ('help', [None, '&Help\tALT+H', "Documentation",
                       None, wx.Menu(), True, OrderedDict([
-                          ('manual', [wx.ID_ANY, "&Manual\tCTRL+N",
+                          ('manual', [600, "&Manual\tCTRL+N",
                                       "Open an online manual.",
                                       'app_manual', None, True, None]),
-                          ('releases', [wx.ID_ANY, "&Releases\tCTRL+R",
+                          ('releases', [601, "&Releases\tCTRL+R",
                                         "Open the online release page.",
                                         'app_manual', None, True, None]),
                           ('about', [wx.ID_ABOUT, "&About\tCTRL+T",
@@ -149,12 +146,12 @@ class MenuBar:
         ])
         """
         bind_map = {}
-        menu = wx.MenuBar()
-        self.__recurse_menu(self.__item_map, bind_map, menu)
+        self._menu = wx.MenuBar()
+        self.__recurse_menu(self.menu_items, bind_map, self._menu)
         [self.Bind(event=wx.EVT_MENU, handler=handler, source=source)
          for handler, source in bind_map.values()]
         self.Bind(wx.EVT_MENU_HIGHLIGHT_ALL, self.mouse_over)
-        self.SetMenuBar(menu)
+        self.SetMenuBar(self._menu)
 
     def __recurse_menu(self, map_, bind_map, menu):
         for item in map_:
@@ -163,7 +160,8 @@ class MenuBar:
             v_size = len(values)
 
             try:
-                assert v_size in (0, 7), f"Item '{item}' is wrong length."
+                assert v_size in (0, 7), print(
+                    f"Item '{item}' is wrong length.")
 
                 if v_size == 0:
                     if used != 0: menu.AppendSeparator()
@@ -175,16 +173,18 @@ class MenuBar:
                         name, tab, key = nk.partition('\t')
                         menu.Append(mo, name)
                         self.__recurse_menu(od, bind_map, menu=mo)
-                    elif id and nk and cb and not mo and tf and not od:
+                    elif id and nk and cb and not mo and not od:
                         # Normal menu item.
                         menu_item = menu.Append(id, nk, disc)
                         bind_map.setdefault(nk, [getattr(self, cb), menu_item])
                         used += 1
-                    elif id and nk and not cb and mo and tf and od:
+                        self._menu.Enable(id, tf)
+                    elif id and nk and not cb and mo and od:
                         # Submenu
                         menu_item = menu.Append(id, nk, mo, disc)
                         bind_map.setdefault(nk, [None, menu_item])
                         used += 1
+                        self._menu.Enable(id, tf)
                         self.__recurse_menu(od, bind_map, menu=mo)
             except Exception as e:
                 self._log.error("One of the menu items failed: %s, %s",
@@ -194,14 +194,20 @@ class MenuBar:
     def menu_items(self):
         return self.__item_map
 
-    def menu_item_toggle(self, drop, name):
-        inner = self.item_map.get(drop)[2]
-        inner[name][-1] = False if inner[name][-1] else True
-        return inner[name][-1]
+    def change_menu_items(self, list_=()):
+        """
+        list_ = ((id, True|False), ...)
+        """
+        if list_:
+            # Enable menu items.
+            [self._menu.Enable(id, value if list_ else not value)
+             for id, value in list_]
+        else:
+            # Disable menu items.
+            item_ids = [id for id, value in self._current_menus]
+            [self._menu.FindItem(id)[0].Enable(False) for id in item_ids]
 
-    def menu_item_state(self, drop, name):
-        inner = self.item_map.get(drop)[2]
-        return inner[name][-1]
+        self._current_menus = list_
 
     def file_picker(self, event):
         title = "Open config file for editing."
@@ -235,6 +241,7 @@ class MenuBar:
         self.parent.Destroy()
 
     def edit_config(self, event):
+        self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['configuration']
 
@@ -243,6 +250,7 @@ class MenuBar:
         self._set_panel()
 
     def edit_budget(self, event):
+        self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['budget']
 
@@ -251,6 +259,7 @@ class MenuBar:
         self._set_panel()
 
     def edit_month(self, event):
+        self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['month']
 
@@ -314,14 +323,18 @@ class MenuBar:
         if 'fields' not in self.panels:
             self.set_panel('fields', FieldEdit(self.parent))
 
+        self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['fields']
+        self.change_menu_items(((wx.ID_OPEN, True), (wx.ID_SAVE, True),
+                                (wx.ID_SAVEAS, True),))
         self._set_panel()
 
     def settings_paths(self, event):
         if 'paths' not in self.panels:
             self.set_panel('paths', Paths(self.parent))
 
+        self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['paths']
         self._set_panel()
