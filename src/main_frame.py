@@ -160,8 +160,7 @@ class MenuBar:
             v_size = len(values)
 
             try:
-                assert v_size in (0, 7), print(
-                    f"Item '{item}' is wrong length.")
+                assert v_size in (0, 7), f"Item '{item}' is wrong length."
 
                 if v_size == 0:
                     if used != 0: menu.AppendSeparator()
@@ -201,12 +200,42 @@ class MenuBar:
         if list_:
             # Enable menu items.
             [self._menu.Enable(id, value) for id, value in list_]
+            self.set_menu_item(list_)
         else:
             # Disable menu items.
             [self._menu.FindItem(id)[0].Enable(False)
              for id, values in self._current_menus]
 
+            # Change menu_item states to False in menu_items.
+            for item in self._current_menus:
+                item[-1] = False
+
+            self.set_menu_item(self._current_menus)
+
         self._current_menus = list_
+
+    def set_menu_item(self, list_):
+        list_size = len(list_)
+        changed = []
+
+        for items in self.menu_items.values():
+            if items[-1]:
+                for inner in items[-1].values():
+                    for item in list_:
+                        id, value = item
+
+                        if id == inner[0]:
+                            inner[-2] = value
+                            changed.append(item)
+                            break
+                    if len(changed) == list_size:
+                        break
+            if len(changed) == list_size:
+                break
+
+        assert len(changed) == list_size, (
+            f"Could not find all menu items found: '{changed}', "
+            f"should be: '{list_}'.")
 
     def file_picker(self, event):
         title = "Open config file for editing."
@@ -278,6 +307,7 @@ class MenuBar:
             self._update_short_cuts(self.panel.background_color)
 
     def edit_hide_all(self, event):
+        self.change_menu_items()
         self._hide_all_panels()
         self.panel = None
 
@@ -325,8 +355,8 @@ class MenuBar:
         self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['fields']
-        self.change_menu_items(((wx.ID_OPEN, True), (wx.ID_SAVE, True),
-                                (wx.ID_SAVEAS, True),))
+        self.change_menu_items(([wx.ID_OPEN, True], [wx.ID_SAVE, True],
+                                [wx.ID_SAVEAS, True],))
         self._set_panel()
 
     def settings_paths(self, event):

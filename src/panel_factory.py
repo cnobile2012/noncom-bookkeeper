@@ -296,12 +296,12 @@ class PanelFactory(TomlMetaData):
         has_bgc2 = 'w_bg_color_2' in value
         has_bgc3 = 'w_bg_color_3' in value
         bg = [x for x in (has_bgc, has_bgc1, has_bgc2, has_bgc3) if x]
-        assert -1 < len(bg) < 2, print("Error: Cannot set more than one "
-                                       f"background color in '{widget}'")
+        assert -1 < len(bg) < 2, ("Error: Cannot set more than one "
+                                  f"background color in '{widget}'")
         has_fgc1 = 'w_fg_color_1' in value
         fg = [x for x in (has_fgc1,) if x]
-        assert -1 < len(fg) < 2, print("Error: Cannot set more than one "
-                                       f"foreground color in '{widget}'")
+        assert -1 < len(fg) < 2, ("Error: Cannot set more than one "
+                                  f"foreground color in '{widget}'")
 
         if has_bgc and self._bg_color:
             klass.write(f"        {widget}.SetBackgroundColour("

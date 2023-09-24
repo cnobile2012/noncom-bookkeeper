@@ -12,7 +12,7 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData
-from .bases import BasePanel
+from .bases import BaseSwap
 
 
 class ShortCuts(wx.Frame):
@@ -29,17 +29,14 @@ class ShortCuts(wx.Frame):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, "")
         self.short_cut_text.SetForegroundColour(wx.Colour(*w_fg_color_0))
-        self.set_text(parent)
         self.short_cut_text.SetFont(wx.Font(
             10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_NORMAL, 0, "Courier Prime"))
-        self.sizer.Add(self.short_cut_text, 1,
-                       wx.ALL | wx.EXPAND | wx.LEFT | wx.RIGHT, 6)
+        self.sizer.Add(self.short_cut_text, 1, wx.EXPAND | wx.ALL, 10)
         dismiss = wx.Button(self, id=wx.ID_OK, label="&Dismiss")
         dismiss.Bind(wx.EVT_BUTTON, self.close_frame)
         self.sizer.Add(dismiss, 0, wx.ALL|wx.ALIGN_CENTER,5)
         self.SetSizer(self.sizer)
-        self.sizer.Fit(self)
         self.CenterOnParent(dir=wx.BOTH)
         self.Show()
 
@@ -76,9 +73,10 @@ class ShortCuts(wx.Frame):
     def set_text(self, parent):
         text = self.create_list(parent)
         self.short_cut_text.SetLabel(text)
+        self.Fit()
 
 
-class FieldEdit(BasePanel, wx.Panel):
+class FieldEdit(BaseSwap, wx.Panel):
     """
     Add or remove fields in various panels.
     """
