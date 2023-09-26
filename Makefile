@@ -56,6 +56,10 @@ uninstall-dev:
 	@rm -rf ${HOME}/.config/${APP_NAME}
 	@rm -rf ${HOME}/.cache/${APP_NAME}
 
+.PHONY	: build-exc
+build-exc:
+	pyinstaller app.py
+
 #----------------------------------------------------------------------
 clean	:
 	$(shell $(RM_CMD))
@@ -64,4 +68,5 @@ clean	:
 clobber	: clean
 	@(cd $(DOCS_DIR); make clobber)
 	@rm -rf $(DOCS_DIR)/htmlcov
+	@rm -rf build dist
 #	@rm -f $(LOGS_DIR)/*.log*

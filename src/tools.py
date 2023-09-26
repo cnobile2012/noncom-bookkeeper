@@ -119,25 +119,26 @@ class FieldEdit(BaseSwap, wx.Panel):
                 # Fix the bottom panel if it exists yet.
                 panel_top = arg_dict.get('panel_top')
                 panel_bot = arg_dict.get('panel')
-                grid_sizer = arg_dict.get('grid_sizer')
+                top_grid_sizer = arg_dict.get('top_grid_sizer')
 
-                if panel_top and panel_bot and grid_sizer:
+                if panel_top and panel_bot and top_grid_sizer:
                     width, height = self.parent.GetSize()
+                    tgs_w, tgs_h = top_grid_sizer.GetMinSize()
                     tw, th = panel_top.GetSize()
                     height = height - th - self.parent.statusbar_size[1]
-                    panel_bot.SetSizeHints((width, height))
+                    panel_bot.SetSizeHints((tgs_w, height))
 
         return on_idle
 
     def _panel_top(self, arg_dict):
+        w_bg_color = arg_dict['w_bg_color']
+        w_fg_color_0 = arg_dict['w_fg_color_0']
+        w_fg_color_1 = arg_dict['w_fg_color_1']
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
         panel.SetSizer(sizer)
         grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
         sizer.Add(grid_sizer, 0, wx.CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 6)
-        w_bg_color = arg_dict['w_bg_color']
-        w_fg_color_0 = arg_dict['w_fg_color_0']
-        w_fg_color_1 = arg_dict['w_fg_color_1']
         desc = wx.StaticText(panel, wx.ID_ANY, self._description, style=0)
         desc.SetForegroundColour(wx.Colour(*w_fg_color_1))
         desc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
@@ -179,17 +180,20 @@ class FieldEdit(BaseSwap, wx.Panel):
         line = wx.StaticLine(panel, wx.ID_ANY)
         line.SetBackgroundColour(wx.Colour(*w_fg_color_0))
         grid_sizer.Add(line, (3, 0), (1, 3), wx.EXPAND, 0)
+        arg_dict['top_grid_sizer'] = grid_sizer
         #print(f"Top panel size: {panel.GetSize()}")
         return panel
 
     def _panel_bot(self, arg_dict):
+        w_bg_color = arg_dict['w_bg_color']
+        w_fg_color_0 = arg_dict['w_fg_color_0']
+        w_fg_color_1 = arg_dict['w_fg_color_1']
         panel = ScrolledPanel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
         panel.SetSizer(sizer)
         grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
-        sizer.Add(grid_sizer, 0, wx.CENTER | wx.ALL, 6)
-        w_fg_color_0 = arg_dict['w_fg_color_0']
-        w_fg_color_1 = arg_dict['w_fg_color_1']
+        panel.SetBackgroundColour(wx.Colour(*w_bg_color))
+        sizer.Add(grid_sizer, 0, wx.EXPAND | wx.ALL, 6)
         widget_labels = arg_dict['widget_labels']
 
         for idx, label in enumerate(widget_labels):
@@ -221,7 +225,7 @@ class FieldEdit(BaseSwap, wx.Panel):
 
         #print(f"Bottom panel size: {panel.GetSize()}")
         arg_dict['panel'] = panel
-        arg_dict['grid_sizer'] = grid_sizer
+        arg_dict['bot_grid_sizer'] = grid_sizer
         return panel
 
     def selection_closure(self, arg_dict):
@@ -235,10 +239,9 @@ class FieldEdit(BaseSwap, wx.Panel):
                     chosen, {}).get('widgets', {})
 
                 for value in items.values():
-                    if (not isinstance(value, list)
-                        or value[0] != 'StaticText'): continue
-                    args = self._find_dict(value).get('args', [])
-                    widget_labels.append(args[2])
+                    if (isinstance(value, list) and value[0] == 'StaticText'):
+                        args = self._find_dict(value).get('args', [])
+                        widget_labels.append(args[2])
 
                 arg_dict['widget_labels'] = widget_labels
                 self._create_widgets(arg_dict)
@@ -255,8 +258,10 @@ class FieldEdit(BaseSwap, wx.Panel):
         self._destroy_panel(panel, parent_sizer)
         # Create new panel.
         panel = self._panel_bot(arg_dict)
-        parent_sizer.Add(panel, 0, wx.EXPAND | wx.ALL, 6)
-        self._setup_sizer_height_correctly(arg_dict['grid_sizer'])
+        parent_sizer.Add(panel, 0, wx.CENTER | wx.ALL, 6)
+        width, height = arg_dict['top_grid_sizer'].GetMinSize()
+        bot_grid_sizer = arg_dict['bot_grid_sizer']
+        self._setup_sizer_height_correctly(bot_grid_sizer, swidth=width)
         wx.CallLater(100, panel.SetupScrolling, rate_x=10, rate_y=10)
 
     def _destroy_panel(self, panel, parent_sizer):
@@ -267,7 +272,7 @@ class FieldEdit(BaseSwap, wx.Panel):
 
     def add_closuer(self, arg_dict):
         def add_button(event):
-            grid_sizer = arg_dict.get('grid_sizer')
+            grid_sizer = arg_dict.get('bot_grid_sizer')
 
             if grid_sizer:
                 row_count = grid_sizer.GetRows()

@@ -4,3 +4,5 @@ wxPython
 appdirs
 tomlkit
 #varname
+PyInstaller
+pyinstaller-hooks-contrib

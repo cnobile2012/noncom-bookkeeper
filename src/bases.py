@@ -17,12 +17,13 @@ class BasePanel:
     def background_color(self):
         return self._bg_color
 
-    def _setup_sizer_height_correctly(self, sizer):
+    def _setup_sizer_height_correctly(self, sizer, swidth=None):
         """
         Add the height of the status bar to the Sizer height so that the
         call to SetupScrolling creates the correct virtual window size.
         """
         width, height = sizer.GetMinSize()
+        width = swidth if swidth else width
         height += self.parent.statusbar_size[1]
         sizer.SetMinSize((width, height))
 
@@ -53,7 +54,7 @@ class BaseSwap(BasePanel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def gbs_swap_rows(self, gbs, row0, row1, flags=0):
+    def gbs_swap_rows(self, gbs, row0, row1, flag=0, border=0):
         """
         Swap any two rows in a GridBagSizer keeping most parameters.
         """
@@ -85,10 +86,10 @@ class BaseSwap(BasePanel):
 
             for item in row:
                 if item:
-                    windows[idx].append([item.GetWindow(), item.GetSpan()])
+                    windows[idx].append((item.GetWindow(), item.GetSpan()))
                     gbs.Remove(self.get_sizer_item_index(gbs, item))
 
         # Add the new GBSizerItem objects into the GridBagSizer.
         for row, rpos in enumerate(reversed(positions)):
             for idx, item in enumerate(windows[row]):
-                gbs.Add(item[0], rpos[idx], item[1], flags=flags)
+                gbs.Add(item[0], rpos[idx], item[1], flag=flag, border=border)
