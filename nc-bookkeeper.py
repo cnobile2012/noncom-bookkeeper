@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+#
+# nc-bookkeeper.py
+#
 
 from src.main_frame import MainFrame
 from src.ncb import CheckPanelConfig, CheckAppConfig

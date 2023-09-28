@@ -80,7 +80,7 @@ class BaseSwap(BasePanel):
                 positions[idx].append((r, c))
                 old_sizer_items[idx].append(gbs.FindItemAtPosition((r, c)))
 
-        # Remove GBSizerItem in both rows.
+        # Remove the GBSizerItem in both rows.
         for idx, row in enumerate(old_sizer_items):
             windows.append([])
 
@@ -89,7 +89,28 @@ class BaseSwap(BasePanel):
                     windows[idx].append((item.GetWindow(), item.GetSpan()))
                     gbs.Remove(self.get_sizer_item_index(gbs, item))
 
-        # Add the new GBSizerItem objects into the GridBagSizer.
+        # Add the widgets to the GridBagSizer at a new position.
         for row, rpos in enumerate(reversed(positions)):
             for idx, item in enumerate(windows[row]):
                 gbs.Add(item[0], rpos[idx], item[1], flag=flag, border=border)
+
+    def get_sizer_item_index(self, sizer, item):
+        """
+        Determines the index of an item in a sizer.
+
+        :params sizer: The sizer to search.
+        :type sizer: wx.Sizer
+        :param item: The item to find.
+        :type item: wx.SizerItem
+        :returns: The index of the item in the sizer, or -1 if the item
+                  is not in the sizer.
+        :rtype: int
+        """
+        index = -1
+
+        for idx, child in enumerate(sizer.GetChildren()):
+            if child == item:
+                index = idx
+                break
+
+        return index

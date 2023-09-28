@@ -58,7 +58,7 @@ uninstall-dev:
 
 .PHONY	: build-exc
 build-exc:
-	pyinstaller app.py
+	pyinstaller nc-bookkeeper.py
 
 #----------------------------------------------------------------------
 clean	:
@@ -68,5 +68,5 @@ clean	:
 clobber	: clean
 	@(cd $(DOCS_DIR); make clobber)
 	@rm -rf $(DOCS_DIR)/htmlcov
-	@rm -rf build dist
+	@rm -rf build dist *.spec
 #	@rm -f $(LOGS_DIR)/*.log*

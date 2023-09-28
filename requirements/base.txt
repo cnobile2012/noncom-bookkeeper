@@ -6,3 +6,4 @@ tomlkit
 #varname
 PyInstaller
 pyinstaller-hooks-contrib
+wxdo
