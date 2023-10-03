@@ -12,7 +12,8 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData
-from .bases import BaseSwap
+from .bases import BasePanel
+from .utilities import GBSRowSwapping, EventStaticText
 
 
 class ShortCuts(wx.Frame):
@@ -76,11 +77,13 @@ class ShortCuts(wx.Frame):
         self.Fit()
 
 
-class FieldEdit(BaseSwap, wx.Panel):
+class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
     """
     Add or remove fields in various panels.
     """
     tmd = TomlMetaData()
+    __previous_row = None
+    __cl = None
 
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -157,8 +160,8 @@ class FieldEdit(BaseSwap, wx.Panel):
         grid_sizer.Add(combo_box, (1, 0), (1, 1),
                        wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-        field_desc = wx.StaticText(panel, wx.ID_ANY, "Enter a new field name:",
-                                   style=0)
+        field_desc = wx.StaticText(
+            panel, wx.ID_ANY, "Enter a new field name:", style=0)
         field_desc.SetForegroundColour(wx.Colour(*w_fg_color_0))
         field_desc.SetFont(
             wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
@@ -177,10 +180,24 @@ class FieldEdit(BaseSwap, wx.Panel):
         add_button.Bind(wx.EVT_BUTTON, self.add_closuer(arg_dict))
         grid_sizer.Add(add_button, (2, 2), (1, 1), wx.ALL, 6)
 
+        spin_desc = wx.StaticText(
+            panel, wx.ID_ANY, "Click field then move it:", style=0)
+        spin_desc.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        spin_desc.SetFont(wx.Font(
+            10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+            wx.FONTWEIGHT_BOLD, 0, ''))
+        grid_sizer.Add(spin_desc, (3, 0), (1, 1), wx.ALL, 6)
+        spin_ctrl = wx.SpinCtrl(self, wx.ID_ANY, "")
+        #spin_ctrl.SetMinSize((75, 23))
+        spin_ctrl.SetBackgroundColour(wx.Colour(*w_bg_color))
+        spin_ctrl.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        grid_sizer.Add(spin_ctrl, (3, 1), (1, 1),
+                       wx.RIGHT | wx.BOTTOM | wx.TOP, 6)
         line = wx.StaticLine(panel, wx.ID_ANY)
         line.SetBackgroundColour(wx.Colour(*w_fg_color_0))
-        grid_sizer.Add(line, (3, 0), (1, 3), wx.EXPAND, 0)
+        grid_sizer.Add(line, (4, 0), (1, 3), wx.EXPAND, 0)
         arg_dict['top_grid_sizer'] = grid_sizer
+        arg_dict['spin_ctrl'] = spin_ctrl
         #print(f"Top panel size: {panel.GetSize()}")
         return panel
 
@@ -188,6 +205,7 @@ class FieldEdit(BaseSwap, wx.Panel):
         w_bg_color = arg_dict['w_bg_color']
         w_fg_color_0 = arg_dict['w_fg_color_0']
         w_fg_color_1 = arg_dict['w_fg_color_1']
+        spin_ctrl = arg_dict['spin_ctrl']
         panel = ScrolledPanel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
         panel.SetSizer(sizer)
@@ -198,7 +216,7 @@ class FieldEdit(BaseSwap, wx.Panel):
 
         for idx, label in enumerate(widget_labels):
             label = label.replace(r'\n', '\n')
-            widget = wx.StaticText(panel, wx.ID_ANY, label)
+            widget = EventStaticText(panel, wx.ID_ANY, label)
 
             if label.endswith(':'):
                 span = 1
@@ -222,7 +240,13 @@ class FieldEdit(BaseSwap, wx.Panel):
             grid_sizer.Add(
                 widget, (idx, 0), (1, span),
                 wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+            self.Bind(
+                widget.event_click_position, self.event_click_closure(
+                    grid_sizer, spin_ctrl, wx.Colour(*w_bg_color)),
+                id=widget.GetId())
 
+        self.Bind(wx.EVT_SPINCTRL, self.swap_rows_closure(
+            grid_sizer, wx.Colour(*w_bg_color)))
         #print(f"Bottom panel size: {panel.GetSize()}")
         arg_dict['panel'] = panel
         arg_dict['bot_grid_sizer'] = grid_sizer
@@ -250,6 +274,45 @@ class FieldEdit(BaseSwap, wx.Panel):
                                     arg_dict.get('parent_sizer'))
 
         return get_selection
+
+    def event_click_closure(self, gbs, sb, orig_color=None, color='blue'):
+        """
+        Event to highlight the GBS row when a widget is clicked.
+        """
+        def event_click(event):
+            self.stop_call_later()
+            pos = event.get_value()
+            row, col = pos
+            self.highlight_row(gbs, self.__previous_row, color=orig_color)
+            self.highlight_row(gbs, row, color=color)
+            self.__previous_row = row
+            sb.SetValue(row)
+            self.__cl = wx.CallLater(
+                4000, self.turn_off_highlight, gbs, orig_color)
+
+        return event_click
+
+    def swap_rows_closure(self, gbs, orig_color):
+        """
+        Event to swap the two rows.
+        """
+        def swap_rows(event):
+            if self.__previous_row is not None:
+                row0 = self.__previous_row
+                obj = event.GetEventObject()
+                row1 = obj.GetValue()
+                self.__previous_row = row1
+
+                if row0 != row1:
+                    self.stop_call_later()
+                    flags = (wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT
+                             | wx.BOTTOM)
+                    self.gbs_swap_rows(gbs, row0, row1, flags, 6)
+                    self.Layout()
+                    self.__cl = wx.CallLater(
+                        4000, self.turn_off_highlight, gbs, orig_color)
+
+        return swap_rows
 
     def _create_widgets(self, arg_dict):
         parent_sizer = arg_dict['parent_sizer']
@@ -281,6 +344,9 @@ class FieldEdit(BaseSwap, wx.Panel):
 
         return add_button
 
+    def static_text_click(self, event):
+        print("StaticText Clicked")
+
     def _find_dict(self, value):
         for item in value:
             if isinstance(item, dict):
@@ -289,6 +355,17 @@ class FieldEdit(BaseSwap, wx.Panel):
                 item = {}
 
         return item
+
+    def turn_off_highlight(self, gbs, orig_color):
+        for row in range(gbs.GetRows()):
+            self.__previous_row = None
+            self.highlight_row(gbs, row, color=orig_color)
+            self.Layout()
+
+    def stop_call_later(self):
+        if self.__cl and self.__cl.IsRunning():
+            self.__cl.Stop()
+            self.__cl = None
 
     @property
     def _description(self):
