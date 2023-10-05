@@ -109,12 +109,19 @@ class WidgetEvent(wx.PyCommandEvent):
     def __init__(self, evt_type, id):
         super().__init__(evt_type, id)
         self.__value = None
+        self.__window = None
 
     def get_value(self):
         return self.__value
 
     def set_value(self, value):
         self.__value = value
+
+    def get_window(self):
+        return self.__window
+
+    def set_window(self, win):
+        self.__window = win
 
 
 class EventStaticText(wx.StaticText):
@@ -151,6 +158,7 @@ class EventStaticText(wx.StaticText):
 
         evt = WidgetEvent(self._type_id, self.GetId())
         evt.set_value(pos)
+        evt.set_window(obj)
         self.GetEventHandler().ProcessEvent(evt)
         event.Skip()
 

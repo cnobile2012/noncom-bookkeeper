@@ -150,6 +150,7 @@ class MenuBar:
         self.__recurse_menu(self.menu_items, bind_map, self._menu)
         [self.Bind(event=wx.EVT_MENU, handler=handler, source=source)
          for handler, source in bind_map.values()]
+        # Puts menu info in status bar.
         self.Bind(wx.EVT_MENU_HIGHLIGHT_ALL, self.mouse_over)
         self.SetMenuBar(self._menu)
 
@@ -419,17 +420,6 @@ class MainFrame(MenuBar, wx.Frame):
         self._statusbar = self.CreateStatusBar(len(status_widths),
                                                wx.STB_DEFAULT_STYLE)
         self._statusbar.SetStatusWidths(status_widths)
-        # statusbar fields
-        ## self.statusbar_fields = {
-        ##     'temp0': "statusbar_0",
-        ##     'temp1': "statusbar_1"
-        ##     }
-
-        ## for idx, key in enumerate(self.statusbar_fields.keys()):
-        ##     status = self.statusbar_fields.get(key)
-        ##     statusbar.SetStatusText(status, idx)
-        # End Status Bar
-
         size = (500, 800)
         self.set_size(size)
         self.SetSizer(self.__box_sizer)
@@ -503,6 +493,27 @@ class MainFrame(MenuBar, wx.Frame):
     @property
     def sizer(self):
         return self.__box_sizer
+
+    def statusbar_warning(self, value):
+        self.__set_status(value, 'yellow')
+    statusbar_warning = property(None, statusbar_warning)
+
+    def statusbar_error(self, value):
+        self.__set_status(value, 'pink')
+    statusbar_error = property(None, statusbar_error)
+
+    def __set_status(self, value, color):
+        self._statusbar.SetStatusText(value, 1)
+        bg_color = self._statusbar.GetBackgroundColour()
+        fg_color = self._statusbar.GetForegroundColour()
+        self._statusbar.SetBackgroundColour(color)
+        self._statusbar.SetForegroundColour('black')
+        wx.CallLater(5000, self.__reset_status, bg_color, fg_color)
+
+    def __reset_status(self, bg_color, fg_color):
+        self._statusbar.SetStatusText("", 1)
+        self._statusbar.SetBackgroundColour(bg_color)
+        self._statusbar.SetForegroundColour(fg_color)
 
     @property
     def statusbar_size(self):
