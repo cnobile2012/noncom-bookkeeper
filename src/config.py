@@ -5,11 +5,13 @@
 __docformat__ = "restructuredtext en"
 
 import os
+import re
 import logging
 import shutil
 from datetime import datetime
 from appdirs import AppDirs
 
+from .bases import find_dict
 from .exceptions import InvalidTomlException
 
 import tomlkit as tk
@@ -355,6 +357,65 @@ class TomlAppConfig(BaseSystemData):
                    f"file, {str(s)}")
             self._log.critical(msg)
             # *** TODO *** This needs to be shown on the screen if detected.
+
+
+class TomlCreatePanel(BaseSystemData):
+    """
+    Create an updated panel Toml file.
+    """
+    _KEY_NUM = re.compile(r"^.*_(?P<count>\d+)$")
+    __panel = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @property
+    def current_panel(self):
+        return self.__panel
+
+    @current_panel.setter
+    def current_panel(self, current):
+        self.__panel = current.copy()
+
+    @property
+    def field_names(self):
+        assert self.__panel, "Current panel not set."
+        names = []
+
+        for item in self.__panel.values():
+            list_ = find_dict(item).get('args', [])
+
+            if len(list_) >= 3:
+                names.append(list_[2])
+
+        return [name for name in names if name and name.endswith(':')]
+
+    def add_name(self, name, row_count):
+        assert self.__panel, "Current panel not set."
+        next_num = self.next_widget_num
+        key = f"widget_{next_num:>02}"
+        self.__panel[key] = [
+            'StaticText', 'w_fg_color_1',
+            {'args': ['self', 'ID_ANY', name],
+             'min': [-1, 23],
+             'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
+             'pos': [row_count, 0],
+             'span': [1, 1]}]
+        key = f"widget_{next_num+1:>02}"
+        self.__panel[key] = [
+            'TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
+            {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
+             'min': [-1, 30],
+             'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+             'pos': [row_count, 1],
+             'span': [1, 1]}]
+
+    @property
+    def next_widget_num(self):
+        last_key = list(self.__panel.keys())[-1]
+        sre = self._KEY_NUM.search(last_key)
+        assert sre is not None, f"There was an invalid key: {last_key}."
+        return int(sre.group('count')) + 1
 
 
 class Database(BaseSystemData):

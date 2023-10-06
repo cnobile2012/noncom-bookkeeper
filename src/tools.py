@@ -11,7 +11,7 @@ from pprint import pprint # *** TODO *** Remove later
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
-from .config import TomlMetaData
+from .config import TomlMetaData, TomlCreatePanel
 from .bases import BasePanel
 from .utilities import GBSRowSwapping, EventStaticText
 
@@ -82,6 +82,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
     Add or remove fields in various panels.
     """
     tmd = TomlMetaData()
+    tcp = TomlCreatePanel()
     __previous_row = None
     __cl = None
 
@@ -301,6 +302,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
             if edit_names[0].lower() != chosen:
                 items = self.tmd.panel_config.get(
                     chosen, {}).get('widgets', {})
+                self.tcp.current_panel = items
 
                 for value in items.values():
                     if (isinstance(value, list) and value[0] == 'StaticText'):
@@ -393,22 +395,31 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
             if value:
                 value = value if value.endswith(':') else value + ':'
-                row_count = grid_sizer.GetRows()
-                widget = EventStaticText(panel, wx.ID_ANY, value)
-                widget.SetFont(wx.Font(
-                    10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
-                    wx.FONTWEIGHT_BOLD, 0, ''))
-                widget.SetForegroundColour(wx.Colour(*w_fg_color_0))
-                widget.SetMinSize((-1, 23))
-                grid_sizer.Add(widget, (row_count, 0), (1, 1),
-                               (wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT
-                                | wx.BOTTOM), 6)
+
+                if value not in self.tcp.field_names:
+                    row_count = grid_sizer.GetRows()
+                    widget = EventStaticText(panel, wx.ID_ANY, value)
+                    widget.SetFont(wx.Font(
+                        10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                        wx.FONTWEIGHT_BOLD, 0, ''))
+                    widget.SetForegroundColour(wx.Colour(*w_fg_color_0))
+                    widget.SetMinSize((-1, 23))
+                    grid_sizer.Add(widget, (row_count, 0), (1, 1),
+                                   (wx.ALIGN_CENTER_VERTICAL | wx.LEFT
+                                    | wx.RIGHT | wx.BOTTOM), 6)
+                    self.Bind(
+                        widget.event_click_position, self.event_click_closure(
+                            arg_dict, orig_color=wx.Colour(*w_bg_color)),
+                        id=widget.GetId())
+                    self.bind_events(arg_dict)
+                    self.tcp.add_name(value, row_count)
+
+                    print(self.tcp.current_panel)
+                else:
+                    msg = "Duplicate fields are not allowed."
+                    self.parent.statusbar_warning = msg
+
                 field_name.SetValue("")
-                self.Bind(
-                    widget.event_click_position, self.event_click_closure(
-                        arg_dict, orig_color=wx.Colour(*w_bg_color)),
-                    id=widget.GetId())
-                self.bind_events(arg_dict)
 
         return add_button
 
@@ -419,9 +430,8 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
             if value.endswith(':'):
                 widget = arg_dict['current_widget']
-                value = value if value.endswith(':') else value + ':'
-                widget.SetLabel(value)
-            else:
+                widget.SetLabel(value if value.endswith(':') else value + ':')
+            elif value:
                 self.parent.statusbar_warning = "Cannot update title fields."
 
             field_name.SetValue("")
@@ -430,22 +440,12 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
     def remove_closuer(self, arg_dict):
         def remove_button(event):
-            print("Remove")
+            field_name = arg_dict['new_field_name']
+            value = field_name.GetValue()
+
 
 
         return remove_button
-
-    def static_text_click(self, event):
-        print("StaticText Clicked")
-
-    def _find_dict(self, value):
-        for item in value:
-            if isinstance(item, dict):
-                break
-            else:
-                item = {}
-
-        return item
 
     def turn_off_highlight(self, gbs, orig_color):
         for row in range(gbs.GetRows()):

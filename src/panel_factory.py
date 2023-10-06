@@ -7,6 +7,7 @@ __docformat__ = "restructuredtext en"
 from io import StringIO
 
 from .config import TomlMetaData
+from .bases import find_dict
 
 import wx
 import wx.adv
@@ -120,20 +121,20 @@ class PanelFactory(TomlMetaData):
 
     def flex_grid_sizer(self, klass, sizer, value):
         self.second_sizer = sizer
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         grid = dict_.get('grid')
         klass.write(f"        {sizer} = wx.FlexGridSizer(*{grid})\n")
         self._set_add_to_sizer(klass, sizer, value)
 
     def grid_bag_sizer(self, klass, sizer, value):
         self.second_sizer = sizer
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         gap = dict_.get('gap')
         klass.write(f"        {sizer} = wx.GridBagSizer(*{gap})\n")
         self._set_add_to_sizer(klass, sizer, value)
 
     def radio_box(self, klass, widget, value):
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         parent, id, label = dict_.get('args')
         style = dict_.get('style', 0)
         style = style if style == 0 else self._fix_flags(style)
@@ -165,7 +166,7 @@ class PanelFactory(TomlMetaData):
                         f"self._locality_prefix, *({widget}, '{update}'))\n")
 
     def static_text(self, klass, widget, value):
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         parent, id, label = dict_.get('args')
         label = f"'''{label}'''"
         style = dict_.get('style', 0)
@@ -193,7 +194,7 @@ class PanelFactory(TomlMetaData):
             klass.write(f"        self.{widget} = {widget}\n")
 
     def text_ctrl(self, klass, widget, value):
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         parent, id, label = dict_.get('args')
         label = f"'''{label}'''"
         style = dict_.get('style', 0)
@@ -215,7 +216,7 @@ class PanelFactory(TomlMetaData):
             klass.write(f"        self.{widget} = {widget}\n")
 
     def date_picker_ctrl(self, klass, widget, value):
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         parent, id = dict_.get('args')
         klass.write(f"        {widget} = wx.adv.DatePickerCtrl("
                     f"{parent}, wx.{id})\n")
@@ -228,7 +229,7 @@ class PanelFactory(TomlMetaData):
         self._set_add_to_sizer(klass, widget, value)
 
     def choice_combo_box(self, klass, widget, value):
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         args = dict_.get('args')
         parent, id = dict_.get('args')
         widget_type = value[0]
@@ -255,7 +256,7 @@ class PanelFactory(TomlMetaData):
         self._set_add_to_sizer(klass, widget, value)
 
     def static_line(self, klass, widget, value):
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         parent, flags = dict_.get('args')
         flags = self._fix_flags(flags)
         klass.write(f"        {widget} = wx.StaticLine({parent}, {flags})\n")
@@ -274,15 +275,6 @@ class PanelFactory(TomlMetaData):
         else:
             flag_list = flags.replace(' ', '').split('|')
             item = ' | '.join([f"wx.{flag.upper()}" for flag in flag_list])
-
-        return item
-
-    def _find_dict(self, value):
-        for item in value:
-            if isinstance(item, dict):
-                break
-            else:
-                item = {}
 
         return item
 
@@ -336,7 +328,7 @@ class PanelFactory(TomlMetaData):
         Sets the widget to the sizer add.
         """
         sizer = self.main_sizer if 'Sizer' in value[0] else self.second_sizer
-        dict_ = self._find_dict(value)
+        dict_ = find_dict(value)
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags)
         pos = dict_.get('pos')

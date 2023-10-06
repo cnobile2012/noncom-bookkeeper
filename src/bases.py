@@ -8,8 +8,24 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 
-class BasePanel:
 
+def find_dict(value):
+    """
+    Fine the dict in the Toml data that is in the widget value list.
+    """
+    for item in value:
+        if isinstance(item, dict):
+            break
+        else:
+            item = {}
+
+    return item
+
+
+class BasePanel:
+    """
+    This base class is used in the FieldEdit class in the tools.py and the
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -26,6 +42,9 @@ class BasePanel:
         width = swidth if swidth else width
         height += self.parent.statusbar_size[1]
         sizer.SetMinSize((width, height))
+
+    def _find_dict(self, value):
+        return find_dict(value)
 
 
 class BaseGenerated(BasePanel, ScrolledPanel):
