@@ -209,6 +209,25 @@ class TomlMetaData(BaseSystemData):
     def locale_prefix(self):
         return self.panel_config.get('meta', {}).get('locale_prefix')
 
+    @property
+    def font_12_normal(self):
+        return self.panel_config.get('meta', {}).get('font_12_normal')
+
+    @property
+    def font_12_bold(self):
+        return self.panel_config.get('meta', {}).get('font_12_bold')
+
+    @property
+    def font_10_normal(self):
+        return self.panel_config.get('meta', {}).get('font_10_normal')
+
+    @property
+    def font_10_bold(self):
+        return self.panel_config.get('meta', {}).get('font_10_bold')
+
+    def get_font(self, font_type):
+        return getattr(self, font_type)
+
 
 class TomlPanelConfig(BaseSystemData):
     """
@@ -312,8 +331,8 @@ class TomlAppConfig(BaseSystemData):
         doc.add(tk.nl())
         # Create app size
         app_size = tk.table()
-        app_size.add('default', [530, 880])
-        app_size.add('size', [530, 880])
+        app_size.add('default', [530, 830])
+        app_size.add('size', [530, 830])
         doc.add('app_size', app_size)
         self._write_file(tk.dumps(doc))
 
@@ -397,7 +416,7 @@ class TomlCreatePanel(BaseSystemData):
         self.__panel[key] = [
             'StaticText', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', name],
-             'min': [-1, 23],
+             'min': [-1, -1],
              'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
              'pos': [row_count, 0],
              'span': [1, 1]}]
@@ -405,7 +424,7 @@ class TomlCreatePanel(BaseSystemData):
         self.__panel[key] = [
             'TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
-             'min': [-1, 30],
+             'min': [-1, -1],
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
              'pos': [row_count, 1],
              'span': [1, 1]}]

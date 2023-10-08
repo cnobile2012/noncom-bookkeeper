@@ -64,12 +64,10 @@ class PanelFactory(TomlMetaData):
         self._w_bg_color_2 = panel_kwargs.get('w_bg_color_2')
         self._w_bg_color_3 = panel_kwargs.get('w_bg_color_3')
         self._w_fg_color_1 = panel_kwargs.get('w_fg_color_1')
-        ps, fam, style, weight, ul, fn = panel_kwargs.get('font')
-        fam = self._fix_flags(fam)
-        style = self._fix_flags(style)
-        weight = self._fix_flags(weight)
-        klass.write(f"        font = [{ps}, {fam}, {style}, {weight}, "
-                    f"{ul}, {fn}]\n")
+        # Set default font.
+        ps, fam, style, weight, ul, fn = self._parse_font('font_12_normal')
+        klass.write(f"        self.SetFont(wx.Font({ps}, {fam}, {style}, "
+                    f"{weight}, {ul}, '{fn}'))\n")
         self.span = panel_kwargs.get('sizer_span')
         klass.write(f"        self.locale_prefix = {self.locale_prefix}\n")
 
@@ -173,7 +171,6 @@ class PanelFactory(TomlMetaData):
         style = style if style == 0 else self._fix_flags(style)
         klass.write(f"        {widget} = wx.StaticText("
                     f"{parent}, wx.{id}, {label}, style={style})\n")
-        font = dict_.get('font')
         wrap = dict_.get('wrap')
         self._set_colors(klass, widget, value)
         self._set_font(klass, widget, dict_)
@@ -202,6 +199,7 @@ class PanelFactory(TomlMetaData):
         klass.write(f"        {widget} = wx.TextCtrl("
                     f"{parent}, wx.{id}, {label}, style={style})\n")
         self._set_colors(klass, widget, value)
+        self._set_font(klass, widget, dict_)
         min_size = dict_.get('min')
 
         if min_size:
@@ -267,17 +265,6 @@ class PanelFactory(TomlMetaData):
         if self.span:
             klass.write(f"        {self.second_sizer}.Add(*{self.span})\n")
 
-
-
-    def _fix_flags(self, flags):
-        if isinstance(flags, int):
-            item = flags
-        else:
-            flag_list = flags.replace(' ', '').split('|')
-            item = ' | '.join([f"wx.{flag.upper()}" for flag in flag_list])
-
-        return item
-
     def _set_colors(self, klass, widget, value):
         """
         Sets the background and/or foreground color. Also raise an
@@ -313,15 +300,29 @@ class PanelFactory(TomlMetaData):
                         f"wx.Colour(*{self._w_fg_color_1}))\n")
 
     def _set_font(self, klass, widget, dict_):
-        font = dict_.get('font')
+        font_type = dict_.get('font')
 
-        if font:
-            ps, fam, style, weight, ul, fn = font
-            fam = self._fix_flags(fam)
-            style = self._fix_flags(style)
-            weight = self._fix_flags(weight)
+        if font_type:
+            ps, fam, style, weight, ul, fn = self._parse_font(font_type)
             klass.write(f"        {widget}.SetFont(wx.Font({ps}, {fam}, "
                         f"{style}, {weight}, {ul}, '{fn}'))\n")
+
+    def _parse_font(self, font_type):
+        font = self.get_font(font_type)
+        ps, fam, style, weight, ul, fn = font
+        fam = self._fix_flags(fam)
+        style = self._fix_flags(style)
+        weight = self._fix_flags(weight)
+        return ps, fam, style, weight, ul, fn
+
+    def _fix_flags(self, flags):
+        if isinstance(flags, int):
+            item = flags
+        else:
+            flag_list = flags.replace(' ', '').split('|')
+            item = ' | '.join([f"wx.{flag.upper()}" for flag in flag_list])
+
+        return item
 
     def _set_add_to_sizer(self, klass, widget, value):
         """
