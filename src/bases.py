@@ -24,10 +24,9 @@ def find_dict(value):
 
 class BasePanel:
     """
-    This base class is used in the FieldEdit class in the tools.py and the
+    This base class is used in the FieldEdit class in Tools and the
+    panels created by the PanelFactory.
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     @property
     def background_color(self):

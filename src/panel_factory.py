@@ -107,7 +107,7 @@ class PanelFactory(TomlMetaData):
 
         klass.write("        self._setup_sizer_height_correctly("
                     f"{self.second_sizer})\n")
-        klass.write("        self.SetupScrolling(rate_x=10, rate_y=10)\n")
+        klass.write("        self.SetupScrolling(rate_x=20, rate_y=40)\n")
         klass.write("        self.Hide()\n")
         self.__panels[panel] = klass.getvalue()
         klass.close()

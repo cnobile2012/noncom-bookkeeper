@@ -129,7 +129,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
                     width, height = self.parent.GetSize()
                     tgs_w, tgs_h = top_grid_sizer.GetMinSize()
                     tw, th = panel_top.GetSize()
-                    height = height - th - self.parent.statusbar_size[1]
+                    height = height - th + self.parent.statusbar_size[1]
                     panel_bot.SetSizeHints((tgs_w, height))
                     self.parent.Layout()
 
@@ -237,7 +237,6 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         widget_labels = arg_dict['widget_labels']
 
         for idx, label in enumerate(widget_labels):
-            #label = label.replace(r'\n', '\n')
             widget = EventStaticText(panel, wx.ID_ANY, label)
 
             if label.endswith(':'):
@@ -375,7 +374,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         width, height = arg_dict['top_grid_sizer'].GetMinSize()
         bot_grid_sizer = arg_dict['bot_grid_sizer']
         self._setup_sizer_height_correctly(bot_grid_sizer, swidth=width)
-        wx.CallLater(100, panel.SetupScrolling, rate_x=10, rate_y=10)
+        wx.CallLater(100, panel.SetupScrolling, rate_x=20, rate_y=40)
 
     def _destroy_panel(self, panel, parent_sizer):
         if panel and parent_sizer:

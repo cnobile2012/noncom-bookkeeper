@@ -11,7 +11,7 @@ from pprint import pprint # *** TODO *** Remove later
 import wx
 from wx.lib.inspection import InspectionTool
 
-from .bases import BaseGenerated
+from .bases import BaseGenerated # Used by the factory created classes.
 from .config import TomlAppConfig
 from .panel_factory import PanelFactory
 from .tools import ShortCuts, FieldEdit
@@ -458,6 +458,7 @@ class MainFrame(MenuBar, wx.Frame):
         self.Bind(wx.EVT_IDLE, self.on_idle)
 
     def on_size(self, event):
+        event.Skip()
         self.__resized = True
 
     def on_idle(self, event):
