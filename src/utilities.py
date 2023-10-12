@@ -14,7 +14,7 @@ class GBSRowSwapping:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def gbs_swap_rows(self, gbs, row0, row1, flag=0, border=0):
+    def gbs_swap_rows(self, gbs, row0, row1):
         """
         Swap any two rows in a GridBagSizer keeping most parameters.
         """
@@ -40,13 +40,14 @@ class GBSRowSwapping:
 
         sizer_items = [[item for item in row.keys()] for row in sizer_items]
         # Get list of windows (widgets).
-        windows = [[(item.GetWindow(), item.GetSpan())
+        windows = [[(item.GetWindow(), item.GetSpan(),
+                     item.GetFlag(), item.GetBorder())
                     for item in row if item] for row in sizer_items]
         # Remove GBSizerItem in both rows.
         [gbs.Remove(self.get_sizer_item_index(gbs, item))
          for item in list(chain(*sizer_items)) if item]
         # Add the widget objects to the GridBagSizer with swapped positions.
-        [[gbs.Add(item[0], rpos[idx], item[1], flag=flag, border=border)
+        [[gbs.Add(item[0], rpos[idx], item[1], flag=item[2], border=item[3])
           for idx, item in enumerate(windows[row])]
          for row, rpos in enumerate(reversed(positions))]
 
@@ -141,7 +142,7 @@ class EventStaticText(wx.StaticText):
         return self._cp.get_new_event_type(self.__type_name)
 
     @property
-    def event_click_position(self):
+    def EVT_CLICK_POSITION(self):
         return self._cp.get_click_position(self.__type_name)
 
     def on_left_down(self, event):

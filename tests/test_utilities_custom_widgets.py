@@ -26,21 +26,21 @@ class _TestFrame(wx.Frame):
 
         widget1 = EventStaticText(self, wx.ID_ANY, "Widget 1")
         gbs.Add(widget1, (0, 0), (1, 1), wx.ALIGN_CENTER | wx.ALL, 6)
-        self.Bind(widget1.event_click_position, self.test_event,
+        self.Bind(widget1.EVT_CLICK_POSITION, self.test_event,
                   id=widget1.GetId())
         e_type_1 = widget1.new_event_type
         print(f"widget1 event type: {e_type_1}")
 
         widget2 = EventStaticText(self, wx.ID_ANY, "Widget 2")
         gbs.Add(widget2, (1, 0), (1, 1), wx.ALIGN_CENTER | wx.ALL, 6)
-        self.Bind(widget2.event_click_position, self.test_event,
+        self.Bind(widget2.EVT_CLICK_POSITION, self.test_event,
                   id=widget2.GetId())
         e_type_2 = widget2.new_event_type
         print(f"widget2 event type: {e_type_2}")
 
         widget3 = EventStaticText(self, wx.ID_ANY, "Widget 3")
         sizer.Add(widget3, 0, wx.CENTER | wx.ALL, 6)
-        self.Bind(widget3.event_click_position, self.test_event,
+        self.Bind(widget3.EVT_CLICK_POSITION, self.test_event,
                   id=widget3.GetId())
         e_type_3 = widget3.new_event_type
         print(f"widget3 event type: {e_type_3}")

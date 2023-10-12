@@ -303,6 +303,7 @@ class MenuBar:
         self.sizer.Add(self.panel, 1, wx.EXPAND)
         self.parent.SetTitle(self.panel.title)
         self.panel.Show()
+        self.parent.Layout()
 
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)

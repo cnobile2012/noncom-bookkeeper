@@ -411,7 +411,7 @@ class TomlCreatePanel(BaseSystemData):
 
     def add_name(self, name, row_count):
         assert self.__panel, "Current panel not set."
-        next_num = self.next_widget_num
+        next_num = self._next_widget_num
         key = f"widget_{next_num:>02}"
         self.__panel[key] = [
             'StaticText', 'w_fg_color_1',
@@ -429,8 +429,14 @@ class TomlCreatePanel(BaseSystemData):
              'pos': [row_count, 1],
              'span': [1, 1]}]
 
+    def remove_name(self, name):
+        pass
+
+
+
+
     @property
-    def next_widget_num(self):
+    def _next_widget_num(self):
         last_key = list(self.__panel.keys())[-1]
         sre = self._KEY_NUM.search(last_key)
         assert sre is not None, f"There was an invalid key: {last_key}."

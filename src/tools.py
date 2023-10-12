@@ -205,7 +205,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
             10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_BOLD, 0, ''))
         grid_sizer.Add(spin_desc, (4, 0), (1, 1), static_text_flags, 4)
-        spin_ctrl = wx.SpinCtrl(panel, wx.ID_ANY, "")
+        spin_ctrl = wx.SpinCtrl(panel, wx.ID_ANY, name="")
         spin_ctrl.SetMinSize((-1, 32))
         spin_ctrl.SetBackgroundColour(wx.Colour(*w_bg_color))
         spin_ctrl.SetForegroundColour(wx.Colour(*w_fg_color_0))
@@ -259,9 +259,9 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
             grid_sizer.Add(
                 widget, (idx, 0), (1, span),
                 wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.TOP, 6)
-            spin_ctrl.SetValue(0)
+            spin_ctrl.SetValue("")
             self.Bind(
-                widget.event_click_position, self.event_click_closure(
+                widget.EVT_CLICK_POSITION, self.event_click_closure(
                     arg_dict, orig_color=wx.Colour(*w_bg_color)),
                 id=widget.GetId())
 
@@ -289,7 +289,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
         evt_s = self.Unbind(wx.EVT_SPINCTRL)
         self.Bind(wx.EVT_SPINCTRL, self.swap_rows_closure(
-            grid_sizer, wx.Colour(*w_bg_color), spin_ctrl))
+            arg_dict, wx.Colour(*w_bg_color)))
 
     def selection_closure(self, arg_dict):
         def get_selection(event):
@@ -336,11 +336,11 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
             spin_ctrl.SetValue(row)
             spin_ctrl.SetRange(0, gbs.GetRows() - 1)
             self.__cl = wx.CallLater(
-                5000, self.turn_off_highlight, gbs, orig_color, spin_ctrl)
+                7000, self.turn_off_highlight, arg_dict, orig_color)
 
         return event_click
 
-    def swap_rows_closure(self, gbs, orig_color, spin_ctrl):
+    def swap_rows_closure(self, arg_dict, orig_color):
         """
         Event to swap the two rows.
         """
@@ -352,14 +352,12 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
                 self.__previous_row = row1
 
                 if row0 != row1:
+                    gbs = arg_dict.get('bot_grid_sizer')
                     self.stop_call_later()
-                    flags = (wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT
-                             | wx.TOP)
-                    self.gbs_swap_rows(gbs, row0, row1, flags, 6)
+                    self.gbs_swap_rows(gbs, row0, row1)
                     self.Layout()
                     self.__cl = wx.CallLater(
-                        5000, self.turn_off_highlight, gbs, orig_color,
-                        spin_ctrl)
+                        7000, self.turn_off_highlight, arg_dict, orig_color)
 
         return swap_rows
 
@@ -399,21 +397,20 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
                     row_count = grid_sizer.GetRows()
                     widget = EventStaticText(panel, wx.ID_ANY, value)
                     widget.SetFont(wx.Font(
-                        10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
-                        wx.FONTWEIGHT_BOLD, 0, ''))
+                        12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                        wx.FONTWEIGHT_NORMAL, 0, ''))
                     widget.SetForegroundColour(wx.Colour(*w_fg_color_0))
                     widget.SetMinSize((-1, -1))
                     grid_sizer.Add(widget, (row_count, 0), (1, 1),
                                    (wx.ALIGN_CENTER_VERTICAL | wx.LEFT
                                     | wx.RIGHT), 6)
+                    grid_sizer.Layout()
                     self.Bind(
-                        widget.event_click_position, self.event_click_closure(
+                        widget.EVT_CLICK_POSITION, self.event_click_closure(
                             arg_dict, orig_color=wx.Colour(*w_bg_color)),
                         id=widget.GetId())
                     self.bind_events(arg_dict)
                     self.tcp.add_name(value, row_count)
-                    #print(self.tcp.current_panel)
-                    #grid_sizer.Layout()
                 else:
                     msg = "Duplicate fields are not allowed."
                     self.parent.statusbar_warning = msg
@@ -439,15 +436,41 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
     def remove_closuer(self, arg_dict):
         def remove_button(event):
-            field_name = arg_dict['new_field_name']
-            value = field_name.GetValue()
 
+            # *** TODO *** Popup to ask if you are sure.
 
+            gbs = arg_dict.get('bot_grid_sizer')
+            rows = gbs.GetRows()
+            # Row to remove
+            spin_ctrl = arg_dict['spin_ctrl']
+            row = spin_ctrl.GetValue()
+
+            if row >= 0:
+                spin_ctrl.SetValue("")
+                start_row = row
+
+                for count in range(rows-row-1):
+                    #print(start_row, start_row+1)
+                    self.gbs_swap_rows(gbs, start_row, start_row+1)
+                    start_row += 1
+
+                windows = [(item.GetWindow())
+                           for item in gbs.GetChildren()
+                           if item and item.GetPos()[0] == rows-1]
+
+                for window in windows:
+                    window.Unbind(window.EVT_CLICK_POSITION)
+                    window.Destroy()
+
+                gbs.Layout()
+                arg_dict['panel'].Layout()
 
         return remove_button
 
-    def turn_off_highlight(self, gbs, orig_color, spin_ctrl=None):
-        if spin_ctrl: spin_ctrl.SetValue(0)
+    def turn_off_highlight(self, arg_dict, orig_color):
+        gbs = arg_dict.get('bot_grid_sizer')
+        arg_dict['spin_ctrl'].SetValue("")
+        arg_dict['new_field_name'].SetValue("")
 
         for row in range(gbs.GetRows()):
             self.__previous_row = None
