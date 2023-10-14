@@ -82,6 +82,62 @@ class GBSRowSwapping:
                 w.Refresh()
 
 
+class ConfirmationDialog(wx.Dialog):
+    """
+    Create a generic dialog box.
+    """
+
+    def __init__(self, parent, msg, cap, bg_color=(220, 130, 143), # Red-ish
+                 fg_color=None):
+        super().__init__(parent, wx.ID_ANY, cap,
+                         style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
+        self._parent = parent
+        self.SetSize((300, 150))
+
+        self._bg_color = bg_color
+        self._fg_color = fg_color
+        if bg_color: self.SetBackgroundColour(wx.Colour(*bg_color))
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(sizer)
+
+        message = wx.StaticText(self, wx.ID_ANY, msg)
+        if fg_color: message.SetForegroundColour(wx.Colour(*fg_color))
+        message.Wrap(300)
+        sizer.Add(message, 0, wx.ALL | wx.CENTER, 10)
+
+        line = wx.StaticLine(self, -1, size=(20,-1), style=wx.LI_HORIZONTAL)
+        sizer.Add(line, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 6)
+
+        button_sizer = wx.StdDialogButtonSizer()
+        sizer.Add(button_sizer, 0, wx.CENTER | wx.ALL, 6)
+
+        ok_button = wx.Button(self, wx.ID_OK)
+        #ok_button.SetDefault()
+        button_sizer.AddButton(ok_button)
+
+        cancel_button = wx.Button(self, wx.ID_CANCEL)
+        cancel_button.SetDefault()
+        button_sizer.AddButton(cancel_button)
+
+        button_sizer.Realize()
+        sizer.Fit(self)
+
+    def show(self):
+        self.CenterOnParent()
+        value = self.ShowModal()
+
+        if value == wx.ID_OK:
+            ret = True
+            #print("You pressed OK")
+        else:
+            ret = False
+            #print("You pressed Cancel")
+
+        self.Destroy()
+        return ret
+
+
 class _ClickPosition:
     """
     A borg pattern to hold new widget type IDs.

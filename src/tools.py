@@ -13,7 +13,7 @@ from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData, TomlCreatePanel
 from .bases import BasePanel
-from .utilities import GBSRowSwapping, EventStaticText
+from .utilities import GBSRowSwapping, ConfirmationDialog, EventStaticText
 
 
 class ShortCuts(wx.Frame):
@@ -436,34 +436,45 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
     def remove_closuer(self, arg_dict):
         def remove_button(event):
+            value = arg_dict['new_field_name'].GetValue()
 
-            # *** TODO *** Popup to ask if you are sure.
+            if value:
+                w_fg_color_0 = arg_dict['w_fg_color_0']
+                msg = f'Confirm the removal of the following field:\n"{value}"'
 
-            gbs = arg_dict.get('bot_grid_sizer')
-            rows = gbs.GetRows()
-            # Row to remove
-            spin_ctrl = arg_dict['spin_ctrl']
-            row = spin_ctrl.GetValue()
+                # *** TODO *** Check database for entries on this field.
 
-            if row >= 0:
-                spin_ctrl.SetValue("")
-                start_row = row
+                cap = "Removal Confirmation"
+                dlg = ConfirmationDialog(self, msg, cap, fg_color=w_fg_color_0)
+                ret = dlg.show()
 
-                for count in range(rows-row-1):
-                    #print(start_row, start_row+1)
-                    self.gbs_swap_rows(gbs, start_row, start_row+1)
-                    start_row += 1
+                if ret:
+                    gbs = arg_dict.get('bot_grid_sizer')
+                    rows = gbs.GetRows()
+                    # Row to remove
+                    spin_ctrl = arg_dict['spin_ctrl']
+                    row = spin_ctrl.GetValue()
 
-                windows = [(item.GetWindow())
-                           for item in gbs.GetChildren()
-                           if item and item.GetPos()[0] == rows-1]
+                    # Move the row to remove to the end of the list.
+                    if row >= 0:
+                        spin_ctrl.SetValue("")
+                        start_row = row
 
-                for window in windows:
-                    window.Unbind(window.EVT_CLICK_POSITION)
-                    window.Destroy()
+                        for count in range(rows-row-1):
+                            self.gbs_swap_rows(gbs, start_row, start_row+1)
+                            start_row += 1
 
-                gbs.Layout()
-                arg_dict['panel'].Layout()
+                        windows = [(item.GetWindow())
+                                   for item in gbs.GetChildren()
+                                   if item and item.GetPos()[0] == rows-1]
+
+                        for window in windows:
+                            window.Unbind(window.EVT_CLICK_POSITION)
+                            window.Destroy()
+
+                        gbs.Layout()
+                        print(rows, gbs.GetRows())
+                        arg_dict['panel'].Layout()
 
         return remove_button
 
