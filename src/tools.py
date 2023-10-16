@@ -81,8 +81,8 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
     """
     Add or remove fields in various panels.
     """
-    tmd = TomlMetaData()
-    tcp = TomlCreatePanel()
+    _tmd = TomlMetaData()
+    _tcp = TomlCreatePanel()
     __previous_row = None
     __cl = None
 
@@ -298,9 +298,9 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
             widget_labels = []
 
             if edit_names[0].lower() != chosen:
-                items = self.tmd.panel_config.get(
+                items = self._tmd.panel_config.get(
                     chosen, {}).get('widgets', {})
-                self.tcp.current_panel = items
+                self._tcp.current_panel = items
 
                 for value in items.values():
                     if (isinstance(value, list) and value[0] == 'StaticText'):
@@ -371,8 +371,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         parent_sizer.Add(panel, 0, wx.CENTER | wx.ALL, 6)
         width, height = arg_dict['top_grid_sizer'].GetMinSize()
         bot_grid_sizer = arg_dict['bot_grid_sizer']
-        self._setup_sizer_height_correctly(bot_grid_sizer, swidth=width)
-        wx.CallLater(100, panel.SetupScrolling, rate_x=20, rate_y=40)
+        self._update_screen_size(arg_dict)
 
     def _destroy_panel(self, panel, parent_sizer):
         if panel and parent_sizer:
@@ -393,7 +392,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
             if value:
                 value = value if value.endswith(':') else value + ':'
 
-                if value not in self.tcp.field_names:
+                if value not in self._tcp.field_names:
                     row_count = grid_sizer.GetRows()
                     widget = EventStaticText(panel, wx.ID_ANY, value)
                     widget.SetFont(wx.Font(
@@ -410,7 +409,8 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
                             arg_dict, orig_color=wx.Colour(*w_bg_color)),
                         id=widget.GetId())
                     self.bind_events(arg_dict)
-                    self.tcp.add_name(value, row_count)
+                    self._tcp.add_name(value, row_count)
+                    self._update_screen_size(arg_dict)
                 else:
                     msg = "Duplicate fields are not allowed."
                     self.parent.statusbar_warning = msg
@@ -471,7 +471,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
                             window.Unbind(window.EVT_CLICK_POSITION)
                             window.Destroy()
 
-                        self.tcp.remove_name(value)
+                        self._tcp.remove_name(value)
                         gbs.Layout()
                         #print(rows, gbs.GetRows())
                         arg_dict['panel'].Layout()
@@ -494,6 +494,13 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         if self.__cl and self.__cl.IsRunning():
             self.__cl.Stop()
             self.__cl = None
+
+    def _update_screen_size(self, arg_dict):
+        panel = arg_dict['panel']
+        grid_sizer = arg_dict.get('bot_grid_sizer')
+        width, height = arg_dict['top_grid_sizer'].GetMinSize()
+        self._setup_sizer_height_correctly(grid_sizer, swidth=width)
+        wx.CallLater(100, panel.SetupScrolling, rate_x=20, rate_y=40)
 
     @property
     def _description(self):
