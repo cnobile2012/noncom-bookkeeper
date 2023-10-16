@@ -390,14 +390,26 @@ class TomlCreatePanel(BaseSystemData):
 
     @property
     def current_panel(self):
+        """
+        Returns the Toml doc of the current panel.
+        """
         return self.__panel
 
     @current_panel.setter
     def current_panel(self, current):
+        """
+        Make a copy of the Toml doc of the current panel.
+
+        :param current: The current panel's Toml doc.
+        :type current: Toml doc
+        """
         self.__panel = current.copy()
 
     @property
     def field_names(self):
+        """
+        A list of field names not including title names.
+        """
         assert self.__panel, "Current panel not set."
         names = []
 
@@ -410,9 +422,18 @@ class TomlCreatePanel(BaseSystemData):
         return [name for name in names if name and name.endswith(':')]
 
     def add_name(self, name, row_count):
+        """
+        Add the named StaticText and it companion the TextCtrl to the
+        Toml file.
+
+        :param name: The value name of the StaticText widget.
+        :type name: str
+        :param row_count: The current number of rows in the GridBagSizer.
+        :type row_count: int
+        """
         assert self.__panel, "Current panel not set."
-        next_num = self._next_widget_num
-        key = f"widget_{next_num:>02}"
+        key_num = self._next_widget_num
+        key = self._make_key(key_num)
         self.__panel[key] = [
             'StaticText', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', name],
@@ -420,7 +441,7 @@ class TomlCreatePanel(BaseSystemData):
              'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
              'pos': [row_count, 0],
              'span': [1, 1]}]
-        key = f"widget_{next_num+1:>02}"
+        key = self._make_key(key_num+1)
         self.__panel[key] = [
             'TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
@@ -430,17 +451,70 @@ class TomlCreatePanel(BaseSystemData):
              'span': [1, 1]}]
 
     def remove_name(self, name):
-        pass
+        """
+        Remove the named StaticText and it companion the TextCtrl from
+        the Toml file.
 
+        :param name: The value name of the StaticText widget.
+        :type name: str
+        """
+        for key, item in self.__panel.items():
+            list_ = find_dict(item).get('args', [])
+            if name in list_: break
 
+        self._remove_two_consecutive_keys(key)
+        #self.__panel = self._reorder(self.__panel)
 
+    def _remove_two_consecutive_keys(self, key):
+        """
+        Remove two consecutive keys using the first key as a starting
+        point. This works because we are removing the StaticText widgit
+        by name then the TextCtrl that will be right agter it.
+
+        :param key: The Toml key.
+        :type key: str
+        """
+        sre = self._KEY_NUM.search(key)
+        assert sre is not None, f"There was an invalid key: {key}."
+        key_num = int(sre.group('count'))
+        self.__panel.pop(key, None)
+        second_key = self._make_key(key_num+1)
+        self.__panel.pop(second_key, None)
+
+    def _reorder(self, panel):
+        """
+        Re order the items in the Toml doc.
+
+        :param panel: This is the Toml doc for the panel that is being
+                      worked on.
+        :type panel: Toml doc
+        :return: A reordered Toml doc.
+        :rtype: Toml doc
+        """
+        keys = sorted(list(panel))
+        doc = tk.document()
+
+        for idx, key in enumerate(keys):
+            value = panel[key]
+            doc[self._make_key(idx)] = value
+
+        return doc
 
     @property
     def _next_widget_num(self):
+        """
+        Get the next widget key to be used when adding a new widget.
+
+        :return: The next widget number.
+        :rtype: int
+        """
         last_key = list(self.__panel.keys())[-1]
         sre = self._KEY_NUM.search(last_key)
         assert sre is not None, f"There was an invalid key: {last_key}."
         return int(sre.group('count')) + 1
+
+    def _make_key(self, key_num):
+        return f"widget_{key_num:>02}"
 
 
 class Database(BaseSystemData):

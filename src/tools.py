@@ -421,8 +421,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
     def update_closuer(self, arg_dict):
         def update_button(event):
-            field_name = arg_dict['new_field_name']
-            value = field_name.GetValue()
+            value = arg_dict['new_field_name'].GetValue()
 
             if value.endswith(':'):
                 widget = arg_dict['current_widget']
@@ -438,7 +437,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         def remove_button(event):
             value = arg_dict['new_field_name'].GetValue()
 
-            if value:
+            if value.endswith(':'):
                 w_fg_color_0 = arg_dict['w_fg_color_0']
                 msg = f'Confirm the removal of the following field:\n"{value}"'
 
@@ -472,9 +471,12 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
                             window.Unbind(window.EVT_CLICK_POSITION)
                             window.Destroy()
 
+                        self.tcp.remove_name(value)
                         gbs.Layout()
-                        print(rows, gbs.GetRows())
+                        #print(rows, gbs.GetRows())
                         arg_dict['panel'].Layout()
+            elif value:
+                self.parent.statusbar_warning = "Cannot remove title fields."
 
         return remove_button
 

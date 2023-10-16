@@ -129,10 +129,8 @@ class ConfirmationDialog(wx.Dialog):
 
         if value == wx.ID_OK:
             ret = True
-            #print("You pressed OK")
         else:
             ret = False
-            #print("You pressed Cancel")
 
         self.Destroy()
         return ret
