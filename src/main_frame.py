@@ -51,7 +51,7 @@ class MenuBar:
                           ])]),
             ('edit', [None, '&Edit\tALT+E', "Screen editing operations.",
                       None, wx.Menu(), True, OrderedDict([
-                          ('conf', [200, "&Configuration\tCTRL+F",
+                          ('conf', [200, "&Org Information\tCTRL+F",
                                     "Edit basic organization configuration.",
                                     'edit_config', None, True, None]),
                           ('budget', [201, "&Budget\tCTRL+B",
