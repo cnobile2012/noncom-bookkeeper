@@ -153,8 +153,7 @@ class FieldEdit(BasePanel, wx.Panel):
                              wx.FONTWEIGHT_BOLD, 0, ''))
         grid_sizer.Add(desc, (0, 0), (1, 3), wx.ALIGN_CENTER | wx.ALL, 6)
 
-        edit_names = self._edit_names
-        arg_dict['edit_names'] = edit_names
+        edit_names = [m_name for m_name, name in self._tmd.panels]
         edit_names.insert(0, 'Choose the Page to Edit')
         combo_box = wx.ComboBox(panel, wx.ID_ANY, value=edit_names[0],
                                 choices=edit_names, style=wx.TE_READONLY)
@@ -303,11 +302,11 @@ class FieldEdit(BasePanel, wx.Panel):
 
     def selection_closure(self, arg_dict):
         def get_selection(event):
-            edit_names = arg_dict['edit_names']
-            chosen = event.GetString().lower()
+            edit_names = {m_name: name for m_name, name in self._tmd.panels}
+            chosen = edit_names.get(event.GetString())
             widget_labels = []
 
-            if edit_names[0].lower() != chosen:
+            if chosen:
                 items = self._tmd.panel_config.get(
                     chosen, {}).get('widgets', {})
                 self._tcp.current_panel = items
@@ -531,18 +530,3 @@ class FieldEdit(BasePanel, wx.Panel):
         value = buff.getvalue()
         buff.close()
         return value
-
-    @property
-    def _edit_names(self):
-        item_list = self.parent.menu_items.get('edit', [])
-        item_names = []
-
-        if item_list: # Just in case the list is empty.
-            for item in item_list[-1].values():
-                if item: # Just in case we find a separator.
-                    name, tab, key = item[1].partition('\t')
-                    if "Close All" in name: continue
-                    item_names.append(name.lstrip('&'))
-
-        item_names.sort()
-        return item_names
