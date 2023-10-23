@@ -66,7 +66,7 @@ class Settings(AppDirs):
     @already_run.setter
     def already_run(self, value):
         assert isinstance(value, bool), (f"The 'already_run' value '{value}'"
-                                         f" is not a Boolean.")
+                                         " is not a Boolean.")
         self._ALREADY_RUN = value
 
     @property

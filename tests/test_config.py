@@ -23,26 +23,33 @@ from src.config import (TomlMetaData, TomlPanelConfig, TomlAppConfig,
 from src.ncb import CheckPanelConfig, CheckAppConfig
 
 
+def setup_logging():
+    LOGGER_NAME = 'config'
+    filename = 'config.log'
+    full_path = os.path.abspath(os.path.join(BASE_DIR, 'logs', filename))
+    logger = Logger()
+    logger.config(LOGGER_NAME, full_path, logging.DEBUG)
+    return logging.getLogger(LOGGER_NAME)
+
+log = setup_logging()
+
+
 class BaseTest(unittest.TestCase):
     LOGGER_NAME = 'config'
     _log_path = os.path.join(BASE_DIR, 'logs')
     _cpd = CheckPanelConfig()
     _cad = CheckAppConfig()
 
-    def __init__(self, name, filename=None):
+    def __init__(self, name):
         super().__init__(name)
-        full_path = os.path.abspath(os.path.join(self._log_path, filename))
-        logger = Logger()
-        logger.config(self.LOGGER_NAME, full_path, logging.DEBUG)
         self._cpd.has_valid_data
 
 
 class TestTomlMetaData(BaseTest):
-    _LOG_FILENAME = 'toml-meta-data.log'
     _NUM_PANELS = 3
 
     def __init__(self, name):
-        super().__init__(name, self._LOG_FILENAME)
+        super().__init__(name)
 
     def setUp(self):
         self.tmd = TomlMetaData()
@@ -179,15 +186,14 @@ class TestTomlMetaData(BaseTest):
 
 
 class TestTomlAppConfig(BaseTest):
-    _LOG_FILENAME = 'toml-app-config.log'
     _NUM_PANELS = 3
 
     def __init__(self, name):
-        super().__init__(name, self._LOG_FILENAME)
+        super().__init__(name)
 
     def setUp(self):
-        self.tmd = TomlMetaData()
+        self.tac = TomlAppConfig()
         self.NUM_MONTHS = {'bahai': 20, 'generic': 12}.get(
-            self.tmd.config_type)
+            self.tac.config_type)
 
 
