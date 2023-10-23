@@ -1,8 +1,13 @@
 # Include the bare minimum.
 -r base.txt
 
-#coverage
+coverage
+wheel
+twine
+mock
+pynose
 
 ipython
 
-#Sphinx
+Sphinx
+sphinx_rtd_theme

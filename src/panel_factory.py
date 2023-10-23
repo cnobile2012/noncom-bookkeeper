@@ -37,7 +37,7 @@ class PanelFactory(TomlMetaData):
         return self.__panels.get(panel)
 
     def parse(self):
-        for panel in self.panels:
+        for m_name, panel in self.panels:
             try:
                 self.setup_panel(panel)
             except Exception as e:

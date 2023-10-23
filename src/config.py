@@ -41,9 +41,9 @@ class Settings(AppDirs):
         # The two lines below read an environment variable which is used
         # during the app build process. The default is to use the Baha'i
         # configuration.
-        value = os.environ.get('NCB_TYPE', 'bahai')
-        self.__user_toml = self._CONFIG_FILES['user'][value]
-        self.__local_toml = self._CONFIG_FILES['local'][value]
+        self.config_type = os.environ.get('NCB_TYPE', 'bahai')
+        self.__user_toml = self._CONFIG_FILES['user'][self.config_type]
+        self.__local_toml = self._CONFIG_FILES['local'][self.config_type]
         self.__app_toml = 'nc-bookkeeper.toml'
 
     def create_dirs(self):
@@ -66,7 +66,7 @@ class Settings(AppDirs):
     @already_run.setter
     def already_run(self, value):
         assert isinstance(value, bool), (f"The 'already_run' value '{value}'"
-                                         f" is not a boolean.")
+                                         f" is not a Boolean.")
         self._ALREADY_RUN = value
 
     @property
@@ -124,7 +124,7 @@ class Settings(AppDirs):
 class BaseSystemData(Settings):
     """
     This base class writes and reads config files and is used
-    in all the types of config subclasses.
+    in all the types of config sub-classes.
     """
     SYS_FILES = {'data': None, 'panel_config': None, 'app_config': None}
 
@@ -383,6 +383,7 @@ class TomlCreatePanel(BaseSystemData):
     Create an updated panel Toml file.
     """
     _KEY_NUM = re.compile(r"^.*_(?P<count>\d+)$")
+    _last_removed = None
     __panel = None
 
     def __init__(self, *args, **kwargs):
@@ -421,17 +422,27 @@ class TomlCreatePanel(BaseSystemData):
 
         return [name for name in names if name and name.endswith(':')]
 
-    def add_name(self, name, row_count):
+    def add_name(self, name, key_num=None):
         """
-        Add the named StaticText and it companion the TextCtrl to the
-        Toml file.
+        Add the named StaticText and it companion the TextCtrl to the end
+        Toml file. If `key_num` is provided the `key_num is the y coordinate
+        and 0 will be the y continent.
 
         :param name: The value name of the StaticText widget.
         :type name: str
-        :param row_count: The current number of rows in the GridBagSizer.
-        :type row_count: int
+        :param key_num: The key number to use.
+        :type key_num: int
         """
         assert self.__panel, "Current panel not set."
+
+        if key_num is None:
+
+
+
+            x, y = self._find_widget_gbs_pos(key_num=self._next_widget_num)
+        else:
+            x, y = (key_num, 0)
+
         key_num = self._next_widget_num
         key = self._make_key(key_num)
         self.__panel[key] = [
@@ -439,7 +450,7 @@ class TomlCreatePanel(BaseSystemData):
             {'args': ['self', 'ID_ANY', name],
              'min': [-1, -1],
              'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
-             'pos': [row_count, 0],
+             'pos': [x, y],
              'span': [1, 1]}]
         key = self._make_key(key_num+1)
         self.__panel[key] = [
@@ -447,7 +458,7 @@ class TomlCreatePanel(BaseSystemData):
             {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
              'min': [-1, -1],
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-             'pos': [row_count, 1],
+             'pos': [x, y+1],
              'span': [1, 1]}]
 
     def remove_name(self, name):
@@ -463,20 +474,39 @@ class TomlCreatePanel(BaseSystemData):
             if name in list_: break
 
         self._remove_two_consecutive_keys(key)
-        #self.__panel = self._reorder(self.__panel)
+        self._last_removed = (key, name)
+
+    def undo_name(self, name):
+        """
+        Undo a removed field.
+
+        :param name: The value name of the StaticText widget.
+        :type name: str
+        """
+        ret = None
+
+        if self._last_removed:
+            old_key, name = self._last_removed
+            self._create_hole(old_key+1)
+
+
+
+            self.add_name(name, row_count)
+            self._last_removed = None
+            new_key = self._make_key(self._next_widget_num())
+
+        return ret
 
     def _remove_two_consecutive_keys(self, key):
         """
         Remove two consecutive keys using the first key as a starting
-        point. This works because we are removing the StaticText widgit
-        by name then the TextCtrl that will be right agter it.
+        point. This works because we are removing the StaticText widget
+        by name then the TextCtrl that will be right after it.
 
         :param key: The Toml key.
         :type key: str
         """
-        sre = self._KEY_NUM.search(key)
-        assert sre is not None, f"There was an invalid key: {key}."
-        key_num = int(sre.group('count'))
+        key_num = self._find_key_num(key)
         self.__panel.pop(key, None)
         second_key = self._make_key(key_num+1)
         self.__panel.pop(second_key, None)
@@ -500,6 +530,28 @@ class TomlCreatePanel(BaseSystemData):
 
         return doc
 
+    def _create_hole(self, start):
+        """
+        Create a hole in the widget panel. All widgets after the hole
+        will gets its key bumped up by two.
+
+        :param start: Where to start the reordering. Should be the widget
+                      set that will be after the hole.
+        :type start: int
+        """
+        doc = tk.document()
+
+        for key, value in self.__panel.item():
+            old_num = self._find_key_num(key)
+
+            if old_num != start:
+                doc[key] = value
+            else:
+                new_key = self._make_key(old_num+1)
+                doc[new_key] = value
+
+        self.__panel = doc
+
     @property
     def _next_widget_num(self):
         """
@@ -509,9 +561,43 @@ class TomlCreatePanel(BaseSystemData):
         :rtype: int
         """
         last_key = list(self.__panel.keys())[-1]
-        sre = self._KEY_NUM.search(last_key)
-        assert sre is not None, f"There was an invalid key: {last_key}."
-        return int(sre.group('count')) + 1
+        return self._find_key_num(last_key) + 1
+
+    def _find_widget_gbs_pos(self, *, name=None, key_num=None):
+        """
+        Find the GridBagSizer position for either the name or the key number.
+
+        :param name: The value name of the StaticText widget.
+        :type name: str
+        :param key_num: The number of the widget key.
+        :type key_num: int
+        """
+        assert name or key_num is not None, (
+            f"Either the name ({name}) or the key_num ({key_num}) must be set.")
+        pos = ()
+        print(key_num)
+
+        if name:
+            for value in self.__panel.value():
+                dict_ = find_dict(value)
+
+                if name in dict_['args']:
+                    pos = dict_['pos']
+                    break
+                elif key_num is not None:
+                    value = self.__panel.get(self._make_key(key_num), [])
+                    print(key_num, value)
+                    assert values, f"An invalid key_num was provided."
+                    dict_ = find_dict(value)
+                    pos = dict_['pos']
+                    break
+
+        return pos
+
+    def _find_key_num(self, key):
+        sre = self._KEY_NUM.search(key)
+        assert sre is not None, f"There was an invalid key: {key}."
+        return int(sre.group('count'))
 
     def _make_key(self, key_num):
         return f"widget_{key_num:>02}"

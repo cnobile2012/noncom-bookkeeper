@@ -9,17 +9,17 @@ from itertools import chain
 import wx
 
 
-class GBSRowSwapping:
+class GridBagSizer(wx.GridBagSizer):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def gbs_swap_rows(self, gbs, row0, row1):
+    def swap_rows(self, row0, row1):
         """
         Swap any two rows in a GridBagSizer keeping most parameters.
+
+        Some code here contributed by:
+          Georg Klingenberg @ https://discuss.wxpython.org/u/da-dada
         """
-        rows = gbs.GetRows()
-        cols = gbs.GetCols()
+        rows = self.GetRows()
+        cols = self.GetCols()
         assert row0 != row1, (f"row0 ({row0}) and row1 ({row1}) cannot "
                               "be the same.")
         assert -1 < row0 < rows, ("The row0 value is invalid can only be "
@@ -27,59 +27,41 @@ class GBSRowSwapping:
         assert -1 < row1 < rows, ("The row1 value is invalid can only be "
                                   f"between 0 and {rows-1}, found {row1}")
         assert -1 < cols, f"The number of columns must be >= 0, found {cols}."
-        # Get GBS positions.
-        positions = [[(r, c) for c in range(cols)] for r in (row0, row1)]
-        # Remove the GBSizerItem in both rows.
-        sizer_items = []
+        w0 = []
+        w1 = []
 
-        for idx, row in enumerate(positions):
-            sizer_items.append(OrderedDict())
+        # Save all widgets in row0 to w0 and all widgets in row1 to w1.
+        # The row0 widgets also have a few attributes saved.
+        for idx, item in enumerate(self.GetChildren()):
+            if (y := item.GetPos()[0]) == row0:
+                w = item.GetWindow()
+                w0.append((w, item.GetPos(), item.GetSpan(),
+                           item.GetFlag(), item.GetBorder(), idx))
+            elif y == row1:
+                w1.append(item.GetWindow())
 
-            for rc in row:
-                sizer_items[idx][gbs.FindItemAtPosition(rc)] = None
+        # Remove only row0 widgets from the GridBagSizer.
+        [self.Remove(w_list[5]) for w_list in reversed(w0)]
 
-        sizer_items = [[item for item in row.keys()] for row in sizer_items]
-        # Get list of windows (widgets).
-        windows = [[(item.GetWindow(), item.GetSpan(),
-                     item.GetFlag(), item.GetBorder())
-                    for item in row if item] for row in sizer_items]
-        # Remove GBSizerItem in both rows.
-        [gbs.Remove(self.get_sizer_item_index(gbs, item))
-         for item in list(chain(*sizer_items)) if item]
-        # Add the widget objects to the GridBagSizer with swapped positions.
-        [[gbs.Add(item[0], rpos[idx], item[1], flag=item[2], border=item[3])
-          for idx, item in enumerate(windows[row])]
-         for row, rpos in enumerate(reversed(positions))]
+        # Reposition all row1 widgets in the row0 positions.
+        for w in w1:
+            pos = self.GetItemPosition(w)
+            pos.SetRow(row0)
+            self.SetItemPosition(w, pos)
 
-    def get_sizer_item_index(self, sizer, item):
-        """
-        Determines the index of an item in a sizer.
+        # Re-add all the original row0 widgets in the row1 positions.
+        for w_list in w0:
+            w_list[1].SetRow(row1)
+            self.Add(w_list[0], w_list[1], w_list[2],
+                     flag=w_list[3], border=w_list[4])
 
-        :params sizer: The sizer to search.
-        :type sizer: wx.Sizer
-        :param item: The item to find.
-        :type item: wx.SizerItem
-        :returns: The index of the item in the sizer, or -1 if the item
-                  is not in the sizer.
-        :rtype: int
-        """
-        index = -1
-
-        for idx, child in enumerate(sizer.GetChildren()):
-            if child == item:
-                index = idx
-                break
-
-        return index
-
-    def highlight_row(self, gbs, row, color=None):
+    def highlight_row(self, row, color=None):
         if row is not None and color:
-            positions = [(row, c) for c in range(gbs.GetCols())]
-
-            for w in [gbs.FindItemAtPosition(pos).GetWindow()
-                      for pos in positions if gbs.FindItemAtPosition(pos)]:
-                w.SetBackgroundColour(color)
-                w.Refresh()
+            for item in self.GetChildren():
+                if item.GetPos()[0] == row:
+                    w = item.GetWindow()
+                    w.SetBackgroundColour(color)
+                    w.Refresh()
 
 
 class ConfirmationDialog(wx.Dialog):

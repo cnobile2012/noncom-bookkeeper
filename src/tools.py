@@ -13,7 +13,7 @@ from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData, TomlCreatePanel
 from .bases import BasePanel
-from .utilities import GBSRowSwapping, ConfirmationDialog, EventStaticText
+from .utilities import GridBagSizer, ConfirmationDialog, EventStaticText
 
 
 class ShortCuts(wx.Frame):
@@ -77,7 +77,7 @@ class ShortCuts(wx.Frame):
         self.Fit()
 
 
-class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
+class FieldEdit(BasePanel, wx.Panel):
     """
     Add or remove fields in various panels.
     """
@@ -175,7 +175,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         field_name = wx.TextCtrl(panel,  wx.ID_ANY, "", style=wx.TE_LEFT)
         field_name.SetBackgroundColour(wx.Colour(*w_bg_color))
         field_name.SetForegroundColour(wx.Colour(*w_fg_color_0))
-        field_name.SetMinSize((264, 32))
+        field_name.SetMinSize((266, 32))
         grid_sizer.Add(field_name, (2, 1), (1, 1), ctrl_but_flags, 4)
 
         embed_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -197,6 +197,11 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         remove_button.SetBackgroundColour(wx.Colour(*w_bg_color))
         remove_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
         embed_sizer.Add(remove_button, 0, but_flags, 6)
+        undo_button = wx.Button(panel,  wx.ID_ANY, "Undo")
+        undo_button.SetMinSize((62 , 32))
+        undo_button.SetBackgroundColour(wx.Colour(*w_bg_color))
+        undo_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        embed_sizer.Add(undo_button, 0, but_flags, 6)
 
         spin_desc = wx.StaticText(
             panel, wx.ID_ANY, "Click field then move it:", style=0)
@@ -220,6 +225,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         arg_dict['add_button'] = add_button
         arg_dict['update_button'] = update_button
         arg_dict['remove_button'] = remove_button
+        arg_dict['undo_buttom'] = undo_button
         #print(f"Top panel size: {panel.GetSize()}")
         return panel
 
@@ -231,7 +237,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         panel = ScrolledPanel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
         panel.SetSizer(sizer)
-        grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
+        grid_sizer = GridBagSizer(vgap=2, hgap=2)
         panel.SetBackgroundColour(wx.Colour(*w_bg_color))
         sizer.Add(grid_sizer, 0, wx.EXPAND | wx.ALL, 6)
         widget_labels = arg_dict['widget_labels']
@@ -277,6 +283,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
         add_button = arg_dict['add_button']
         update_button = arg_dict['update_button']
         remove_button = arg_dict['remove_button']
+        undo_button = arg_dict['undo_buttom']
 
         evt_b = add_button.Unbind(wx.EVT_BUTTON)
         add_button.Bind(wx.EVT_BUTTON, self.add_closuer(arg_dict))
@@ -286,6 +293,9 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
         evt_r = remove_button.Unbind(wx.EVT_BUTTON)
         remove_button.Bind(wx.EVT_BUTTON, self.remove_closuer(arg_dict))
+
+        evt_d = undo_button.Unbind(wx.EVT_BUTTON)
+        undo_button.Bind(wx.EVT_BUTTON, self.undo_closuer(arg_dict))
 
         evt_s = self.Unbind(wx.EVT_SPINCTRL)
         self.Bind(wx.EVT_SPINCTRL, self.swap_rows_closure(
@@ -330,8 +340,8 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
             field_name.SetValue(widget.GetLabel())
             pos = event.get_value()
             row, col = pos
-            self.highlight_row(gbs, self.__previous_row, color=orig_color)
-            self.highlight_row(gbs, row, color=color)
+            gbs.highlight_row(self.__previous_row, color=orig_color)
+            gbs.highlight_row(row, color=color)
             self.__previous_row = row
             spin_ctrl.SetValue(row)
             spin_ctrl.SetRange(0, gbs.GetRows() - 1)
@@ -354,7 +364,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
                 if row0 != row1:
                     gbs = arg_dict.get('bot_grid_sizer')
                     self.stop_call_later()
-                    self.gbs_swap_rows(gbs, row0, row1)
+                    gbs.swap_rows(row0, row1)
                     self.Layout()
                     self.__cl = wx.CallLater(
                         7000, self.turn_off_highlight, arg_dict, orig_color)
@@ -409,7 +419,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
                             arg_dict, orig_color=wx.Colour(*w_bg_color)),
                         id=widget.GetId())
                     self.bind_events(arg_dict)
-                    self._tcp.add_name(value, row_count)
+                    self._tcp.add_name(value)
                     self._update_screen_size(arg_dict)
                 else:
                     msg = "Duplicate fields are not allowed."
@@ -473,12 +483,21 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
                         self._tcp.remove_name(value)
                         gbs.Layout()
-                        #print(rows, gbs.GetRows())
                         arg_dict['panel'].Layout()
             elif value:
                 self.parent.statusbar_warning = "Cannot remove title fields."
 
         return remove_button
+
+    def undo_closuer(self, arg_dict):
+        def undo_button(event):
+            value = arg_dict['new_field_name'].GetValue()
+
+            if value.endswith(':'):
+                self._tcp.undo_name(name)
+
+
+        return undo_button
 
     def turn_off_highlight(self, arg_dict, orig_color):
         gbs = arg_dict.get('bot_grid_sizer')
@@ -487,7 +506,7 @@ class FieldEdit(GBSRowSwapping, BasePanel, wx.Panel):
 
         for row in range(gbs.GetRows()):
             self.__previous_row = None
-            self.highlight_row(gbs, row, color=orig_color)
+            gbs.highlight_row(row, color=orig_color)
             self.Layout()
 
     def stop_call_later(self):

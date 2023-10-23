@@ -65,7 +65,7 @@ class Logger:
         else:
             log = logging.getLogger()
 
-        log.info("Logging start for %s.", Bootstrap().logger_name)
+        log.info("Logging start for %s.", logger_name)
 
     @property
     def level(self, level):

@@ -8,7 +8,6 @@ import os
 import logging
 import shutil
 
-from . import Logger
 from .config import TomlPanelConfig, TomlAppConfig
 
 

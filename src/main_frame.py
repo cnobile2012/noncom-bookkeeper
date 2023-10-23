@@ -6,7 +6,9 @@ __docformat__ = "restructuredtext en"
 
 import logging
 from collections import OrderedDict
-from pprint import pprint # *** TODO *** Remove later
+#from pprint import pprint # *** TODO *** Remove later
+
+from .config import TomlMetaData
 
 import wx
 from wx.lib.inspection import InspectionTool
@@ -22,12 +24,17 @@ class MenuBar:
     """
     Dynamic menu bar.
     """
+    _tmd = TomlMetaData()
     __short_cut = None
     __inspection = None
     _current_menus = ()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    def create_menu(self):
+        names = [panel[0] for panel in self._tmd.panels]
+
         self.__item_map = OrderedDict([
             ('file', [None, '&File\tALT+F', "File and App operations.",
                       None, wx.Menu(), True, OrderedDict([
@@ -51,13 +58,13 @@ class MenuBar:
                           ])]),
             ('edit', [None, '&Edit\tALT+E', "Screen editing operations.",
                       None, wx.Menu(), True, OrderedDict([
-                          ('conf', [200, "&Org Information\tCTRL+F",
+                          ('conf', [200, f"&{names[0]}\tCTRL+F",
                                     "Edit basic organization configuration.",
                                     'edit_config', None, True, None]),
-                          ('budget', [201, "&Budget\tCTRL+B",
+                          ('budget', [201, f"&{names[1]}\tCTRL+B",
                                       "Edit yearly budget.",
                                       'edit_budget', None, True, None]),
-                          ('month', [202, "&Month\tCTRL+M",
+                          ('month', [202, f"&{names[2]}\tCTRL+M",
                                       "Edit monthy data.",
                                       'edit_month', None, True, None]),
                           ('hide', [203, "&Close All\tCTRL+L",
@@ -113,9 +120,9 @@ class MenuBar:
                                      'app_about', None, True, None]),
                           ])]),
             ])
-        self.create_menu()
+        self._create_menu()
 
-    def create_menu(self):
+    def _create_menu(self):
         """
         Create a drop down menu based on the data structure below.
         <id|None>  = wx ID
@@ -272,7 +279,7 @@ class MenuBar:
     def edit_config(self, event):
         self.change_menu_items()
         self._hide_all_panels()
-        self.panel = self.panels['configuration']
+        self.panel = self.panels['organization']
 
         #self.menu_item_toggle(drop, name)
 
@@ -429,9 +436,8 @@ class MainFrame(MenuBar, wx.Frame):
         #self.Center()
         sf = PanelFactory()
         sf.parse()
-        panel_names = sf.class_name_keys
 
-        for panel in panel_names:
+        for panel in sf.class_name_keys:
             code = sf.get_panel_code(panel)
 
             if code:
@@ -439,6 +445,8 @@ class MainFrame(MenuBar, wx.Frame):
                 exec(code)
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = eval(class_name)(self)
+
+        self.create_menu()
 
     def set_size(self, size, key='size'):
         """

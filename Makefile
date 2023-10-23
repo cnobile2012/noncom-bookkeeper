@@ -10,15 +10,13 @@ TEST_TAG	=
 PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
 APP_NAME	= NC-Bookkeeper
 DOCS_DIR	= $(PREFIX)/docs
-#LOGS_DIR	= $(PREFIX)/logs
+LOGS_DIR	= $(PREFIX)/logs
 RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
                   -exec rm {} \;
-COVERAGE_DIR	= $(PREFIX)/.coverage_tests
-COVERAGE_FILE	= .coveragerc
-COVERAGE_PROCESS_START	= $(COVERAGE_FILE)
-TEST_ARGS	= --parallel=4
-PIP_ARGS	=
+TEST_TAG	=
+PIP_ARGS	= # Pass var for pip install.
+TEST_PATH	=
 
 #----------------------------------------------------------------------
 all	: tar
@@ -30,16 +28,9 @@ tar	: clean
 
 .PHONY	: tests
 tests	: clean
-	@rm -rf $(DOCS_DIR)/htmlcov
-	@coverage erase --rcfile=$(COVERAGE_FILE)
-	@rm -rf $(COVERAGE_DIR)
-	@mkdir -p $(COVERAGE_DIR)
-	@coverage run --concurrency=multiprocessing \
-         --rcfile=$(COVERAGE_FILE)  ./manage.py test $(TEST_ARGS)
-	@mv .coverage.* $(COVERAGE_DIR)
-	@coverage combine --rcfile=$(COVERAGE_FILE) $(COVERAGE_DIR)
-	@coverage report -m --rcfile=$(COVERAGE_FILE)
-	@coverage html --rcfile=$(COVERAGE_FILE)
+	@nosetests --with-coverage --cover-erase --cover-inclusive \
+                   --cover-html --cover-html-dir=$(DOCS_DIR)/htmlcov \
+                   --cover-package=$(PREFIX)/src $(TEST_PATH)
 	@echo $(TODAY)
 
 .PHONY	: sphinx
@@ -69,4 +60,4 @@ clobber	: clean
 	@(cd $(DOCS_DIR); make clobber)
 	@rm -rf $(DOCS_DIR)/htmlcov
 	@rm -rf build dist *.spec
-#	@rm -f $(LOGS_DIR)/*.log*
+	@rm -f $(LOGS_DIR)/*.log*
