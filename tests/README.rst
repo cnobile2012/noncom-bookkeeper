@@ -33,7 +33,7 @@ the packages for *python3.11*. Then we install the *virtualenvwrapper*
 package. This is a wrapper around *virtualenv* that provides easy to use
 tools for *virtualenv*. It also installs *virtualenv* for you.
 
-You can get the full instruction if you vist
+You can get the full instruction if you visit
 `pypa <https://github.com/pypa/get-pip>`_. But, in general this is what you do
 to install `pip` system wide.
 
@@ -51,7 +51,8 @@ Now we install the *virtualenvwrapper* package.
 
     $ sudo -H pip3 install virtualenvwrapper
 
-Configure *.bashrc* to auto load the *virtualenvwrapper* package.
+Configure *.bashrc* to auto load the *virtualenvwrapper* package. Use your
+favorite editor, I'm using *nano* here.
 
 .. code-block:: console
 
@@ -64,6 +65,12 @@ Then add the following lines to the bottom of the *.bashrc* file.
     # Setup the Python virtual environment.
     VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3.11
     source /usr/local/bin/virtualenvwrapper.sh
+
+You may need to resource the *.bashrc* file.
+
+.. code-block:: console
+
+    $ source .bashrc
 
 Download *noncom-bookkeeper*. First **cd** into the path where you want
 to put the package. If you forked the package then change the path
