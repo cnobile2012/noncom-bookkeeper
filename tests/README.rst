@@ -118,11 +118,14 @@ the tests pass, but will be invaluable if any fail.
 .. code-block:: console
 
     $ make tests
-    $ make tests TEST_PATH=tests/test_config.TestTomlMetaData
+    $ make tests TEST_PATH=tests.test_config.TestTomlMetaData
+    $ make tests TEST_PATH=tests/test_config.py:TestTomlMetaData
     $ make tests TEST_PATH=tests/test_config.py:TestTomlMetaData.test_panels_property
 
 * The 1st example will run all tests.
 * The 2nd example will run tests for a specific class in the *test_config.py*
-  module. Be sure to notice the : (colon) just before the class name.
-* The 3rd example will run a specific test in the TestClassMethods. This also
+  module.
+* The 3rd example give the same result as the 2nd. Be sure to notice the :
+  (colon) just before the class name.
+* The 4th example will run a specific test in the TestClassMethods. This also
   needs a : just before the class name.
