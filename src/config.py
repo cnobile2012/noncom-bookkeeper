@@ -234,6 +234,7 @@ class TomlPanelConfig(BaseSystemData):
     Read and write the TOML panel config file.
     """
     _shared_state = {}
+    _FILE_LIST = ('user_config_fullpath', 'local_config_fullpath')
 
     def __init__(self, *args, **kwargs):
         self.__dict__ = self._shared_state
@@ -247,26 +248,34 @@ class TomlPanelConfig(BaseSystemData):
         """
         ret = True
         # The order of the tuple below is important.
-        file_list = ('user_config_fullpath',
-                      'local_config_fullpath')
-        errors = self.parse_toml(file_list)
+        errors = self.parse_toml(self._FILE_LIST)
 
         for error in errors:
             if error == 'user_config_fullpath':
                 # Backup bad file then over write the original with the default.
                 fname = self.user_config_fullpath
                 bad_file = f'{fname}.bad'
-                shutil.copy2(fname, bad_file)
-                shutil.copy2(self.local_config_fullpath, fname)
-                msg = ("Found an invalid panel config file and reverted "
-                       "to the default version. The original bad file has "
-                       f"been backed up to {bad_file}.")
-                self._log.warning(msg)
+
+                try:
+                    shutil.copy2(fname, bad_file)
+                    shutil.copy2(self.local_config_fullpath, fname)
+                except FileNotFoundError as e:
+                    msg = f"A critical error was encounted, {str(e)}"
+                    self._log.critical(msg)
+                    ret = False
+                else:
+                    msg = ("Found an invalid panel config file and reverted "
+                           "to the default version. The original bad file "
+                           f"has been backed up to {bad_file}.")
+                    self._log.warning(msg)
+
+                #self.parent.statusbar_warning = msg
                 # *** TODO *** This needs to be shown on the screen if detected.
             else:
                 msg = (f"The file {getattr(self, error)} could not be "
-                       f"parsed. It will need to be replaced.")
+                       "parsed. It will need to be replaced.")
                 self._log.warning(msg)
+                #self.parent.statusbar_warning = msg
                 # *** TODO *** This needs to be shown on the screen if detected.
                 ret = False
 
@@ -278,6 +287,8 @@ class TomlAppConfig(BaseSystemData):
     Read and write the TOML app config file.
     """
     _shared_state = {}
+    _FILE_LIST = ('user_app_config_fullpath',)
+
 
     def __init__(self, *args, **kwargs):
         self.__dict__ = self._shared_state
@@ -290,8 +301,7 @@ class TomlAppConfig(BaseSystemData):
         This property always returns True.
         """
         ret = True
-        file_list = ('user_app_config_fullpath',)
-        errors = self.parse_toml(file_list)
+        errors = self.parse_toml(self._FILE_LIST)
 
         for error in errors:
             if error == 'user_app_config_fullpath':
@@ -315,7 +325,7 @@ class TomlAppConfig(BaseSystemData):
                     #              if detected.
 
                 self.create_app_config()
-                self.parse_toml(file_list)
+                self.parse_toml(self._FILE_LIST)
 
         return ret
 

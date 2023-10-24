@@ -35,7 +35,8 @@ class Logger:
         self._format = format_str if format_str else self._DEFAULT_FORMAT
         self.logger = None
 
-    def config(self, logger_name=None, file_path=None, level=logging.INFO):
+    def config(self, logger_name=None, file_path=None, level=logging.INFO,
+               initial_msg=True):
         """
         Config the logger.
 
@@ -65,7 +66,8 @@ class Logger:
         else:
             log = logging.getLogger()
 
-        log.info("Logging start for %s.", logger_name)
+        if initial_msg:
+            log.info("Logging start for %s.", logger_name)
 
     @property
     def level(self, level):

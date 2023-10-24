@@ -5,38 +5,30 @@
 #
 __docformat__ = "restructuredtext en"
 
-import os
-import logging
 import unittest
-import time
 
 try:
     from unittest.mock import patch
 except:
     from mock import patch
 
-from .base_dir import BASE_DIR
-
-from src import Logger
+from . import log, initial_log_message, get_path
 from src.config import (TomlMetaData, TomlPanelConfig, TomlAppConfig,
                         TomlCreatePanel)
 from src.ncb import CheckPanelConfig, CheckAppConfig
 
 
-def setup_logging():
-    LOGGER_NAME = 'config'
-    filename = 'config.log'
-    full_path = os.path.abspath(os.path.join(BASE_DIR, 'logs', filename))
-    logger = Logger()
-    logger.config(LOGGER_NAME, full_path, logging.DEBUG)
-    return logging.getLogger(LOGGER_NAME)
+RUN_FLAG = {'TestTomlMetaData': False, 'TestTomlPanelConfig': False,
+            'TomlAppConfig': False, 'TomlCreatePanel': False}
 
-log = setup_logging()
+
+def check_flag(name):
+    if not RUN_FLAG[name]:
+        initial_log_message("Start logging for %s", name)
+        RUN_FLAG[name] = True
 
 
 class BaseTest(unittest.TestCase):
-    LOGGER_NAME = 'config'
-    _log_path = os.path.join(BASE_DIR, 'logs')
     _cpd = CheckPanelConfig()
     _cad = CheckAppConfig()
 
@@ -52,6 +44,7 @@ class TestTomlMetaData(BaseTest):
         super().__init__(name)
 
     def setUp(self):
+        check_flag(self.__class__.__name__)
         self.tmd = TomlMetaData()
         self.NUM_MONTHS = {'bahai': 20, 'generic': 12}.get(
             self.tmd.config_type)
@@ -62,6 +55,7 @@ class TestTomlMetaData(BaseTest):
         Test that the panel property returns a list of list containing
         [[Menu Name, Toml File Name],...]
         """
+        log.debug("Testing test_panels_property")
         panels = self.tmd.panels
         num_panels = len(panels)
         msg = f"There should be {self._NUM_PANELS}, found {num_panels}."
@@ -185,15 +179,79 @@ class TestTomlMetaData(BaseTest):
                               msg.format('weight', values[0], font[3]))
 
 
+class TestTomlPanelConfig(BaseTest):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        self.tpc = TomlPanelConfig()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_is_valid_property(self):
+        """
+        Test that the is_valid property returns a boolean for normal
+        operation.
+        """
+        ret = self.tpc.is_valid
+        msg = f"Should be True, found {ret}."
+        self.assertTrue(ret, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlPanelConfig, 'user_config_fullpath',
+                  '/tmp/fake_file.toml')
+    def test_is_valid_property_user_bad_path(self):
+        """
+        Test that the is_valid property returns a boolean for a bad
+        path in the `user_config_fullpath` property.
+        """
+        ret = self.tpc.is_valid
+        msg = f"Should be False, found {ret}."
+        self.assertFalse(ret, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlPanelConfig, 'user_config_dir', get_path())
+    def test_is_valid_property_user_unparsable(self):
+        """
+        Test that the is_valid property returns a boolean for an
+        unparsable Toml file in the `user_config_fullpath` property.
+        """
+        ret = self.tpc.is_valid
+        msg = f"Should be True, found {ret}."
+        self.assertTrue(ret, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlPanelConfig, 'local_config_fullpath',
+                  '/tmp/fake_file.toml')
+    def test_is_valid_property_local_bad_path(self):
+        """
+        Test that the is_valid property returns a boolean for a bad
+        path in the `local_config_fullpath` property.
+        """
+        ret = self.tpc.is_valid
+        msg = f"Should be False, found {ret}."
+        self.assertFalse(ret, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlPanelConfig, '_LOCAL_CONFIG', get_path())
+    def test_is_valid_property_local_unparsable(self):
+        """
+        Test that the is_valid property returns a boolean for an
+        unparsable Toml file in the `local_config_fullpath` property.
+        """
+        ret = self.tpc.is_valid
+        msg = f"Should be True, found {ret}."
+        self.assertTrue(ret, msg)
+
+
 class TestTomlAppConfig(BaseTest):
-    _NUM_PANELS = 3
 
     def __init__(self, name):
         super().__init__(name)
 
     def setUp(self):
         self.tac = TomlAppConfig()
-        self.NUM_MONTHS = {'bahai': 20, 'generic': 12}.get(
-            self.tac.config_type)
+
 
 
