@@ -34,10 +34,10 @@ package. This is a wrapper around *virtualenv* that provides easy to use
 tools for *virtualenv*. It also installs *virtualenv* for you.
 
 You can get the full instruction if you vist
-'pypa <https://github.com/pypa/get-pip>'_ But, in general this is what you do
+`pypa <https://github.com/pypa/get-pip>`_. But, in general this is what you do
 to install `pip` system wide.
 
--- code-block:: console
+.. code-block:: console
 
     $ curl -sSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     $ sudo -H python3.11 get-pip.py
