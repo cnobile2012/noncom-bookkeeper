@@ -5,6 +5,7 @@
 #
 __docformat__ = "restructuredtext en"
 
+import os
 import unittest
 
 try:
@@ -16,10 +17,13 @@ from . import log, initial_log_message, get_path
 from src.config import (TomlMetaData, TomlPanelConfig, TomlAppConfig,
                         TomlCreatePanel)
 from src.ncb import CheckPanelConfig, CheckAppConfig
+#from src import Logger
 
+#logger = Logger()
+#logger.config(logger_name='debug', user_stdout=True)
 
 RUN_FLAG = {'TestTomlMetaData': False, 'TestTomlPanelConfig': False,
-            'TomlAppConfig': False, 'TomlCreatePanel': False}
+            'TestTomlAppConfig': False, 'TestTomlCreatePanel': False}
 
 
 def check_flag(name):
@@ -180,6 +184,7 @@ class TestTomlMetaData(BaseTest):
 
 
 class TestTomlPanelConfig(BaseTest):
+    _TMP_USER_CONFIG_FILE = '/tmp/user_config.toml'
 
     def __init__(self, name):
         super().__init__(name)
@@ -188,11 +193,16 @@ class TestTomlPanelConfig(BaseTest):
         check_flag(self.__class__.__name__)
         self.tpc = TomlPanelConfig()
 
+    def tearDown(self):
+        try:
+            os.remove(self._TMP_USER_CONFIG_FILE)
+        except FileNotFoundError:
+            pass
+
     #@unittest.skip("Temporarily skipped")
     def test_is_valid_property(self):
         """
-        Test that the is_valid property returns a boolean for normal
-        operation.
+        Test that the is_valid property returns a True for normal operation.
         """
         ret = self.tpc.is_valid
         msg = f"Should be True, found {ret}."
@@ -200,34 +210,41 @@ class TestTomlPanelConfig(BaseTest):
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(TomlPanelConfig, 'user_config_fullpath',
-                  '/tmp/fake_file.toml')
+                  _TMP_USER_CONFIG_FILE)
     def test_is_valid_property_user_bad_path(self):
         """
-        Test that the is_valid property returns a boolean for a bad
-        path in the `user_config_fullpath` property.
+        Test that the is_valid property returns a False for a bad path in
+        the `user_config_fullpath` property.
         """
         ret = self.tpc.is_valid
         msg = f"Should be False, found {ret}."
         self.assertFalse(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlPanelConfig, 'user_config_dir', get_path())
+    @patch.object(TomlPanelConfig, 'user_config_fullpath',
+                  _TMP_USER_CONFIG_FILE)
     def test_is_valid_property_user_unparsable(self):
         """
-        Test that the is_valid property returns a boolean for an
-        unparsable Toml file in the `user_config_fullpath` property.
+        Test that the is_valid property returns a True for an unparsable
+        Toml file in the `user_config_fullpath` property.
+
+        Note: The is_valid will fix this issue so it will return a True.
         """
+        # Create an unparsable file.
+        with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
+            f.write('')
+
         ret = self.tpc.is_valid
         msg = f"Should be True, found {ret}."
         self.assertTrue(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(TomlPanelConfig, 'local_config_fullpath',
-                  '/tmp/fake_file.toml')
+                  _TMP_USER_CONFIG_FILE)
     def test_is_valid_property_local_bad_path(self):
         """
-        Test that the is_valid property returns a boolean for a bad
-        path in the `local_config_fullpath` property.
+        Test that the is_valid property returns a False for a bad path in
+        the `local_config_fullpath` property.
         """
         ret = self.tpc.is_valid
         msg = f"Should be False, found {ret}."
@@ -237,21 +254,230 @@ class TestTomlPanelConfig(BaseTest):
     @patch.object(TomlPanelConfig, '_LOCAL_CONFIG', get_path())
     def test_is_valid_property_local_unparsable(self):
         """
-        Test that the is_valid property returns a boolean for an
-        unparsable Toml file in the `local_config_fullpath` property.
+        Test that the is_valid property returns a False for an unparsable
+        Toml file in the `local_config_fullpath` property.
         """
         ret = self.tpc.is_valid
-        msg = f"Should be True, found {ret}."
-        self.assertTrue(ret, msg)
+        msg = f"Should be False, found {ret}."
+        self.assertFalse(ret, msg)
 
 
 class TestTomlAppConfig(BaseTest):
+    _TMP_USER_APP_FILE = '/tmp/user_app_config.toml'
+    _TMP_UNWRITABE_PATH = '/invalid_test.toml'
 
     def __init__(self, name):
         super().__init__(name)
 
     def setUp(self):
+        check_flag(self.__class__.__name__)
         self.tac = TomlAppConfig()
+
+    def tearDown(self):
+        try:
+            os.remove(self._TMP_USER_APP_FILE)
+        except FileNotFoundError:
+            pass
+
+    def create_config(self):
+        self.tac.create_app_config()
+        return self.tac.is_valid
+
+    #@unittest.skip("Temporarily skipped")
+    def test_is_valid_property(self):
+        """
+        Test that the is_valid property returns a boolean for normal
+        operation.
+        """
+        ret = self.tac.is_valid
+        msg = f"Should be True, found {ret}."
+        self.assertTrue(ret, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_USER_APP_FILE)
+    def test_is_valid_property_user_not_found(self):
+        """
+        Test that the is_valid property returns a boolean for a bad
+        path in the `user_app_config_fullpath` property.
+        """
+        ret = self.tac.is_valid
+        msg = f"Should be True, found {ret}."
+        self.assertTrue(ret, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_USER_APP_FILE)
+    def test_is_valid_property_user_unparsable(self):
+        """
+        Test that the is_valid property returns a boolean for a bad
+        path in the `user_app_config_fullpath` property.
+        """
+        # Create an unparsable file.
+        with open(self._TMP_USER_APP_FILE, 'w') as f:
+            f.write('')
+
+        ret = self.tac.is_valid
+        msg = f"Should be True, found {ret}."
+        self.assertTrue(ret, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_USER_APP_FILE)
+    def test_create_app_config(self):
+        """
+        Test that the application config file is created.
+
+        File should contain the following data:
+        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        """
+        ret = self.create_config()
+        msg = f"Should be True, found {ret}."
+        self.assertTrue(ret, msg)
+        outer_key_list = ('app_size',)
+        inner_key_list = ('default', 'size')
+        key_msg = "Key '{}' does not exist"
+        val_msg = "Value should be a list, found '{}'."
+
+        for j, (outer_key, values) in enumerate(self.tac.app_config.items()):
+            self.assertEquals(outer_key_list[j], outer_key,
+                              key_msg.format(outer_key))
+
+            for k, (inner_key, value) in enumerate(values.items()):
+                self.assertEquals(inner_key_list[k], inner_key,
+                                  key_msg.format(inner_key))
+                self.assertTrue(isinstance(value, list), val_msg.format(value))
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_USER_APP_FILE)
+    def test_get_value(self):
+        """
+        Test that a value can be found.
+
+        File should contain the following data:
+        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        """
+        self.create_config()
+        value = self.tac.get_value('app_size', 'default')
+        msg = f"Value should be a list, found '{value}'."
+        self.assertTrue(isinstance(value, list), msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_USER_APP_FILE)
+    def test_get_value_invalid_key(self):
+        """
+        Test that an invalid key is logged.
+
+        File should contain the following data:
+        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        """
+        self.create_config()
+        invalid_key = 'invalid'
+
+        with self.assertRaises(AssertionError) as cm:
+            self.tac.get_value('app_size', invalid_key)
+
+        ex = str(cm.exception)
+        msg = f"The key '{invalid_key}' was found, {ex}"
+        self.assertIn('invalid', ex, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_USER_APP_FILE)
+    def test_update_app_config(self):
+        """
+        Test that a value can be updated.
+
+        File should contain the following data:
+        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        """
+        self.create_config()
+        # Test that the 'default' value is the default.
+        value = self.tac.get_value('app_size', 'default')
+        should_be = [530, 830]
+        msg = f"Should be '{should_be}' found '{value}'."
+        self.assertEqual(should_be, value, msg)
+
+        # Test that the update works properly.
+        changed_value = [600, 900]
+        self.tac.update_app_config('app_size', 'default', changed_value)
+        value = self.tac.get_value('app_size', 'default')
+        msg = f"Should be '{changed_value}' found '{value}'."
+        self.assertEqual(changed_value, value, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_USER_APP_FILE)
+    def test_update_app_config_key_not_found(self):
+        """
+        Test that a value for a new key gets added properly.
+
+        File should contain the following data:
+        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        """
+        self.create_config()
+        # Test that the new key does not exist yet.
+        new_key = 'test_key'
+
+        with self.assertRaises(AssertionError) as cm:
+            value = self.tac.get_value('app_size', new_key)
+
+        ex = str(cm.exception)
+        msg = f"The key '{new_key}' was found, {ex}"
+        self.assertIn(new_key, ex, msg)
+
+        # Test that the new key can be added and found.
+        new_value = 'Test Value'
+        self.tac.update_app_config('app_size', new_key, new_value)
+        value = self.tac.get_value('app_size', new_key)
+        msg = f"Should be '{new_value}' found '{value}'."
+        self.assertEquals(new_value, value, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_USER_APP_FILE)
+    def test_update_app_config_table_not_found(self):
+        """
+        Test that a value for a new table and key gets added properly.
+
+        File should contain the following data:
+        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        """
+        self.create_config()
+        # Test that the new table is not found.
+        new_table = 'new_table'
+        new_key = 'test_key'
+
+        with self.assertRaises(AssertionError) as cm:
+            value = self.tac.get_value(new_table, new_key)
+
+        ex = str(cm.exception)
+        msg = f"The table '{new_table}' was found, {ex}"
+        self.assertIn(new_table, ex, msg)
+
+        # Test that the new table and key can be added and found.
+        new_value = 'Test Value'
+        self.tac.update_app_config(new_table, new_key, new_value)
+        value = self.tac.get_value(new_table, new_key)
+        msg = f"Should be '{new_value}' found '{value}'."
+        self.assertEquals(new_value, value, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
+                  _TMP_UNWRITABE_PATH)
+    def test__write_file_open_failed(self):
+        """
+        Test that writing to a file fails when a unwritable path is provided.
+        """
+        with self.assertRaises(PermissionError) as cm:
+            self.tac._write_file('Invalid path')
+
+        ex = str(cm.exception)
+        msg = (f"The file '{self._TMP_UNWRITABE_PATH}' could not be "
+               f"written, {ex}")
+        self.assertIn(self._TMP_UNWRITABE_PATH, ex, msg)
 
 
 

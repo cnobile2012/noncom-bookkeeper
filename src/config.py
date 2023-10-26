@@ -170,21 +170,25 @@ class BaseSystemData(Settings):
                 errors.append(file_type)
                 self._log.error("Error: cannot find file '%s'.", fname)
             else:
-                try:
-                    doc = tk.parse(raw_doc)
-                except tk.exceptions.TOMLKitError as e:
-                    self._log.error("TOML error: %s", str(e))
-                    errors.append(file_type)
+                if raw_doc != "":
+                    try:
+                        doc = tk.parse(raw_doc)
+                    except tk.exceptions.TOMLKitError as e:
+                        self._log.error("TOML error: %s", str(e))
+                        errors.append(file_type)
+                    else:
+                        if 'user_config' in file_type:
+                            self.panel_config = doc
+                        elif (self.panel_config is None
+                              and 'local_config' in file_type):
+                            # Executed only on first run.
+                            self.panel_config = doc
+                        elif (self.app_config is None
+                              and 'user_app_config' in file_type):
+                            self.app_config = doc
                 else:
-                    if 'user_config' in file_type:
-                        self.panel_config = doc
-                    elif (self.panel_config is None
-                          and 'local_config' in file_type):
-                        # Executed only on first run.
-                        self.panel_config = doc
-                    elif (self.app_config is None
-                          and 'user_app_config' in file_type):
-                        self.app_config = doc
+                    errors.append(file_type)
+                    self._log.error("Error: cannot parse file '%s'.", fname)
 
         return errors
 
@@ -289,7 +293,6 @@ class TomlAppConfig(BaseSystemData):
     _shared_state = {}
     _FILE_LIST = ('user_app_config_fullpath',)
 
-
     def __init__(self, *args, **kwargs):
         self.__dict__ = self._shared_state
         super().__init__(*args, **kwargs)
@@ -315,12 +318,14 @@ class TomlAppConfig(BaseSystemData):
                        "will be created. The original bad file has "
                        f"been backed up to {bad_file}.")
                     self._log.warning(msg)
+                    #self.parent.statusbar_warning = msg
                     # *** TODO *** This needs to be shown on the screen
                     #              if detected.
                 else:
                     msg = (f"The file {getattr(self, error)} could not be "
                            f"found. It will be created.")
                     self._log.warning(msg)
+                    #self.parent.statusbar_warning = msg
                     # *** TODO *** This needs to be shown on the screen
                     #              if detected.
 
@@ -333,8 +338,7 @@ class TomlAppConfig(BaseSystemData):
         doc = tk.document()
         # Create header
         doc.add(tk.comment(""))
-        doc.add(
-            tk.comment("Noncommercial Bookkeeper application config file."))
+        doc.add(tk.comment("Noncommercial Accounting System config file."))
         doc.add(tk.comment(""))
         doc.add(tk.comment(f"Date Created: {datetime.now()}"))
         doc.add(tk.comment(""))
@@ -349,15 +353,21 @@ class TomlAppConfig(BaseSystemData):
     def get_value(self, table, key):
         doc = self.app_config
         item_table = doc.get(table)
+        have_keys = False
 
         if item_table:
             item_key = item_table.get(key)
 
             if item_key:
+                have_keys = True
                 return doc[table][key]
 
-        self._log.error("Could not find the table '%s' or key: %s in %s.",
-                        table, key, self.user_app_config_fullpath)
+        msg = (f"Could not find the table '{table}' or key: '{key}' in "
+               f"{self.user_app_config_fullpath}.")
+        self._log.error(msg)
+        #self.parent.statusbar_warning = msg
+        # *** TODO *** This needs to be shown on the screen if detected.
+        assert have_keys, msg
 
     def update_app_config(self, table, key, value):
         doc = self.app_config
@@ -381,11 +391,13 @@ class TomlAppConfig(BaseSystemData):
         try:
             with open(self.user_app_config_fullpath, 'w') as f:
                 f.write(data)
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             msg = (f"Could not create the {self.user_app_config_fullpath} "
-                   f"file, {str(s)}")
+                   f"file, {str(e)}")
             self._log.critical(msg)
+            #self.parent.statusbar_warning = msg
             # *** TODO *** This needs to be shown on the screen if detected.
+            raise e
 
 
 class TomlCreatePanel(BaseSystemData):

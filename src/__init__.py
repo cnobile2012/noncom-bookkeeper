@@ -36,7 +36,7 @@ class Logger:
         self.logger = None
 
     def config(self, logger_name=None, file_path=None, level=logging.INFO,
-               initial_msg=True):
+               initial_msg=True, user_stdout=False):
         """
         Config the logger.
 
@@ -49,17 +49,20 @@ class Logger:
                       Python logger docs.
         :type level: int
         """
-        if logger_name and file_path:
-            self.log_name = logger_name
-            self.logger = logging.getLogger(logger_name)
-            self.logger.setLevel(level)
-            handler = logging.FileHandler(file_path)
-            formatter = logging.Formatter(self._format)
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
+        if not user_stdout:
+            if logger_name and file_path:
+                self.log_name = logger_name
+                self.logger = logging.getLogger(logger_name)
+                self.logger.setLevel(level)
+                handler = logging.FileHandler(file_path)
+                formatter = logging.Formatter(self._format)
+                handler.setFormatter(formatter)
+                self.logger.addHandler(handler)
+            else:
+                logging.basicConfig(filename=file_path, format=self._format,
+                                    level=level)
         else:
-            logging.basicConfig(filename=file_path, format=self._format,
-                                level=level)
+            logging.basicConfig(format=self._format, level=level)
 
         if logger_name:
             log = logging.getLogger(logger_name)
