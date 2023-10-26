@@ -58,6 +58,5 @@ clean	:
 
 clobber	: clean
 	@(cd $(DOCS_DIR); make clobber)
-	@rm -rf $(DOCS_DIR)/htmlcov
 	@rm -rf build dist *.spec
 	@rm -f $(LOGS_DIR)/*.log*
