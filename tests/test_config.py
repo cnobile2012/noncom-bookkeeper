@@ -157,16 +157,8 @@ class TestSettings(unittest.TestCase):
         self.assertEquals(should_be_fp, fp, msg)
 
 
-class BaseTest(unittest.TestCase):
-    _cpd = CheckPanelConfig()
-    _cad = CheckAppConfig()
-
-    def __init__(self, name):
-        super().__init__(name)
-        self._cpd.has_valid_data
-
-
-class TestBaseSystemData(BaseTest):
+class TestBaseSystemData(unittest.TestCase):
+    _TMP_USER_CONFIG_FILE = '/tmp/user_config.toml'
 
     def __init__(self, name):
         super().__init__(name)
@@ -174,6 +166,12 @@ class TestBaseSystemData(BaseTest):
     def setUp(self):
         check_flag(self.__class__.__name__)
         self.bsd = BaseSystemData()
+
+    def tearDown(self):
+        try:
+            os.remove(self._TMP_USER_CONFIG_FILE)
+        except FileNotFoundError:
+            pass
 
     #@unittest.skip("Temporarily skipped")
     def test_parse_toml_user_app_config(self):
@@ -196,6 +194,7 @@ class TestBaseSystemData(BaseTest):
         """
         Test that toml files get pared correctly.
         """
+        self.bsd.panel_config = None
         file_types = ('local_config_fullpath',)
         errors = self.bsd.parse_toml(file_types)
         self.assertFalse(errors)
@@ -206,9 +205,72 @@ class TestBaseSystemData(BaseTest):
             msg = f"Have parsed data for {key} '{valid}'"
             self.assertTrue(valid, msg)
 
+    #@unittest.skip("Temporarily skipped")
+    def test_parse_toml_invalid_file_type(self):
+        """
+        Test that an exception is raised when a wrong file type is found.
+        """
+        errors = self.bsd.parse_toml(('non_existant_file',))
+
+        for error in errors:
+            msg = f"Should have error '{error[1]}'"
+            self.assertIn('Invalid property, ', error[1])
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(BaseSystemData, 'user_config_fullpath',
+                  _TMP_USER_CONFIG_FILE)
+    def test_parse_toml_file_not_found_error(self):
+        """
+        Test that an exception is raised when a file is not found.
+        """
+        errors = self.bsd.parse_toml(('user_config_fullpath',))
+
+        for error in errors:
+            msg = f"Should have error '{error[1]}'"
+            self.assertIn('Cannot find file ', error[1])
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(BaseSystemData, 'user_config_fullpath',
+                  _TMP_USER_CONFIG_FILE)
+    def test_parse_toml_parse_error(self):
+        """
+        Test that an exception is raised when a parse error is found.
+        """
+        # Create an unparsable file.
+        with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
+            f.write("[meta]\nsomevar = {junk='some_value'")
+
+        errors = self.bsd.parse_toml(('user_config_fullpath',))
+
+        for error in errors:
+            msg = f"Should have error '{error[1]}'"
+            self.assertIn('TOML error: ', error[1])
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(BaseSystemData, 'user_config_fullpath',
+                  _TMP_USER_CONFIG_FILE)
+    def test_parse_toml_empty_file_error(self):
+        """
+        Test that an exception is raised when a zero length file is found.
+        """
+        # Create an unparsable file.
+        with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
+            f.write("")
+
+        errors = self.bsd.parse_toml(('user_config_fullpath',))
+
+        for error in errors:
+            msg = f"Should have error '{error[1]}'"
+            self.assertIn('Cannot parse zero length file ', error[1])
 
 
+class BaseTest(unittest.TestCase):
+    _cpd = CheckPanelConfig()
+    _cad = CheckAppConfig()
 
+    def __init__(self, name):
+        super().__init__(name)
+        self._cpd.has_valid_data
 
 
 class TestTomlMetaData(BaseTest):

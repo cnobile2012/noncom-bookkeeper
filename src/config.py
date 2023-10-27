@@ -149,34 +149,42 @@ class BaseSystemData(Settings):
         errors = []
 
         for file_type in file_list:
-            fname = getattr(self, file_type)
-
             try:
-                with open(fname, 'r') as f:
-                    raw_doc = f.read()
-            except FileNotFoundError as e:
-                errors.append(file_type)
-                self._log.error("Error: cannot find file '%s'.", fname)
+                fname = getattr(self, file_type)
+            except AttributeError as e:
+                msg = f"Invalid property, {str(e)}"
+                self._log.error(msg)
+                errors.append((file_type, msg))
             else:
-                if raw_doc != "":
-                    try:
-                        doc = tk.parse(raw_doc)
-                    except tk.exceptions.TOMLKitError as e:
-                        self._log.error("TOML error: %s", str(e))
-                        errors.append(file_type)
-                    else:
-                        if 'user_config' in file_type:
-                            self.panel_config = doc
-                        elif (self.panel_config is None
-                              and 'local_config' in file_type):
-                            # Executed only on first run.
-                            self.panel_config = doc
-                        elif (self.app_config is None
-                              and 'user_app_config' in file_type):
-                            self.app_config = doc
+                try:
+                    with open(fname, 'r') as f:
+                        raw_doc = f.read()
+                except FileNotFoundError as e:
+                    msg = "Cannot find file {fname}, {str(e)}"
+                    self._log.error(msg)
+                    errors.append((file_type, msg))
                 else:
-                    errors.append(file_type)
-                    self._log.error("Error: cannot parse file '%s'.", fname)
+                    if raw_doc != "":
+                        try:
+                            doc = tk.parse(raw_doc)
+                        except tk.exceptions.TOMLKitError as e:
+                            msg = "TOML error: {str(e)}"
+                            self._log.error(msg)
+                            errors.append((file_type, msg))
+                        else:
+                            if 'user_config' in file_type:
+                                self.panel_config = doc
+                            elif (self.panel_config is None
+                                  and 'local_config' in file_type):
+                                # Executed only on first run.
+                                self.panel_config = doc
+                            elif (self.app_config is None
+                                  and 'user_app_config' in file_type):
+                                self.app_config = doc
+                    else:
+                        msg = f"Cannot parse zero length file '{fname}'."
+                        self._log.error(msg)
+                        errors.append((file_type, msg))
 
         return errors
 
@@ -243,7 +251,7 @@ class TomlPanelConfig(BaseSystemData):
         errors = self.parse_toml(self._FILE_LIST)
 
         for error in errors:
-            if error == 'user_config_fullpath':
+            if error[0] == 'user_config_fullpath':
                 # Backup bad file then over write the original with the default.
                 fname = self.user_config_fullpath
                 bad_file = f'{fname}.bad'
@@ -263,9 +271,9 @@ class TomlPanelConfig(BaseSystemData):
 
                 #self.parent.statusbar_warning = msg
                 # *** TODO *** This needs to be shown on the screen if detected.
-            else:
-                msg = (f"The file {getattr(self, error)} could not be "
-                       "parsed. It will need to be replaced.")
+            elif error[0] == 'local_config_fullpath':
+                msg = (f"The file {getattr(self, error[0])} could not be "
+                       "parsed. It will need to be replaced manually.")
                 self._log.warning(msg)
                 #self.parent.statusbar_warning = msg
                 # *** TODO *** This needs to be shown on the screen if detected.
@@ -295,7 +303,7 @@ class TomlAppConfig(BaseSystemData):
         errors = self.parse_toml(self._FILE_LIST)
 
         for error in errors:
-            if error == 'user_app_config_fullpath':
+            if error[0] == 'user_app_config_fullpath':
                 fname = self.user_app_config_fullpath
 
                 if os.path.exists(fname):
@@ -303,15 +311,15 @@ class TomlAppConfig(BaseSystemData):
                     bad_file = f'{fname}.bad'
                     shutil.move(fname, bad_file)
                     msg = ("Found an invalid app config file, a new one "
-                       "will be created. The original bad file has "
-                       f"been backed up to {bad_file}.")
+                           "will be created. The original bad file has "
+                           f"been backed up to {bad_file}.")
                     self._log.warning(msg)
                     #self.parent.statusbar_warning = msg
                     # *** TODO *** This needs to be shown on the screen
                     #              if detected.
                 else:
-                    msg = (f"The file {getattr(self, error)} could not be "
-                           f"found. It will be created.")
+                    msg = (f"The file {getattr(self, error[0])} could not be "
+                           "found. It will be created.")
                     self._log.warning(msg)
                     #self.parent.statusbar_warning = msg
                     # *** TODO *** This needs to be shown on the screen
