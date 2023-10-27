@@ -33,7 +33,6 @@ class Settings(AppDirs):
                                'generic': 'default_generic.toml'},
                      'user': {'bahai': 'bahai.toml',
                               'generic': 'generic.toml'}}
-    _ALREADY_RUN = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(appname=self.app_name,
@@ -46,7 +45,7 @@ class Settings(AppDirs):
         self.__local_toml = self._CONFIG_FILES['local'][self.config_type]
         self.__app_toml = 'nc-bookkeeper.toml'
 
-    def create_dirs(self):
+    def create_dirs(self): # pragma: no cover
         if not os.path.exists(self.user_data_dir):
             os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)
 
@@ -60,24 +59,13 @@ class Settings(AppDirs):
             os.makedirs(self.user_log_dir, mode=0o775, exist_ok=True)
 
     @property
-    def already_run(self):
-        return self._ALREADY_RUN
-
-    @already_run.setter
-    def already_run(self, value):
-        assert isinstance(value, bool), (f"The 'already_run' value '{value}'"
-                                         " is not a Boolean.")
-        self._ALREADY_RUN = value
+    def app_name(self):
+        return self._APP_NAME
 
     @property
     def primary_developer(self):
         return self._DEVELOPERS[0]
 
-    @property
-    def app_name(self):
-        return self._APP_NAME
-
-    @property
     def contributors(self, array=False):
         result = None
 

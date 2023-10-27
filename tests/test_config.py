@@ -13,16 +13,19 @@ try:
 except:
     from mock import patch
 
+import tomlkit as tk
+
 from . import log, initial_log_message, get_path
-from src.config import (TomlMetaData, TomlPanelConfig, TomlAppConfig,
-                        TomlCreatePanel)
+from src.config import (Settings, BaseSystemData, TomlMetaData,
+                        TomlPanelConfig, TomlAppConfig, TomlCreatePanel)
 from src.ncb import CheckPanelConfig, CheckAppConfig
 #from src import Logger
 
 #logger = Logger()
 #logger.config(logger_name='debug', user_stdout=True)
 
-RUN_FLAG = {'TestTomlMetaData': False, 'TestTomlPanelConfig': False,
+RUN_FLAG = {'TestSettings': False, 'TestBaseSystemData': False,
+            'TestTomlMetaData': False, 'TestTomlPanelConfig': False,
             'TestTomlAppConfig': False, 'TestTomlCreatePanel': False}
 
 
@@ -32,6 +35,128 @@ def check_flag(name):
         RUN_FLAG[name] = True
 
 
+class TestSettings(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        self.set = Settings()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_primary_developer(self):
+        """
+        Test that the primary developer is returned.
+        """
+        dev = self.set.primary_developer
+        should_be_dev = self.set._DEVELOPERS[0]
+        msg = f"Should be '{should_be_dev}' found '{dev}'"
+        self.assertEquals(should_be_dev, dev, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_contributors(self):
+        """
+        Test that the contributors are returned.
+        """
+        # Test that a list is returned.
+        cont = self.set.contributors(True)
+        should_be_cont = self.set._DEVELOPERS
+        msg = f"Should be '{should_be_cont}' found '{cont}'"
+        self.assertEquals(should_be_cont, cont, msg)
+        # Test that a srting is returned.
+        cont = self.set.contributors()
+        should_be_cont = ''.join([s+'\n' for s in self.set._DEVELOPERS]
+                                 ).strip()
+        msg = f"Should be '{should_be_cont}' found '{cont}'"
+        self.assertEquals(should_be_cont, cont, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_logger_name(self):
+        """
+        Test that the data logger name is returned.
+        """
+        name = self.set.logger_name
+        should_be_name = self.set._LOGGER_NAME
+        msg = f"Should be '{should_be_name}' found '{name}'."
+        self.assertEquals(should_be_name, name, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_logfile_name(self):
+        """
+        Test that the data logfile name is returned.
+        """
+        name = self.set.logfile_name
+        should_be_name = self.set._LOGFILE_NAME
+        msg = f"Should be '{should_be_name}' found '{name}'."
+        self.assertEquals(should_be_name, name, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_data_file_name(self):
+        """
+        Test that the data file name is returned.
+        """
+        df = self.set.data_file_name
+        should_be_df = self.set._DATA_FILE
+        msg = f"Should be '{should_be_df}' found '{df}'."
+        self.assertEquals(should_be_df, df, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_user_data_fullpath(self):
+        """
+        Test that the user data file path is returned.
+        """
+        fp = self.set.user_data_fullpath
+        should_be_fp = os.path.join(self.set.user_data_dir,
+                                    self.set.data_file_name)
+        msg = f"Should be '{should_be_fp}' found '{fp}'."
+        self.assertEquals(should_be_fp, fp, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_user_config_fullpath(self):
+        """
+        Test that the user config file path is returned.
+        """
+        fp = self.set.user_config_fullpath
+        should_be_fp = os.path.join(self.set.user_config_dir,
+                                    self.set._Settings__user_toml)
+        msg = f"Should be '{should_be_fp}' found '{fp}'."
+        self.assertEquals(should_be_fp, fp, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_user_app_config_fullpath(self):
+        """
+        Test that the user app config file path is returned.
+        """
+        fp = self.set.user_app_config_fullpath
+        should_be_fp = os.path.join(self.set.user_config_dir,
+                                    self.set._Settings__app_toml)
+        msg = f"Should be '{should_be_fp}' found '{fp}'."
+        self.assertEquals(should_be_fp, fp, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_user_log_fullpath(self):
+        """
+        Test that the user log file path is returned.
+        """
+        fp = self.set.user_log_fullpath
+        should_be_fp = os.path.join(self.set.user_log_dir,
+                                    self.set.logfile_name)
+        msg = f"Should be '{should_be_fp}' found '{fp}'."
+        self.assertEquals(should_be_fp, fp, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_local_config_fullpath(self):
+        """
+        Test that the local data file path is returned.
+        """
+        fp = self.set.local_config_fullpath
+        should_be_fp = os.path.join(self.set._LOCAL_CONFIG,
+                                    self.set._Settings__local_toml)
+        msg = f"Should be '{should_be_fp}' found '{fp}'."
+        self.assertEquals(should_be_fp, fp, msg)
+
+
 class BaseTest(unittest.TestCase):
     _cpd = CheckPanelConfig()
     _cad = CheckAppConfig()
@@ -39,6 +164,51 @@ class BaseTest(unittest.TestCase):
     def __init__(self, name):
         super().__init__(name)
         self._cpd.has_valid_data
+
+
+class TestBaseSystemData(BaseTest):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        self.bsd = BaseSystemData()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_parse_toml_user_app_config(self):
+        """
+        Test that toml files get pared correctly.
+        """
+        file_types = ('user_config_fullpath', 'user_app_config_fullpath')
+        errors = self.bsd.parse_toml(file_types)
+        self.assertFalse(errors)
+        results = {'user_config_fullpath': self.bsd.panel_config,
+                   'user_app_config_fullpath': self.bsd.app_config}
+
+        for key, result in results.items():
+            valid = isinstance(result, tk.toml_document.TOMLDocument)
+            msg = f"Have parsed data for {key} '{valid}'"
+            self.assertTrue(valid, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_parse_toml_local_config(self):
+        """
+        Test that toml files get pared correctly.
+        """
+        file_types = ('local_config_fullpath',)
+        errors = self.bsd.parse_toml(file_types)
+        self.assertFalse(errors)
+        results = {'local_config_fullpath': self.bsd.panel_config}
+
+        for key, result in results.items():
+            valid = isinstance(result, tk.toml_document.TOMLDocument)
+            msg = f"Have parsed data for {key} '{valid}'"
+            self.assertTrue(valid, msg)
+
+
+
+
 
 
 class TestTomlMetaData(BaseTest):
