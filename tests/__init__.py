@@ -26,4 +26,20 @@ def get_path():
     return os.path.join(BASE_DIR, 'tests')
 
 
-__all__ = (log, initial_log_message, get_path)
+RUN_FLAG = {'TestBootstrap': False,
+            'TestLogger': False,
+            'TestSettings': False,
+            'TestBaseSystemData': False,
+            'TestTomlMetaData': False,
+            'TestTomlPanelConfig': False,
+            'TestTomlAppConfig': False,
+            'TestTomlCreatePanel': False}
+
+
+def check_flag(name):
+    if not RUN_FLAG[name]:
+        initial_log_message("Start logging for %s", name)
+        RUN_FLAG[name] = True
+
+
+__all__ = (log, get_path, check_flag)

@@ -28,6 +28,7 @@ tar	: clean
 
 .PHONY	: tests
 tests	: clean
+	@mkdir -p $(LOGS_DIR)
 	@nosetests --with-coverage --cover-erase --cover-inclusive \
                    --cover-html --cover-html-dir=$(DOCS_DIR)/htmlcov \
                    --cover-package=$(PREFIX)/src $(TEST_PATH)

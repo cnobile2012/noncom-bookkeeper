@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # test/test_config.py
@@ -7,6 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import os
 import unittest
+import shutil
 
 try:
     from unittest.mock import patch
@@ -15,24 +15,13 @@ except:
 
 import tomlkit as tk
 
-from . import log, initial_log_message, get_path
+from . import log, get_path, check_flag
 from src.config import (Settings, BaseSystemData, TomlMetaData,
                         TomlPanelConfig, TomlAppConfig, TomlCreatePanel)
 from src.ncb import CheckPanelConfig, CheckAppConfig
-#from src import Logger
+from src import Logger
 
-#logger = Logger()
-#logger.config(logger_name='debug', user_stdout=True)
-
-RUN_FLAG = {'TestSettings': False, 'TestBaseSystemData': False,
-            'TestTomlMetaData': False, 'TestTomlPanelConfig': False,
-            'TestTomlAppConfig': False, 'TestTomlCreatePanel': False}
-
-
-def check_flag(name):
-    if not RUN_FLAG[name]:
-        initial_log_message("Start logging for %s", name)
-        RUN_FLAG[name] = True
+#Logger().config()
 
 
 class TestSettings(unittest.TestCase):
@@ -159,6 +148,7 @@ class TestSettings(unittest.TestCase):
 
 class TestBaseSystemData(unittest.TestCase):
     _TMP_USER_CONFIG_FILE = '/tmp/user_config.toml'
+    _TMP_USER_APP_CONFIG_FILE = '/tmp/user_app_config.toml'
 
     def __init__(self, name):
         super().__init__(name)
@@ -170,14 +160,25 @@ class TestBaseSystemData(unittest.TestCase):
     def tearDown(self):
         try:
             os.remove(self._TMP_USER_CONFIG_FILE)
+            os.remove(self._TMP_USER_APP_CONFIG_FILE)
         except FileNotFoundError:
             pass
 
     #@unittest.skip("Temporarily skipped")
+    @patch.object(BaseSystemData, 'user_app_config_fullpath',
+                  _TMP_USER_APP_CONFIG_FILE)
+    @patch.object(BaseSystemData, 'user_config_fullpath',
+                  _TMP_USER_CONFIG_FILE)
     def test_parse_toml_user_app_config(self):
         """
-        Test that toml files get pared correctly.
+        Test that toml files get parsed correctly.
         """
+        # Create or copy files to temporary locations.
+        tac = TomlAppConfig()
+        tac.create_app_config()
+        shutil.copy2(self.bsd.local_config_fullpath,
+                     self._TMP_USER_CONFIG_FILE)
+        # Run test
         file_types = ('user_config_fullpath', 'user_app_config_fullpath')
         errors = self.bsd.parse_toml(file_types)
         self.assertFalse(errors)
@@ -432,10 +433,16 @@ class TestTomlPanelConfig(BaseTest):
             pass
 
     #@unittest.skip("Temporarily skipped")
+    @patch.object(BaseSystemData, 'user_config_fullpath',
+                  _TMP_USER_CONFIG_FILE)
     def test_is_valid_property(self):
         """
         Test that the is_valid property returns a True for normal operation.
         """
+        # Create or copy files to temporary locations.
+        shutil.copy2(self.tpc.local_config_fullpath,
+                     self._TMP_USER_CONFIG_FILE)
+        # Run test
         ret = self.tpc.is_valid
         msg = f"Should be True, found {ret}."
         self.assertTrue(ret, msg)
