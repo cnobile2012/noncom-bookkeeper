@@ -27,8 +27,8 @@ class Logger:
     Setup some basic logging. This uses the borg patten, it's kind of like a
     singlton but has a side affect of assimulation.
     """
-    _DEFAULT_FORMAT = ("%(asctime)s %(levelname)s %(name)s %(funcName)s "
-                       "[line:%(lineno)d] %(message)s")
+    _DEFAULT_FORMAT = ("%(asctime)s %(levelname)s %(name)s %(module)s "
+                       "%(funcName)s [line:%(lineno)d] %(message)s")
 
     def __init__(self, format_str=None):
         self._format = format_str if format_str else self._DEFAULT_FORMAT
@@ -44,14 +44,13 @@ class Logger:
         :param file_path: The path to the logging file. If left as None
                           logging will be to the screen.
         :type file_path: str
-        :param level: The lewest leven to generate lofs for. See the
+        :param level: The lowest level to generate logs for. See the
                       Python logger docs.
         :type level: int
         :param initial_msg: Print the inital log message. The default is True.
         :type initial_msg: bool
         """
         if logger_name and file_path:
-            self.log_name = logger_name
             self.logger = logging.getLogger(logger_name)
             self.logger.setLevel(level)
             handler = logging.FileHandler(file_path)
@@ -60,10 +59,12 @@ class Logger:
             self.logger.addHandler(handler)
         elif file_path: # Creates a root logger to a file.
             logging.basicConfig(filename=file_path, format=self._format,
-                                level=level)
+                                level=level, force=True)
+            self.logger = logging.getLogger()
         else: # Creates a root logger to stdout.
             logging.basicConfig(stream=sys.stdout, format=self._format,
-                                level=level)
+                                level=level, force=True)
+            self.logger = logging.getLogger()
 
         if logger_name:
             log = logging.getLogger(logger_name)
@@ -74,7 +75,13 @@ class Logger:
             log.info("Logging start for %s.", logger_name)
 
     @property
+    def level(self):
+        assert self.logger, "The 'config()' method must be called first."
+        return self.logger.getEffectiveLevel()
+
+    @level.setter
     def level(self, level):
+        assert self.logger, "The 'config()' method must be called first."
         self.logger.setLevel(level)
 
 # The lines below runs the Bootstrap class for the first time.

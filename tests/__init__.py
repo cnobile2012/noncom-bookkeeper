@@ -8,7 +8,7 @@ from src import Logger
 
 
 def setup_logging():
-    LOGGER_NAME = 'configuration'
+    LOGGER_NAME = 'config'
     filename = 'config.log'
     full_path = os.path.abspath(os.path.join(BASE_DIR, 'logs', filename))
     logger = Logger()

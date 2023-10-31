@@ -19,9 +19,8 @@ from . import log, get_path, check_flag
 from src.config import (Settings, BaseSystemData, TomlMetaData,
                         TomlPanelConfig, TomlAppConfig, TomlCreatePanel)
 from src.ncb import CheckPanelConfig, CheckAppConfig
-from src import Logger
 
-#Logger().config()
+#from src import Logger; Logger().config()
 
 
 class TestSettings(unittest.TestCase):

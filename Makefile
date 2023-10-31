@@ -27,7 +27,7 @@ tar	: clean
           --exclude="__pycache__" $(BASE_DIR))
 
 .PHONY	: tests
-tests	: clean
+tests	: clobber
 	@mkdir -p $(LOGS_DIR)
 	@nosetests --with-coverage --cover-erase --cover-inclusive \
                    --cover-html --cover-html-dir=$(DOCS_DIR)/htmlcov \
