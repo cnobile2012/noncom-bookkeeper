@@ -9,7 +9,8 @@ class NCBookkeeperException(Exception):
     """
     Base NC Bookkeeper Exception.
     """
-    pass
+    def __init__(self, message):
+        super().__init__(message)
 
 
 class InvalidTomlException(NCBookkeeperException):
@@ -19,9 +20,13 @@ class InvalidTomlException(NCBookkeeperException):
     _DEFAULT_MSG = "Unparseable TOML file."
 
     def __init__(self, message="", errors=None):
-        if message != "":
+        if message == "":
             message = self._DEFAULT_MSG
 
-        self.message = message
-        self.errors = errors
-        super().__init__(self.message)
+        self._message = message
+        self._errors = errors
+        super().__init__(self._message)
+
+    @property
+    def errors(self):
+        return self._errors

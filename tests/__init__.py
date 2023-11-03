@@ -36,7 +36,8 @@ RUN_FLAG = {'TestBootstrap': False,
             'TestTomlMetaData': False,
             'TestTomlPanelConfig': False,
             'TestTomlAppConfig': False,
-            'TestTomlCreatePanel': False}
+            'TestTomlCreatePanel': False,
+            'TestExceptions': False}
 
 
 def check_flag(name):
