@@ -6,6 +6,8 @@ import logging
 from .base_dir import BASE_DIR
 from src import Logger
 
+from .fixtures import FakeWidget, FakeEvent
+
 
 def setup_logging():
     LOGGER_NAME = 'config'
@@ -28,6 +30,7 @@ def get_path():
 
 RUN_FLAG = {'TestBootstrap': False,
             'TestLogger': False,
+            'TestBases': False,
             'TestSettings': False,
             'TestBaseSystemData': False,
             'TestTomlMetaData': False,
@@ -42,4 +45,4 @@ def check_flag(name):
         RUN_FLAG[name] = True
 
 
-__all__ = (log, get_path, check_flag)
+__all__ = (log, get_path, check_flag, FakeWidget, FakeEvent)

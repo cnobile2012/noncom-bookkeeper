@@ -8,7 +8,6 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 
-
 def find_dict(value):
     """
     Fine the dict in the Toml data that is in the widget value list.
@@ -54,13 +53,34 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         self.parent = parent
 
     def locality_prefix(self, update):
+        """
+        This is a closure for the 'do_event' callback.
+
+        :param update: The widget that is being updated.
+        :type update: wx.Window
+        """
         def do_event(event):
+            """
+            This is an event callback.
+
+            :param event: This is a wx event.
+            :type event: wx.Event
+            """
             rb = event.GetEventObject()
             self._locality_prefix(rb, update)
 
         return do_event
 
     def _locality_prefix(self, rb, update):
+        """
+        Set value in the widget used for the community type. This method
+        is used only when the Baha'i config file is used.
+
+        :param rb: A RadioButton widget object.
+        :type rb: RadioButton
+        :param update: The widget that is being updated.
+        :type update: widget object
+        """
         selection = rb.GetStringSelection()
         text = self.locale_prefix[selection.lower()]
         prefix_widget = getattr(self, update)
