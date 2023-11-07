@@ -4,8 +4,6 @@
 #
 __docformat__ = "restructuredtext en"
 
-import logging
-
 import wx
 
 from .config import Settings
@@ -19,60 +17,63 @@ class Paths(wx.Panel):
 
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
+        self.create_display()
+
+    def create_display(self):
         self.title = '''Application Paths'''
-        self._bg_color = [178, 181, 185]
-        w_bg_color = [222, 237, 230]
-        w_fg_color = [50, 50, 204]
+        self._bg_color = (178, 181, 185)
+        w_bg_color = (222, 237, 230)
+        w_fg_color = (50, 50, 204)
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
         grid_sizer = wx.FlexGridSizer(4, 2, 0, 2) # rows, cols, vgap, hgap
         sizer.Add(grid_sizer, 0, wx.CENTER, 0)
 
-        widget_0 = wx.StaticText(self, wx.ID_ANY, "Data Path:")
-        widget_0.SetForegroundColour(wx.Colour(50, 50, 204))
-        widget_0.SetMinSize([-1, -1])
-        grid_sizer.Add(widget_0, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-        widget_1 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_data_fullpath,
+        widget_00 = wx.StaticText(self, wx.ID_ANY, "Data Path:")
+        widget_00.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_00.SetMinSize([-1, -1])
+        grid_sizer.Add(widget_00, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        widget_01 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_data_fullpath,
                                style=wx.TE_READONLY)
-        widget_1.SetBackgroundColour(wx.Colour(*w_bg_color))
-        widget_1.SetForegroundColour(wx.Colour(*w_fg_color))
-        widget_1.SetMinSize([400, -1])
-        grid_sizer.Add(widget_1, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        widget_01.SetBackgroundColour(wx.Colour(*w_bg_color))
+        widget_01.SetForegroundColour(wx.Colour(*w_fg_color))
+        widget_01.SetMinSize([400, -1])
+        grid_sizer.Add(widget_01, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-        widget_2 = wx.StaticText(self, wx.ID_ANY, "Panel Path:")
-        widget_2.SetForegroundColour(wx.Colour(50, 50, 204))
-        widget_2.SetMinSize([-1, -1])
-        grid_sizer.Add(widget_2, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-        widget_3 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_config_fullpath,
+        widget_02 = wx.StaticText(self, wx.ID_ANY, "Panel Path:")
+        widget_02.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_02.SetMinSize([-1, -1])
+        grid_sizer.Add(widget_02, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        widget_03 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_config_fullpath,
                                style=wx.TE_READONLY)
-        widget_3.SetBackgroundColour(wx.Colour(*w_bg_color))
-        widget_3.SetForegroundColour(wx.Colour(*w_fg_color))
-        widget_3.SetMinSize([400, -1])
-        grid_sizer.Add(widget_3, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        widget_03.SetBackgroundColour(wx.Colour(*w_bg_color))
+        widget_03.SetForegroundColour(wx.Colour(*w_fg_color))
+        widget_03.SetMinSize([400, -1])
+        grid_sizer.Add(widget_03, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-        widget_4 = wx.StaticText(self, wx.ID_ANY, "Config Path:")
-        widget_4.SetForegroundColour(wx.Colour(50, 50, 204))
-        widget_4.SetMinSize([-1, -1])
-        grid_sizer.Add(widget_4, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-        widget_5 = wx.TextCtrl(self, wx.ID_ANY,
+        widget_04 = wx.StaticText(self, wx.ID_ANY, "Config Path:")
+        widget_04.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_04.SetMinSize([-1, -1])
+        grid_sizer.Add(widget_04, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        widget_05 = wx.TextCtrl(self, wx.ID_ANY,
                                self.sg.user_app_config_fullpath,
                                style=wx.TE_READONLY)
-        widget_5.SetBackgroundColour(wx.Colour(*w_bg_color))
-        widget_5.SetForegroundColour(wx.Colour(*w_fg_color))
-        widget_5.SetMinSize([400, -1])
-        grid_sizer.Add(widget_5, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        widget_05.SetBackgroundColour(wx.Colour(*w_bg_color))
+        widget_05.SetForegroundColour(wx.Colour(*w_fg_color))
+        widget_05.SetMinSize([400, -1])
+        grid_sizer.Add(widget_05, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-        widget_6 = wx.StaticText(self, wx.ID_ANY, "Log Path:")
-        widget_6.SetForegroundColour(wx.Colour(50, 50, 204))
-        widget_6.SetMinSize([-1, -1])
-        grid_sizer.Add(widget_6, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-        widget_7 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_log_fullpath,
+        widget_06 = wx.StaticText(self, wx.ID_ANY, "Log Path:")
+        widget_06.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_06.SetMinSize([-1, -1])
+        grid_sizer.Add(widget_06, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        widget_07 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_log_fullpath,
                                style=wx.TE_READONLY)
-        widget_7.SetBackgroundColour(wx.Colour(*w_bg_color))
-        widget_7.SetForegroundColour(wx.Colour(*w_fg_color))
-        widget_7.SetMinSize([400, -1])
-        grid_sizer.Add(widget_7, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        widget_07.SetBackgroundColour(wx.Colour(*w_bg_color))
+        widget_07.SetForegroundColour(wx.Colour(*w_fg_color))
+        widget_07.SetMinSize([400, -1])
+        grid_sizer.Add(widget_07, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
     @property
     def background_color(self):
