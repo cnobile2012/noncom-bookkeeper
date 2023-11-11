@@ -417,7 +417,7 @@ class TestTomlMetaData(BaseTest):
 
 class TestTomlPanelConfig(BaseTest):
     _TMP_USER_CONFIG_FILE = '/tmp/user_config.toml'
-    _TMP_LOCAL_CONFIG_FILE = 'default_bahai.toml'
+    _TMP_LOCAL_CONFIG_FILE = '/tmp/default_bahai.toml'
 
     def __init__(self, name):
         super().__init__(name)
@@ -429,6 +429,16 @@ class TestTomlPanelConfig(BaseTest):
     def tearDown(self):
         try:
             os.remove(self._TMP_USER_CONFIG_FILE)
+        except FileNotFoundError:
+            pass
+
+        try:
+            os.remove(self._TMP_LOCAL_CONFIG_FILE)
+        except FileNotFoundError:
+            pass
+
+        try:
+            os.remove(f"{self._TMP_USER_CONFIG_FILE}.bad")
         except FileNotFoundError:
             pass
 
@@ -507,15 +517,15 @@ class TestTomlPanelConfig(BaseTest):
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(TomlPanelConfig, '_LOCAL_CONFIG', '/tmp')
+    @patch.object(TomlPanelConfig, 'user_config_fullpath',
+                  _TMP_USER_CONFIG_FILE)
     def test_is_valid_property_local_unparsable(self):
         """
         Test that the is_valid property returns a False for an unparsable
         Toml file in the `local_config_fullpath` property.
         """
         # Create an unparsable file.
-        fullpath = os.path.join('/tmp', self._TMP_LOCAL_CONFIG_FILE)
-
-        with open(fullpath, 'w') as f:
+        with open(self._TMP_LOCAL_CONFIG_FILE, 'w') as f:
             f.write("[meta]\nsomevar = {junk='some_value'")
 
         ret = self.tpc.is_valid
@@ -540,9 +550,24 @@ class TestTomlAppConfig(BaseTest):
         except FileNotFoundError:
             pass
 
+        try:
+            os.remove(f"{self._TMP_USER_APP_FILE}.bad")
+        except FileNotFoundError:
+            pass
+
     def create_config(self):
         self.tac.create_app_config()
         return self.tac.is_valid
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlAppConfig, '_FILE_LIST', ('user_invalid_property',))
+    def test_is_valid_property_invalid(self):
+        """
+        Test that an invalid property causes an error.
+        """
+        ret = self.tac.is_valid
+        msg = f"Should be False, found {ret}."
+        self.assertFalse(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_is_valid_property(self):
@@ -739,6 +764,3 @@ class TestTomlAppConfig(BaseTest):
         msg = (f"The file '{self._TMP_UNWRITABE_PATH}' could not be "
                f"written, {ex}")
         self.assertIn(self._TMP_UNWRITABE_PATH, ex, msg)
-
-
-

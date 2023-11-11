@@ -104,19 +104,23 @@ class TestLogger(unittest.TestCase):
         a logger object is created.
         """
         name = 'TestName'
-        Logger().config(logger_name=name, file_path=self._TMP_LOGGER_FILE,
-                        initial_msg=False)
-        log = logging.getLogger(name)
-        test_msg = "Test logging"
-        log.info(test_msg)
-        data = ""
 
-        with open(self._TMP_LOGGER_FILE, 'r') as f:
-            data = f.read()
+        with LogCapture() as l:
+            Logger().config(logger_name=name, file_path=self._TMP_LOGGER_FILE,
+                            initial_msg=False)
 
-        msg = f"Should find a {name} logger with {test_msg} found in {data}"
-        self.assertIn(test_msg, data, msg)
-        self.assertIn(name, data, msg)
+            log = logging.getLogger(name)
+            test_msg = "Test logging"
+            log.info(test_msg)
+            data = ""
+
+            with open(self._TMP_LOGGER_FILE, 'r') as f:
+                data = f.read()
+
+            msg = (f"Should find a {name} logger with {test_msg} found "
+                   f"in {data}")
+            self.assertIn(test_msg, data, msg)
+            self.assertIn(name, data, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_config_root_logger_to_file(self):
@@ -124,19 +128,21 @@ class TestLogger(unittest.TestCase):
         Test that with only the 'file_path' argument a root logger
         object is created.
         """
-        Logger().config(file_path=self._TMP_LOGGER_FILE, initial_msg=False)
-        log = logging.getLogger()
-        test_msg = "Test logging to file."
-        log.info(test_msg)
-        data = ""
+        with LogCapture() as l:
+            Logger().config(file_path=self._TMP_LOGGER_FILE, initial_msg=False)
 
-        with open(self._TMP_LOGGER_FILE, 'r') as f:
-            data = f.read()
+            log = logging.getLogger()
+            test_msg = "Test logging to file."
+            log.info(test_msg)
+            data = ""
 
-        name = 'root'
-        msg = f"Should find a {name} logger with {test_msg} found in {data}"
-        self.assertIn(test_msg, data, msg)
-        self.assertIn(name, data, msg)
+            with open(self._TMP_LOGGER_FILE, 'r') as f:
+                data = f.read()
+
+            name = 'root'
+            msg = f"Should find a {name} logger with {test_msg} found in {data}"
+            self.assertIn(test_msg, data, msg)
+            self.assertIn(name, data, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_config_root_logger_to_stdout(self):
