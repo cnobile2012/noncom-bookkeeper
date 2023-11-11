@@ -21,10 +21,28 @@ class TestCheckPanelConfig(unittest.TestCase):
 
     def test_has_valid_data(self):
         """
-        Test that the config data is valid.
+        Test that the config data is valid. This is a quick tests since the
+        internals of the is_valid property is tested elsewhere.
         """
+        ret = self.cpc.has_valid_data
+        msg = f"Should be True found {ret}"
+        self.assertTrue(ret, msg)
 
 
+class TestCheckAppConfig(unittest.TestCase):
 
+    def __init__(self, name):
+        super().__init__(name)
 
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        self.cac = CheckAppConfig()
 
+    def test_has_valid_data(self):
+        """
+        Test that the config data is valid. This is a quick tests since the
+        internals of the is_valid property is tested elsewhere.
+        """
+        ret = self.cac.has_valid_data
+        msg = f"Should be True found {ret}"
+        self.assertTrue(ret, msg)
