@@ -5,7 +5,6 @@
 __docformat__ = "restructuredtext en"
 
 import os
-import logging
 import shutil
 
 from .config import TomlPanelConfig, TomlAppConfig
@@ -38,19 +37,8 @@ class CheckPanelConfig(TomlPanelConfig):
     @property
     def has_valid_data(self):
         """
-        Does the static data exist and is the data valid?
+        Does the static panel config exist and is the data valid?
         """
-        return self.check_config_files()
-
-    def check_config_files(self):
-        """
-        Config files will be TOML files.
-        """
-        fname = self.user_config_fullpath
-
-        if not os.path.exists(fname):
-            shutil.copy2(self.local_config_fullpath, fname)
-
         return self.is_valid
 
 
@@ -66,6 +54,6 @@ class CheckAppConfig(TomlAppConfig):
     @property
     def has_valid_data(self):
         """
-        Does the static data exist and is the data valid?
+        Does the static app config exist and is the data valid?
         """
         return self.is_valid

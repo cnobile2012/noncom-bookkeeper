@@ -24,10 +24,6 @@ def initial_log_message(message, *args, **kwargs):
     log.info(message, *args, **kwargs)
 
 
-def get_path():
-    return os.path.join(BASE_DIR, 'tests')
-
-
 RUN_FLAG = {'TestBootstrap': False,
             'TestLogger': False,
             'TestBases': False,
@@ -38,7 +34,8 @@ RUN_FLAG = {'TestBootstrap': False,
             'TestTomlAppConfig': False,
             'TestTomlCreatePanel': False,
             'TestExceptions': False,
-            'TestPaths': False}
+            'TestPaths': False,
+            'TestCheckPanelConfig': False}
 
 
 def check_flag(name):
@@ -47,4 +44,4 @@ def check_flag(name):
         RUN_FLAG[name] = True
 
 
-__all__ = (log, get_path, check_flag, FakeWidget, FakeEvent)
+__all__ = (log, check_flag, FakeWidget, FakeEvent)

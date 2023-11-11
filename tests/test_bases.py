@@ -7,7 +7,7 @@ __docformat__ = "restructuredtext en"
 import unittest
 import wx
 
-from . import log, get_path, check_flag, FakeWidget, FakeEvent
+from . import log, check_flag, FakeWidget, FakeEvent
 
 from src.bases import find_dict, BasePanel, BaseGenerated
 

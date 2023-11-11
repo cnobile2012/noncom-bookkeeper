@@ -15,7 +15,7 @@ except:
 
 import tomlkit as tk
 
-from . import log, get_path, check_flag
+from . import log, check_flag
 from src.config import (Settings, BaseSystemData, TomlMetaData,
                         TomlPanelConfig, TomlAppConfig, TomlCreatePanel)
 from src.ncb import CheckPanelConfig, CheckAppConfig
@@ -417,6 +417,7 @@ class TestTomlMetaData(BaseTest):
 
 class TestTomlPanelConfig(BaseTest):
     _TMP_USER_CONFIG_FILE = '/tmp/user_config.toml'
+    _TMP_LOCAL_CONFIG_FILE = 'default_bahai.toml'
 
     def __init__(self, name):
         super().__init__(name)
@@ -432,7 +433,18 @@ class TestTomlPanelConfig(BaseTest):
             pass
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(BaseSystemData, 'user_config_fullpath',
+    @patch.object(TomlPanelConfig, '_FILE_LIST', ('user_invalid_property',
+                                                  'local_invalid_property'))
+    def test_is_valid_property_invalid(self):
+        """
+        Test that an invalid property causes an error.
+        """
+        ret = self.tpc.is_valid
+        msg = f"Should be False, found {ret}."
+        self.assertFalse(ret, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch.object(TomlPanelConfig, 'user_config_fullpath',
                   _TMP_USER_CONFIG_FILE)
     def test_is_valid_property(self):
         """
@@ -449,14 +461,16 @@ class TestTomlPanelConfig(BaseTest):
     #@unittest.skip("Temporarily skipped")
     @patch.object(TomlPanelConfig, 'user_config_fullpath',
                   _TMP_USER_CONFIG_FILE)
-    def test_is_valid_property_user_bad_path(self):
+    def test_is_valid_property_user_bad_file(self):
         """
-        Test that the is_valid property returns a False for a bad path in
-        the `user_config_fullpath` property.
+        Test that the is_valid property returns a True for a bad file in
+        the `user_config_fullpath` property. The bad file is fixed.
+
+        Note: The responds to error code 4.
         """
         ret = self.tpc.is_valid
-        msg = f"Should be False, found {ret}."
-        self.assertFalse(ret, msg)
+        msg = f"Should be True, found {ret}."
+        self.assertTrue(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(TomlPanelConfig, 'user_config_fullpath',
@@ -466,7 +480,8 @@ class TestTomlPanelConfig(BaseTest):
         Test that the is_valid property returns a True for an unparsable
         Toml file in the `user_config_fullpath` property.
 
-        Note: The is_valid will fix this issue so it will return a True.
+        Note: 1. The is_valid will fix this issue so it will return a True.
+              2. Responds to error code 3.
         """
         # Create an unparsable file.
         with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
@@ -479,22 +494,30 @@ class TestTomlPanelConfig(BaseTest):
     #@unittest.skip("Temporarily skipped")
     @patch.object(TomlPanelConfig, 'local_config_fullpath',
                   _TMP_USER_CONFIG_FILE)
-    def test_is_valid_property_local_bad_path(self):
+    def test_is_valid_property_local_not_found(self):
         """
-        Test that the is_valid property returns a False for a bad path in
-        the `local_config_fullpath` property.
+        Test that the is_valid property returns a False for a not found
+        file in the `local_config_fullpath` property.
+
+        Note: Responds to error code 2.
         """
         ret = self.tpc.is_valid
         msg = f"Should be False, found {ret}."
         self.assertFalse(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlPanelConfig, '_LOCAL_CONFIG', get_path())
+    @patch.object(TomlPanelConfig, '_LOCAL_CONFIG', '/tmp')
     def test_is_valid_property_local_unparsable(self):
         """
         Test that the is_valid property returns a False for an unparsable
         Toml file in the `local_config_fullpath` property.
         """
+        # Create an unparsable file.
+        fullpath = os.path.join('/tmp', self._TMP_LOCAL_CONFIG_FILE)
+
+        with open(fullpath, 'w') as f:
+            f.write("[meta]\nsomevar = {junk='some_value'")
+
         ret = self.tpc.is_valid
         msg = f"Should be False, found {ret}."
         self.assertFalse(ret, msg)

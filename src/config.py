@@ -145,6 +145,21 @@ class BaseSystemData(Settings):
         self.SYS_FILES['app_config'] = value
 
     def parse_toml(self, file_list):
+        """
+        Parse the toml file.
+
+        .. note::
+
+          Where errcode is one of 1 = Invalid property
+                                  2 = Cannot find file
+                                  3 = TOML error
+                                  4 = Zero length file
+
+        :param file_list: A tuple of files to parse.
+        :type file_list: str
+        :return: A list of errors if any exist. [fullpath, errmsg, errcode]
+        :rtype: list
+        """
         raw_doc = None
         errors = []
 
@@ -154,7 +169,7 @@ class BaseSystemData(Settings):
             except AttributeError as e:
                 msg = f"Invalid property, {str(e)}"
                 self._log.error(msg)
-                errors.append((file_type, msg))
+                errors.append((file_type, msg, 1))
             else:
                 try:
                     with open(fname, 'r') as f:
@@ -162,7 +177,7 @@ class BaseSystemData(Settings):
                 except FileNotFoundError as e:
                     msg = "Cannot find file {fname}, {str(e)}"
                     self._log.error(msg)
-                    errors.append((file_type, msg))
+                    errors.append((file_type, msg, 2))
                 else:
                     if raw_doc != "":
                         try:
@@ -170,7 +185,7 @@ class BaseSystemData(Settings):
                         except tk.exceptions.TOMLKitError as e:
                             msg = "TOML error: {str(e)}"
                             self._log.error(msg)
-                            errors.append((file_type, msg))
+                            errors.append((file_type, msg, 3))
                         else:
                             if 'user_config' in file_type:
                                 self.panel_config = doc
@@ -184,7 +199,7 @@ class BaseSystemData(Settings):
                     else:
                         msg = f"Cannot parse zero length file '{fname}'."
                         self._log.error(msg)
-                        errors.append((file_type, msg))
+                        errors.append((file_type, msg, 4))
 
         return errors
 
@@ -251,31 +266,55 @@ class TomlPanelConfig(BaseSystemData):
         errors = self.parse_toml(self._FILE_LIST)
 
         for error in errors:
-            if error[0] == 'user_config_fullpath':
+            if error[2] == 1:
+                msg = f"Error: {error[1]}"
+                self._log.critical(msg)
+                ret = False
+            elif error[0] == 'user_config_fullpath':
                 # Backup bad file then over write the original with the default.
-                fname = self.user_config_fullpath
-                bad_file = f'{fname}.bad'
+                ufname = self.user_config_fullpath
+                lfname = self.local_config_fullpath
+                msg = "A critical error was encounted '{}' does not exist."
 
-                try:
-                    shutil.copy2(fname, bad_file)
-                    shutil.copy2(self.local_config_fullpath, fname)
-                except FileNotFoundError as e:
-                    msg = f"A critical error was encounted, {str(e)}"
-                    self._log.critical(msg)
-                    ret = False
-                else:
-                    msg = ("Found an invalid panel config file and reverted "
-                           "to the default version. The original bad file "
-                           f"has been backed up to {bad_file}.")
+                if not os.path.exists(ufname):
+                    msg = msg.format(ufname)
                     self._log.warning(msg)
 
-                #self.parent.statusbar_warning = msg
-                # *** TODO *** This needs to be shown on the screen if detected.
+                if not os.path.exists(lfname):
+                    msg = msg.format(lfname)
+                    self._log.critical(msg)
+                    ret = False
+
+                if ret:
+                    if error[2] in (2, 4):
+                        shutil.copy2(lfname, ufname)
+                        self.parse_toml((ufname,))
+                        msg = f"Warning {error[1]}"
+                        self._log.warning(msg)
+                        #self.parent.statusbar_warning = msg
+                        # *** TODO *** This needs to be shown on the screen
+                        #              if detected.
+                    elif error[2] == 3:
+                        bad_file = f'{ufname}.bad'
+                        shutil.copy2(ufname, bad_file)
+                        shutil.copy2(lfname, ufname)
+                        msg = ("Found an invalid panel config file and "
+                               "reverted to the default version. The original "
+                               f"bad file has been backed up to {bad_file}, "
+                               f"{error[1]}")
+                        self._log.warning(msg)
+                        #self.parent.statusbar_warning = msg
+                        # *** TODO *** This needs to be shown on the screen
+                        #              if detected.
+                else:
+                    pass
+                    #self.parent.statusbar_error = msg
+                    # *** TODO *** This needs to be shown on the screen
+                    #              if detected.
             elif error[0] == 'local_config_fullpath':
-                msg = (f"The file {getattr(self, error[0])} could not be "
-                       "parsed. It will need to be replaced manually.")
-                self._log.warning(msg)
-                #self.parent.statusbar_warning = msg
+                msg = f"Error: {error[2]}"
+                self._log.critical(msg)
+                #self.parent.statusbar_error = msg
                 # *** TODO *** This needs to be shown on the screen if detected.
                 ret = False
 
