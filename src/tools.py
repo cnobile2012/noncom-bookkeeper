@@ -339,8 +339,8 @@ class FieldEdit(BasePanel, wx.Panel):
             field_name.SetValue(widget.GetLabel())
             pos = event.get_value()
             row, col = pos
-            gbs.highlight_row(self.__previous_row, color=orig_color)
-            gbs.highlight_row(row, color=color)
+            gbs.highlight_row(self.__previous_row, orig_color)
+            gbs.highlight_row(row, color)
             self.__previous_row = row
             spin_ctrl.SetValue(row)
             spin_ctrl.SetRange(0, gbs.GetRows() - 1)
@@ -505,7 +505,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
         for row in range(gbs.GetRows()):
             self.__previous_row = None
-            gbs.highlight_row(row, color=orig_color)
+            gbs.highlight_row(row, orig_color)
             self.Layout()
 
     def stop_call_later(self):

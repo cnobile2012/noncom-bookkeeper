@@ -4,8 +4,6 @@
 #
 __docformat__ = "restructuredtext en"
 
-from collections import OrderedDict
-from itertools import chain
 import wx
 
 
@@ -55,8 +53,8 @@ class GridBagSizer(wx.GridBagSizer):
             self.Add(w_list[0], w_list[1], w_list[2],
                      flag=w_list[3], border=w_list[4])
 
-    def highlight_row(self, row, color=None):
-        if row is not None and color:
+    def highlight_row(self, row, color):
+        if row is not None:
             for item in self.GetChildren():
                 if item.GetPos()[0] == row:
                     w = item.GetWindow()

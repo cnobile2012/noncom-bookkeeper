@@ -94,8 +94,8 @@ class MyFrame(wx.Frame):
             self.stop_call_later()
             pos = event.get_value()
             row, col = pos
-            gbs.highlight_row(self.__previous_row, color=orig_color)
-            gbs.highlight_row(row, color=color)
+            gbs.highlight_row(self.__previous_row, orig_color)
+            gbs.highlight_row(row, color)
             self.__previous_row = row
             sb.SetValue(row)
             self.__cl = wx.CallLater(4000, self.turn_off_highlight,
@@ -106,7 +106,7 @@ class MyFrame(wx.Frame):
     def turn_off_highlight(self, gbs, orig_color):
         for row in range(gbs.GetRows()):
             self.__previous_row = None
-            gbs.highlight_row(row, color=orig_color)
+            gbs.highlight_row(row, orig_color)
             self.Layout()
 
     def stop_call_later(self):
