@@ -20,12 +20,10 @@ class _TestFrame(wx.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
-        w_fg_color_0 = (50, 50, 204)
         msg = "Test message."
         cap = "Removal Confirmation"
 
-        dlg = ConfirmationDialog(self, msg, cap, (220, 130, 143), # Red-ish
-                                 w_fg_color_0)
+        dlg = ConfirmationDialog(self, msg, cap)
         print(dlg.show())
         wx.Exit()
 
