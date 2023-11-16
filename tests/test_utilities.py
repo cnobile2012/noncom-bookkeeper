@@ -261,3 +261,58 @@ class TestConfirmationDialog(unittest.TestCase):
         msg = f"Caption should be '{caption}' found '{found_cap}'."
         self.assertEquals(caption, found_cap, msg)
         self.check_widgets(new_bg_color, new_fg_color, dlg_msg)
+
+
+class Test_ClickPosition(unittest.TestCase):
+    """
+    The _ClickPosition() class uses the Borg pattern.
+    """
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        self.widget_name = "New Widget"
+        # Get rid of any previous data, since we are dealing with a
+        # borg class.
+        self.cp._new_types.clear()
+
+    @classmethod
+    def setUpClass(self):
+        self.cp = _ClickPosition()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_get_new_event_type(self):
+        """
+        Test that a new even type is returned from wxPython.
+        """
+        event_type = self.cp.get_new_event_type(self.widget_name)
+        msg = f"Event type should be an integer found {event_type}."
+        self.assertTrue(isinstance(event_type, int), msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_get_click_position_event_type_not_set(self):
+        """
+        Test that get_click_position() rases an AssertionError.
+        """
+        err_msg = "get_new_event_type"
+
+        with self.assertRaises(AssertionError) as cm:
+            self.cp.get_click_position(self.widget_name)
+
+        message = str(cm.exception)
+        msg = f"Error message should contain {err_msg} found {message}"
+        self.assertIn(err_msg, message, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_get_click_position_event_type(self):
+        """
+        Test that get_click_position() returns the new event.
+        """
+        event_type = self.cp.get_new_event_type(self.widget_name)
+        event = self.cp.get_click_position(self.widget_name)
+        should_be = 'wx.core.PyEventBinder'
+        msg = f"Event should be a '{should_be}' found {event}."
+        self.assertIn(should_be, str(event), msg)
+

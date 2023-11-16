@@ -129,8 +129,8 @@ class _ClickPosition:
         return self._new_types.setdefault(w_name, wx.NewEventType())
 
     def get_click_position(self, w_name):
-        assert w_name in self._new_types, ("The 'get_new_event_type' must "
-                                           "be called first.")
+        assert w_name in self._new_types, ("The 'get_new_event_type' method "
+                                           "must be called first.")
         return wx.PyEventBinder(self._new_types[w_name], 1)
 
 

@@ -38,7 +38,8 @@ RUN_FLAG = {'TestBootstrap': False,
             'TestCheckPanelConfig': False,
             'TestCheckAppConfig': False,
             'TestGridBagSizer': False,
-            'TestConfirmationDialog': False}
+            'TestConfirmationDialog': False,
+            'Test_ClickPosition': False}
 
 
 def check_flag(name):
