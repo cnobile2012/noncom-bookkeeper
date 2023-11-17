@@ -9,10 +9,36 @@ import wx
 
 from . import log, check_flag
 from src.utilities import (GridBagSizer, ConfirmationDialog, _ClickPosition,
-                           WidgetEvent, EventStaticText)
+                           EventStaticText)
 
 
-class TestGridBagSizer(unittest.TestCase):
+class BaseTests(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def create_objects(self):
+        self.app = wx.App()
+        self.frame = wx.Frame(None)
+        self.gbs = GridBagSizer()
+        self.frame.SetSizer(self.gbs)
+        widget = EventStaticText(self.frame, wx.ID_ANY,
+                                 label="Two column wide text (move me).",
+                                 style=0)
+        self.gbs.Add(widget, (0, 0), (1, 2), wx.ALL, 6)
+        num_widgets = 13
+        num = 0
+
+        for idx in range(num_widgets):
+            dec = idx % 3
+            if not dec: num += 1
+            label = f"Widget {num}.{dec}"
+            widget = EventStaticText(self.frame, -1, label, style=0)
+            pos, span = (num, dec), (1, 1)
+            self.gbs.Add(widget, pos, span, wx.ALIGN_CENTER | wx.ALL, 6)
+
+
+class TestGridBagSizer(BaseTests):
     """
     Test if GridBagSizer gets swapped correctly.
     The GBS items use the following grid.
@@ -30,27 +56,12 @@ class TestGridBagSizer(unittest.TestCase):
     def __init__(self, name):
         super().__init__(name)
 
-    def setUp(self):
-        check_flag(self.__class__.__name__)
-
     @classmethod
     def setUpClass(self):
-        app = wx.App()
-        frame = wx.Frame(None)
-        self.gbs = GridBagSizer()
-        widget = EventStaticText(frame, -1,
-                                 "Two column wide text (move me).", style=0)
-        self.gbs.Add(widget, (0, 0), (1, 2), wx.ALL, 6)
-        num_widgets = 13
-        num = 0
+        self.create_objects(self)
 
-        for idx in range(num_widgets):
-            dec = idx % 3
-            if not dec: num += 1
-            label = f"Widget {num}.{dec}"
-            widget = EventStaticText(frame, -1, label, style=0)
-            pos, span = (num, dec), (1, 1)
-            self.gbs.Add(widget, pos, span, wx.ALIGN_CENTER | wx.ALL, 6)
+    def setUp(self):
+        check_flag(self.__class__.__name__)
 
     def check_rows(self, row, test_row):
         """
@@ -273,7 +284,7 @@ class Test_ClickPosition(unittest.TestCase):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        self.widget_name = "New Widget"
+        self.widget_name = "NewWidget"
         # Get rid of any previous data, since we are dealing with a
         # borg class.
         self.cp._new_types.clear()
@@ -316,3 +327,88 @@ class Test_ClickPosition(unittest.TestCase):
         msg = f"Event should be a '{should_be}' found {event}."
         self.assertIn(should_be, str(event), msg)
 
+
+#class TestWidgetEvent(BaseTests):
+#    """
+#    Test the WidgetEvent class. This class stores values of the widget and
+#    puts them on the event object that is passed to event handlers.
+#    """
+# The WidgetEvent class cannot be tested directly.
+# It's tested in the TestEventStaticText class.
+#
+
+
+class TestEventStaticText(BaseTests):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        self.create_objects()
+
+    def tearDown(self):
+        self.frame.Close()
+
+    def get_widget(self, index=0):
+        return self.frame.GetChildren()[index]
+
+    def simulate_left_click(self, widget):
+        """
+        Thanks to OpenAI for this method.
+        This method will not work without the toplevel window shown.
+        """
+        simulator = wx.UIActionSimulator()
+        rect = widget.GetScreenRect()
+        center = rect.GetPosition() + rect.GetSize() / 2
+        simulator.MouseMove(center)
+        simulator.MouseClick()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_new_event_type(self):
+        """
+        Test that a new event type is returned.
+        """
+        widget = self.get_widget()
+        event_type = widget.new_event_type
+        msg = f"Event type should be an integer found {event_type}."
+        self.assertTrue(isinstance(event_type, int), msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_EVT_CLICK_POSITION(self):
+        """
+        Test that a new event is returned.
+        """
+        widget = self.get_widget()
+        event = widget.EVT_CLICK_POSITION
+        should_be = 'wx.core.PyEventBinder'
+        msg = f"Event should be a '{should_be}' found {event}."
+        self.assertIn(should_be, str(event), msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_WidgetEvent_data(self):
+        """
+        Test that the WidgetEvent data returns properly.
+        """
+        self.frame.Show()
+        widget = self.get_widget(1)
+        should_be_label = widget.GetLabel()
+
+        def event_click(event):
+            # Test the position.
+            should_be = (1, 0)
+            value = event.get_value()
+            msg = f"Value should be '{should_be}' found '{value}'."
+            self.assertEquals(should_be, value, msg)
+            # Test the window.
+            window = event.get_window()
+            label = window.GetLabel()
+            msg = f"Label should be '{should_be_label}' found '{label}'."
+            self.assertEquals(should_be_label, label, msg)
+            # Exit GUI
+            self.app.ExitMainLoop()
+
+        self.frame.Bind(widget.EVT_CLICK_POSITION, event_click,
+                        id=widget.GetId())
+        self.simulate_left_click(widget)
+        self.app.MainLoop()

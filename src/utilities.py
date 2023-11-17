@@ -137,7 +137,7 @@ class _ClickPosition:
 class WidgetEvent(wx.PyCommandEvent):
     """
     For some reason wx.PyCommandEvent screws up the use of properties,
-    bummer.
+    bummer so I needed to use actual getter and setter methods.
     """
 
     def __init__(self, evt_type, id):
@@ -176,9 +176,15 @@ class EventStaticText(wx.StaticText):
 
     @property
     def EVT_CLICK_POSITION(self):
+        """
+        Returns the new event type.
+
+        :return: New event Type.
+        :rtype: wx.core.PyEventBinder
+        """
         return self._cp.get_click_position(self.__type_name)
 
-    def on_left_down(self, event):
+    def on_left_down(self, event): # pragma: no cover
         obj = event.GetEventObject()
         sizer = obj.GetContainingSizer()
         pos = None
