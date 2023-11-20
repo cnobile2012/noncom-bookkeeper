@@ -1,6 +1,8 @@
 #
 # Development by Carl J. Nobile
 #
+# The 'icons' target requires povray and imagemagick to be installed.
+#
 include include.mk
 
 TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
@@ -34,6 +36,12 @@ tests	: clobber
                    --cover-package=$(PREFIX)/src $(TEST_PATH)
 	@echo $(TODAY)
 
+.PHONY	: icons
+icons	:
+	povray +w1280 +h1280 +p +x +d0 -v -icontrib/icon/logo.pov
+	convert $(PREFIX)/contrib/icon/logo.png -resize 48x48 \
+                $(PREFIX)/images/logo-48x48.png
+
 .PHONY	: sphinx
 sphinx  : clean
 	(cd $(DOCS_DIR); make html)
@@ -59,5 +67,6 @@ clean	:
 
 clobber	: clean
 	@(cd $(DOCS_DIR); make clobber)
-	@rm -rf build dist *.spec
+	@rm -rf build dist
 	@rm -f $(LOGS_DIR)/*.log*
+
