@@ -26,6 +26,7 @@ if __name__ == "__main__":
         # Try to run display.
         app = wx.App()
         mf = MainFrame()
+        mf.SetIcon(wx.Icon("images/logo-48x48.ico"))
         mf.Show(True)
         app.MainLoop()
 

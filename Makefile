@@ -1,7 +1,8 @@
 #
 # Development by Carl J. Nobile
 #
-# The 'icons' target requires povray and imagemagick to be installed.
+# The 'logo' and 'icons' target requires povray and imagemagick to be
+# installed.
 #
 include include.mk
 
@@ -36,11 +37,16 @@ tests	: clobber
                    --cover-package=$(PREFIX)/src $(TEST_PATH)
 	@echo $(TODAY)
 
-.PHONY	: icons
-icons	:
+.PHONY	: logo
+logo	:
 	povray +w1280 +h1280 +p +x +d0 -v -icontrib/icon/logo.pov
+
+.PHONY	: icons
+icons	: logo
 	convert $(PREFIX)/contrib/icon/logo.png -resize 48x48 \
                 $(PREFIX)/images/logo-48x48.png
+	convert $(PREFIX)/contrib/icon/logo.png -resize 48x48 \
+                $(PREFIX)/images/logo-48x48.ico
 
 .PHONY	: sphinx
 sphinx  : clean
