@@ -419,7 +419,6 @@ class MainFrame(MenuBar, wx.Frame):
         self.parent_bg_color = (128, 128, 128)
         self.SetBackgroundColour(wx.Colour(*self.parent_bg_color))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
-        #self.SetIcon(wx.Icon("icons/wxwin.ico"))
         self.__box_sizer = wx.BoxSizer(wx.VERTICAL)
         self.setup_resize_event()
 

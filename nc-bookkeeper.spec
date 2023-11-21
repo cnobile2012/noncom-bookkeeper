@@ -1,7 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
 
-
 a = Analysis(
     ['nc-bookkeeper.py'],
     pathex=[],
@@ -22,6 +21,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name='bahai-bookkeeper',
+    icon='images/logo-48x48.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -46,14 +46,5 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='Bahai Bookkeeper.app',
-    icon=None,
+    icon='images/logo-48x48.ico',
     bundle_identifier=None)
-
-
-def nc_type():
-    config_types = {'bahai': 'bahai-bookkeeper', 'generic': 'nc-bookkeeper'}
-    config_type = os.environ.get('NCB_TYPE', 'bahai')
-    print(config_type)
-    #print(exe.__dict__)
-
-nc_type()

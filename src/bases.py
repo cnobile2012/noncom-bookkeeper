@@ -4,6 +4,8 @@
 #
 __docformat__ = "restructuredtext en"
 
+import os
+import re
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
@@ -19,6 +21,21 @@ def find_dict(value):
             item = {}
 
     return item
+
+
+def version():
+    from .config import Settings
+    regex = r'(?m)(^{}[\s]*=[\s]*(?P<ver>\d*)$)'
+
+    with open(os.path.join(Settings.base_dir(), 'include.mk')) as f:
+        ver = f.read()
+
+    major = re.search(regex.format('MAJORVERSION'), ver).group('ver')
+    minor = re.search(regex.format('MINORVERSION'), ver).group('ver')
+    patch = re.search(regex.format('PATCHLEVEL'), ver).group('ver')
+    # Look for a tag indicating a pre-release candidate. ex. rc1
+    env_value = os.environ.get('PR_TAG', '')
+    return f"{major}.{minor}.{patch}{env_value}"
 
 
 class BasePanel:

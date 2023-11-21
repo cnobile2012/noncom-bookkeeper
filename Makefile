@@ -14,6 +14,7 @@ PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
 APP_NAME	= NC-Bookkeeper
 DOCS_DIR	= $(PREFIX)/docs
 LOGS_DIR	= $(PREFIX)/logs
+BUILD_PKG_DIR	= $(PREFIX)/package
 RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
                   -exec rm {} \;
@@ -42,11 +43,21 @@ logo	:
 	povray +w1280 +h1280 +p +x +d0 -v -icontrib/icon/logo.pov
 
 .PHONY	: icons
-icons	: logo
-	convert $(PREFIX)/contrib/icon/logo.png -resize 48x48 \
-                $(PREFIX)/images/logo-48x48.png
+icons	:
 	convert $(PREFIX)/contrib/icon/logo.png -resize 48x48 \
                 $(PREFIX)/images/logo-48x48.ico
+	convert $(PREFIX)/contrib/icon/logo.png -resize 72x72 \
+                $(PREFIX)/images/logo-72x72.png
+	convert $(PREFIX)/contrib/icon/logo.png -resize 64x64 \
+                $(PREFIX)/images/logo-64x64.png
+	convert $(PREFIX)/contrib/icon/logo.png -resize 48x48 \
+                $(PREFIX)/images/logo-48x48.png
+	convert $(PREFIX)/contrib/icon/logo.png -resize 32x32 \
+                $(PREFIX)/images/logo-32x32.png
+	convert $(PREFIX)/contrib/icon/logo.png -resize 24x24 \
+                $(PREFIX)/images/logo-24x24.png
+	convert $(PREFIX)/contrib/icon/logo.png -resize 16x16 \
+                $(PREFIX)/images/logo-16x16.png
 
 .PHONY	: sphinx
 sphinx  : clean
@@ -64,7 +75,7 @@ uninstall-dev:
 
 .PHONY	: build-exc
 build-exc:
-	pyinstaller nc-bookkeeper.py
+	pyinstaller nc-bookkeeper.spec
 
 #----------------------------------------------------------------------
 clean	:
@@ -74,5 +85,5 @@ clean	:
 clobber	: clean
 	@(cd $(DOCS_DIR); make clobber)
 	@rm -rf build dist
-	@rm -f $(LOGS_DIR)/*.log*
-
+	@rm -rf $(LOGS_DIR)
+	@rm -rf $(BUILD_PKG_DIR)

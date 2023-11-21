@@ -11,10 +11,18 @@ import shutil
 from datetime import datetime
 from appdirs import AppDirs
 
-from .bases import find_dict
+from .bases import find_dict, version
 from .exceptions import InvalidTomlException
 
 import tomlkit as tk
+
+try:
+    from ctypes import windll
+    # Only exists on Windows.
+    myappid = f"tetrasys.nc-bookkeeper.{version()}"
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+except ImportError:
+    pass
 
 
 class Settings(AppDirs):
@@ -57,6 +65,10 @@ class Settings(AppDirs):
 
         if not os.path.exists(self.user_log_dir):
             os.makedirs(self.user_log_dir, mode=0o775, exist_ok=True)
+
+    @staticmethod
+    def base_dir():
+        return Settings._BASE_DIR
 
     @property
     def app_name(self):

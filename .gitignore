@@ -16,6 +16,7 @@ docs/api
 docs/htmlcov
 !docs/*.pdf
 logs
+package
 
 # C extensions
 *.so

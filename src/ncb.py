@@ -4,9 +4,6 @@
 #
 __docformat__ = "restructuredtext en"
 
-import os
-import shutil
-
 from .config import TomlPanelConfig, TomlAppConfig
 
 

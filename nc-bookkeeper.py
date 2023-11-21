@@ -3,8 +3,11 @@
 # nc-bookkeeper.py
 #
 
+import os
+
 from src.main_frame import MainFrame
 from src.ncb import CheckPanelConfig, CheckAppConfig
+from src.config import Settings
 
 import wx
 
@@ -26,7 +29,9 @@ if __name__ == "__main__":
         # Try to run display.
         app = wx.App()
         mf = MainFrame()
-        mf.SetIcon(wx.Icon("images/logo-48x48.ico"))
+        icon_path = os.path.join(Settings.base_dir(), 'images',
+                                 'logo-48x48.ico')
+        mf.SetIcon(wx.Icon(icon_path))
         mf.Show(True)
         app.MainLoop()
 
