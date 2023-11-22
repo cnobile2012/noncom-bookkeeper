@@ -45,19 +45,19 @@ logo	:
 .PHONY	: icons
 icons	:
 	convert $(PREFIX)/contrib/icon/logo.png -resize 48x48 \
-                $(PREFIX)/images/logo-48x48.ico
+                $(PREFIX)/images/bookkeeper-48x48.ico
 	convert $(PREFIX)/contrib/icon/logo.png -resize 72x72 \
-                $(PREFIX)/images/logo-72x72.png
+                $(PREFIX)/images/bookkeeper-72x72.png
 	convert $(PREFIX)/contrib/icon/logo.png -resize 64x64 \
-                $(PREFIX)/images/logo-64x64.png
+                $(PREFIX)/images/bookkeeper-64x64.png
 	convert $(PREFIX)/contrib/icon/logo.png -resize 48x48 \
-                $(PREFIX)/images/logo-48x48.png
+                $(PREFIX)/images/bookkeeper-48x48.png
 	convert $(PREFIX)/contrib/icon/logo.png -resize 32x32 \
-                $(PREFIX)/images/logo-32x32.png
+                $(PREFIX)/images/bookkeeper-32x32.png
 	convert $(PREFIX)/contrib/icon/logo.png -resize 24x24 \
-                $(PREFIX)/images/logo-24x24.png
+                $(PREFIX)/images/bookkeeper-24x24.png
 	convert $(PREFIX)/contrib/icon/logo.png -resize 16x16 \
-                $(PREFIX)/images/logo-16x16.png
+                $(PREFIX)/images/bookkeeper-16x16.png
 
 .PHONY	: sphinx
 sphinx  : clean
@@ -74,7 +74,7 @@ uninstall-dev:
 	@rm -rf ${HOME}/.cache/${APP_NAME}
 
 .PHONY	: build-exc
-build-exc:
+build-spec:
 	pyinstaller nc-bookkeeper.spec
 
 #----------------------------------------------------------------------
