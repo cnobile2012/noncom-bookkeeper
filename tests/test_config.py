@@ -33,6 +33,17 @@ class TestSettings(unittest.TestCase):
         self.set = Settings()
 
     #@unittest.skip("Temporarily skipped")
+    def test_base_dir(self):
+        """
+        Test that this static method returns the base directory without
+        instantiating the class.
+        """
+        path = Settings.base_dir()
+        should_be = Settings._BASE_DIR
+        msg = f"Path should be '{should_be}' found '{path}'."
+        self.assertEquals(should_be, path, msg)
+
+    #@unittest.skip("Temporarily skipped")
     def test_primary_developer(self):
         """
         Test that the primary developer is returned.

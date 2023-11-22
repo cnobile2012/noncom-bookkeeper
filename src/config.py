@@ -16,7 +16,7 @@ from .exceptions import InvalidTomlException
 
 import tomlkit as tk
 
-try:
+try: # pragma: no cover
     from ctypes import windll
     # Only exists on Windows.
     myappid = f"tetrasys.nc-bookkeeper.{version()}"
