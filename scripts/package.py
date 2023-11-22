@@ -32,11 +32,8 @@ Icon={}
 class CreatePackage:
     _PACKAGE_DIR = 'package'
     _OPT_DIR = 'opt'
-    _USR_DIR = 'usr'
-    _SHARE_DIR = 'share'
-    _APP_DIR = 'applications'
-    _ICONS_DIR = 'icons'
-    _HICOLOR_DIR = 'hicolor'
+    _APP_DIR = 'usr/share/applications'
+    _HICOLOR_DIR = 'usr/share/icons/hicolor'
     _HIC_SUB_DIRS = ('16x16', '24x24', '32x32', '48x48', '64x64', '72x72')
     _RE_IMG = re.compile(r"^bookkeeper-(?P<rez>\d+x\d+)\.png$")
     _CONFIG_TYPES = {'bahai': 'bahai-bookkeeper', 'generic': 'nc-bookkeeper'}
@@ -62,10 +59,8 @@ class CreatePackage:
         path = os.path.join(self._base_path, self._PACKAGE_DIR)
         if os.path.exists(path): shutil.rmtree(path)
         os. makedirs(os.path.join(path, self._OPT_DIR), mode=0o775)
-        os. makedirs(os.path.join(path, self._USR_DIR, self._SHARE_DIR,
-                                  self._APP_DIR), mode=0o775)
-        icon_dirs = os.path.join(path, self._USR_DIR, self._SHARE_DIR,
-                                 self._ICONS_DIR, self._HICOLOR_DIR)
+        os. makedirs(os.path.join(path, self._APP_DIR), mode=0o775)
+        icon_dirs = os.path.join(path, self._HICOLOR_DIR)
 
         for dir_ in self._HIC_SUB_DIRS:
             new_dir = os.path.join(icon_dirs, dir_)
@@ -85,8 +80,7 @@ class CreatePackage:
         shutil.copytree(self._dist_path, path, dirs_exist_ok=True)
 
     def copy_desktop_file(self):
-        path = os.path.join(self._base_path, self._PACKAGE_DIR, self._USR_DIR,
-                            self._SHARE_DIR, self._APP_DIR,
+        path = os.path.join(self._base_path, self._PACKAGE_DIR, self._APP_DIR,
                             'nc-bookkeeper.desktop')
 
         with open(path, 'w') as f:
