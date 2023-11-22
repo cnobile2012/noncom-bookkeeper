@@ -31,9 +31,9 @@ class Settings(AppDirs):
     system.
     """
     _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    _APP_NAME = "NC-Bookkeeper"
+    _APP_NAME = "nc-bookkeeper"
     _DEVELOPERS = ('Carl J. Nobile',)
-    _LOGGER_NAME = "NC-Bookkeeper"
+    _LOGGER_NAME = "ncb"
     _LOGFILE_NAME = "ncbookkeeper.log"
     _LOCAL_CONFIG = os.path.join(_BASE_DIR, 'config')
     _DATA_FILE = 'data.sqlite3'

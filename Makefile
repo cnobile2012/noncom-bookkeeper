@@ -1,8 +1,12 @@
 #
 # Development by Carl J. Nobile
 #
-# The 'logo' and 'icons' target requires povray and imagemagick to be
-# installed.
+# NOTES:
+# 1. The 'logo' and 'icons' target requires povray and imagemagick to be
+#    installed.
+# 2. To build Linux packages the ruby gem fpm needs to be installed.
+#    sudo apt-get install ruby
+#    gem install fpm --user-install
 #
 include include.mk
 
@@ -11,7 +15,7 @@ PREFIX		= $(shell pwd)
 BASE_DIR	= $(shell echo $${PWD\#\#*/})
 TEST_TAG	=
 PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
-APP_NAME	= NC-Bookkeeper
+APP_NAME	= nc-bookkeeper
 DOCS_DIR	= $(PREFIX)/docs
 LOGS_DIR	= $(PREFIX)/logs
 BUILD_PKG_DIR	= $(PREFIX)/package
@@ -73,9 +77,26 @@ uninstall-dev:
 	@rm -rf ${HOME}/.config/${APP_NAME}
 	@rm -rf ${HOME}/.cache/${APP_NAME}
 
-.PHONY	: build-exc
+.PHONY	: build-spec
 build-spec:
 	pyinstaller nc-bookkeeper.spec
+
+.PHONY	: package
+package	:
+	./scripts/package.py
+
+.PHONY	: build-all
+build-all: clobber build-spec package build-deb build-rpm
+
+.PHONY	: build-deb
+build-deb:
+	@fpm -C package -s dir -t deb -n $(APP_NAME) -v $(VERSION) \
+             --license MIT -p build/$(APP_NAME)-$(VERSION)-amd64.deb
+
+.PHONY	: build-rpm
+build-rpm:
+	@fpm -C package -s dir -t rpm -n $(APP_NAME) -v $(VERSION) \
+             --license MIT -p build/$(APP_NAME)-$(VERSION)-amd64.rpm
 
 #----------------------------------------------------------------------
 clean	:
