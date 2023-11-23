@@ -30,7 +30,7 @@ if __name__ == "__main__":
         app = wx.App()
         mf = MainFrame()
         icon_path = os.path.join(Settings.base_dir(), 'images',
-                                 'logo-48x48.ico')
+                                 'bookkeeper-48x48.ico')
         mf.SetIcon(wx.Icon(icon_path))
         mf.Show(True)
         app.MainLoop()
