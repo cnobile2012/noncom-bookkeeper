@@ -27,9 +27,19 @@ PIP_ARGS	= # Pass var for pip install.
 TEST_PATH	=
 
 #----------------------------------------------------------------------
-all	: tar
+.PHONY	: all
+all	: help
 
 #----------------------------------------------------------------------
+.PHONY: help
+help	:
+	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : \
+                2>/dev/null | awk -v RS= \
+                -F: '/(^|\n)# Files(\n|$$)/,/(^|\n)# Finished Make data \
+                     base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep \
+                -E -v -e '^[^[:alnum:]]' -e '^$@$$'
+
+.PHONY	: tar
 tar	: clean
 	@(cd ..; tar -czvf $(PACKAGE_DIR).tar.gz --exclude=".git" \
           --exclude="__pycache__" $(BASE_DIR))
@@ -79,7 +89,7 @@ uninstall-dev:
 
 .PHONY	: build-spec
 build-spec:
-	pyinstaller nc-bookkeeper.spec
+	@pyinstaller nc-bookkeeper.spec
 
 .PHONY	: package
 package	:
@@ -99,9 +109,11 @@ build-rpm:
              --license MIT -p build/$(APP_NAME)-$(VERSION)-amd64.rpm
 
 #----------------------------------------------------------------------
+.PHONY	: clean clobber
+
 clean	:
-	$(shell $(RM_CMD))
 	@(cd ${DOCS_DIR}; make clean)
+	$(shell $(RM_CMD))
 
 clobber	: clean
 	@(cd $(DOCS_DIR); make clobber)
