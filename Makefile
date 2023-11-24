@@ -13,7 +13,7 @@ include include.mk
 TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
 PREFIX		= $(shell pwd)
 BASE_DIR	= $(shell echo $${PWD\#\#*/})
-TEST_TAG	=
+TEST_TAG	= # Define the rc<version>
 PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
 APP_NAME	= nc-bookkeeper
 DOCS_DIR	= $(PREFIX)/docs
@@ -22,9 +22,8 @@ BUILD_PKG_DIR	= $(PREFIX)/package
 RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
                   -exec rm {} \;
-TEST_TAG	=
-PIP_ARGS	= # Pass var for pip install.
-TEST_PATH	=
+PIP_ARGS	= # Pass variables for pip install.
+TEST_PATH	= # The path to run tests on.
 
 #----------------------------------------------------------------------
 .PHONY	: all
@@ -40,7 +39,7 @@ help	:
                 -E -v -e '^[^[:alnum:]]' -e '^$@$$'
 
 .PHONY	: tar
-tar	: clean
+tar	: clobber
 	@(cd ..; tar -czvf $(PACKAGE_DIR).tar.gz --exclude=".git" \
           --exclude="__pycache__" $(BASE_DIR))
 
@@ -95,18 +94,26 @@ build-spec:
 package	:
 	./scripts/package.py
 
+# To add a pre-release candidate such as 'rc1' to a test package name an
+# environment variable needs to be set that setup.py can read.
+#
+# The command below will work with any package target below.
+# make build-deb TEST_TAG=rc1
+#
+# For example a deb file might look like 'nc-bookkeeper-0.10rc1-amd64.deb'.
+#
 .PHONY	: build-all
 build-all: clobber build-spec package build-deb build-rpm
 
 .PHONY	: build-deb
 build-deb:
-	@fpm -C package -s dir -t deb -n $(APP_NAME) -v $(VERSION) \
-             --license MIT -p build/$(APP_NAME)-$(VERSION)-amd64.deb
+	@fpm -C package -s dir -t deb -n $(APP_NAME) -v $(VERSION)$(TEST_TAG) \
+             --license MIT -p build/$(APP_NAME)-$(VERSION)$(TEST_TAG)-amd64.deb
 
 .PHONY	: build-rpm
 build-rpm:
-	@fpm -C package -s dir -t rpm -n $(APP_NAME) -v $(VERSION) \
-             --license MIT -p build/$(APP_NAME)-$(VERSION)-amd64.rpm
+	@fpm -C package -s dir -t rpm -n $(APP_NAME) -v $(VERSION)$(TEST_TAG) \
+             --license MIT -p build/$(APP_NAME)-$(VERSION)$(TEST_TAG)-amd64.rpm
 
 #----------------------------------------------------------------------
 .PHONY	: clean clobber
