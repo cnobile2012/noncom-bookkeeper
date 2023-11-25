@@ -11,18 +11,10 @@ import shutil
 from datetime import datetime
 from appdirs import AppDirs
 
-from .bases import find_dict, version
+from .bases import find_dict
 from .exceptions import InvalidTomlException
 
 import tomlkit as tk
-
-try: # pragma: no cover
-    from ctypes import windll
-    # Only exists on Windows.
-    myappid = f"tetrasys.nc-bookkeeper.{version()}"
-    windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-except ImportError:
-    pass
 
 
 class Settings(AppDirs):
@@ -679,4 +671,20 @@ class TomlCreatePanel(BaseSystemData):
 
 
 class Database(BaseSystemData):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @property
+    def has_org_info(self):
+        """
+        Check that the db has the Organization Information.
+        """
+        ret = False
+        # For now return false.
+        return ret
+
+
+
+# Store currency values as integers.
+# Example $1952.14 in the db is 195214.
