@@ -215,7 +215,7 @@ class PanelFactory(TomlMetaData):
 
     def date_picker_ctrl(self, klass, widget, value):
         dict_ = find_dict(value)
-        parent, id = dict_.get('args')
+        parent, id, _ = dict_.get('args')
         klass.write(f"        {widget} = wx.adv.DatePickerCtrl("
                     f"{parent}, wx.{id})\n")
         self._set_colors(klass, widget, value)

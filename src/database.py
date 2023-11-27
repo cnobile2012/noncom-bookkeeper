@@ -4,10 +4,17 @@
 #
 __docformat__ = "restructuredtext en"
 
-from .config import Settings
+import sqlite3
+
+from .config import BaseSystemData
 
 
-class Database(Settings):
+class Database(BaseSystemData):
+    _SCHEMA = (
+        ('FieldType', 'pk', 'field', 'rids', 'desc' , 'c_time', 'm_time'),
+        ('ReportType', 'pk', 'report', 'rid', 'desc' , 'c_time', 'm_time'),
+        ('Data', 'pk', 'value', 'fk', 'c_time' , 'm_time')
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -17,6 +24,15 @@ class Database(Settings):
         # [{pk: <value>, report: <value>, rid: <value>, desc: <value>,
         #   c_time: <value>, m_time: <value>}, ...]
         self._report_types = []
+        self._con = None
+        self._cur = None
+
+    def connect_db(self):
+        """
+        Connect to the db and create a cursor.
+        """
+        self._con = sqlite3.connect(self.user_data_fullpath)
+        self._cur = self._con.cursor()
 
     @property
     def has_org_info(self) -> bool:
@@ -24,8 +40,47 @@ class Database(Settings):
         Check that the db has the Organization Information.
         """
         ret = False
+
+        row_names = self.field_names('organization')
+        #print(row_names)
+
         # For now return false.
         return ret
+
+    @property
+    def has_schema(self):
+        assert self._cur, "Error, the curser needs to be created first."
+        result = self._cur.execute("SELECT name FROM sqlite_master")
+        table_names = [
+            table[0] for table in result.fetchmany(size=len(self._SCHEMA) + 4)]
+        check = len(table_names) == len(self._SCHEMA)
+
+        if not check:
+            names = [table[0] for table in self._SCHEMA]
+            msg = ("Database table count is wrong it should be "
+                   f"'{names}' found '{table_names}'")
+            self._log.error(msg)
+            #self.parent.statusbar_error = msg
+            # *** TODO *** This needs to be shown on the screen if detected.
+
+        #print(table_names)
+        return check
+
+    def create_db(self):
+        """
+        Create the database based on the fields currently defined.
+        """
+        assert self._cur, "Error, the curser needs to be created first."
+
+        if not self.has_schema:
+
+            for params in self._SCHEMA:
+                table = params[0]
+                fields = ', '.join([field for field in params[1:]])
+                query = f"CREATE TABLE {table}({fields})"
+                self._cur.execute(query)
+
+            #cur.executemany("INSERT INTO lang VALUES(:name, :year)", data)
 
     def value_to_db(self, value:str) -> int:
         """
@@ -71,19 +126,39 @@ class Database(Settings):
         """
 
 
-    def read_from_data_table(self, val0, t1=None, t2=None):
+    def read_from_data_table(self, val0, v1=None, v2=None):
         """
         Reads a row or rows from the Data table.
 
-        :param val0: This can be a pk, value, fft_fk, or a c_time or
-                     m_time string.
+        :param val0: This can be a pk, value, or a 'fk' or 'c_time' or
+                     'm_time' string.
         :type val0: str or int
-        :param t1: Start datetime range.
-        :type t1: datetime
-        :param t2: End datetime range.
-        :type 21: datetime
+        :param v1: Start datetime range or fk (from the FieldType table).
+        :type v1: datetime
+        :param v2: End datetime range.
+        :type v2: datetime
         :return: A list of rows from the Data table.
         :rtype: list
         """
+        query = {}
 
+        if val0 == 'fk': # Foreign Key
+            assert v1, f"Invalid 'v1: {v1} value."
+            query['fk'] = v1
+
+
+        elif val0 == 'c_time': # c_time
+            assert v1 and v2, f"Invalid 'v1: {v1}' or 'v2: {v2}' values."
+
+
+        elif val0 == 'm_time': # m_time
+            assert v1 and v2, f"Invalid 'v1: {v1}' or 'v2: {v2}' values."
+
+
+        elif isinstance(val0, int): # value
+            pass
+
+
+        else: # Primary Key
+            pass
 

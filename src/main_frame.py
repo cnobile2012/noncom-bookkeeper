@@ -78,8 +78,12 @@ class MainFrame(MenuBar, wx.Frame):
         the 'Organization Information' panel.
         """
         db = Database()
+        db.connect_db()
 
         if not db.has_org_info:
+            # *** TODO *** Display a panel that offers the the ability
+            #              to add or change fields.
+            db.create_db()
             self.edit_config(None)
 
     def set_size(self, size, key='size'):

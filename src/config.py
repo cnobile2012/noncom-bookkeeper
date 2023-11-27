@@ -44,6 +44,7 @@ class Settings(AppDirs):
         self.__user_toml = self._CONFIG_FILES['user'][self.config_type]
         self.__local_toml = self._CONFIG_FILES['local'][self.config_type]
         self.__app_toml = 'nc-bookkeeper.toml'
+        self._log = logging.getLogger(self.logger_name)
 
     def create_dirs(self): # pragma: no cover
         if not os.path.exists(self.user_data_dir):
@@ -127,7 +128,6 @@ class BaseSystemData(Settings):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._log = logging.getLogger(self.logger_name)
 
     @property
     def panel_config(self):
@@ -136,6 +136,27 @@ class BaseSystemData(Settings):
     @panel_config.setter
     def panel_config(self, value):
         self.SYS_FILES['panel_config'] = value
+
+    def field_names(self, panel, raw=False):
+        """
+        Get the field names for a specific panel.
+        """
+        widget_names = []
+
+        for widget in self.panel_config[panel]['widgets'].values():
+            w_type = widget[0]
+
+            if w_type in ('RadioBox', 'StaticText'):
+                args = find_dict(widget).get('args', [])
+                name = args[2] if args else ''
+                if not name: continue
+
+                if not raw:
+                    name = name.replace(' ', '_').replace(':', '').lower()
+
+                widget_names.append(name)
+
+        return widget_names
 
     @property
     def app_config(self):
