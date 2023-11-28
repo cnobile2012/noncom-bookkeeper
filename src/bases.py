@@ -10,9 +10,14 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 
-def find_dict(value):
+def find_dict(value:list) -> dict:
     """
     Fine the dict in the Toml data that is in the widget value list.
+
+    :param value: A list that defines a widget from a TOML file.
+    :type value: list
+    :return: A dict with attributes that define a widget.
+    :rtype: dict
     """
     for item in value:
         if isinstance(item, dict):
@@ -23,7 +28,14 @@ def find_dict(value):
     return item
 
 
-def version():
+def version() -> str:
+    """
+    Opens the 'include.mk' file and reads the version information. It
+    also reads from the environment a pre-release version if it exists.
+
+    :return: A formatted version number.
+    :rtype: str
+    """
     from .config import Settings
     regex = r'(?m)(^{}[\s]*=[\s]*(?P<ver>\d*)$)'
 

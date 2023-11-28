@@ -4,6 +4,7 @@
 #
 
 import os
+import sys
 
 from src.main_frame import MainFrame
 from src.ncb import CheckPanelConfig, CheckAppConfig
@@ -13,19 +14,15 @@ import wx
 
 
 if __name__ == "__main__":
-    import sys
-
-    cpd = CheckPanelConfig()
-    cad = CheckAppConfig()
+    cpc = CheckPanelConfig()
+    cac = CheckAppConfig()
     status = 0
 
-    if not cpd.has_valid_data:
+    if not cpc.has_valid_data:
         status = 1
         print(f"Invalid data, see log file, exit status {status}")
 
-    cad.has_valid_data
-
-    if status == 0:
+    if status == 0 and cac.has_valid_data:
         # Try to run display.
         app = wx.App()
         mf = MainFrame()
@@ -34,5 +31,8 @@ if __name__ == "__main__":
         mf.SetIcon(wx.Icon(icon_path))
         mf.Show(True)
         app.MainLoop()
+    else:
+        status = 2
+        print(f"Programming error, see log file, exit status {status}")
 
     sys.exit(status)
