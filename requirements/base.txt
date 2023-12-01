@@ -3,6 +3,7 @@
 wxPython
 appdirs
 tomlkit
+aiosqlite
 #varname
 PyInstaller
 pyinstaller-hooks-contrib

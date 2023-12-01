@@ -7,6 +7,25 @@ __docformat__ = "restructuredtext en"
 import wx
 
 
+class Borg:
+    _state = {}
+
+    def __new__(cls, *args, **kwargs):
+        if cls not in cls._state:
+            cls._state[cls] = super().__new__(cls)
+
+        return cls._state[cls]
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __getattr__(self, item):
+        return self._state.setdefault(self, item)
+
+    def __setattr__(self, item, value):
+        self._state.setdefault(self, {})[item] = value
+
+
 class GridBagSizer(wx.GridBagSizer):
 
     def swap_rows(self, row0, row1):
@@ -115,15 +134,13 @@ class ConfirmationDialog(wx.Dialog):
         return ret
 
 
-class _ClickPosition:
+class _ClickPosition(Borg):
     """
     A borg pattern to hold new widget type IDs.
     """
-    _shared_state = {}
-    _new_types = {}
 
     def __init__(self):
-        self.__dict__ = self._shared_state
+        self._new_types = {}
 
     def get_new_event_type(self, w_name):
         return self._new_types.setdefault(w_name, wx.NewEventType())
@@ -201,3 +218,16 @@ class EventStaticText(wx.StaticText):
         evt.set_window(obj)
         self.GetEventHandler().ProcessEvent(evt)
         event.Skip()
+
+
+class StoreObjects(Borg):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._object_store = {}
+
+    def set_object(self, key, value):
+        self._object_store[key] = value
+
+    def get_object(self, key):
+        return self._object_store.get(key)

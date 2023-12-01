@@ -11,10 +11,10 @@ import shutil
 from datetime import datetime
 from appdirs import AppDirs
 
+import tomlkit as tk
+
 from .bases import find_dict
 from .exceptions import InvalidTomlException
-
-import tomlkit as tk
 
 
 class Settings(AppDirs):

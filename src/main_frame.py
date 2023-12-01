@@ -4,10 +4,12 @@
 #
 __docformat__ = "restructuredtext en"
 
+import asyncio
 import logging
 
 from .config import TomlAppConfig
 from .database import Database
+from .utilities import StoreObjects
 
 import wx
 
@@ -47,7 +49,7 @@ class MainFrame(MenuBar, wx.Frame):
         self.setup_resize_event()
 
         # Status Bar
-        status_widths = [-1, -1]
+        status_widths = (-1,)
         self._statusbar = self.CreateStatusBar(len(status_widths),
                                                wx.STB_DEFAULT_STYLE)
         self._statusbar.SetStatusWidths(status_widths)
@@ -70,18 +72,18 @@ class MainFrame(MenuBar, wx.Frame):
                 self.__panel_classes[panel] = eval(class_name)(self)
 
         self.create_menu()
-        self.start()
+        StoreObjects().set_object(self.__class__.__name__, self)
+        asyncio.run(self.start())
 
-    def start(self):
+    async def start(self):
         """
         Check that the db has the Organization Information. If not start
         the 'Organization Information' panel.
         """
         db = Database()
-        db.connect_db()
-        db.create_db()
+        await db.start()
 
-        if not db.has_org_info:
+        if not await db.has_org_info:
             # *** TODO *** Display a panel that offers the the ability
             #              to add or change fields.
             self.edit_config(None)
@@ -151,7 +153,7 @@ class MainFrame(MenuBar, wx.Frame):
     statusbar_error = property(None, statusbar_error)
 
     def __set_status(self, value, color):
-        self._statusbar.SetStatusText(value, 1)
+        self._statusbar.SetStatusText(value, 0)
         bg_color = self._statusbar.GetBackgroundColour()
         fg_color = self._statusbar.GetForegroundColour()
         self._statusbar.SetBackgroundColour(color)
@@ -159,7 +161,7 @@ class MainFrame(MenuBar, wx.Frame):
         wx.CallLater(5000, self.__reset_status, bg_color, fg_color)
 
     def __reset_status(self, bg_color, fg_color):
-        self._statusbar.SetStatusText("", 1)
+        self._statusbar.SetStatusText("", 0)
         self._statusbar.SetBackgroundColour(bg_color)
         self._statusbar.SetForegroundColour(fg_color)
 

@@ -4,9 +4,10 @@
 #
 __docformat__ = "restructuredtext en"
 
-import sqlite3
+import aiosqlite
 
 from .config import BaseSystemData
+from .utilities import StoreObjects
 
 
 class Database(BaseSystemData):
@@ -24,61 +25,83 @@ class Database(BaseSystemData):
         # [{pk: <value>, report: <value>, rid: <value>, desc: <value>,
         #   c_time: <value>, m_time: <value>}, ...]
         self._report_types = []
-        self._con = None
-        self._cur = None
+        self._mf = StoreObjects().get_object('MainFrame')
 
-    def connect_db(self):
-        """
-        Connect to the db and create a cursor.
-        """
-        self._con = sqlite3.connect(self.user_data_fullpath)
-        self._cur = self._con.cursor()
+    async def start(self):
+        await self.create_db()
 
     @property
-    def has_org_info(self) -> bool:
+    async def has_org_info(self) -> bool:
         """
         Check that the db has the Organization Information.
+
+        The db stores data for the 'selection' in the RadioBox, 'value'
+        for the 4th, 6th, and 8th TextCtrl, 'value' of the DatePickerCtrl.
+
+        :return: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
         """
         ret = False
+        row_names = "', '".join(self.field_names('organization'))
+        query = f"SELECT field FROM FieldType WHERE field IN ('{row_names}');"
 
-        row_names = self.field_names('organization')
-        #print(row_names)
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            async with db.execute("SELECT name FROM sqlite_master") as cursor:
+                values = await cursor.fetchall()
+
+        print(values)
+
+        oi_panel = self._mf.panels['organization']
+        children = list(oi_panel.GetChildren())
+        child_sets = [children[i:i+2] for i in range(0, len(children), 2)]
+
+        for c_set in child_sets:
+            name0 = c_set[0].__class__.__name__
+            name1 = c_set[1].__class__.__name__
+
+            if name0 == 'RadioBox':
+                print(c_set[0].GetSelection()) # Returns an integer.
+            elif name0 == 'StaticText':
+                if name1 in ('TextCtrl', 'DatePickerCtrl'):
+                    print(c_set[1].GetValue())
+
+        #    query = f"SELECT "
 
         # For now return false.
         return ret
 
     @property
-    def has_schema(self):
-        assert self._cur, "Error, the curser needs to be created first."
-        result = self._cur.execute("SELECT name FROM sqlite_master")
-        table_names = [
-            table[0] for table in result.fetchmany(size=len(self._SCHEMA) + 4)]
-        check = len(table_names) == len(self._SCHEMA)
+    async def has_schema(self):
+        query = "SELECT name FROM sqlite_master"
 
-        if not check:
-            names = [table[0] for table in self._SCHEMA]
-            msg = ("Database table count is wrong it should be "
-                   f"'{names}' found '{table_names}'")
-            self._log.error(msg)
-            #self.parent.statusbar_error = msg
-            # *** TODO *** This needs to be shown on the screen if detected.
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            async with db.execute(query) as cursor:
+                table_names = [table[0] for table in await cursor.fetchall()]
+                check = len(table_names) == len(self._SCHEMA)
 
-        #print(table_names)
+                if not check:
+                    names = [table[0] for table in self._SCHEMA]
+                    msg = ("Database table count is wrong it should be "
+                           f"'{names}' found '{table_names}'")
+                    self._log.error(msg)
+                    #self.parent.statusbar_error = msg
+                    # *** TODO *** This needs to be shown on the screen if
+                    #              detected.
+
         return check
 
-    def create_db(self):
+    async def create_db(self):
         """
         Create the database based on the fields currently defined.
         """
-        assert self._cur, "Error, the curser needs to be created first."
-
-        if not self.has_schema:
-
-            for params in self._SCHEMA:
-                table = params[0]
-                fields = ', '.join([field for field in params[1:]])
-                query = f"CREATE TABLE {table}({fields})"
-                self._cur.execute(query)
+        if not await self.has_schema:
+            async with aiosqlite.connect(self.user_data_fullpath) as db:
+                for params in self._SCHEMA:
+                    table = params[0]
+                    fields = ', '.join([field for field in params[1:]])
+                    query = f"CREATE TABLE {table}({fields})"
+                    await db.execute(query)
+                    await db.commit()
 
             #cur.executemany("INSERT INTO lang VALUES(:name, :year)", data)
 
