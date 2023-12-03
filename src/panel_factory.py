@@ -70,6 +70,7 @@ class PanelFactory(TomlMetaData):
                     f"{weight}, {ul}, '{fn}'))\n")
         self.span = panel_kwargs.get('sizer_span')
         klass.write(f"        self.locale_prefix = {self.locale_prefix}\n")
+        klass.write("        self._dirty = False\n")
 
         self.main_sizer = None
         self.second_sizer = None
@@ -208,6 +209,9 @@ class PanelFactory(TomlMetaData):
         if dict_.get('focus', False):
             klass.write(f"        {widget}.SetFocus()\n")
 
+        if dict_.get('dirty_event', True):
+            klass.write(f"        {widget}.Bind(wx.EVT_TEXT, "
+                        "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 
         if dict_.get('instance'):
@@ -224,12 +228,14 @@ class PanelFactory(TomlMetaData):
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
+        klass.write(f"        {widget}.Bind(wx.EVT_TEXT, "
+                    "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 
     def choice_combo_box(self, klass, widget, value):
         dict_ = find_dict(value)
         args = dict_.get('args')
-        parent, id = dict_.get('args')
+        parent, id, name = dict_.get('args')
         widget_type = value[0]
         months = [f"{idx:>2} {month}"
                   for idx, month in enumerate(self.months, start=1)]
@@ -251,6 +257,9 @@ class PanelFactory(TomlMetaData):
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
+        klass.write(f"        {widget}.SetLabel('{name}')\n")
+        klass.write(f"        {widget}.Bind(wx.EVT_TEXT, "
+                    "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 
     def static_line(self, klass, widget, value):

@@ -90,7 +90,7 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         """
         def do_event(event):
             """
-            This is an event callback.
+            This event callback updates the locality prefix TextCtrl.
 
             :param event: This is a wx event.
             :type event: wx.Event
@@ -114,3 +114,18 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         text = self.locale_prefix[selection.lower()]
         prefix_widget = getattr(self, update)
         prefix_widget.SetValue(text)
+
+    def set_dirty_flag(self, event):
+        """
+        Set a dirty flag on any editable widget.
+        """
+        self.dirty = True
+        event.Skip()
+
+    @property
+    def dirty(self):
+        return self._dirty
+
+    @dirty.setter
+    def dirty(self, value):
+        self._dirty = value

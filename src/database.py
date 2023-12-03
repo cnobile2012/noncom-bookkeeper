@@ -5,6 +5,8 @@
 __docformat__ = "restructuredtext en"
 
 import aiosqlite
+from datetime import datetime
+import wx
 
 from .config import BaseSystemData
 from .utilities import StoreObjects
@@ -16,6 +18,8 @@ class Database(BaseSystemData):
         ('ReportType', 'pk', 'report', 'rid', 'desc' , 'c_time', 'm_time'),
         ('Data', 'pk', 'value', 'fk', 'c_time' , 'm_time')
         )
+    _TABLES = [table[0] for table in  _SCHEMA]
+    _TABLES.sort()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -26,69 +30,6 @@ class Database(BaseSystemData):
         #   c_time: <value>, m_time: <value>}, ...]
         self._report_types = []
         self._mf = StoreObjects().get_object('MainFrame')
-
-    async def start(self):
-        await self.create_db()
-
-    @property
-    async def has_org_info(self) -> bool:
-        """
-        Check that the db has the Organization Information.
-
-        The db stores data for the 'selection' in the RadioBox, 'value'
-        for the 4th, 6th, and 8th TextCtrl, 'value' of the DatePickerCtrl.
-
-        :return: True if data has been saved in the DB and False if not saved.
-        :rtype: bool
-        """
-        ret = False
-        row_names = "', '".join(self.field_names('organization'))
-        query = f"SELECT field FROM FieldType WHERE field IN ('{row_names}');"
-
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
-            async with db.execute("SELECT name FROM sqlite_master") as cursor:
-                values = await cursor.fetchall()
-
-        print(values)
-
-        oi_panel = self._mf.panels['organization']
-        children = list(oi_panel.GetChildren())
-        child_sets = [children[i:i+2] for i in range(0, len(children), 2)]
-
-        for c_set in child_sets:
-            name0 = c_set[0].__class__.__name__
-            name1 = c_set[1].__class__.__name__
-
-            if name0 == 'RadioBox':
-                print(c_set[0].GetSelection()) # Returns an integer.
-            elif name0 == 'StaticText':
-                if name1 in ('TextCtrl', 'DatePickerCtrl'):
-                    print(c_set[1].GetValue())
-
-        #    query = f"SELECT "
-
-        # For now return false.
-        return ret
-
-    @property
-    async def has_schema(self):
-        query = "SELECT name FROM sqlite_master"
-
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
-            async with db.execute(query) as cursor:
-                table_names = [table[0] for table in await cursor.fetchall()]
-                check = len(table_names) == len(self._SCHEMA)
-
-                if not check:
-                    names = [table[0] for table in self._SCHEMA]
-                    msg = ("Database table count is wrong it should be "
-                           f"'{names}' found '{table_names}'")
-                    self._log.error(msg)
-                    #self.parent.statusbar_error = msg
-                    # *** TODO *** This needs to be shown on the screen if
-                    #              detected.
-
-        return check
 
     async def create_db(self):
         """
@@ -104,6 +45,150 @@ class Database(BaseSystemData):
                     await db.commit()
 
             #cur.executemany("INSERT INTO lang VALUES(:name, :year)", data)
+
+    @property
+    async def has_schema(self) -> bool:
+        """
+        Checks that the schema has been created.
+
+        :return: True if the schema has been created and False if it has not
+                 been created.
+        :rtype: bool
+        """
+        query = "SELECT name FROM sqlite_master"
+
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            async with db.execute(query) as cursor:
+                table_names = [table[0] for table in await cursor.fetchall()]
+                table_names.sort()
+                check = table_names == self._TABLES
+
+                if not check:
+                    msg = ("Database table count is wrong it should be "
+                           f"'{self._TABLES}' found '{table_names}'")
+                    self._log.error(msg)
+                    #self.parent.statusbar_error = msg
+                    # *** TODO *** This needs to be shown on the screen if
+                    #              detected.
+
+        return check
+
+    @property
+    async def has_org_info(self) -> bool:
+        """
+        Check that the db has the Organization Information.
+
+        The db stores data for the 'selection' in the RadioBox, 'value'
+        for the 4th, 6th, and 8th TextCtrl, 'value' of the DatePickerCtrl.
+
+        :return: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
+        """
+        ret = False
+        panel = self._mf.panels['organization']
+        data = self.collect_panel_values(panel)
+        #print(f"POOP--data {data}")
+
+        # Check that the field names are in the FieldType table.
+        #rows = "', '".join(self.panel_field_names('organization'))
+        rows = "', '".join(list(data.keys()))
+        query = f"SELECT field FROM FieldType WHERE field IN ('{rows}');"
+
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            async with db.execute(query) as cursor:
+                values = await cursor.fetchall()
+                print(values)
+
+
+
+        # Check that we have data for the fields in Data table.
+        #    query = f"SELECT "
+
+        for field in data:
+            pass
+
+        # For now return false.
+        return ret
+
+    def save_to_database(self, panel:wx.Panel) -> None:
+        """
+        Save the given panel data to the database.
+
+        :param panel: Any of the panels that has collected data.
+        :type panel: wx.Panel
+        """
+        data = self.collect_panel_values(panel)
+        print(data)
+
+
+
+    def collect_panel_values(self, panel:wx.Panel,
+                             convert_to_utc:bool=False) -> dict:
+        """
+        Collects the data from the panel's widgets.
+
+        *** TODO *** This method will not work for the Budget and Monthly panel.
+
+        :param panel: The panel to collect data from.
+        :type panel: wx.Panel
+        :param convert_to_utc: True if wx.DateTime field's should be
+                               converted to UTC and False if they are not
+                               to be converted (default is False).
+        :return: A dictonary of field names and values.
+        :rtype: dict
+        """
+        data = {}
+        children = []
+
+        for child in panel.GetChildren():
+            add = False
+            name = child.__class__.__name__
+
+            if name == 'StaticLine': continue
+            elif name == 'StaticText':
+                font = child.GetFont()
+                ps = font.GetPointSize()
+                w = font.GetWeight()
+                if ps == 12 and w == wx.FONTWEIGHT_BOLD: continue
+            elif name == 'ComboBox':
+                add = True
+
+            children.append(child)
+            if add: children.append(None)
+
+        print(children)
+        child_sets = [children[i:i+2] for i in range(0, len(children), 2)]
+
+        for c_set in child_sets:
+            name0 = c_set[0].__class__.__name__
+            name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
+
+            if name0 == 'RadioBox':
+                db_name = self._make_db_name(c_set[0].GetLabelText())
+                # Returns an integer.
+                data[db_name] = self._scrub_value(c_set[0].GetSelection())
+            elif name0 == 'ComboBox':
+                db_name = self._make_db_name(c_set[0].GetLabelText())
+                data[db_name] = c_set[0].GetSelection()
+            elif name0 == 'StaticText':
+                db_name = self._make_db_name(c_set[0].GetLabelText())
+
+                if name1 == 'TextCtrl':
+                    data[db_name] = self._scrub_value(c_set[1].GetValue())
+                elif name1 == 'DatePickerCtrl':
+                    data[db_name] = self._scrub_value(c_set[1].GetValue(),
+                                                      convert_to_utc)
+
+        return data
+
+    def add_to_field_type_table(self, fields:list) -> None:
+        """
+        Add given fields to the FieldType table.
+
+        :param fields: The field names to add.
+        :type fields: list
+        """
+
 
     def value_to_db(self, value:str) -> int:
         """
@@ -185,3 +270,17 @@ class Database(BaseSystemData):
         else: # Primary Key
             pass
 
+    def _make_db_name(self, name):
+        return name.replace(' ', '_').replace(':', '').lower()
+
+    def _scrub_value(self, value, convert_to_utc=False):
+        if isinstance(value, str):
+            value = value.strip()
+        #elif isinstance(value, int):
+        #    pass
+        elif isinstance(value, wx.DateTime):
+            # We convert into an ISO format for the db.
+            if convert_to_utc: value = value.ToUTC()
+            value = value.FormatISOCombined()
+
+        return value

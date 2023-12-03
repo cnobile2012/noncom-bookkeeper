@@ -81,12 +81,25 @@ class MainFrame(MenuBar, wx.Frame):
         the 'Organization Information' panel.
         """
         db = Database()
-        await db.start()
+        await db.create_db()
 
         if not await db.has_org_info:
-            # *** TODO *** Display a panel that offers the the ability
+            # *** TODO *** Display a panel that offers the user ability
             #              to add or change fields.
             self.edit_config(None)
+
+        self._timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)
+        # Checks panel dirty flag every second.
+        self._timer.Start(5000)
+
+    def on_timer_closure(self, db):
+        def on_timer(event):
+            for name, panel in self.panels.items():
+                if panel.dirty:
+                    db.save_to_database(panel)
+
+        return on_timer
 
     def set_size(self, size, key='size'):
         """

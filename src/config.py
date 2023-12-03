@@ -137,7 +137,7 @@ class BaseSystemData(Settings):
     def panel_config(self, value):
         self.SYS_FILES['panel_config'] = value
 
-    def field_names(self, panel, raw=False):
+    def panel_field_names(self, panel, raw=False):
         """
         Get the field names for a specific panel.
         """

@@ -4,6 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
+import asyncio
 from collections import OrderedDict
 
 from .config import TomlAppConfig, TomlMetaData
@@ -11,6 +12,7 @@ from .config import TomlAppConfig, TomlMetaData
 import wx
 from wx.lib.inspection import InspectionTool
 
+from .database import Database
 from .tools import ShortCuts, FieldEdit
 from .settings import Paths
 
@@ -275,27 +277,18 @@ class MenuBar:
         self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['organization']
-
-        #self.menu_item_toggle(drop, name)
-
         self._set_panel()
 
     def edit_budget(self, event):
         self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['budget']
-
-        #self.menu_item_toggle(drop, name)
-
         self._set_panel()
 
     def edit_month(self, event):
         self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels['month']
-
-        #self.menu_item_toggle(drop, name)
-
         self._set_panel()
 
     def _set_panel(self):
