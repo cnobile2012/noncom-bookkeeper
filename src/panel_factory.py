@@ -157,12 +157,16 @@ class PanelFactory(TomlMetaData):
         select = dict_.get('select', 0)
         klass.write(f"        {widget}.SetSelection({select})\n")
         self._set_add_to_sizer(klass, widget, value)
+        dirty_flag = dict_.get('dirty_event', True)
 
         if callback:
             klass.write(f"        {widget}.Bind(wx.EVT_RADIOBOX, "
-                        f"self.{callback}('{update}'))\n")
-            klass.write("        wx.CallLater(1000, "
-                        f"self._locality_prefix, *({widget}, '{update}'))\n")
+                        f"self.{callback}('{update}', {dirty_flag}))\n")
+            klass.write("        wx.CallLater(1000, self._locality_prefix, "
+                        f"*({widget}, '{update}'))\n")
+        elif dirty_flag:
+            klass.write(f"        {widget}.Bind(wx.EVT_RADIOBOX, "
+                        "self.set_dirty_flag)\n")
 
     def static_text(self, klass, widget, value):
         dict_ = find_dict(value)
@@ -258,7 +262,7 @@ class PanelFactory(TomlMetaData):
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
         klass.write(f"        {widget}.SetLabel('{name}')\n")
-        klass.write(f"        {widget}.Bind(wx.EVT_TEXT, "
+        klass.write(f"        {widget}.Bind(wx.EVT_COMBOBOX, "
                     "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 

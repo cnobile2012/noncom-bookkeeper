@@ -127,8 +127,6 @@ class Database(BaseSystemData):
         """
         Collects the data from the panel's widgets.
 
-        *** TODO *** This method will not work for the Budget and Monthly panel.
-
         :param panel: The panel to collect data from.
         :type panel: wx.Panel
         :param convert_to_utc: True if wx.DateTime field's should be

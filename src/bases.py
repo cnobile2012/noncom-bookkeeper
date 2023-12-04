@@ -81,7 +81,7 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         super().__init__(parent, id=id, **kwargs)
         self.parent = parent
 
-    def locality_prefix(self, update):
+    def locality_prefix(self, update, dirty_flag):
         """
         This is a closure for the 'do_event' callback.
 
@@ -97,6 +97,7 @@ class BaseGenerated(BasePanel, ScrolledPanel):
             """
             rb = event.GetEventObject()
             self._locality_prefix(rb, update)
+            self.dirty = dirty_flag
 
         return do_event
 
