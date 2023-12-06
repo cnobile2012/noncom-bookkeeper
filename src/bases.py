@@ -57,10 +57,11 @@ class BasePanel:
     """
 
     @property
-    def background_color(self):
+    def background_color(self) -> list:
         return self._bg_color
 
-    def _setup_sizer_height_correctly(self, sizer, swidth=None):
+    def _setup_sizer_height_correctly(self, sizer:wx.GridBagSizer,
+                                      swidth:int=None) -> None:
         """
         Add the height of the status bar to the Sizer height so that the
         call to SetupScrolling creates the correct virtual window size.
@@ -80,6 +81,7 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
         super().__init__(parent, id=id, **kwargs)
         self.parent = parent
+        self._dirty = False
 
     def locality_prefix(self, update, dirty_flag):
         """
@@ -119,7 +121,7 @@ class BaseGenerated(BasePanel, ScrolledPanel):
 
     def set_dirty_flag(self, event):
         """
-        Set a dirty flag on any editable widget.
+        Set a dirty flag when any editable widget is modified.
         """
         self.dirty = True
         event.Skip()

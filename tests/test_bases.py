@@ -4,12 +4,14 @@
 #
 __docformat__ = "restructuredtext en"
 
+import os
+import re
 import unittest
 import wx
 
-from . import log, check_flag, FakeWidget, FakeEvent
+from . import log, check_flag, FakeFrame, FakeWidget, FakeEvent
 
-from src.bases import find_dict, BasePanel, BaseGenerated
+from src.bases import find_dict, version, BasePanel, BaseGenerated
 
 
 class TestBases(unittest.TestCase):
@@ -47,6 +49,25 @@ class TestBases(unittest.TestCase):
         self.assertTrue(isinstance(dict_, dict), msg)
         msg = f"Should find a 'dict' of zero length found {dict_}"
         self.assertFalse(dict_, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_version(self):
+        """
+        Test that the application version is returned properly.
+        """
+        os.environ['PR_TAG'] = 'rc1'
+        ver = version()
+        sre = re.search(r"(\d*)\.(\d*)\.(\d*)(\w{2}\d*)", ver)
+        ver_list = sre.groups()
+        msg = "Should be an integer found {}."
+
+        for idx, v in enumerate([int(v) for v in ver_list[:-1]], start=1):
+            self.assertTrue(isinstance(v, int), msg.format(v))
+
+        msg = f"Should have three integer parts to version found {idx}"
+        self.assertEquals(3, idx, msg)
+        msg = f"Should find pre-release (rc#) found {ver_list[-1]}"
+        self.assertEquals(os.environ['PR_TAG'], ver_list[-1], msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_background_color(self):
@@ -109,14 +130,6 @@ class TestBases(unittest.TestCase):
         Test that returns the 'do_event' callback and the callback updates
         a widget.
         """
-        class FakeFrame(wx.Frame):
-
-            def __init__(self, parent=None, id=wx.ID_ANY,
-                         pos=wx.DefaultPosition,
-                         style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
-                         **kwargs):
-                super().__init__(parent, id=id, pos=pos, style=style)
-
         class FakePanel(BaseGenerated):
 
             def __init__(self, parent, **kwargs):
@@ -131,7 +144,8 @@ class TestBases(unittest.TestCase):
         frame = FakeFrame()
         panel = FakePanel(frame, **kwargs)
         # Test the locality_prefix() method.
-        callback = panel.locality_prefix('widget_00')
+        dirty_flag = True
+        callback = panel.locality_prefix('widget_00', dirty_flag)
         should_be = 'do_event'
         msg = f"Should be a callback '{should_be}' found '{callback}'"
         self.assertIn(should_be, str(callback), msg)
@@ -139,7 +153,30 @@ class TestBases(unittest.TestCase):
         fake_event = FakeEvent(event_object=FakeWidget(
             selection=kwargs['selection']))
         callback(fake_event)
+        # Test dirty_flag
+        msg = f"Should have dirty_flag set to {dirty_flag} found {panel.dirty}"
+        self.assertTrue(panel.dirty, msg)
 
+    #@unittest.skip("Temporarily skipped")
+    def test_set_dirty_flag(self):
+        """
+        Test that the dirty_flag gets set in the event callback.
+        """
+        class FakePanel(BaseGenerated):
 
+            def __init__(self, parent, **kwargs):
+                selection = kwargs.pop('selection', '')
+                super().__init__(parent)
+                self.widget_00 = wx.TextCtrl(self, wx.ID_ANY, '')
+                self.widget_00.Bind(wx.EVT_TEXT, self.set_dirty_flag)
 
-
+        app = wx.App()
+        frame = FakeFrame()
+        panel = FakePanel(frame)
+        should_be = False
+        msg = "The dirty_flag should be {should_be} found {panel.dirty}."
+        self.assertFalse(panel.dirty, msg)
+        panel.widget_00.SetValue("Something to test")
+        should_be = True
+        msg = "The dirty_flag should be {should_be} found {panel.dirty}."
+        self.assertTrue(panel.dirty, msg)

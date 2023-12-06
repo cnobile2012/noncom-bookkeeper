@@ -4,33 +4,14 @@
 #
 __docformat__ = "restructuredtext en"
 
-
-## def _constructor_decorator(cls, **kwgs):
-##     orig_init = cls.__init__
-
-##     def new_init(self, *args, **kwargs):
-##         orig_init(self, *args, **kwargs)
-
-##         for key, value in kwgs.items():
-##             setattr(self, key, eval(value)())
-
-##     cls.__init__ = new_init
-##     return cls
+import wx
 
 
-## def _method_closurer(orig_method, **kwgs):
-##     def add_decorator_closure(func):
-##         def add_decorator(self, *args, **kwargs):
-##             result = func(self, *args, **kwargs)
+class FakeFrame(wx.Frame):
 
-##             for key, value in kwgs.items():
-##                 print(value)
-##                 setattr(self, key, eval(value)())
-
-##             return result
-
-##     decorated_method = add_decorator_closure(orig_method)
-##     return decorated_method
+    def __init__(self, parent=None, id=wx.ID_ANY, pos=wx.DefaultPosition,
+                 style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL, **kwargs):
+        super().__init__(parent, id=id, pos=pos, style=style)
 
 
 class FakeWidget:

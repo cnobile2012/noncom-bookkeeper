@@ -6,7 +6,7 @@ import logging
 from .base_dir import BASE_DIR
 from src import Logger
 
-from .fixtures import FakeWidget, FakeEvent
+from .fixtures import FakeFrame, FakeWidget, FakeEvent
 
 
 def setup_logging():
@@ -49,4 +49,4 @@ def check_flag(name):
         RUN_FLAG[name] = True
 
 
-__all__ = (log, check_flag, FakeWidget, FakeEvent)
+__all__ = (log, check_flag, FakeFrame, FakeWidget, FakeEvent)

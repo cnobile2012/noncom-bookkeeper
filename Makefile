@@ -43,6 +43,9 @@ tar	: clobber
 	@(cd ..; tar -czvf $(PACKAGE_DIR).tar.gz --exclude=".git" \
           --exclude="__pycache__" $(BASE_DIR))
 
+# $ make tests
+# $ make tests TEST_PATH=tests.test_bases
+# $ make tests TEST_PATH=tests/test_bases.py:TestBases.test_version
 .PHONY	: tests
 tests	: clobber
 	@mkdir -p $(LOGS_DIR)

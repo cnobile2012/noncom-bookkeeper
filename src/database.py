@@ -123,7 +123,7 @@ class Database(BaseSystemData):
         """
         data = self.collect_panel_values(panel)
         await self.add_fields_to_field_type_table(data)
-        await self.add_values_to_data_table(data)
+        await self._insert_values_to_data_table(data)
 
 
 

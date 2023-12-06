@@ -137,26 +137,26 @@ class BaseSystemData(Settings):
     def panel_config(self, value):
         self.SYS_FILES['panel_config'] = value
 
-    def panel_field_names(self, panel, raw=False):
-        """
-        Get the field names for a specific panel.
-        """
-        widget_names = []
+    ## def panel_field_names(self, panel, raw=False):
+    ##     """
+    ##     Get the field names for a specific panel.
+    ##     """
+    ##     widget_names = []
 
-        for widget in self.panel_config[panel]['widgets'].values():
-            w_type = widget[0]
+    ##     for widget in self.panel_config[panel]['widgets'].values():
+    ##         w_type = widget[0]
 
-            if w_type in ('RadioBox', 'StaticText'):
-                args = find_dict(widget).get('args', [])
-                name = args[2] if args else ''
-                if not name: continue
+    ##         if w_type in ('RadioBox', 'StaticText'):
+    ##             args = find_dict(widget).get('args', [])
+    ##             name = args[2] if args else ''
+    ##             if not name: continue
 
-                if not raw:
-                    name = name.replace(' ', '_').replace(':', '').lower()
+    ##             if not raw:
+    ##                 name = name.replace(' ', '_').replace(':', '').lower()
 
-                widget_names.append(name)
+    ##             widget_names.append(name)
 
-        return widget_names
+    ##     return widget_names
 
     @property
     def app_config(self):
