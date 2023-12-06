@@ -97,7 +97,7 @@ class MainFrame(MenuBar, wx.Frame):
         def on_timer(event):
             for name, panel in self.panels.items():
                 if panel.dirty:
-                    db.save_to_database(panel)
+                    asyncio.run(db.save_to_database(panel))
 
         return on_timer
 

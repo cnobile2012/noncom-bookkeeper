@@ -90,7 +90,8 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         """
         def do_event(event):
             """
-            This event callback updates the locality prefix TextCtrl.
+            This event callback updates the locality prefix TextCtrl and
+            setting the dirty flag.
 
             :param event: This is a wx event.
             :type event: wx.Event

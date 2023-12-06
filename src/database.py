@@ -14,9 +14,22 @@ from .utilities import StoreObjects
 
 class Database(BaseSystemData):
     _SCHEMA = (
-        ('FieldType', 'pk', 'field', 'rids', 'desc' , 'c_time', 'm_time'),
-        ('ReportType', 'pk', 'report', 'rid', 'desc' , 'c_time', 'm_time'),
-        ('Data', 'pk', 'value', 'fk', 'c_time' , 'm_time')
+        ('FieldType', 'pk INTEGER NOT NULL PRIMARY KEY',
+         'field TEXT NOT NULL',
+         'rids INTEGER DEFAULT 0 NOT NULL',
+         'c_time TEXT NOT NULL',
+         'm_time TEXT NOT NULL'),
+        ('ReportType', 'pk INTEGER NOT NULL PRIMARY KEY',
+         'report TEXT NOT NULL',
+         'rid INTEGER NOT NULL',
+         'c_time TEXT NOT NULL',
+         'm_time TEXT NOT NULL'),
+        ('Data', 'pk INTEGER NOT NULL PRIMARY KEY',
+         'value INTEGER NOT NULL',
+         'fk INTEGER NOT NULL',
+         'c_time TEXT NOT NULL',
+         'm_time TEXT NOT NULL',
+         'FOREIGN KEY (fk) REFERENCES FieldType (pk)')
         )
     _TABLES = [table[0] for table in  _SCHEMA]
     _TABLES.sort()
@@ -30,6 +43,7 @@ class Database(BaseSystemData):
         #   c_time: <value>, m_time: <value>}, ...]
         self._report_types = []
         self._mf = StoreObjects().get_object('MainFrame')
+        self.__org_info_field_data = None
 
     async def create_db(self):
         """
@@ -40,11 +54,9 @@ class Database(BaseSystemData):
                 for params in self._SCHEMA:
                     table = params[0]
                     fields = ', '.join([field for field in params[1:]])
-                    query = f"CREATE TABLE {table}({fields})"
+                    query = f"CREATE TABLE IF NOT EXISTS {table}({fields})"
                     await db.execute(query)
                     await db.commit()
-
-            #cur.executemany("INSERT INTO lang VALUES(:name, :year)", data)
 
     @property
     async def has_schema(self) -> bool:
@@ -87,30 +99,22 @@ class Database(BaseSystemData):
         ret = False
         panel = self._mf.panels['organization']
         data = self.collect_panel_values(panel)
-        #print(f"POOP--data {data}")
 
         # Check that the field names are in the FieldType table.
-        #rows = "', '".join(self.panel_field_names('organization'))
-        rows = "', '".join(list(data.keys()))
-        query = f"SELECT field FROM FieldType WHERE field IN ('{rows}');"
+        values = await self._select_field_type_data(data)
+        print(values)
 
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
-            async with db.execute(query) as cursor:
-                values = await cursor.fetchall()
-                print(values)
+        if values:
+            # Check that we have data for the fields in Data table.
+            #    query = f"SELECT "
 
-
-
-        # Check that we have data for the fields in Data table.
-        #    query = f"SELECT "
-
-        for field in data:
-            pass
+            for field in data:
+                pass
 
         # For now return false.
         return ret
 
-    def save_to_database(self, panel:wx.Panel) -> None:
+    async def save_to_database(self, panel:wx.Panel) -> None:
         """
         Save the given panel data to the database.
 
@@ -118,7 +122,10 @@ class Database(BaseSystemData):
         :type panel: wx.Panel
         """
         data = self.collect_panel_values(panel)
-        print(data)
+        await self.add_fields_to_field_type_table(data)
+        await self.add_values_to_data_table(data)
+
+
 
 
 
@@ -132,7 +139,7 @@ class Database(BaseSystemData):
         :param convert_to_utc: True if wx.DateTime field's should be
                                converted to UTC and False if they are not
                                to be converted (default is False).
-        :return: A dictonary of field names and values.
+        :return: A dictonary of db field names and values.
         :rtype: dict
         """
         data = {}
@@ -154,7 +161,6 @@ class Database(BaseSystemData):
             children.append(child)
             if add: children.append(None)
 
-        print(children)
         child_sets = [children[i:i+2] for i in range(0, len(children), 2)]
 
         for c_set in child_sets:
@@ -179,13 +185,73 @@ class Database(BaseSystemData):
 
         return data
 
-    def add_to_field_type_table(self, fields:list) -> None:
+    async def add_fields_to_field_type_table(self, data:dict) -> None:
         """
-        Add given fields to the FieldType table.
+        Add fields to the FieldType table if they don't already exist.
 
-        :param fields: The field names to add.
-        :type fields: list
+        :param data: The data from the Organization Information panel.
+        :type data: dict
         """
+        values = await self._select_field_type_data(data)
+
+        if not values:
+            await self._insert_field_type_data(data)
+
+    async def _select_field_type_data(self, data:dict) -> list:
+        """
+        Read from the DB the fields that relate to the Organization
+        Information panel.
+
+        :param data: The data from the Organization Information panel.
+        :type data: dict
+        :return: The values read from the FieldType table.
+        :rtype: list of tuples
+        """
+        if not self.__org_info_field_data:
+            rows = "', '".join(list(data.keys()))
+            query = f"SELECT * FROM FieldType WHERE field IN ('{rows}');"
+
+            async with aiosqlite.connect(self.user_data_fullpath) as db:
+                async with db.execute(query) as cursor:
+                    values = await cursor.fetchall()
+
+            self.__org_info_field_data = values
+
+        return self.__org_info_field_data
+
+    async def _insert_field_type_data(self, data:dict) -> None:
+        """
+        Insert fields into the FieldType table.
+
+        :param data: The data from the Organization Information panel.
+        :type data: dict
+        """
+        fields = []
+        now = datetime.utcnow().isoformat()
+        fields = [(field, now, now) for field in data.keys()]
+        query = ("INSERT INTO FieldType (field, c_time, m_time) "
+                 "VALUES (?, ?, ?)")
+
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            await db.executemany(query, fields)
+            await db.commit()
+
+    async def _insert_values_to_data_table(self, data:dict) -> None:
+        """
+        Insert values into the Data table.
+
+        :param data: The data from the Organization Information panel.
+        :type data: dict
+        """
+
+
+
+        fields = []
+        now = datetime.utcnow().isoformat()
+        fields = [(field, now, now) for field in data.keys()]
+
+
+
 
 
     def value_to_db(self, value:str) -> int:
@@ -253,15 +319,15 @@ class Database(BaseSystemData):
             query['fk'] = v1
 
 
-        elif val0 == 'c_time': # c_time
+        elif val0 == 'c_time': # create time
             assert v1 and v2, f"Invalid 'v1: {v1}' or 'v2: {v2}' values."
 
 
-        elif val0 == 'm_time': # m_time
+        elif val0 == 'm_time': # modify time
             assert v1 and v2, f"Invalid 'v1: {v1}' or 'v2: {v2}' values."
 
 
-        elif isinstance(val0, int): # value
+        elif isinstance(val0, int): # integer value
             pass
 
 
@@ -277,7 +343,7 @@ class Database(BaseSystemData):
         #elif isinstance(value, int):
         #    pass
         elif isinstance(value, wx.DateTime):
-            # We convert into an ISO format for the db.
+            # We convert into an ISO 8601 format for the db.
             if convert_to_utc: value = value.ToUTC()
             value = value.FormatISOCombined()
 
