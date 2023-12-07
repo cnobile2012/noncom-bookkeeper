@@ -15,13 +15,13 @@ from .utilities import StoreObjects
 class Database(BaseSystemData):
     _SCHEMA = (
         ('FieldType', 'pk INTEGER NOT NULL PRIMARY KEY',
-         'field TEXT NOT NULL',
+         'field TEXT UNIQUE NOT NULL',
          'rids INTEGER DEFAULT 0 NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
         ('ReportType', 'pk INTEGER NOT NULL PRIMARY KEY',
-         'report TEXT NOT NULL',
-         'rid INTEGER NOT NULL',
+         'report TEXT UNIQUE NOT NULL',
+         'rid INTEGER UNIQUE NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
         ('Data', 'pk INTEGER NOT NULL PRIMARY KEY',
@@ -43,7 +43,7 @@ class Database(BaseSystemData):
         #   c_time: <value>, m_time: <value>}, ...]
         self._report_types = []
         self._mf = StoreObjects().get_object('MainFrame')
-        self.__org_info_field_data = None
+        self.__org_info_field_data = set()
 
     async def create_db(self):
         """
@@ -98,11 +98,11 @@ class Database(BaseSystemData):
         """
         ret = False
         panel = self._mf.panels['organization']
-        data = self.collect_panel_values(panel)
+        data = self._collect_panel_values(panel)
 
         # Check that the field names are in the FieldType table.
-        values = await self._select_field_type_data(data)
-        print(values)
+        values = await self._select_org_info_field_types(data)
+        print(f"POOP100--{values}")
 
         if values:
             # Check that we have data for the fields in Data table.
@@ -121,15 +121,15 @@ class Database(BaseSystemData):
         :param panel: Any of the panels that has collected data.
         :type panel: wx.Panel
         """
-        data = self.collect_panel_values(panel)
-        await self.add_fields_to_field_type_table(data)
-        await self._insert_values_to_data_table(data)
+        data = self._collect_panel_values(panel)
+        await self._add_fields_to_field_type_table(data)
+        await self._insert_values_into_data_table(data)
 
 
 
 
 
-    def collect_panel_values(self, panel:wx.Panel,
+    def _collect_panel_values(self, panel:wx.Panel,
                              convert_to_utc:bool=False) -> dict:
         """
         Collects the data from the panel's widgets.
@@ -185,37 +185,43 @@ class Database(BaseSystemData):
 
         return data
 
-    async def add_fields_to_field_type_table(self, data:dict) -> None:
+    async def _add_fields_to_field_type_table(self, data:dict) -> None:
         """
         Add fields to the FieldType table if they don't already exist.
 
         :param data: The data from the Organization Information panel.
         :type data: dict
         """
-        values = await self._select_field_type_data(data)
+        values = await self._select_org_info_field_types(data)
 
         if not values:
             await self._insert_field_type_data(data)
 
-    async def _select_field_type_data(self, data:dict) -> list:
+    async def _select_org_info_field_types(self, data:dict) -> list:
         """
         Read from the DB the fields that relate to the Organization
-        Information panel.
+        Information panel and store them for future use.
 
-        :param data: The data from the Organization Information panel.
+        :param data: The data from the Organization Information panel in the
+                     form of: {<field name>: <value>,...}.
         :type data: dict
-        :return: The values read from the FieldType table.
+        :return: The values read from the FieldType table in the form of
+                 [(<pk>, <field>, <rids>, <c_time>, <m_time>), ...].
         :rtype: list of tuples
         """
-        if not self.__org_info_field_data:
-            rows = "', '".join(list(data.keys()))
+        new_fields = set(data) # Just get the keys.
+        old_fields = set([item[1] for item in self.__org_info_field_data])
+
+        # Make sure we include any new fields added to the panel.
+        if new_fields - old_fields:
+            rows = "', '".join(new_fields)
             query = f"SELECT * FROM FieldType WHERE field IN ('{rows}');"
 
             async with aiosqlite.connect(self.user_data_fullpath) as db:
                 async with db.execute(query) as cursor:
                     values = await cursor.fetchall()
 
-            self.__org_info_field_data = values
+            self.__org_info_field_data = set(values)
 
         return self.__org_info_field_data
 
@@ -236,7 +242,7 @@ class Database(BaseSystemData):
             await db.executemany(query, fields)
             await db.commit()
 
-    async def _insert_values_to_data_table(self, data:dict) -> None:
+    async def _insert_values_into_data_table(self, data:dict) -> None:
         """
         Insert values into the Data table.
 
@@ -244,6 +250,8 @@ class Database(BaseSystemData):
         :type data: dict
         """
 
+
+        query = "SELECT * From Data WHERE "
 
 
         fields = []
