@@ -90,8 +90,8 @@ class MainFrame(MenuBar, wx.Frame):
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)
-        # Checks panel dirty flag every second.
-        self._timer.Start(5000)
+        # Checks panel dirty flag every 10 seconds.
+        self._timer.Start(1000*10)
 
     def on_timer_closure(self, db):
         def on_timer(event):

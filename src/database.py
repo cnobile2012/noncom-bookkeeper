@@ -43,7 +43,6 @@ class Database(BaseSystemData):
         #   c_time: <value>, m_time: <value>}, ...]
         self._report_types = []
         self._mf = StoreObjects().get_object('MainFrame')
-        self.__org_info_field_data = set()
 
     async def create_db(self):
         """
@@ -101,7 +100,7 @@ class Database(BaseSystemData):
         data = self._collect_panel_values(panel)
 
         # Check that the field names are in the FieldType table.
-        values = await self._select_org_info_field_types(data)
+        values = await self._select_from_field_type_table(data)
         print(f"POOP100--{values}")
 
         if values:
@@ -123,7 +122,7 @@ class Database(BaseSystemData):
         """
         data = self._collect_panel_values(panel)
         await self._add_fields_to_field_type_table(data)
-        await self._insert_values_into_data_table(data)
+        await self._insert_values_in_data_table(data)
 
 
 
@@ -189,18 +188,20 @@ class Database(BaseSystemData):
         """
         Add fields to the FieldType table if they don't already exist.
 
-        :param data: The data from the Organization Information panel.
+        :param data: The data from the Organization Information panel in the
+                     form of: {<field name>: <value>,...}.
         :type data: dict
         """
-        values = await self._select_org_info_field_types(data)
+        items = await self._select_from_field_type_table(data)
+        old_fields = [item[1] for item in items]
+        fields = self._find_fields(data, old_fields)
 
-        if not values:
-            await self._insert_field_type_data(data)
+        if fields:
+            await self._insert_field_type_data(fields)
 
-    async def _select_org_info_field_types(self, data:dict) -> list:
+    async def _select_from_field_type_table(self, data:dict) -> list:
         """
-        Read from the DB the fields that relate to the Organization
-        Information panel and store them for future use.
+        Read from the FieldType the fields in the data argument.
 
         :param data: The data from the Organization Information panel in the
                      form of: {<field name>: <value>,...}.
@@ -209,104 +210,34 @@ class Database(BaseSystemData):
                  [(<pk>, <field>, <rids>, <c_time>, <m_time>), ...].
         :rtype: list of tuples
         """
-        new_fields = set(data) # Just get the keys.
-        old_fields = set([item[1] for item in self.__org_info_field_data])
+        assert data, f"There must be valid data, found '{data}'."
+        fields = "', '".join(data)
+        query = f"SELECT * FROM FieldType WHERE field IN ('{fields}');"
 
-        # Make sure we include any new fields added to the panel.
-        if new_fields - old_fields:
-            rows = "', '".join(new_fields)
-            query = f"SELECT * FROM FieldType WHERE field IN ('{rows}');"
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            async with db.execute(query) as cursor:
+                values = await cursor.fetchall()
 
-            async with aiosqlite.connect(self.user_data_fullpath) as db:
-                async with db.execute(query) as cursor:
-                    values = await cursor.fetchall()
+        return values
 
-            self.__org_info_field_data = set(values)
-
-        return self.__org_info_field_data
-
-    async def _insert_field_type_data(self, data:dict) -> None:
+    async def _insert_field_type_data(self, fields:set) -> None:
         """
         Insert fields into the FieldType table.
 
-        :param data: The data from the Organization Information panel.
-        :type data: dict
+        :param fields: The fields from any panel in the form of:
+                       [<field name>,...].
+        :type fields: set
         """
-        fields = []
         now = datetime.utcnow().isoformat()
-        fields = [(field, now, now) for field in data.keys()]
+        data = [(field, now, now) for field in fields]
         query = ("INSERT INTO FieldType (field, c_time, m_time) "
                  "VALUES (?, ?, ?)")
 
         async with aiosqlite.connect(self.user_data_fullpath) as db:
-            await db.executemany(query, fields)
+            await db.executemany(query, data)
             await db.commit()
 
-    async def _insert_values_into_data_table(self, data:dict) -> None:
-        """
-        Insert values into the Data table.
-
-        :param data: The data from the Organization Information panel.
-        :type data: dict
-        """
-
-
-        query = "SELECT * From Data WHERE "
-
-
-        fields = []
-        now = datetime.utcnow().isoformat()
-        fields = [(field, now, now) for field in data.keys()]
-
-
-
-
-
-    def value_to_db(self, value:str) -> int:
-        """
-        Convert the text currency value to an integer.
-
-        .. note::
-
-           We store currency values as integers.
-           Example $1952.14 in the db is 195214.
-
-        :param value: A currency value from a field.
-        :type value: str
-        :return: An integer value suttable for putting in the database.
-        :rtype: int
-        """
-        assert isinstance(value, str), ("The argument 'value' can only be a "
-                                        f"string found {type(value)}")
-        return int(float(value)*100)
-
-    def db_to_value(self, value:int) -> str:
-        """
-        Convert an integer from the database into a value sutable for
-        displaying in a widget.
-
-        :param value: A currency value from the database.
-        :type value: int
-        :return: A string representation of a currency value.
-        :rtype: str
-        """
-        assert isinstance(value, int), ("The argument 'value' can only be an "
-                                        f"integer found {type(value)}")
-        return f"{value/100:.2f}"
-
-    def read_field_type_table(self):
-        """
-        Reads the FieldType table and loads it into memory.
-        """
-
-
-    def read_report_type_table(self):
-        """
-        Reads the ReportType table and loads it into memory.
-        """
-
-
-    def read_from_data_table(self, val0, v1=None, v2=None):
+    async def select_from_data_table(self, val0, v1=None, v2=None):
         """
         Reads a row or rows from the Data table.
 
@@ -342,6 +273,44 @@ class Database(BaseSystemData):
         else: # Primary Key
             pass
 
+    async def _insert_values_in_data_table(self, data:dict) -> None:
+        """
+        Insert values into the Data table.
+
+        :param data: The data from the any panel  in the form of:
+                     {<field name>: <value>,...}.
+        :type data: dict
+        """
+        values = await self._select_from_field_type_table(data)
+
+        if not values:
+            await self._insert_field_type_data(data)
+
+        query = "SELECT * From Data WHERE "
+
+
+        ## fields = []
+        ## now = datetime.utcnow().isoformat()
+        ## fields = [(field, now, now) for field in data.keys()]
+
+
+
+
+    def _find_fields(self, new:list, old:list) -> set:
+        """
+        Find the fields to select or insert.
+
+        :param new: The new fields in the form of: [<field name>,...].
+        :type new: list or dict (only keys used)
+        :param old: The old fields in the form of: [<field name>,...].
+        :type old: list
+        :return: A list of fields.
+        :rtype: list
+        """
+        new_fields = set(new) # Just get the keys if a dict.
+        old_fields = set(old)
+        return new_fields - old_fields
+
     def _make_db_name(self, name):
         return name.replace(' ', '_').replace(':', '').lower()
 
@@ -356,3 +325,35 @@ class Database(BaseSystemData):
             value = value.FormatISOCombined()
 
         return value
+
+    def value_to_db(self, value:str) -> int:
+        """
+        Convert the text currency value to an integer.
+
+        .. note::
+
+           We store currency values as integers.
+           Example $1952.14 in the db is 195214.
+
+        :param value: A currency value from a field.
+        :type value: str
+        :return: An integer value suttable for putting in the database.
+        :rtype: int
+        """
+        assert isinstance(value, str), ("The argument 'value' can only be a "
+                                        f"string found {type(value)}")
+        return int(float(value)*100)
+
+    def db_to_value(self, value:int) -> str:
+        """
+        Convert an integer from the database into a value sutable for
+        displaying in a widget.
+
+        :param value: A currency value from the database.
+        :type value: int
+        :return: A string representation of a currency value.
+        :rtype: str
+        """
+        assert isinstance(value, int), ("The argument 'value' can only be an "
+                                        f"integer found {type(value)}")
+        return f"{value/100:.2f}"
