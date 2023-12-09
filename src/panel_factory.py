@@ -232,7 +232,7 @@ class PanelFactory(TomlMetaData):
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        klass.write(f"        {widget}.Bind(wx.EVT_TEXT, "
+        klass.write(f"        {widget}.Bind(wx.adv.EVT_DATE_CHANGED, "
                     "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 

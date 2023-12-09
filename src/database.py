@@ -13,23 +13,26 @@ from .utilities import StoreObjects
 
 
 class Database(BaseSystemData):
+    __FIELD_TYPE = 'field_type'
+    __REPORT_TYPE = 'report_type'
+    __DATA = 'data'
     _SCHEMA = (
-        ('FieldType', 'pk INTEGER NOT NULL PRIMARY KEY',
+        (__FIELD_TYPE, 'pk INTEGER NOT NULL PRIMARY KEY',
          'field TEXT UNIQUE NOT NULL',
          'rids INTEGER DEFAULT 0 NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
-        ('ReportType', 'pk INTEGER NOT NULL PRIMARY KEY',
+        (__REPORT_TYPE, 'pk INTEGER NOT NULL PRIMARY KEY',
          'report TEXT UNIQUE NOT NULL',
          'rid INTEGER UNIQUE NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
-        ('Data', 'pk INTEGER NOT NULL PRIMARY KEY',
-         'value INTEGER NOT NULL',
+        (__DATA, 'pk INTEGER NOT NULL PRIMARY KEY',
+         'value NOT NULL',
          'fk INTEGER NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL',
-         'FOREIGN KEY (fk) REFERENCES FieldType (pk)')
+         f'FOREIGN KEY (fk) REFERENCES {__FIELD_TYPE} (pk)')
         )
     _TABLES = [table[0] for table in  _SCHEMA]
     _TABLES.sort()
@@ -67,20 +70,18 @@ class Database(BaseSystemData):
         :rtype: bool
         """
         query = "SELECT name FROM sqlite_master"
+        table_names = [
+            table[0] for table in await self._do_select_query(query)]
+        table_names.sort()
+        check = table_names == self._TABLES
 
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
-            async with db.execute(query) as cursor:
-                table_names = [table[0] for table in await cursor.fetchall()]
-                table_names.sort()
-                check = table_names == self._TABLES
-
-                if not check:
-                    msg = ("Database table count is wrong it should be "
-                           f"'{self._TABLES}' found '{table_names}'")
-                    self._log.error(msg)
-                    #self.parent.statusbar_error = msg
-                    # *** TODO *** This needs to be shown on the screen if
-                    #              detected.
+        if not check:
+            msg = ("Database table count is wrong it should be "
+                   f"'{self._TABLES}' found '{table_names}'")
+            self._log.error(msg)
+            #self.parent.statusbar_error = msg
+            # *** TODO *** This needs to be shown on the screen if
+            #              detected.
 
         return check
 
@@ -123,10 +124,7 @@ class Database(BaseSystemData):
         data = self._collect_panel_values(panel)
         await self._add_fields_to_field_type_table(data)
         await self._insert_values_in_data_table(data)
-
-
-
-
+        panel.dirty = False
 
     def _collect_panel_values(self, panel:wx.Panel,
                              convert_to_utc:bool=False) -> dict:
@@ -212,13 +210,9 @@ class Database(BaseSystemData):
         """
         assert data, f"There must be valid data, found '{data}'."
         fields = "', '".join(data)
-        query = f"SELECT * FROM FieldType WHERE field IN ('{fields}');"
-
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
-            async with db.execute(query) as cursor:
-                values = await cursor.fetchall()
-
-        return values
+        query = (f"SELECT * FROM {self.__FIELD_TYPE} WHERE field IN "
+                 f"('{fields}');")
+        return await self._do_select_query(query)
 
     async def _insert_field_type_data(self, fields:set) -> None:
         """
@@ -230,12 +224,9 @@ class Database(BaseSystemData):
         """
         now = datetime.utcnow().isoformat()
         data = [(field, now, now) for field in fields]
-        query = ("INSERT INTO FieldType (field, c_time, m_time) "
+        query = (f"INSERT INTO {self.__FIELD_TYPE} (field, c_time, m_time) "
                  "VALUES (?, ?, ?)")
-
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
-            await db.executemany(query, data)
-            await db.commit()
+        await self._do_insert_query(query, data)
 
     async def select_from_data_table(self, val0, v1=None, v2=None):
         """
@@ -281,20 +272,76 @@ class Database(BaseSystemData):
                      {<field name>: <value>,...}.
         :type data: dict
         """
-        values = await self._select_from_field_type_table(data)
+        query = (f"SELECT ft.field, ft.pk, d.value FROM {self.__DATA} d JOIN ("
+                 f"SELECT pk, field FROM {self.__FIELD_TYPE} ) ft "
+                 f"ON ft.pk = d.fk;")
+        values = await self._do_select_query(query)
 
-        if not values:
-            await self._insert_field_type_data(data)
+        if not values: # Do insert
+            items = await self._select_from_field_type_table(data)
+            now = datetime.utcnow().isoformat()
+            query = (f"INSERT INTO {self.__DATA} (value, fk, c_time, m_time) "
+                     "VALUES (:value, :fk, :c_time, :m_time);")
+            fields = []
 
-        query = "SELECT * From Data WHERE "
+            for item in items:
+                pk, field, rids, c_time, m_time = item
+                fields.append({'value': data[field], 'fk': pk,
+                               'c_time': now, 'm_time': now})
 
+            await self._do_insert_query(query, fields)
+        else: # Do update
+            now = datetime.utcnow().isoformat()
+            query = (f"UPDATE {self.__DATA} SET value = :value, "
+                     "m_time = :m_time WHERE fk = :pk")
+            fields = []
 
-        ## fields = []
-        ## now = datetime.utcnow().isoformat()
-        ## fields = [(field, now, now) for field in data.keys()]
+            for item in values:
+                field, pk, value = item
+                fields.append({'pk': pk,'value': data[field], 'm_time': now})
 
+            await self._do_update_query(query, fields)
 
+    async def _do_select_query(self, query:str) -> list:
+        """
+        Do the actual query and return the results.
 
+        :param query: The SQL query to do.
+        :type query: str
+        :return: A list of the data.
+        :rtype: list
+        """
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            async with db.execute(query) as cursor:
+                values = await cursor.fetchall()
+
+        return values
+
+    async def _do_insert_query(self, query:str, data:list) -> None:
+        """
+        Do the insert query.
+
+        :param query: The SQL query to do.
+        :type query: str
+        :param data: Data to insert into the Data table.
+        :type data: list
+        """
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            await db.executemany(query, data)
+            await db.commit()
+
+    async def _do_update_query(self, query:str, data:list) -> None:
+        """
+        Do the update query.
+
+        :param query: The SQL query to do.
+        :type query: str
+        :param data: Data to insert into the Data table.
+        :type data: list
+        """
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            await db.executemany(query, data)
+            await db.commit()
 
     def _find_fields(self, new:list, old:list) -> set:
         """
