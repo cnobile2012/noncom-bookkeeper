@@ -109,6 +109,7 @@ class FieldEdit(BasePanel, wx.Panel):
         self.__resized = False
         self.Bind(wx.EVT_SIZE, self.on_size)
         self.Bind(wx.EVT_IDLE, self.on_idle_closure(arg_dict))
+        self.dirty = False
 
     def on_size(self, event):
         event.Skip()

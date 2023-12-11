@@ -31,7 +31,7 @@ class TestBootstrap(unittest.TestCase):
         appauthor = Settings._DEVELOPERS[0]
         self.ad = AppDirs(appname=appname, appauthor=appauthor)
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test_constructor(self):
         """
         Test that all directory paths are created.

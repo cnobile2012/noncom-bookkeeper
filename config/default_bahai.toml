@@ -72,70 +72,70 @@ widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Rollover fr
 widget_01 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[1, 0], span=[1, 2]}]
 
 widget_02 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Cash in Bank:'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[2, 0], span=[1, 1]}]
-widget_03 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[2, 1], span=[1, 1]}]
+widget_03 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[2, 1], span=[1, 1], financial=true}]
 
 widget_04 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'OCS Holdings:'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[3, 0], span=[1, 1]}]
-widget_05 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1]}]
+widget_05 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], financial=true}]
 
 widget_06 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Income'], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 2]}]
 
 widget_07 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[5, 0], span=[1, 2]}]
 
 widget_08 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monetary Contributions:'], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[6, 0], span=[1, 1]}]
-widget_09 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[6, 1], span=[1, 1]}]
+widget_09 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[6, 1], span=[1, 1], financial=true}]
 
 widget_10 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Expenses'], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[7, 0], span=[1, 2]}]
 
 widget_11 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[8, 0], span=[1, 2]}]
 
 widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í International Fund:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[9, 0], span=[1, 1]}]
-widget_13 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[9, 1], span=[1, 1]}]
+widget_13 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[9, 1], span=[1, 1], financial=true}]
 
 widget_14 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Shrine of Bahá:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[10, 0], span=[1, 1]}]
-widget_15 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[10, 1], span=[1, 1]}]
+widget_15 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[10, 1], span=[1, 1], financial=true}]
 
 widget_16 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Continental Bahá'í Fund:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[11, 0], span=[1, 1]}]
-widget_17 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[11, 1], span=[1, 1]}]
+widget_17 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[11, 1], span=[1, 1], financial=true}]
 
 widget_18 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National Bahá'í Fund:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[12, 0], span=[1, 1]}]
-widget_19 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[12, 1], span=[1, 1]}]
+widget_19 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[12, 1], span=[1, 1], financial=true}]
 
 widget_20 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Bahá'í Fund:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[13, 0], span=[1, 1]}]
-widget_21 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[13, 1], span=[1, 1]}]
+widget_21 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[13, 1], span=[1, 1], financial=true}]
 
 widget_22 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Bahá'í Center:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[14, 0], span=[1, 1]}]
-widget_23 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[14, 1], span=[1, 1]}]
+widget_23 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[14, 1], span=[1, 1], financial=true}]
 
 widget_24 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Teaching Committee:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[15, 0], span=[1, 1]}]
-widget_25 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[15, 1], span=[1, 1]}]
+widget_25 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[15, 1], span=[1, 1], financial=true}]
 
 widget_26 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Administration:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[16, 0], span=[1, 1]}]
-widget_27 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[16, 1], span=[1, 1]}]
+widget_27 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[16, 1], span=[1, 1], financial=true}]
 
 widget_28 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Scolarships:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[17, 0], span=[1, 1]}]
-widget_29 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[17, 1], span=[1, 1]}]
+widget_29 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[17, 1], span=[1, 1], financial=true}]
 
 widget_30 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Education:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[18, 0], span=[1, 1]}]
-widget_31 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[18, 1], span=[1, 1]}]
+widget_31 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[18, 1], span=[1, 1], financial=true}]
 
 widget_32 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Teaching:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[19, 0], span=[1, 1]}]
-widget_33 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[19, 1], span=[1, 1]}]
+widget_33 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[19, 1], span=[1, 1], financial=true}]
 
 widget_34 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Proclamation:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[20, 0], span=[1, 1]}]
-widget_35 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[20, 1], span=[1, 1]}]
+widget_35 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[20, 1], span=[1, 1], financial=true}]
 
 widget_36 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Other Funds:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[21, 0], span=[1, 1]}]
-widget_37 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[21, 1], span=[1, 1]}]
+widget_37 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[21, 1], span=[1, 1], financial=true}]
 
 widget_38 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Other Misc:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[22, 0], span=[1, 1]}]
-widget_39 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[22, 1], span=[1, 1]}]
+widget_39 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[22, 1], span=[1, 1], financial=true}]
 
 widget_40 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Additional Information'], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[23, 0], span=[1, 1]}]
 
 widget_41 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[24, 0], span=[1, 2]}]
 
 widget_42 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Outstanding Bills (Previous Year):"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[25, 0], span=[1, 1]}]
-widget_43 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[25, 1], span=[1, 1]}]
+widget_43 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[25, 1], span=[1, 1], financial=true}]
 
 widget_44 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Membership (Beginning of Year):"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[26, 0], span=[1, 1]}]
 widget_45 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[50, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[26, 1], span=[1, 1]}]
@@ -164,10 +164,10 @@ widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Participati
 widget_04 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1]}]
 
 widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Outstanding Bills:'], min=[-1, -1], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1]}]
-widget_06 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1]}]
+widget_06 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1], financial=true}]
 
 widget_07 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'End of Month Cash on Hand:'], min=[-1, -1], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1]}]
-widget_08 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1]}]
+widget_08 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1], financial=true}]
 
 widget_09 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields do not change often and the defaults can be accepted.'], font='font_12_bold', min=[448, 50], style='ALIGN_CENTER_HORIZONTAL | ALIGN_CENTER_VERTICAL | TE_MULTILINE | TE_WORDWRAP', add=[0, 'ALIGN_CENTER | ALL', 6], pos=[7, 0], span=[1, 2]}]
 
