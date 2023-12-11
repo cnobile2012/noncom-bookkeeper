@@ -5,6 +5,7 @@
 __docformat__ = "restructuredtext en"
 
 import aiosqlite
+import time
 from datetime import datetime
 import wx
 
@@ -60,6 +61,16 @@ class Database(BaseSystemData):
                     await db.execute(query)
                     await db.commit()
 
+    async def populate_panels(self):
+        """
+        Populate all panels that have data in the database.
+        """
+        for name, panel in self._mf.panels.items():
+            data = self._collect_panel_values(panel)
+            await self._add_fields_to_field_type_table(data)
+            values = await self.select_from_data_table(data)
+            self.populate_panel_values(name, panel, values)
+
     @property
     async def has_schema(self) -> bool:
         """
@@ -70,12 +81,12 @@ class Database(BaseSystemData):
         :rtype: bool
         """
         query = "SELECT name FROM sqlite_master"
-        table_names = [
-            table[0] for table in await self._do_select_query(query)]
+        table_names = [table[0]
+                       for table in await self._do_select_query(query)
+                       if not table[0].startswith('sqlite_')]
         table_names.sort()
-        check = table_names == self._TABLES
 
-        if not check:
+        if not (table_names == self._TABLES):
             msg = ("Database table count is wrong it should be "
                    f"'{self._TABLES}' found '{table_names}'")
             self._log.error(msg)
@@ -86,33 +97,45 @@ class Database(BaseSystemData):
         return check
 
     @property
-    async def has_org_info(self) -> bool:
+    def has_org_info_data(self) -> bool:
         """
         Check that the db has the Organization Information.
-
-        The db stores data for the 'selection' in the RadioBox, 'value'
-        for the 4th, 6th, and 8th TextCtrl, 'value' of the DatePickerCtrl.
 
         :return: True if data has been saved in the DB and False if not saved.
         :rtype: bool
         """
-        ret = False
-        panel = self._mf.panels['organization']
+        return self._check_panels_for_entries('organization')
+
+    @property
+    def has_budget_data(self) -> bool:
+        """
+        Check that the db has the Yearly Budget data.
+
+        :return: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
+        """
+        return self._check_panels_for_entries('budget')
+
+    @property
+    def has_month_data(self) -> bool:
+        """
+        Check that the db has the Organization Information.
+
+        :return: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
+        """
+        return self._check_panels_for_entries('month')
+
+    def _check_panels_for_entries(self, name:str) -> bool:
+        """
+        Check that the given panel name has entries.
+
+        :return: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
+        """
+        panel = self._mf.panels[name]
         data = self._collect_panel_values(panel)
-
-        # Check that the field names are in the FieldType table.
-        values = await self._select_from_field_type_table(data)
-        print(f"POOP100--{values}")
-
-        if values:
-            # Check that we have data for the fields in Data table.
-            #    query = f"SELECT "
-
-            for field in data:
-                pass
-
-        # For now return false.
-        return ret
+        return all([item != '' for item in data.values()])
 
     async def save_to_database(self, panel:wx.Panel) -> None:
         """
@@ -122,7 +145,6 @@ class Database(BaseSystemData):
         :type panel: wx.Panel
         """
         data = self._collect_panel_values(panel)
-        await self._add_fields_to_field_type_table(data)
         await self._insert_values_in_data_table(data)
         panel.dirty = False
 
@@ -140,6 +162,62 @@ class Database(BaseSystemData):
         :rtype: dict
         """
         data = {}
+
+        for c_set in self._find_children(panel):
+            name0 = c_set[0].__class__.__name__
+            name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
+            db_name = self._make_db_name(c_set[0].GetLabelText())
+
+            if name0 == 'RadioBox':
+                data[db_name] = self._scrub_value(c_set[0].GetSelection())
+            elif name0 == 'ComboBox':
+                data[db_name] = c_set[0].GetSelection()
+            elif name0 == 'StaticText':
+                if name1 == 'TextCtrl':
+                    data[db_name] = self._scrub_value(c_set[1].GetValue())
+                elif name1 == 'DatePickerCtrl':
+                    data[db_name] = self._scrub_value(c_set[1].GetValue(),
+                                                      convert_to_utc)
+
+        return data
+
+    def populate_panel_values(self, name:str, panel:wx.Panel,
+                              values:list) -> None:
+        """
+        Poplulate the named panel with the database values.
+
+        :param name: The name of the panel.
+        :type name: str
+        :param values: The database values to be used to poplulate the panel.
+        :type values: list
+        """
+        if (data := {item[0]: item[1:] for item in values}):
+            for c_set in self._find_children(panel):
+                name0 = c_set[0].__class__.__name__
+                name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
+                db_name = self._make_db_name(c_set[0].GetLabelText())
+                value = data[db_name][1]
+
+                if name0 == 'RadioBox':
+                    c_set[0].SetSelection(value)
+                elif name0 == 'ComboBox':
+                    c_set[0].SetSelection(value)
+                elif name0 == 'StaticText':
+                    if name1 == 'TextCtrl':
+                        c_set[1].SetValue(value)
+                    elif name1 == 'DatePickerCtrl':
+                        c_set[1].SetValue(
+                            self._convert_date_to_local_time(value))
+
+    def _find_children(self, panel:wx.Panel) -> list:
+        """
+        Find the children in the panel that hold data.
+
+        :param panel: The panel to collect data from.
+        :type panel: wx.Panel
+        :return: A list of child sets.
+        :rtype: list
+        """
         children = []
 
         for child in panel.GetChildren():
@@ -158,29 +236,7 @@ class Database(BaseSystemData):
             children.append(child)
             if add: children.append(None)
 
-        child_sets = [children[i:i+2] for i in range(0, len(children), 2)]
-
-        for c_set in child_sets:
-            name0 = c_set[0].__class__.__name__
-            name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
-
-            if name0 == 'RadioBox':
-                db_name = self._make_db_name(c_set[0].GetLabelText())
-                # Returns an integer.
-                data[db_name] = self._scrub_value(c_set[0].GetSelection())
-            elif name0 == 'ComboBox':
-                db_name = self._make_db_name(c_set[0].GetLabelText())
-                data[db_name] = c_set[0].GetSelection()
-            elif name0 == 'StaticText':
-                db_name = self._make_db_name(c_set[0].GetLabelText())
-
-                if name1 == 'TextCtrl':
-                    data[db_name] = self._scrub_value(c_set[1].GetValue())
-                elif name1 == 'DatePickerCtrl':
-                    data[db_name] = self._scrub_value(c_set[1].GetValue(),
-                                                      convert_to_utc)
-
-        return data
+        return [children[i:i+2] for i in range(0, len(children), 2)]
 
     async def _add_fields_to_field_type_table(self, data:dict) -> None:
         """
@@ -209,9 +265,9 @@ class Database(BaseSystemData):
         :rtype: list of tuples
         """
         assert data, f"There must be valid data, found '{data}'."
-        fields = "', '".join(data)
-        query = (f"SELECT * FROM {self.__FIELD_TYPE} WHERE field IN "
-                 f"('{fields}');")
+        fields = '", "'.join(data)
+        query = (f'SELECT * FROM {self.__FIELD_TYPE} WHERE field IN '
+                 f'("{fields}");')
         return await self._do_select_query(query)
 
     async def _insert_field_type_data(self, fields:set) -> None:
@@ -228,41 +284,22 @@ class Database(BaseSystemData):
                  "VALUES (?, ?, ?)")
         await self._do_insert_query(query, data)
 
-    async def select_from_data_table(self, val0, v1=None, v2=None):
+    async def select_from_data_table(self, data:dict) -> list:
         """
         Reads a row or rows from the Data table.
 
-        :param val0: This can be a pk, value, or a 'fk' or 'c_time' or
-                     'm_time' string.
-        :type val0: str or int
-        :param v1: Start datetime range or fk (from the FieldType table).
-        :type v1: datetime
-        :param v2: End datetime range.
-        :type v2: datetime
+        :param data: The data from the any panel  in the form of:
+                     {<field name>: <value>,...}.
+        :type data: dict
         :return: A list of rows from the Data table.
         :rtype: list
         """
-        query = {}
-
-        if val0 == 'fk': # Foreign Key
-            assert v1, f"Invalid 'v1: {v1} value."
-            query['fk'] = v1
-
-
-        elif val0 == 'c_time': # create time
-            assert v1 and v2, f"Invalid 'v1: {v1}' or 'v2: {v2}' values."
-
-
-        elif val0 == 'm_time': # modify time
-            assert v1 and v2, f"Invalid 'v1: {v1}' or 'v2: {v2}' values."
-
-
-        elif isinstance(val0, int): # integer value
-            pass
-
-
-        else: # Primary Key
-            pass
+        fields = '", "'.join(data)
+        query = (f'SELECT ft.field, ft.pk, d.value, d.c_time, d.m_time '
+                 f'FROM {self.__DATA} d JOIN ('
+                 f'SELECT pk, field FROM {self.__FIELD_TYPE}) ft '
+                 f'ON ft.pk = d.fk AND field IN ("{fields}");')
+        return await self._do_select_query(query)
 
     async def _insert_values_in_data_table(self, data:dict) -> None:
         """
@@ -272,10 +309,7 @@ class Database(BaseSystemData):
                      {<field name>: <value>,...}.
         :type data: dict
         """
-        query = (f"SELECT ft.field, ft.pk, d.value FROM {self.__DATA} d JOIN ("
-                 f"SELECT pk, field FROM {self.__FIELD_TYPE} ) ft "
-                 f"ON ft.pk = d.fk;")
-        values = await self._do_select_query(query)
+        values = await self.select_from_data_table(data)
 
         if not values: # Do insert
             items = await self._select_from_field_type_table(data)
@@ -297,7 +331,7 @@ class Database(BaseSystemData):
             fields = []
 
             for item in values:
-                field, pk, value = item
+                field, pk = item[:2]
                 fields.append({'pk': pk,'value': data[field], 'm_time': now})
 
             await self._do_update_query(query, fields)
@@ -359,19 +393,31 @@ class Database(BaseSystemData):
         return new_fields - old_fields
 
     def _make_db_name(self, name):
+        name = name.replace('(', '').replace(')', '')
         return name.replace(' ', '_').replace(':', '').lower()
 
     def _scrub_value(self, value, convert_to_utc=False):
         if isinstance(value, str):
             value = value.strip()
-        #elif isinstance(value, int):
-        #    pass
         elif isinstance(value, wx.DateTime):
             # We convert into an ISO 8601 format for the db.
             if convert_to_utc: value = value.ToUTC()
             value = value.FormatISOCombined()
 
         return value
+
+    def _convert_date_to_local_time(self, value:str,
+                                    convert_from_utc=False) -> wx.DateTime:
+        """
+        """
+        dt = wx.DateTime()
+        dt.ParseISOCombined(value)
+
+        if convert_from_utc:
+            tz = time.localtime().tm_zone
+            dt = dt.ToTimezone(dt.TimeZone(tz))
+
+        return dt
 
     def value_to_db(self, value:str) -> int:
         """

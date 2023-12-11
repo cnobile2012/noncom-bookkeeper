@@ -7,4 +7,5 @@ aiosqlite
 #varname
 PyInstaller
 pyinstaller-hooks-contrib
+#pytz
 #wxdo

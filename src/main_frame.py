@@ -81,23 +81,42 @@ class MainFrame(MenuBar, wx.Frame):
         the 'Organization Information' panel.
         """
         db = Database()
+        self._log.info("Create the database if it does not exist.")
         await db.create_db()
+        self._log.info("Populating all panels.")
+        await db.populate_panels()
 
-        if not await db.has_org_info:
+        if not db.has_org_info_data:
+            self._log.info("The Organization Information has not been "
+                           "entered yet.")
             # *** TODO *** Display a panel that offers the user ability
             #              to add or change fields.
             self.edit_config(None)
+        elif not db.has_budget_data:
+            self._log.info("The budget data has not been entered yet.")
+            # *** TODO *** Display a panel that offers the user ability
+            #              to add or change fields.
+            self.edit_budget(None)
+        elif not db.has_month_data:
+            self._log.info("The month data has not been entered yet.")
+            # *** TODO *** Display a panel that offers the user ability
+            #              to add or change fields.
+            self.edit_month(None)
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)
-        # Checks panel dirty flag every 10 seconds.
-        self._timer.Start(1000*10)
+        seconds = 1000*10
+        self._log.info("Checking panel dirty flag every %s seconds.",
+                       seconds/1000)
+        self._timer.Start(seconds)
 
     def on_timer_closure(self, db):
         def on_timer(event):
             for name, panel in self.panels.items():
                 if panel.dirty:
                     asyncio.run(db.save_to_database(panel))
+                    self._log.debug("Checking '%s' for changes, dirty "
+                                    "flag '%s'", name, panel.dirty)
 
         return on_timer
 
