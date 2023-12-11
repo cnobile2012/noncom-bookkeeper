@@ -85,8 +85,9 @@ class Database(BaseSystemData):
                        for table in await self._do_select_query(query)
                        if not table[0].startswith('sqlite_')]
         table_names.sort()
+        check = table_names == self._TABLES
 
-        if not (table_names == self._TABLES):
+        if not check:
             msg = ("Database table count is wrong it should be "
                    f"'{self._TABLES}' found '{table_names}'")
             self._log.error(msg)
