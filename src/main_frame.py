@@ -97,11 +97,11 @@ class MainFrame(MenuBar, wx.Frame):
             # *** TODO *** Display a panel that offers the user ability
             #              to add or change fields.
             self.edit_budget(None)
-        elif not db.has_month_data:
-            self._log.info("The month data has not been entered yet.")
-            # *** TODO *** Display a panel that offers the user ability
-            #              to add or change fields.
-            self.edit_month(None)
+        ## elif not db.has_month_data:
+        ##     self._log.info("The month data has not been entered yet.")
+        ##     # *** TODO *** Display a panel that offers the user ability
+        ##     #              to add or change fields.
+        ##     self.edit_month(None)
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)

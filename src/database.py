@@ -37,6 +37,7 @@ class Database(BaseSystemData):
         )
     _TABLES = [table[0] for table in  _SCHEMA]
     _TABLES.sort()
+    _EMPTY_FIELDS = ('', '0')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -96,9 +97,7 @@ class Database(BaseSystemData):
             msg = ("Database table count is wrong it should be "
                    f"'{self._TABLES}' found '{table_names}'")
             self._log.error(msg)
-            #self.parent.statusbar_error = msg
-            # *** TODO *** This needs to be shown on the screen if
-            #              detected.
+            self._mf.statusbar_error = msg
 
         return check
 
@@ -141,7 +140,7 @@ class Database(BaseSystemData):
         """
         panel = self._mf.panels[name]
         data = self._collect_panel_values(panel)
-        return all([item not in ('', '0') for item in data.values()])
+        return all([item not in self._EMPTY_FIELDS for item in data.values()])
 
     async def save_to_database(self, panel:wx.Panel) -> None:
         """
@@ -151,6 +150,13 @@ class Database(BaseSystemData):
         :type panel: wx.Panel
         """
         data = self._collect_panel_values(panel)
+
+        for field, value in data.items():
+            if value in self._EMPTY_FIELDS:
+                msg = f"The '{field}' field must have data in it."
+                self._log.warning(msg)
+                self._mf.statusbar_warning = msg
+
         await self._insert_values_in_data_table(data)
         panel.dirty = False
 
