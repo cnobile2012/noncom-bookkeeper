@@ -221,8 +221,8 @@ class PanelFactory(TomlMetaData):
         if dict_.get('instance'):
             klass.write(f"        self.{widget} = {widget}\n")
 
-        if (value := dict_.get('financial', False)):
-            klass.write(f"        {widget}.financial = {value}\n")
+        value = dict_.get('financial', False)
+        klass.write(f"        {widget}.financial = {value}\n")
 
     def date_picker_ctrl(self, klass, widget, value):
         dict_ = find_dict(value)

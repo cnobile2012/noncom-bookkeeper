@@ -47,6 +47,7 @@ class Database(BaseSystemData):
         #   c_time: <value>, m_time: <value>}, ...]
         self._report_types = []
         self._mf = StoreObjects().get_object('MainFrame')
+        self._org_data = None
 
     async def create_db(self):
         """
@@ -69,6 +70,10 @@ class Database(BaseSystemData):
             data = self._collect_panel_values(panel)
             await self._add_fields_to_field_type_table(data)
             values = await self.select_from_data_table(data)
+
+            if name == 'organization':
+                self._org_data = {value[0]: value[2] for value in values}
+
             self.populate_panel_values(name, panel, values)
 
     @property
@@ -136,7 +141,7 @@ class Database(BaseSystemData):
         """
         panel = self._mf.panels[name]
         data = self._collect_panel_values(panel)
-        return all([item != '' for item in data.values()])
+        return all([item not in ('', '0') for item in data.values()])
 
     async def save_to_database(self, panel:wx.Panel) -> None:
         """
@@ -174,11 +179,14 @@ class Database(BaseSystemData):
             elif name0 == 'ComboBox':
                 data[db_name] = c_set[0].GetSelection()
             elif name0 == 'StaticText':
+                value = c_set[1].GetValue()
+
                 if name1 == 'TextCtrl':
-                    data[db_name] = self._scrub_value(c_set[1].GetValue())
+                    financial = True if c_set[1].financial else False
+                    data[db_name] = self._scrub_value(value,
+                                                      financial=financial)
                 elif name1 == 'DatePickerCtrl':
-                    data[db_name] = self._scrub_value(c_set[1].GetValue(),
-                                                      convert_to_utc)
+                    data[db_name] = self._scrub_value(value, convert_to_utc)
 
         return data
 
@@ -205,6 +213,15 @@ class Database(BaseSystemData):
                     c_set[0].SetSelection(value)
                 elif name0 == 'StaticText':
                     if name1 == 'TextCtrl':
+                        financial = True if c_set[1].financial else False
+                        value = self.db_to_value(value) if financial else value
+
+                        if name == 'month':
+                            if (not value
+                                and db_name == 'total_membership_month'):
+                                value = self._org_data['total_membership']
+                            elif not value and db_name == 'treasurer_month':
+                                value = self._org_data['treasurer']
                         c_set[1].SetValue(value)
                     elif name1 == 'DatePickerCtrl':
                         c_set[1].SetValue(
@@ -397,8 +414,10 @@ class Database(BaseSystemData):
         name = name.replace('(', '').replace(')', '')
         return name.replace(' ', '_').replace(':', '').lower()
 
-    def _scrub_value(self, value, convert_to_utc=False):
-        if isinstance(value, str):
+    def _scrub_value(self, value, convert_to_utc=False, financial=False):
+        if financial:
+            value = self.value_to_db(value) if value != '' else '0'
+        elif isinstance(value, str):
             value = value.strip()
         elif isinstance(value, wx.DateTime):
             # We convert into an ISO 8601 format for the db.
@@ -438,7 +457,7 @@ class Database(BaseSystemData):
                                         f"string found {type(value)}")
         return int(float(value)*100)
 
-    def db_to_value(self, value:int) -> str:
+    def db_to_value(self, value:str) -> str:
         """
         Convert an integer from the database into a value sutable for
         displaying in a widget.
@@ -448,6 +467,5 @@ class Database(BaseSystemData):
         :return: A string representation of a currency value.
         :rtype: str
         """
-        assert isinstance(value, int), ("The argument 'value' can only be an "
-                                        f"integer found {type(value)}")
+        value = int(value)
         return f"{value/100:.2f}"
