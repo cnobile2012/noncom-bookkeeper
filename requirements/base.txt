@@ -4,8 +4,12 @@ wxPython
 appdirs
 tomlkit
 aiosqlite
+ephem
+geopy
+sunrisesunset
+timezonefinder
 #varname
 PyInstaller
 pyinstaller-hooks-contrib
-#pytz
+pytz
 #wxdo

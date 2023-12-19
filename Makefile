@@ -122,7 +122,6 @@ build-rpm:
 .PHONY	: clean clobber
 
 clean	:
-	@(cd ${DOCS_DIR}; make clean)
 	$(shell $(RM_CMD))
 
 clobber	: clean
