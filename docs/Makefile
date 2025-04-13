@@ -1,32 +1,25 @@
-#
-# Makefile
-# Development by Carl J. Nobile
+# Minimal makefile for Sphinx documentation
 #
 
-FQDN		= $(shell hostname --fqdn)
-DOCS_DIR	= $(shell pwd)
-SRC_DIR		= ${DOC_DIR}../src
-URL		= http://${FQDN}${DOC_DIR}/${API_DIR}/index.html
-TARBALL_NAME	= noncom-financial
+# You can set these variables from the command line.
+SPHINXOPTS    =
+SPHINXBUILD   = sphinx-build
+SPHINXPROJ    = NonCommericalBookkeeperApp
+SOURCEDIR     = source
+BUILDDIR      = build
 
-all	: api-docs
+# Put it first so that "make" without argument is like "make help".
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-#----------------------------------------------------------------------
-.PHONY	: app-docs
-app-docs:
-	@(cd ..; epydoc -v --docformat epytext \
-          --name "Noncommercial Accounting System" -o docs/api --show-private \
-          --show-imports --graph all --url "${URL}" ${SRC_DIR}/*.py \
-         )
-#----------------------------------------------------------------------
-tar	:
-	@(ln -s ${API_DIR} ${TARBALL_NAME}; \
-          tar -chzvf ${TARBALL_NAME}.tar.gz ${TARBALL_NAME})
-#----------------------------------------------------------------------
+.PHONY	: sphinx-apidoc
+sphinx-apidoc:
+	sphinx-apidoc -o source/ -H noncom-bookkeeper -A 'Carl J. Nobile' -V 1.0 \
+         -R 1.0.0 ../src
 
-clean	:
-	@rm -f *~ \#* .\#*
-	@rm -rf $(DOCS_DIR)/htmlcov
+.PHONY: help Makefile
 
-clobber	: clean
-	@rm -rf ${TARBALL_NAME} ${TARBALL_NAME}.tar.gz 
+# Catch-all target: route all unknown targets to Sphinx using the new
+# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
+%: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
