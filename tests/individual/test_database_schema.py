@@ -3,6 +3,7 @@
 #
 # Test database schema.
 #
+__docformat__ = "restructuredtext en"
 
 import os
 import sys
@@ -13,7 +14,7 @@ import asyncio
 import aiosqlite
 import ephem
 import pytz
-from sunrisesunset import SunriseSunset
+
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 
@@ -29,7 +30,6 @@ class DatabaseSchema:
     __REPORT_TYPE = 'report_type'
     __DATA = 'data'
     __REPORT_PIVOT = 'report_pivot'
-    __TEMPERAL_PIVOT = 'temporal_pivot'
     _TABLE_SCHEMA = (
         (__YEAR,
          'pk INTEGER NOT NULL PRIMARY KEY',
@@ -60,7 +60,6 @@ class DatabaseSchema:
          'mfk INTEGER NOT NULL'),
         (__REPORT_PIVOT,
          'tpfk INTEGER NOT NULL', 'rfk INTERGER NOT NULL',
-         f'FOREIGN KEY (tpfk) REFERENCES {__TEMPERAL_PIVOT} (rfk)',
          f'FOREIGN KEY (rfk) REFERENCES {__REPORT_TYPE} (pk)'),
          )
     _DB_PATH = '/tmp/test_db.sqlite3'
@@ -97,10 +96,11 @@ class DatabaseSchema:
     async def start(self):
         year = 2023
         month = 'Bahá'
-        await self.create_db()
         address = 'Fuquay Varina'
         self.timezone, self.lat, self.lon = self._find_timezone(address)
         self._add_sun_set_datetimes(year)
+
+        await self.create_db()
         if not await self._years: await self.add_years()
         if not await self._months: await self.add_months()
         if not await self._field_type: await self.add_field_type()

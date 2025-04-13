@@ -73,7 +73,7 @@ class MainFrame(MenuBar, wx.Frame):
 
         self.create_menu()
         StoreObjects().set_object(self.__class__.__name__, self)
-        asyncio.run(self.start())
+        # asyncio.run(self.start())
 
     async def start(self):
         """

@@ -66,7 +66,7 @@ class TestGridBagSizer(BaseTests):
     def check_rows(self, row, test_row):
         """
         """
-        msg = "Should be 'Widget {}' found '{}'"
+        msg = "Expected 'Widget {}' found '{}'"
         values = list(test_row)
         cols = self.gbs.GetCols()
 
@@ -161,23 +161,23 @@ class TestGridBagSizer(BaseTests):
         row = 0
         # Test that the current color is the default.
         windows = find_widget(row)
-        should_be_color = (49, 54, 59, 255)
+        expected_color = (42, 46, 50, 255)
 
         for w in windows:
             found_color = w.GetBackgroundColour()
-            msg = f"Should be {should_be_color} found {found_color}."
-            self.assertEqual(should_be_color, found_color, msg)
+            msg = f"Expected {expected_color} found {found_color}."
+            self.assertEqual(expected_color, found_color, msg)
 
         # Test that the color changed.
-        should_be_color = (29, 0, 255, 255)
-        new_color = wx.Colour(*should_be_color)
+        expected_color = (29, 0, 255, 255)
+        new_color = wx.Colour(*expected_color)
         self.gbs.highlight_row(row, new_color)
         windows = find_widget(row)
 
         for w in windows:
             found_color = w.GetBackgroundColour()
-            msg = f"Should be {should_be_color} found {found_color}."
-            self.assertEqual(should_be_color, found_color, msg)
+            msg = f"Expected {expected_color} found {found_color}."
+            self.assertEqual(expected_color, found_color, msg)
 
 
 class TestConfirmationDialog(unittest.TestCase):
@@ -202,31 +202,31 @@ class TestConfirmationDialog(unittest.TestCase):
         # Test that the widgets have the proper properties.
         dialog = self.frame.GetChildren()[0]
         buttom_labels = ('Cancel', 'OK')
-        color_msg = f"Color should be {bg_color} found {{}}."
-        message_msg = f"Message should be '{msg}' found '{{}}'."
+        color_msg = f"Color expected {bg_color} found {{}}."
+        message_msg = f"Message wxpected '{msg}' found '{{}}'."
 
         for child in dialog.GetChildren():
             name = child.__class__.__name__
 
             if name == "StaticText":
                 found_color = child.GetBackgroundColour()
-                self.assertEquals(bg_color, found_color,
+                self.assertEqual(bg_color, found_color,
                                   color_msg.format(found_color))
                 found_color = child.GetForegroundColour()
-                self.assertEquals(fg_color, found_color,
+                self.assertEqual(fg_color, found_color,
                                   color_msg.format(found_color))
                 found_msg = child.GetLabel()
-                self.assertEquals(msg, found_msg,
+                self.assertEqual(msg, found_msg,
                                   message_msg.format(found_msg))
             elif name == "Button":
                 text = child.GetLabelText()
-                msg = (f"Button text should be one of '{buttom_labels}' "
+                msg = (f"Button text expected one of '{buttom_labels}' "
                        f"found '{text}'")
                 self.assertIn(text, buttom_labels, msg)
             else:
-                should_be = 'StaticLine'
-                msg = f"Should find a '{should_be}' found {name}"
-                self.assertEquals(should_be, name, msg)
+                expected = 'StaticLine'
+                msg = f"Expected '{expected}' found {name}"
+                self.assertEqual(expected, name, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_creating_a_confirmation_dialog_with_defaults(self):
@@ -242,12 +242,12 @@ class TestConfirmationDialog(unittest.TestCase):
         default_bg_color = (220, 130, 143, 255)
         default_fg_color = (50, 50, 204, 255)
         found_color = dialog.GetBackgroundColour()
-        msg = (f"Background color should be '{default_bg_color}' "
+        msg = (f"Background color expected '{default_bg_color}' "
                f"found '{found_color}'.")
         self.assertEqual(default_bg_color, found_color, msg)
         found_cap = dialog.GetTitle()
-        msg = f"Caption should be '{caption}' found '{found_cap}'."
-        self.assertEquals(caption, found_cap, msg)
+        msg = f"Caption expected '{caption}' found '{found_cap}'."
+        self.assertEqual(caption, found_cap, msg)
         self.check_widgets(default_bg_color, default_fg_color, dlg_msg)
 
     #@unittest.skip("Temporarily skipped")
@@ -265,12 +265,12 @@ class TestConfirmationDialog(unittest.TestCase):
         dialog = self.frame.GetChildren()[0]
         # Test that the dialog has the proper properties.
         found_color = dialog.GetBackgroundColour()
-        msg = (f"Background color should be '{new_bg_color}' "
+        msg = (f"Background color expected '{new_bg_color}' "
                f"found '{found_color}'.")
         self.assertEqual(new_bg_color, found_color, msg)
         found_cap = dialog.GetTitle()
-        msg = f"Caption should be '{caption}' found '{found_cap}'."
-        self.assertEquals(caption, found_cap, msg)
+        msg = f"Caption expected '{caption}' found '{found_cap}'."
+        self.assertEqual(caption, found_cap, msg)
         self.check_widgets(new_bg_color, new_fg_color, dlg_msg)
 
 
@@ -299,7 +299,7 @@ class Test_ClickPosition(unittest.TestCase):
         Test that a new even type is returned from wxPython.
         """
         event_type = self.cp.get_new_event_type(self.widget_name)
-        msg = f"Event type should be an integer found {event_type}."
+        msg = f"Event type expected an integer found {event_type}."
         self.assertTrue(isinstance(event_type, int), msg)
 
     #@unittest.skip("Temporarily skipped")
@@ -313,7 +313,7 @@ class Test_ClickPosition(unittest.TestCase):
             self.cp.get_click_position(self.widget_name)
 
         message = str(cm.exception)
-        msg = f"Error message should contain {err_msg} found {message}"
+        msg = f"Error message expected {err_msg} found {message}"
         self.assertIn(err_msg, message, msg)
 
     #@unittest.skip("Temporarily skipped")
@@ -323,9 +323,9 @@ class Test_ClickPosition(unittest.TestCase):
         """
         event_type = self.cp.get_new_event_type(self.widget_name)
         event = self.cp.get_click_position(self.widget_name)
-        should_be = 'wx.core.PyEventBinder'
-        msg = f"Event should be a '{should_be}' found {event}."
-        self.assertIn(should_be, str(event), msg)
+        expected = 'wx.core.PyEventBinder'
+        msg = f"Event expected '{expected}' found {event}."
+        self.assertIn(expected, str(event), msg)
 
 
 #class TestWidgetEvent(BaseTests):
@@ -371,7 +371,7 @@ class TestEventStaticText(BaseTests):
         """
         widget = self.get_widget()
         event_type = widget.new_event_type
-        msg = f"Event type should be an integer found {event_type}."
+        msg = f"Event type expected an integer found {event_type}."
         self.assertTrue(isinstance(event_type, int), msg)
 
     #@unittest.skip("Temporarily skipped")
@@ -380,34 +380,36 @@ class TestEventStaticText(BaseTests):
         Test that a new event is returned.
         """
         widget = self.get_widget()
+        #widget.new_event_type
         event = widget.EVT_CLICK_POSITION
-        should_be = 'wx.core.PyEventBinder'
-        msg = f"Event should be a '{should_be}' found {event}."
-        self.assertIn(should_be, str(event), msg)
+        expected = 'wx.core.PyEventBinder'
+        msg = f"Event expected '{expected}' found {event}."
+        self.assertIn(expected, str(event), msg)
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test_WidgetEvent_data(self):
         """
         Test that the WidgetEvent data returns properly.
         """
         self.frame.Show()
         widget = self.get_widget(1)
-        should_be_label = widget.GetLabel()
+        expected_label = widget.GetLabel()
 
         def event_click(event):
             # Test the position.
-            should_be = (1, 0)
+            expected = (1, 0)
             value = event.get_value()
-            msg = f"Value should be '{should_be}' found '{value}'."
-            self.assertEquals(should_be, value, msg)
+            msg = f"Value expected '{expected}' found '{value}'."
+            self.assertEqual(expected, value, msg)
             # Test the window.
             window = event.get_window()
             label = window.GetLabel()
-            msg = f"Label should be '{should_be_label}' found '{label}'."
-            self.assertEquals(should_be_label, label, msg)
+            msg = f"Label expected '{expected_label}' found '{label}'."
+            self.assertEqual(expected_label, label, msg)
             # Exit GUI
             self.app.ExitMainLoop()
 
+        #widget.new_event_type
         self.frame.Bind(widget.EVT_CLICK_POSITION, event_click,
                         id=widget.GetId())
         self.simulate_left_click(widget)

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # Test confirmation dialog.
 #
+__docformat__ = "restructuredtext en"
 
 import os
 import sys

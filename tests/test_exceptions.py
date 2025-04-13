@@ -33,7 +33,7 @@ class TestExceptions(unittest.TestCase):
         should_be = InvalidTomlException._DEFAULT_MSG
         ex = str(cm.exception)
         msg = f"Should have message '{should_be}' found '{ex}'."
-        self.assertEquals(should_be, ex, msg)
+        self.assertEqual(should_be, ex, msg)
         msg = f"Should have error '{None}' found '{cm.exception.errors}'."
         self.assertIsNone(cm.exception.errors, msg)
 
@@ -50,6 +50,6 @@ class TestExceptions(unittest.TestCase):
         ex = str(cm.exception)
         errors = cm.exception.errors
         msg = f"Should have message '{should_be_msg}' found '{ex}'."
-        self.assertEquals(should_be_msg, ex, msg)
+        self.assertEqual(should_be_msg, ex, msg)
         msg = f"Should have error '{should_be_err}' found '{errors}'."
         self.assertEqual(should_be_err, errors, msg)

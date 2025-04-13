@@ -41,7 +41,7 @@ class TestSettings(unittest.TestCase):
         path = Settings.base_dir()
         should_be = Settings._BASE_DIR
         msg = f"Path should be '{should_be}' found '{path}'."
-        self.assertEquals(should_be, path, msg)
+        self.assertEqual(should_be, path, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_primary_developer(self):
@@ -51,7 +51,7 @@ class TestSettings(unittest.TestCase):
         dev = self.set.primary_developer
         should_be_dev = self.set._DEVELOPERS[0]
         msg = f"Should be '{should_be_dev}' found '{dev}'"
-        self.assertEquals(should_be_dev, dev, msg)
+        self.assertEqual(should_be_dev, dev, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_contributors(self):
@@ -62,13 +62,13 @@ class TestSettings(unittest.TestCase):
         cont = self.set.contributors(True)
         should_be_cont = self.set._DEVELOPERS
         msg = f"Should be '{should_be_cont}' found '{cont}'"
-        self.assertEquals(should_be_cont, cont, msg)
+        self.assertEqual(should_be_cont, cont, msg)
         # Test that a srting is returned.
         cont = self.set.contributors()
         should_be_cont = ''.join([s+'\n' for s in self.set._DEVELOPERS]
                                  ).strip()
         msg = f"Should be '{should_be_cont}' found '{cont}'"
-        self.assertEquals(should_be_cont, cont, msg)
+        self.assertEqual(should_be_cont, cont, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_logger_name(self):
@@ -78,7 +78,7 @@ class TestSettings(unittest.TestCase):
         name = self.set.logger_name
         should_be_name = self.set._LOGGER_NAME
         msg = f"Should be '{should_be_name}' found '{name}'."
-        self.assertEquals(should_be_name, name, msg)
+        self.assertEqual(should_be_name, name, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_logfile_name(self):
@@ -88,7 +88,7 @@ class TestSettings(unittest.TestCase):
         name = self.set.logfile_name
         should_be_name = self.set._LOGFILE_NAME
         msg = f"Should be '{should_be_name}' found '{name}'."
-        self.assertEquals(should_be_name, name, msg)
+        self.assertEqual(should_be_name, name, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_data_file_name(self):
@@ -98,7 +98,7 @@ class TestSettings(unittest.TestCase):
         df = self.set.data_file_name
         should_be_df = self.set._DATA_FILE
         msg = f"Should be '{should_be_df}' found '{df}'."
-        self.assertEquals(should_be_df, df, msg)
+        self.assertEqual(should_be_df, df, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_user_data_fullpath(self):
@@ -109,7 +109,7 @@ class TestSettings(unittest.TestCase):
         should_be_fp = os.path.join(self.set.user_data_dir,
                                     self.set.data_file_name)
         msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEquals(should_be_fp, fp, msg)
+        self.assertEqual(should_be_fp, fp, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_user_config_fullpath(self):
@@ -120,7 +120,7 @@ class TestSettings(unittest.TestCase):
         should_be_fp = os.path.join(self.set.user_config_dir,
                                     self.set._Settings__user_toml)
         msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEquals(should_be_fp, fp, msg)
+        self.assertEqual(should_be_fp, fp, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_user_app_config_fullpath(self):
@@ -131,7 +131,7 @@ class TestSettings(unittest.TestCase):
         should_be_fp = os.path.join(self.set.user_config_dir,
                                     self.set._Settings__app_toml)
         msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEquals(should_be_fp, fp, msg)
+        self.assertEqual(should_be_fp, fp, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_user_log_fullpath(self):
@@ -142,7 +142,7 @@ class TestSettings(unittest.TestCase):
         should_be_fp = os.path.join(self.set.user_log_dir,
                                     self.set.logfile_name)
         msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEquals(should_be_fp, fp, msg)
+        self.assertEqual(should_be_fp, fp, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_local_config_fullpath(self):
@@ -153,7 +153,7 @@ class TestSettings(unittest.TestCase):
         should_be_fp = os.path.join(self.set._LOCAL_CONFIG,
                                     self.set._Settings__local_toml)
         msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEquals(should_be_fp, fp, msg)
+        self.assertEqual(should_be_fp, fp, msg)
 
 
 class TestBaseSystemData(unittest.TestCase):
@@ -306,14 +306,14 @@ class TestTomlMetaData(BaseTest):
         panels = self.tmd.panels
         num_panels = len(panels)
         msg = f"There should be {self._NUM_PANELS}, found {num_panels}."
-        self.assertEquals(self._NUM_PANELS, num_panels, msg)
+        self.assertEqual(self._NUM_PANELS, num_panels, msg)
         num_in_panel = 2
         msg = (f"There should be 2 strings in each panel object, found {{}} "
                f"in panel {{}}.")
 
         for panel in panels:
             num = len(panel)
-            self.assertEquals(num_in_panel, num, msg.format(num, panel))
+            self.assertEqual(num_in_panel, num, msg.format(num, panel))
 
     #@unittest.skip("Temporarily skipped")
     def test_months_property(self):
@@ -323,7 +323,7 @@ class TestTomlMetaData(BaseTest):
         months = self.tmd.months
         num_months = len(months)
         msg = f"There should be {self.NUM_MONTHS}, found {num_months}."
-        self.assertEquals(self.NUM_MONTHS, num_months, msg)
+        self.assertEqual(self.NUM_MONTHS, num_months, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_locale_prefix_property(self):
@@ -337,7 +337,7 @@ class TestTomlMetaData(BaseTest):
             found_num_prefix = len(locale_prefix)
             should_be_num = 2
             msg = f"There should be {should_be_num}, found {found_num_prefix}."
-            self.assertEquals(should_be_num, found_num_prefix, msg)
+            self.assertEqual(should_be_num, found_num_prefix, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_font_12_normal_property(self):
@@ -349,12 +349,12 @@ class TestTomlMetaData(BaseTest):
         should_be_points = 12
         found_points = font_12_normal[0]
         msg = f"The points should be {should_be_points}, found {found_points}."
-        self.assertEquals(should_be_points, found_points, msg)
+        self.assertEqual(should_be_points, found_points, msg)
         # Test weight
         should_be_weight = 'FONTWEIGHT_NORMAL'
         found_weight = font_12_normal[3]
         msg = f"The weight should be {should_be_weight}, found {found_weight}."
-        self.assertEquals(should_be_weight, found_weight, msg)
+        self.assertEqual(should_be_weight, found_weight, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_font_12_bold_property(self):
@@ -366,12 +366,12 @@ class TestTomlMetaData(BaseTest):
         should_be_points = 12
         found_points = font_12_bold[0]
         msg = f"The points should be {should_be_points}, found {found_points}."
-        self.assertEquals(should_be_points, found_points, msg)
+        self.assertEqual(should_be_points, found_points, msg)
         # Test weight
         should_be_weight = 'FONTWEIGHT_BOLD'
         found_weight = font_12_bold[3]
         msg = f"The weight should be {should_be_weight}, found {found_weight}."
-        self.assertEquals(should_be_weight, found_weight, msg)
+        self.assertEqual(should_be_weight, found_weight, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_font_10_normal_property(self):
@@ -383,12 +383,12 @@ class TestTomlMetaData(BaseTest):
         should_be_points = 10
         found_points = font_10_normal[0]
         msg = f"The points should be {should_be_points}, found {found_points}."
-        self.assertEquals(should_be_points, found_points, msg)
+        self.assertEqual(should_be_points, found_points, msg)
         # Test weight
         should_be_weight = 'FONTWEIGHT_NORMAL'
         found_weight = font_10_normal[3]
         msg = f"The weight should be {should_be_weight}, found {found_weight}."
-        self.assertEquals(should_be_weight, found_weight, msg)
+        self.assertEqual(should_be_weight, found_weight, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_font_10_bold_property(self):
@@ -400,12 +400,12 @@ class TestTomlMetaData(BaseTest):
         should_be_points = 10
         found_points = font_10_bold[0]
         msg = f"The points should be {should_be_points}, found {found_points}."
-        self.assertEquals(should_be_points, found_points, msg)
+        self.assertEqual(should_be_points, found_points, msg)
         # Test weight
         should_be_weight = 'FONTWEIGHT_BOLD'
         found_weight = font_10_bold[3]
         msg = f"The weight should be {should_be_weight}, found {found_weight}."
-        self.assertEquals(should_be_weight, found_weight, msg)
+        self.assertEqual(should_be_weight, found_weight, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_get_font(self):
@@ -420,9 +420,9 @@ class TestTomlMetaData(BaseTest):
 
         for font_type, values in fonts.items():
             font = self.tmd.get_font(font_type)
-            self.assertEquals(values[0], font[0],
+            self.assertEqual(values[0], font[0],
                               msg.format('points', values[0], font[0]))
-            self.assertEquals(values[1], font[3],
+            self.assertEqual(values[1], font[3],
                               msg.format('weight', values[0], font[3]))
 
 
@@ -637,11 +637,11 @@ class TestTomlAppConfig(BaseTest):
         val_msg = "Value should be a list, found '{}'."
 
         for j, (outer_key, values) in enumerate(self.tac.app_config.items()):
-            self.assertEquals(outer_key_list[j], outer_key,
+            self.assertEqual(outer_key_list[j], outer_key,
                               key_msg.format(outer_key))
 
             for k, (inner_key, value) in enumerate(values.items()):
-                self.assertEquals(inner_key_list[k], inner_key,
+                self.assertEqual(inner_key_list[k], inner_key,
                                   key_msg.format(inner_key))
                 self.assertTrue(isinstance(value, list), val_msg.format(value))
 
@@ -730,7 +730,7 @@ class TestTomlAppConfig(BaseTest):
         self.tac.update_app_config('app_size', new_key, new_value)
         value = self.tac.get_value('app_size', new_key)
         msg = f"Should be '{new_value}' found '{value}'."
-        self.assertEquals(new_value, value, msg)
+        self.assertEqual(new_value, value, msg)
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(TomlAppConfig, 'user_app_config_fullpath',
@@ -759,7 +759,7 @@ class TestTomlAppConfig(BaseTest):
         self.tac.update_app_config(new_table, new_key, new_value)
         value = self.tac.get_value(new_table, new_key)
         msg = f"Should be '{new_value}' found '{value}'."
-        self.assertEquals(new_value, value, msg)
+        self.assertEqual(new_value, value, msg)
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(TomlAppConfig, 'user_app_config_fullpath',

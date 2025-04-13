@@ -57,11 +57,11 @@ class Logger:
             formatter = logging.Formatter(self._format)
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
-        elif file_path: # Creates a root logger to a file.
+        elif file_path: # Creates a file root logger.
             logging.basicConfig(filename=file_path, format=self._format,
                                 level=level, force=True)
             self.logger = logging.getLogger()
-        else: # Creates a root logger to stdout.
+        else: # Creates a stdout root logger.
             logging.basicConfig(stream=sys.stdout, format=self._format,
                                 level=level, force=True)
             self.logger = logging.getLogger()

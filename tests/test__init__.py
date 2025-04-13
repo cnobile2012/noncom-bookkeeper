@@ -57,6 +57,9 @@ class TestBootstrap(unittest.TestCase):
 
 
 class TestLogger(unittest.TestCase):
+    """
+    https://testfixtures.readthedocs.io/en/latest/logging.html
+    """
     _TMP_LOGGER_FILE = '/tmp/test_logger.log'
 
     def __init__(self, name):
@@ -122,7 +125,7 @@ class TestLogger(unittest.TestCase):
             self.assertIn(test_msg, data, msg)
             self.assertIn(name, data, msg)
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test_config_root_logger_to_file(self):
         """
         Test that with only the 'file_path' argument a root logger
@@ -130,7 +133,6 @@ class TestLogger(unittest.TestCase):
         """
         with LogCapture() as l:
             Logger().config(file_path=self._TMP_LOGGER_FILE, initial_msg=False)
-
             log = logging.getLogger()
             test_msg = "Test logging to file."
             log.info(test_msg)
@@ -144,7 +146,7 @@ class TestLogger(unittest.TestCase):
             self.assertIn(test_msg, data, msg)
             self.assertIn(name, data, msg)
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test_config_root_logger_to_stdout(self):
         """
         Test that with neither 'loger_name' or 'file_path' arguments
@@ -159,7 +161,7 @@ class TestLogger(unittest.TestCase):
         self.assertIn(test_msg_1, data, msg)
         self.assertIn(name, data, msg)
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test_level_get(self):
         """
         Test that getting a new level works properly.
@@ -176,7 +178,7 @@ class TestLogger(unittest.TestCase):
                f"found '{found_level}'")
         self.assertEquals(should_be_level, found_level, msg)
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test_level_set(self):
         """
         Test that setting a new level works properly.

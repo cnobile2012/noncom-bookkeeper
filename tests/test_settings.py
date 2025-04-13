@@ -39,7 +39,7 @@ class TestPaths(unittest.TestCase):
                    if var.startswith('widget')]
         found = len(widgets)
         msg = f"Should be '{should_be_num}' widgets found '{found}'"
-        self.assertEquals(should_be_num, found, msg)
+        self.assertEqual(should_be_num, found, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_background_color(self):
@@ -51,4 +51,4 @@ class TestPaths(unittest.TestCase):
         should_be = self.paths._bg_color
         bg_color = self.paths.background_color
         msg = f"Should be {should_be} found {bg_color}"
-        self.assertEquals(should_be, bg_color, msg)
+        self.assertEqual(should_be, bg_color, msg)

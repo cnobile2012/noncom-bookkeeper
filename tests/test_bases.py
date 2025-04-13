@@ -36,7 +36,7 @@ class TestBases(unittest.TestCase):
         msg = f"Should find a 'dict' found {type(dict_)}"
         self.assertTrue(isinstance(dict_, dict), msg)
         msg = f"Should find a 'dict' of non zero length found {dict_}"
-        self.assertEquals(len(dict_), 2, msg)
+        self.assertEqual(len(dict_), 2, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_find_dict_not_found(self):
@@ -65,9 +65,9 @@ class TestBases(unittest.TestCase):
             self.assertTrue(isinstance(v, int), msg.format(v))
 
         msg = f"Should have three integer parts to version found {idx}"
-        self.assertEquals(3, idx, msg)
+        self.assertEqual(3, idx, msg)
         msg = f"Should find pre-release (rc#) found {ver_list[-1]}"
-        self.assertEquals(os.environ['PR_TAG'], ver_list[-1], msg)
+        self.assertEqual(os.environ['PR_TAG'], ver_list[-1], msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_background_color(self):
@@ -82,7 +82,7 @@ class TestBases(unittest.TestCase):
         fs = FakeSubclass()
         bg_color = fs.background_color
         msg = f"Should return RGB color '{fs._bg_color}' found '{bg_color}'."
-        self.assertEquals(fs._bg_color, bg_color, msg)
+        self.assertEqual(fs._bg_color, bg_color, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test__setup_sizer_height_correctly(self):
@@ -122,7 +122,7 @@ class TestBases(unittest.TestCase):
         msg = f"Should find a 'dict' found {type(dict_)}"
         self.assertTrue(isinstance(dict_, dict), msg)
         msg = f"Should find a 'dict' of non zero length found {dict_}"
-        self.assertEquals(len(dict_), 2, msg)
+        self.assertEqual(len(dict_), 2, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_locality_prefix_do_event(self):

@@ -6,38 +6,70 @@ __docformat__ = "restructuredtext en"
 
 import aiosqlite
 import time
-from datetime import datetime
+import datetime as dtime
 import wx
 
-from .config import BaseSystemData
+from .config import TomlMetaData
 from .utilities import StoreObjects
 
+import ephem
+from zoneinfo import ZoneInfo
+from badidatetime import UTC, datetime
 
-class Database(BaseSystemData):
+from geopy.geocoders import Nominatim
+from timezonefinder import TimezoneFinder
+
+
+class Database(TomlMetaData):
+    __YEAR = 'year'
+    __MONTH = 'month'
     __FIELD_TYPE = 'field_type'
     __REPORT_TYPE = 'report_type'
     __DATA = 'data'
+    __REPORT_PIVOT = 'report_pivot'
     _SCHEMA = (
-        (__FIELD_TYPE, 'pk INTEGER NOT NULL PRIMARY KEY',
+        (__YEAR,
+         'pk INTEGER NOT NULL PRIMARY KEY',
+         'start_date TEXT UNIQUE NOT NULL',
+         'c_time TEXT NOT NULL',
+         'm_time TEXT NOT NULL'),
+        (__MONTH,
+         'pk INTEGER NOT NULL PRIMARY KEY',
+         'month TEXT UNIQUE NOT NULL',
+         'c_time TEXT NOT NULL',
+         'm_time TEXT NOT NULL'),
+        (__FIELD_TYPE,
+         'pk INTEGER NOT NULL PRIMARY KEY',
          'field TEXT UNIQUE NOT NULL',
-         'rids INTEGER DEFAULT 0 NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
-        (__REPORT_TYPE, 'pk INTEGER NOT NULL PRIMARY KEY',
+        (__REPORT_TYPE,
+         'pk INTEGER NOT NULL PRIMARY KEY',
          'report TEXT UNIQUE NOT NULL',
-         'rid INTEGER UNIQUE NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
-        (__DATA, 'pk INTEGER NOT NULL PRIMARY KEY',
+        (__DATA,
+         'pk INTEGER NOT NULL PRIMARY KEY',
          'value NOT NULL',
-         'fk INTEGER NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL',
-         f'FOREIGN KEY (fk) REFERENCES {__FIELD_TYPE} (pk)')
+         'ffk INTEGER NOT NULL',
+         'mfk INTEGER NOT NULL'),
+        (__REPORT_PIVOT,
+         'rfk INTERGER NOT NULL', 'dfk INTEGER NOT NULL',
+         f'FOREIGN KEY (rfk) REFERENCES {__REPORT_TYPE} (pk)',
+         f'FOREIGN KEY (dfk) REFERENCES {__DATA} (pk)'),
         )
     _TABLES = [table[0] for table in  _SCHEMA]
     _TABLES.sort()
     _EMPTY_FIELDS = ('', '0')
+    __DEFAULT_LOCATION = 'Tehran Persia'
+    __TIMEZONE = 'Asia/Tehran'
+    __LAT = 35.6892523
+    __LON = 51.3896004
+    # ((MOD(year, 4) = 0) * ((MOD(year, 100) <> 0) + (MOD(year, 400) = 0)) = 1)
+    LEAP_YEAR = lambda self, year: (
+        (year % 4 == 0) * ((year % 100 != 0) + (year % 400 == 0)) == 1)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,6 +80,7 @@ class Database(BaseSystemData):
         #   c_time: <value>, m_time: <value>}, ...]
         self._report_types = []
         self._mf = StoreObjects().get_object('MainFrame')
+        self._sunset_year_data = [] # Updated later
         self._org_data = None
 
     async def create_db(self):
@@ -70,7 +103,9 @@ class Database(BaseSystemData):
         for name, panel in self._mf.panels.items():
             data = self._collect_panel_values(panel)
             await self._add_fields_to_field_type_table(data)
-            values = await self.select_from_data_table(data)
+
+
+            values = await self.select_from_data_table(b_year, b_month, data)
 
             if name == 'organization':
                 self._org_data = {value[0]: value[2] for value in values}
@@ -131,7 +166,7 @@ class Database(BaseSystemData):
         """
         return self._check_panels_for_entries('month')
 
-    def _check_panels_for_entries(self, name:str) -> bool:
+    def _check_panels_for_entries(self, name: str) -> bool:
         """
         Check that the given panel name has entries.
 
@@ -142,7 +177,7 @@ class Database(BaseSystemData):
         data = self._collect_panel_values(panel)
         return all([item not in self._EMPTY_FIELDS for item in data.values()])
 
-    async def save_to_database(self, panel:wx.Panel) -> None:
+    async def save_to_database(self, panel: wx.Panel) -> None:
         """
         Save the given panel data to the database.
 
@@ -157,11 +192,27 @@ class Database(BaseSystemData):
                 self._log.warning(msg)
                 self._mf.statusbar_warning = msg
 
+            if name == 'organization' and self.config_type == 'bahai':
+                print(data)
+                start_year = data['start_year']
+                tz, lat, lon = self._find_timezone(address)
+                self._sunset_year_data[:] = self._get_sunset_datetimes(
+                    start_year, tz)
+                month = None
+            else:
+                start_time = None
+                month = None
+
+
+        # *** TODO *** Lots more to do here.
+
+
+
         await self._insert_values_in_data_table(data)
         panel.dirty = False
 
-    def _collect_panel_values(self, panel:wx.Panel,
-                             convert_to_utc:bool=False) -> dict:
+    def _collect_panel_values(self, panel: wx.Panel,
+                              convert_to_utc: bool=False) -> dict:
         """
         Collects the data from the panel's widgets.
 
@@ -196,8 +247,8 @@ class Database(BaseSystemData):
 
         return data
 
-    def populate_panel_values(self, name:str, panel:wx.Panel,
-                              values:list) -> None:
+    def populate_panel_values(self, name: str, panel: wx.Panel,
+                              values: list) -> None:
         """
         Poplulate the named panel with the database values.
 
@@ -233,7 +284,7 @@ class Database(BaseSystemData):
                         c_set[1].SetValue(
                             self._convert_date_to_local_time(value))
 
-    def _find_children(self, panel:wx.Panel) -> list:
+    def _find_children(self, panel: wx.Panel) -> list:
         """
         Find the children in the panel that hold data.
 
@@ -248,12 +299,9 @@ class Database(BaseSystemData):
             add = False
             name = child.__class__.__name__
 
-            if name == 'StaticLine': continue
-            elif name == 'StaticText':
-                font = child.GetFont()
-                ps = font.GetPointSize()
-                w = font.GetWeight()
-                if ps == 12 and w == wx.FONTWEIGHT_BOLD: continue
+            if (name == 'StaticLine' or
+                name == 'StaticText' and not child.GetLabel().endswith(':')):
+                continue
             elif name == 'ComboBox':
                 add = True
 
@@ -262,7 +310,7 @@ class Database(BaseSystemData):
 
         return [children[i:i+2] for i in range(0, len(children), 2)]
 
-    async def _add_fields_to_field_type_table(self, data:dict) -> None:
+    async def _add_fields_to_field_type_table(self, data: dict) -> None:
         """
         Add fields to the FieldType table if they don't already exist.
 
@@ -277,7 +325,7 @@ class Database(BaseSystemData):
         if fields:
             await self._insert_field_type_data(fields)
 
-    async def _select_from_field_type_table(self, data:dict) -> list:
+    async def _select_from_field_type_table(self, data: dict) -> list:
         """
         Read from the FieldType the fields in the data argument.
 
@@ -294,7 +342,7 @@ class Database(BaseSystemData):
                  f'("{fields}");')
         return await self._do_select_query(query)
 
-    async def _insert_field_type_data(self, fields:set) -> None:
+    async def _insert_field_type_data(self, fields: set) -> None:
         """
         Insert fields into the FieldType table.
 
@@ -302,16 +350,25 @@ class Database(BaseSystemData):
                        [<field name>,...].
         :type fields: set
         """
-        now = datetime.utcnow().isoformat()
+        now = dtime.datetime.utcnow().isoformat()
         data = [(field, now, now) for field in fields]
         query = (f"INSERT INTO {self.__FIELD_TYPE} (field, c_time, m_time) "
                  "VALUES (?, ?, ?)")
         await self._do_insert_query(query, data)
 
-    async def select_from_data_table(self, data:dict) -> list:
+    async def select_from_data_table(self, year: int, month: int,
+                                     data: dict) -> list:
         """
         Reads a row or rows from the Data table.
 
+        .. note::
+
+           We convert a Baha'i year and month to a Gregorian year and month.
+
+        :param year: A Baha'i year
+        :type year: int
+        :param month: A Baha'i month
+        :type month: int
         :param data: The data from the any panel  in the form of:
                      {<field name>: <value>,...}.
         :type data: dict
@@ -319,13 +376,26 @@ class Database(BaseSystemData):
         :rtype: list
         """
         fields = '", "'.join(data)
-        query = (f'SELECT ft.field, ft.pk, d.value, d.c_time, d.m_time '
-                 f'FROM {self.__DATA} d JOIN ('
-                 f'SELECT pk, field FROM {self.__FIELD_TYPE}) ft '
-                 f'ON ft.pk = d.fk AND field IN ("{fields}");')
-        return await self._do_select_query(query)
 
-    async def _insert_values_in_data_table(self, data:dict) -> None:
+        if year and month:
+            params = (str(year), str(year+1), month)
+            query = (
+                'SELECT d.pk, f.field, d.value, d.c_time, d.m_time, '
+                'y1.start_date, y2.start_date AS end_date, m.month '
+                f'FROM {self.__DATA} d '
+                f'JOIN {self.__FIELD_TYPE} f ON f.pk = d.ffk '
+                f'AND field IN ("{fields}")'
+                f'JOIN {self.__YEAR} y1 ON substr(y1.start_date, 1, 4) = ?'
+                f'JOIN {self.__YEAR} y2 ON substr(y2.start_date, 1, 4) = ?'
+                f'JOIN {self.__MONTH} m ON m.pk = d.mfk AND month = ?'
+                )
+        else:
+            pass
+
+
+        return await self._do_select_query(query, params)
+
+    async def _insert_values_in_data_table(self, data: dict) -> None:
         """
         Insert values into the Data table.
 
@@ -334,10 +404,10 @@ class Database(BaseSystemData):
         :type data: dict
         """
         values = await self.select_from_data_table(data)
+        now = dtime.datetime.utcnow().isoformat()
 
         if not values: # Do insert
             items = await self._select_from_field_type_table(data)
-            now = datetime.utcnow().isoformat()
             query = (f"INSERT INTO {self.__DATA} (value, fk, c_time, m_time) "
                      "VALUES (:value, :fk, :c_time, :m_time);")
             fields = []
@@ -349,7 +419,6 @@ class Database(BaseSystemData):
 
             await self._do_insert_query(query, fields)
         else: # Do update
-            now = datetime.utcnow().isoformat()
             query = (f"UPDATE {self.__DATA} SET value = :value, "
                      "m_time = :m_time WHERE fk = :pk")
             fields = []
@@ -360,7 +429,7 @@ class Database(BaseSystemData):
 
             await self._do_update_query(query, fields)
 
-    async def _do_select_query(self, query:str) -> list:
+    async def _do_select_query(self, query: str, params: tuple=()) -> list:
         """
         Do the actual query and return the results.
 
@@ -370,12 +439,12 @@ class Database(BaseSystemData):
         :rtype: list
         """
         async with aiosqlite.connect(self.user_data_fullpath) as db:
-            async with db.execute(query) as cursor:
+            async with db.execute(query, params) as cursor:
                 values = await cursor.fetchall()
 
         return values
 
-    async def _do_insert_query(self, query:str, data:list) -> None:
+    async def _do_insert_query(self, query: str, data: list) -> None:
         """
         Do the insert query.
 
@@ -388,7 +457,7 @@ class Database(BaseSystemData):
             await db.executemany(query, data)
             await db.commit()
 
-    async def _do_update_query(self, query:str, data:list) -> None:
+    async def _do_update_query(self, query: str, data: list) -> None:
         """
         Do the update query.
 
@@ -401,7 +470,7 @@ class Database(BaseSystemData):
             await db.executemany(query, data)
             await db.commit()
 
-    def _find_fields(self, new:list, old:list) -> set:
+    def _find_fields(self, new: list, old: list) -> set:
         """
         Find the fields to select or insert.
 
@@ -416,11 +485,12 @@ class Database(BaseSystemData):
         old_fields = set(old)
         return new_fields - old_fields
 
-    def _make_db_name(self, name):
+    def _make_db_name(self, name: str):
         name = name.replace('(', '').replace(')', '')
         return name.replace(' ', '_').replace(':', '').lower()
 
-    def _scrub_value(self, value, convert_to_utc=False, financial=False):
+    def _scrub_value(self, value, convert_to_utc: bool=False,
+                     financial: bool=False):
         if financial:
             value = self.value_to_db(value) if value != '' else '0'
         elif isinstance(value, str):
@@ -432,8 +502,9 @@ class Database(BaseSystemData):
 
         return value
 
-    def _convert_date_to_local_time(self, value:str,
-                                    convert_from_utc=False) -> wx.DateTime:
+    def _convert_date_to_local_time(self, value: str,
+                                    convert_from_utc: bool=False
+                                    ) -> wx.DateTime:
         """
         """
         dt = wx.DateTime()
@@ -445,7 +516,7 @@ class Database(BaseSystemData):
 
         return dt
 
-    def value_to_db(self, value:str) -> int:
+    def value_to_db(self, value: str) -> int:
         """
         Convert the text currency value to an integer.
 
@@ -463,7 +534,7 @@ class Database(BaseSystemData):
                                         f"string found {type(value)}")
         return int(float(value)*100)
 
-    def db_to_value(self, value:str) -> str:
+    def db_to_value(self, value: str) -> str:
         """
         Convert an integer from the database into a value sutable for
         displaying in a widget.
@@ -475,3 +546,125 @@ class Database(BaseSystemData):
         """
         value = int(value)
         return f"{value/100:.2f}"
+
+    async def _do_insert_query(self, query:str, data:list) -> None:
+        async with aiosqlite.connect(self.user_data_fullpath) as db:
+            await db.executemany(query, data)
+            await db.commit()
+
+    def _find_timezone(self, address: str):
+        geolocator = Nominatim(user_agent='nc-bookkeeper')
+        location = geolocator.geocode(address)
+
+        if location:
+            raw = location.raw
+            lat = float(raw['lat'])
+            lon = float(raw['lon'])
+            tf = TimezoneFinder()
+            tz = tf.timezone_at(lng=lon, lat=lat)
+        else:
+            address = "Not Known"
+            tz = lat = lon = ''
+            msg = f"Cannot find the timezone for '{address}'."
+            self._mf.statusbar_error = msg
+
+        return tz, lat, lon
+
+    def _get_sunset_datetimes(self, start_year: int, timezone: str) -> list:
+        """
+        Get the sunset for any timezone.
+
+        :param start_year: The current Gregorian year.
+        :type start_year: int
+        :param timezone: The timezone for the area in question.
+        :type timezone: str
+        :return: A list of ISO formatted current and next years.
+        :rtype: list
+        """
+        return [self._get_sunset(self._get_vernal_equinox(year, timezone))
+                for year in (start_year, start_year+1)]
+
+    def _get_vernal_equinox(self, year: int, timezone: str) -> dtime.datetime:
+        zone = ZoneInfo(timezone)
+        # Get the UTC time of the vernal equinox then make it aware.
+        # Convert it to local time to get the sun set for the given
+        # address then convert it back to UTC time.
+        utc_dt = ephem.next_vernal_equinox(str(year)).datetime()
+        utc_dt = utc_dt.replace(tzinfo=UTC)
+        return utc_dt.astimezone(zone)
+
+    def _get_sunset(self, date: dtime.datetime, utc: bool=True,
+                    iso: bool=True) -> dtime.datetime:
+        srss = SunriseSunset(date, self.__LAT, self.__LON)
+        rise_time, set_time = srss.sun_rise_set
+        utc_set_time = set_time.astimezone(UTC) if utc else set_time
+        return utc_set_time.isoformat() if iso else utc_set_time
+
+    def _local_to_utc_time(self, dt: dtime.datetime):
+        local_tz = ZoneInfo(self.__TIMEZONE)
+        local_dt = dt.replace(tzinfo=local_tz)
+        return local_dt.astimezone(UTC)
+
+    def _utc_to_local_time(self, dt: dtime.datetime):
+        utc_dt = dt.replace(tzinfo=UTC)
+        local_tz = ZoneInfo(self.__TIMEZONE)
+        return utc_dt.astimezone(local_tz)
+
+    def _convert_bahai_to_gregorian_year(self, year: str) -> int:
+        """
+        Convert a Baha'i year to a Gregorian year. If a Gregorian year is
+        passed in, it will not be changed unless it is below 1000.
+
+        :param year: A Baha'i year.
+        :type year: str
+        :return: The converted year
+        :rtype: int
+        """
+        start_year = 1843
+        year = int(year)
+        if year < 1000: year += 1843
+        return year
+
+    def _convert_gregorian_to_bahai_year(self, year: str) -> int:
+        """
+        Convert a Gregorian year to a Baha'i year. If a Baha'i year is
+        passed in, it will not be changed unless it is below 1000.
+
+        :param year: A Gregorian year.
+        :type year: str
+        :return: The converted year
+        :rtype: int
+        """
+        start_year = 1843
+        year = int(year)
+        if year > 1000: year - 1843
+        return year
+
+    def _get_bahai_month_from_gregorian_date(self, today:dtime.date) -> str:
+        """
+        Get the Baha'i month from the localized gregorian date.
+
+        :param today: A Gergorian date for today.
+        :type today: dtime.date
+        :return: Baha'i month.
+        :rtype: str
+        """
+        year_gregorian_days = (today-time.date(today.year, 1, 1)).days+1
+        b_year = today.year - 1843 if self.LEAP_YEAR(today.year) else 1844
+        #days_gregorian_year = 366 if self.LEAP_YEAR(today.year) else 365
+        #days_in_bahai_year = 366 if self.LEAP_YEAR(b_year) else 365
+
+        add = 1 if self.LEAP_YEAR(b_year) else 0
+        # The magic number 78 is the number of days into the Gregorian year
+        # that indicates the start of the Baha'i year. We add 1 if it is a
+        # leap year.
+        bahai_numerical_month = round((year_gregorian_days - 78 + add) / 19)
+
+        #if bahai_numerical_month > 18:
+
+
+
+        return bahai_numerical_month
+
+        #months = self.months
+

@@ -40,9 +40,9 @@ class Settings(AppDirs):
         # The two lines below read an environment variable which is used
         # during the app build process. The default is to use the Baha'i
         # configuration.
-        self.config_type = os.environ.get('NCB_TYPE', 'bahai')
-        self.__user_toml = self._CONFIG_FILES['user'][self.config_type]
-        self.__local_toml = self._CONFIG_FILES['local'][self.config_type]
+        self.__config_type = os.environ.get('NCB_TYPE', 'bahai')
+        self.__user_toml = self._CONFIG_FILES['user'][self.__config_type]
+        self.__local_toml = self._CONFIG_FILES['local'][self.__config_type]
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
 
@@ -113,6 +113,9 @@ class Settings(AppDirs):
     def local_config_fullpath(self):
         return os.path.join(self._LOCAL_CONFIG, self.__local_toml)
 
+    @property
+    def config_type(self):
+        return self.__config_type
 
 class BaseSystemData(Settings):
     """

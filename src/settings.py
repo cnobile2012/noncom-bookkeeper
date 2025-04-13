@@ -18,6 +18,7 @@ class Paths(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.create_display()
+        self.dirty = False
 
     def create_display(self):
         self.title = '''Application Paths'''
