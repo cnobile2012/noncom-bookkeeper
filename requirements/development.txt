@@ -3,12 +3,13 @@
 
 coverage
 wheel
-twine
-mock
-pynose
+#twine
+flake8
+hatch
+pytest
 testfixtures
-
 ipython
 
 Sphinx
 sphinx_rtd_theme
+sphinx_new_tab_link

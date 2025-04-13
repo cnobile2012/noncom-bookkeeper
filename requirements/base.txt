@@ -6,10 +6,11 @@ tomlkit
 aiosqlite
 ephem
 geopy
-sunrisesunset
+badidatetime
 timezonefinder
 #varname
 PyInstaller
 pyinstaller-hooks-contrib
 pytz
 #wxdo
+#mpmath

@@ -12,8 +12,7 @@ include include.mk
 
 TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
 PREFIX		= $(shell pwd)
-BASE_DIR	= $(shell echo $${PWD\#\#*/})
-TEST_TAG	= # Define the rc<version>
+BASE_DIR	= $(shell basename $(PREFIX))
 PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
 APP_NAME	= nc-bookkeeper
 DOCS_DIR	= $(PREFIX)/docs
@@ -24,6 +23,7 @@ RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
                   -exec rm {} \;
 PIP_ARGS	= # Pass variables for pip install.
 TEST_PATH	= # The path to run tests on.
+TEST_TAG	= # Define the rc<version>
 
 #----------------------------------------------------------------------
 .PHONY	: all
@@ -41,18 +41,36 @@ help	:
 .PHONY	: tar
 tar	: clobber
 	@(cd ..; tar -czvf $(PACKAGE_DIR).tar.gz --exclude=".git" \
-          --exclude="__pycache__" $(BASE_DIR))
+          --exclude="__pycache__" --exclude=".pytest_cache" $(BASE_DIR))
 
+# Run all tests
 # $ make tests
-# $ make tests TEST_PATH=tests.test_bases
-# $ make tests TEST_PATH=tests/test_bases.py:TestBases.test_version
+#
+# Run all tests in a specific test file.
+# $ make tests TEST_PATH=tests/test_bases.py
+#
+# Run all tests in a specific test file and class.
+# $ make tests TEST_PATH=tests/test_bases.py::TestBases
+#
+# Run just one test in a specific test file and class.
+# $ make tests TEST_PATH=tests/test_bases.py::TestBases::test_version
 .PHONY	: tests
 tests	: clobber
+	@rm -rf $(DOCS_DIR)/htmlcov
 	@mkdir -p $(LOGS_DIR)
-	@nosetests --with-coverage --cover-erase --cover-inclusive \
-                   --cover-html --cover-html-dir=$(DOCS_DIR)/htmlcov \
-                   --cover-package=$(PREFIX)/src $(TEST_PATH)
+	@coverage erase --rcfile=$(COVERAGE_FILE)
+	@coverage run --rcfile=$(COVERAGE_FILE) -m pytest --capture=tee-sys \
+         $(TEST_PATH)
+	@coverage report -m --rcfile=$(COVERAGE_FILE)
+	@coverage html --rcfile=$(COVERAGE_FILE)
 	@echo $(TODAY)
+
+.PHONY  : flake8
+flake8  :
+        # Error on syntax errors or undefined names.
+	flake8 . --select=E9,F7,F63,F82 --show-source
+        # Warn on everything else.
+	flake8 . --exit-zero
 
 .PHONY	: logo
 logo	:
@@ -75,9 +93,24 @@ icons	:
 	convert $(PREFIX)/contrib/icon/logo.png -resize 16x16 \
                 $(PREFIX)/images/bookkeeper-16x16.png
 
+# --------------------------------------------------------------------
+
 .PHONY	: sphinx
 sphinx  : clean
 	(cd $(DOCS_DIR); make html)
+
+.PHONY  : latexpdf
+latexpdf:
+	(cd $(DOCS_DIR); make latexpdf)
+
+.PHONY	: epub
+epub	:
+	(cd $(DOCS_DIR); make epub)
+
+.PHONY	: alldocs
+alldocs	: sphinx epub latexpdf
+
+# --------------------------------------------------------------------
 
 .PHONY	: install-dev
 install-dev:
@@ -125,7 +158,7 @@ clean	:
 	$(shell $(RM_CMD))
 
 clobber	: clean
-	@(cd $(DOCS_DIR); make clobber)
+#	@(cd $(DOCS_DIR); make clobber)
 	@rm -rf build dist
 	@rm -rf $(LOGS_DIR)
 	@rm -rf $(BUILD_PKG_DIR)
