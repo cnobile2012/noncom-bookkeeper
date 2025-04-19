@@ -8,15 +8,18 @@ __docformat__ = "restructuredtext en"
 import os
 import sys
 import time
-from datetime import datetime
+import datetime as dtime
+from zoneinfo import ZoneInfo
 
 import asyncio
 import aiosqlite
-import ephem
-import pytz
 
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
+
+from badidatetime import UTC, datetime
+
+from ..database import Database
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))))
@@ -122,7 +125,7 @@ class DatabaseSchema:
         return len(values)
 
     async def add_years(self):
-        now = datetime.utcnow().isoformat()
+        now = dtime.datetime.now(UTC).isoformat()
         data = [(year, now, now) for year in self._year_data]
         query = (f"INSERT INTO {self.__YEAR} (start_date, c_time, m_time) "
                  "VALUES (?, ?, ?)")
@@ -135,7 +138,7 @@ class DatabaseSchema:
         return len(values)
 
     async def add_months(self):
-        now = datetime.utcnow().isoformat()
+        now = dtime.datetime.now(UTC).isoformat()
         data = [(month, now, now) for month in self._MONTHS]
         query = (f"INSERT INTO {self.__MONTH} (month, c_time, m_time) "
                  "VALUES (?, ?, ?)")
@@ -148,7 +151,7 @@ class DatabaseSchema:
         return len(values)
 
     async def add_field_type(self):
-        now = datetime.utcnow().isoformat()
+        now = dtime.datetime.now(UTC).isoformat()
         data = [(month, now, now) for month in self._FIELD_TYPES]
         query = (f"INSERT INTO {self.__FIELD_TYPE} (field, c_time, m_time) "
                  "VALUES (?, ?, ?)")
@@ -165,7 +168,7 @@ class DatabaseSchema:
                  " VALUES (?, ?, ?, "
                  f"(SELECT pk FROM {self.__FIELD_TYPE} WHERE field = ?), "
                  f"(SELECT pk FROM {self.__MONTH} WHERE month = ?))")
-        now = datetime.utcnow().isoformat()
+        now = dtime.datetime.now(UTC).isoformat()
         items = [(value, now, now, field, month)
                  for field, value in data.items()]
         await self._do_insert_query(query, items)
@@ -200,40 +203,14 @@ class DatabaseSchema:
             lat = float(raw['lat'])
             lon = float(raw['lon'])
             tf = TimezoneFinder()
-            tz = tf.timezone_at(lng=lon, lat=lat)
+            iana = tf.timezone_at(lng=lon, lat=lat)
 
-        return tz, lat, lon
-
-    def _add_sun_set_datetimes(self, start_year):
-        for year in  (start_year, start_year+1):
-            date = self._get_vernal_equinox_sunset(year)
-            self._year_data.append(date)
-
-    def _get_vernal_equinox_sunset(self, year):
-        try:
-            zone = pytz.timezone(self.timezone)
-        except pytz.UnknownTimeZoneError as e:
-            print(f"Invalid timezone '{tz}' for the given latitude "
-                  f"{lat}, longitude {lon}, and address '{address}'.")
-            ret = ''
-        else:
-            # Get the UTC time of the vernal equinox then make it aware.
-            # Convert it to local time to get the sun set for the given
-            # address then convert it back to UTC time.
-            utc_dt = ephem.next_vernal_equinox(str(year)).datetime()
-            utc_dt = utc_dt.replace(tzinfo=pytz.UTC)
-            dt = utc_dt.astimezone(zone)
-            srss = SunriseSunset(dt, self.lat, self.lon)
-            rise_time, set_time = srss.sun_rise_set
-            utc_set_time = set_time.astimezone(pytz.UTC)
-            ret = utc_set_time.isoformat()
-
-        return ret
+        return iana, lat, lon
 
     def _local_to_utc_time(self, dt):
-        local_tz = pytz.timezone(self.timezone)
+        local_tz = ZoneInfo(self.timezone)
         local_dt = dt.replace(tzinfo=local_tz)
-        return local_dt.astimezone(pytz.UTC)
+        return local_dt.astimezone(UTC)
 
     def remove_database(self):
         os.remove(self._DB_PATH)

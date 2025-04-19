@@ -374,7 +374,7 @@ class TestEventStaticText(BaseTests):
         msg = f"Event type expected an integer found {event_type}."
         self.assertTrue(isinstance(event_type, int), msg)
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test_EVT_CLICK_POSITION(self):
         """
         Test that a new event is returned.

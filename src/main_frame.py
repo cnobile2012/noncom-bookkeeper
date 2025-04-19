@@ -73,7 +73,7 @@ class MainFrame(MenuBar, wx.Frame):
 
         self.create_menu()
         StoreObjects().set_object(self.__class__.__name__, self)
-        # asyncio.run(self.start())
+        asyncio.run(self.start())
 
     async def start(self):
         """
@@ -114,7 +114,7 @@ class MainFrame(MenuBar, wx.Frame):
         def on_timer(event):
             for name, panel in self.panels.items():
                 if panel.dirty:
-                    asyncio.run(db.save_to_database(panel))
+                    asyncio.run(db.save_to_database(name, panel))
                     self._log.debug("Checking '%s' for changes, dirty "
                                     "flag '%s'", name, panel.dirty)
 

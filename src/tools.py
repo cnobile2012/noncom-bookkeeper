@@ -439,7 +439,7 @@ class FieldEdit(BasePanel, wx.Panel):
             elif value:
                 self.parent.statusbar_warning = "Cannot update title fields."
 
-            field_name.SetValue("")
+            # field_name.SetValue("")
 
         return update_button
 
@@ -489,15 +489,15 @@ class FieldEdit(BasePanel, wx.Panel):
 
         return remove_button
 
-    def undo_closuer(self, arg_dict):
-        def undo_button(event):
-            value = arg_dict['new_field_name'].GetValue()
+    # def undo_closuer(self, arg_dict):
+    #     def undo_button(event):
+    #         value = arg_dict['new_field_name'].GetValue()
 
-            if value.endswith(':'):
-                self._tcp.undo_name(name)
+    #         if value.endswith(':'):
+    #             self._tcp.undo_name(name)
 
 
-        return undo_button
+    #     return undo_button
 
     def turn_off_highlight(self, arg_dict, orig_color):
         gbs = arg_dict.get('bot_grid_sizer')

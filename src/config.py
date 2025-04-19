@@ -559,26 +559,26 @@ class TomlCreatePanel(BaseSystemData):
         self._remove_two_consecutive_keys(key)
         self._last_removed = (key, name)
 
-    def undo_name(self, name):
-        """
-        Undo a removed field.
+    # def undo_name(self, name):
+    #     """
+    #     Undo a removed field.
 
-        :param name: The value name of the StaticText widget.
-        :type name: str
-        """
-        ret = None
+    #     :param name: The value name of the StaticText widget.
+    #     :type name: str
+    #     """
+    #     ret = None
 
-        if self._last_removed:
-            old_key, name = self._last_removed
-            self._create_hole(old_key+1)
+    #     if self._last_removed:
+    #         old_key, name = self._last_removed
+    #         self._create_hole(old_key+1)
 
 
 
-            self.add_name(name, row_count)
-            self._last_removed = None
-            new_key = self._make_key(self._next_widget_num())
+    #         self.add_name(name, row_count)
+    #         self._last_removed = None
+    #         new_key = self._make_key(self._next_widget_num())
 
-        return ret
+    #     return ret
 
     def _remove_two_consecutive_keys(self, key):
         """
@@ -670,7 +670,7 @@ class TomlCreatePanel(BaseSystemData):
                 elif key_num is not None:
                     value = self.__panel.get(self._make_key(key_num), [])
                     print(key_num, value)
-                    assert values, f"An invalid key_num was provided."
+                    assert value, f"An invalid key_num was provided."
                     dict_ = find_dict(value)
                     pos = dict_['pos']
                     break

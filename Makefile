@@ -162,3 +162,4 @@ clobber	: clean
 	@rm -rf build dist
 	@rm -rf $(LOGS_DIR)
 	@rm -rf $(BUILD_PKG_DIR)
+	@rm -rf $(DOCS_DIR)/htmlcov
