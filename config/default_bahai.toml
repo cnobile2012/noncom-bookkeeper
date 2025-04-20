@@ -148,25 +148,25 @@ widget_43 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_44 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Membership (Beginning of Year):"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[26, 0], span=[1, 1]}]
 widget_45 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[50, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[26, 1], span=[1, 1], financial=false}]
 
-[monthly]
+[month]
 
-[monthly.meta]
+[month.meta]
 title = 'Monthly Specific Settings'
 bg_color = [247, 246, 207]
 w_bg_color_1 = [222, 237, 230]
 w_bg_color_2 = [50, 50, 204]
 w_fg_color_1 = [50, 50, 204]
 
-[monthly.sizers]
+[month.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
 sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
 
-[monthly.widgets]
+[month.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated monthly.'], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[0, 0], span=[1, 2]}]
 
 widget_01 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[1, 0], span=[1, 2]}]
 
-widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Month'], style='TE_READONLY', min=[228, -1], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[2, 0], span=[1, 1]}]
+widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monthly'], style='TE_READONLY', min=[228, -1], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[2, 0], span=[1, 1]}]
 
 widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Participation:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], update='widget_1', pos=[3, 0], span=[1, 1]}]
 widget_04 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[60, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], financial=false}]
@@ -177,7 +177,7 @@ widget_06 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_07 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'End of Month Cash on Hand:'], min=[-1, -1], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1]}]
 widget_08 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1], financial=true}]
 
-widget_09 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields do not change often and the defaults can be accepted.'], font='font_12_bold', min=[448, 50], style='ALIGN_CENTER_HORIZONTAL | ALIGN_CENTER_VERTICAL | TE_MULTILINE | TE_WORDWRAP', add=[0, 'ALIGN_CENTER | ALL', 6], pos=[7, 0], span=[1, 2]}]
+widget_09 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields do not change often and the defaults can usually be accepted.'], font='font_12_bold', min=[448, 50], style='ALIGN_CENTER_HORIZONTAL | ALIGN_CENTER_VERTICAL | TE_MULTILINE | TE_WORDWRAP', add=[0, 'ALIGN_CENTER | ALL', 6], pos=[7, 0], span=[1, 2]}]
 
 widget_10 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[8, 0], span=[1, 2]}]
 

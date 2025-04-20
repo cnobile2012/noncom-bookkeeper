@@ -21,6 +21,7 @@ class BaseDatabase:
 
     https://sqlite.org/
     https://www.w3schools.com/sql/
+    https://docs.wxpython.org/
     """
     _T_FISCAL_YEAR = 'fiscal_year'
     _T_MONTH = 'month'
@@ -172,21 +173,21 @@ class BaseDatabase:
         for c_set in self._find_children(panel):
             name0 = c_set[0].__class__.__name__
             name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
-            db_name = self._make_db_name(c_set[0].GetLabelText())
+            field_name = self._make_field_name(c_set[0].GetLabelText())
 
             if name0 == 'RadioBox':
-                data[db_name] = self._scrub_value(c_set[0].GetSelection())
+                data[field_name] = self._scrub_value(c_set[0].GetSelection())
             elif name0 == 'ComboBox':
-                data[db_name] = c_set[0].GetSelection()
+                data[field_name] = c_set[0].GetSelection()
             elif name0 == 'StaticText':
                 value = c_set[1].GetValue()
 
                 if name1 == 'TextCtrl':
                     financial = True if c_set[1].financial else False
-                    data[db_name] = self._scrub_value(value,
-                                                      financial=financial)
+                    data[field_name] = self._scrub_value(value,
+                                                        financial=financial)
                 elif name1 == 'DatePickerCtrl':
-                    data[db_name] = self._scrub_value(value, convert_to_utc)
+                    data[field_name] = self._scrub_value(value, convert_to_utc)
 
         return data
 
@@ -199,12 +200,12 @@ class BaseDatabase:
         :param list values: The database values to be used to poplulate the
                             panel.
         """
-        if (data := {item[0]: item[1:] for item in values}):
+        if (data := {item[1]: item[2:] for item in values}):
             for c_set in self._find_children(panel):
                 name0 = c_set[0].__class__.__name__
                 name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
-                db_name = self._make_db_name(c_set[0].GetLabelText())
-                value = data[db_name][1]
+                field_name = self._make_field_name(c_set[0].GetLabelText())
+                value = data[field_name][0]
 
                 if name0 == 'RadioBox':
                     c_set[0].SetSelection(value)
@@ -217,14 +218,15 @@ class BaseDatabase:
 
                         if name == 'month':
                             if (not value
-                                and db_name == 'total_membership_month'):
+                                and field_name == 'total_membership_month'):
                                 value = self._org_data['total_membership']
-                            elif not value and db_name == 'treasurer_month':
+                            elif not value and field_name == 'treasurer_month':
                                 value = self._org_data['treasurer']
                         c_set[1].SetValue(value)
                     elif name1 == 'DatePickerCtrl':
-                        c_set[1].SetValue(
-                            self._convert_date_to_local_time(value))
+                        year, month, day = self._convert_date_to_yymmdd(value)
+                        dt = wx.DateTime(year=year, month=month, day=day)
+                        c_set[1].SetValue(dt)
 
     def _find_children(self, panel: wx.Panel) -> list:
         """
@@ -309,7 +311,7 @@ class BaseDatabase:
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: <value>,...}.
         """
-        values = await self.select_from_data_table(year, data, month)
+        values = await self.select_from_data_table(data, year, month)
         #              field     pk
         items = dict([(item[1], item[0]) for item in values])
         insert_data = {}
@@ -377,7 +379,7 @@ class BaseDatabase:
         old_fields = set(old)
         return new_fields - old_fields
 
-    def _make_db_name(self, name: str):
+    def _make_field_name(self, name: str):
         name = name.replace('(', '').replace(')', '')
         return name.replace(' ', '_').replace(':', '').lower()
 
@@ -393,20 +395,6 @@ class BaseDatabase:
             value = value.FormatISOCombined()
 
         return value
-
-    def _convert_date_to_local_time(self, value: str,
-                                    convert_from_utc: bool=False
-                                    ) -> wx.DateTime:
-        """
-        """
-        dt = wx.DateTime()
-        dt.ParseISOCombined(value)
-
-        if convert_from_utc:
-            tz = time.localtime().tm_zone
-            dt = dt.ToTimezone(dt.TimeZone(tz))
-
-        return dt
 
     def value_to_db(self, value: str) -> int:
         """

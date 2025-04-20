@@ -48,7 +48,7 @@ class Database(TomlMetaData, BaseDatabase):
             await self._add_fields_to_field_type_table(data)
             await self._insert_into_month_table()
             dt = badidatetime.datetime.now(badidatetime.UTC, short=True)
-            values = await self.select_from_data_table(dt.year, data, dt.month)
+            values = await self.select_from_data_table(data, dt.year, dt.month)
 
             if name == 'organization':
                 self._update_organization_constants(values)
@@ -241,7 +241,7 @@ class Database(TomlMetaData, BaseDatabase):
                  "VALUES (?, ?, ?)")
         await self._do_insert_query(query, data)
 
-    async def select_from_data_table(self, year: int, data: dict,
+    async def select_from_data_table(self, data: dict, year: int=None,
                                      month: int=None,) -> list:
         """
         Reads a row or rows from the `data` table.
@@ -289,7 +289,7 @@ class Database(TomlMetaData, BaseDatabase):
                 f"     AND f.field IN (\"{fields}\")"
                 f"JOIN {self._T_FISCAL_YEAR} AS y1 ON y1.year = ?"
                 f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.year = ?"
-                f"JOIN {self._T_MONTH} AS m ON m.pk = d.mfk AND m.ord = ?"
+                f"JOIN {self._T_MONTH} AS m ON m.pk = d.mfk AND m.ord = ?;"
                 )
         else:
             params = ()
@@ -297,7 +297,7 @@ class Database(TomlMetaData, BaseDatabase):
                 "SELECT d.pk, f.field, d.value, d.c_time, d.m_time, "
                 f"FROM {self._T_DATA} AS d "
                 f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
-                f"     AND f.field IN (\"{fields}\")"
+                f"     AND f.field IN (\"{fields}\");"
                 )
 
         return await self._do_select_query(query, params)
@@ -358,3 +358,12 @@ class Database(TomlMetaData, BaseDatabase):
             values.append((value, m_time, pk))
 
         await self._do_update_query(query, values)
+
+    def _convert_date_to_yymmdd(self, value):
+        """
+        Converts the ISO date string to a tiple contaning the
+        (year, month, day).
+
+        :param str value: A ISO formatting date string.
+        """
+        return badidatetime.date.fromisoformat(value, short=True).b_date
