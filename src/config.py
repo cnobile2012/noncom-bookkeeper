@@ -14,7 +14,6 @@ from appdirs import AppDirs
 import tomlkit as tk
 
 from .bases import find_dict
-from .exceptions import InvalidTomlException
 
 
 class Settings(AppDirs):
@@ -46,7 +45,7 @@ class Settings(AppDirs):
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
 
-    def create_dirs(self): # pragma: no cover
+    def create_dirs(self):  # pragma: no cover
         if not os.path.exists(self.user_data_dir):
             os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)
 
@@ -117,6 +116,7 @@ class Settings(AppDirs):
     def config_type(self):
         return self.__config_type
 
+
 class BaseSystemData(Settings):
     """
     This base class writes and reads config files and is used
@@ -124,10 +124,10 @@ class BaseSystemData(Settings):
     """
     SYS_FILES = {'data': None, 'panel_config': None, 'app_config': None}
 
-    INVALID_PROP = 1 # Invalid property
-    CANNOT_FIND_FILE = 2 # Cannot find file
-    TOML_ERROR = 3 # TOML error
-    ZERO_LENGTH_FILE = 4 #  Zero length file
+    INVALID_PROP = 1      # Invalid property
+    CANNOT_FIND_FILE = 2  # Cannot find file
+    TOML_ERROR = 3        # TOML error
+    ZERO_LENGTH_FILE = 4  # Zero length file
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -140,26 +140,26 @@ class BaseSystemData(Settings):
     def panel_config(self, value):
         self.SYS_FILES['panel_config'] = value
 
-    ## def panel_field_names(self, panel, raw=False):
-    ##     """
-    ##     Get the field names for a specific panel.
-    ##     """
-    ##     widget_names = []
+    # def panel_field_names(self, panel, raw=False):
+    #     """
+    #     Get the field names for a specific panel.
+    #     """
+    #     widget_names = []
 
-    ##     for widget in self.panel_config[panel]['widgets'].values():
-    ##         w_type = widget[0]
+    #     for widget in self.panel_config[panel]['widgets'].values():
+    #         w_type = widget[0]
 
-    ##         if w_type in ('RadioBox', 'StaticText'):
-    ##             args = find_dict(widget).get('args', [])
-    ##             name = args[2] if args else ''
-    ##             if not name: continue
+    #         if w_type in ('RadioBox', 'StaticText'):
+    #             args = find_dict(widget).get('args', [])
+    #             name = args[2] if args else ''
+    #             if not name: continue
 
-    ##             if not raw:
-    ##                 name = name.replace(' ', '_').replace(':', '').lower()
+    #             if not raw:
+    #                 name = name.replace(' ', '_').replace(':', '').lower()
 
-    ##             widget_names.append(name)
+    #             widget_names.append(name)
 
-    ##     return widget_names
+    #     return widget_names
 
     @property
     def app_config(self):
@@ -192,7 +192,7 @@ class BaseSystemData(Settings):
                 try:
                     with open(fname, 'r') as f:
                         raw_doc = f.read()
-                except FileNotFoundError as e:
+                except FileNotFoundError:
                     msg = "Cannot find file {fname}, {str(e)}"
                     self._log.error(msg)
                     errors.append((file_type, msg, self.CANNOT_FIND_FILE))
@@ -200,7 +200,7 @@ class BaseSystemData(Settings):
                     if raw_doc != "":
                         try:
                             doc = tk.parse(raw_doc)
-                        except tk.exceptions.TOMLKitError as e:
+                        except tk.exceptions.TOMLKitError:
                             msg = "TOML error: {str(e)}"
                             self._log.error(msg)
                             errors.append((file_type, msg, self.TOML_ERROR))
@@ -383,7 +383,7 @@ class TomlAppConfig(BaseSystemData):
                         #self.parent.statusbar_warning = msg
                         # *** TODO *** This needs to be shown on the screen
                         #              if detected.
-                    else: # CANNOT_FIND_FILE
+                    else:  # CANNOT_FIND_FILE
                         msg = (f"The file {getattr(self, error[0])} could "
                                "not be found. It will be created.")
                         self._log.warning(msg)
@@ -519,9 +519,6 @@ class TomlCreatePanel(BaseSystemData):
         assert self.__panel, "Current panel not set."
 
         if key_num is None:
-
-
-
             x, y = self._find_widget_gbs_pos(key_num=self._next_widget_num)
         else:
             x, y = (key_num, 0)
@@ -571,8 +568,6 @@ class TomlCreatePanel(BaseSystemData):
     #     if self._last_removed:
     #         old_key, name = self._last_removed
     #         self._create_hole(old_key+1)
-
-
 
     #         self.add_name(name, row_count)
     #         self._last_removed = None
@@ -656,9 +651,10 @@ class TomlCreatePanel(BaseSystemData):
         :type key_num: int
         """
         assert name or key_num is not None, (
-            f"Either the name ({name}) or the key_num ({key_num}) must be set.")
+            f"Either the name '{name}' or the key_num '{key_num}' must "
+            "be set.")
         pos = ()
-        print(key_num)
+        #print(key_num)
 
         if name:
             for value in self.__panel.value():
@@ -670,7 +666,7 @@ class TomlCreatePanel(BaseSystemData):
                 elif key_num is not None:
                     value = self.__panel.get(self._make_key(key_num), [])
                     print(key_num, value)
-                    assert value, f"An invalid key_num was provided."
+                    assert value, "An invalid key_num was provided."
                     dict_ = find_dict(value)
                     pos = dict_['pos']
                     break

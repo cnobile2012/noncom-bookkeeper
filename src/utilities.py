@@ -92,8 +92,8 @@ class ConfirmationDialog(wx.Dialog):
         self._parent = parent
         self.SetSize((300, 150))
 
-        self._bg_color = bg_color if bg_color else (220, 130, 143) # Red-ish
-        self._fg_color = fg_color if fg_color else (50, 50, 204) # Blue-ish
+        self._bg_color = bg_color if bg_color else (220, 130, 143)  # Red-ish
+        self._fg_color = fg_color if fg_color else (50, 50, 204)    # Blue-ish
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -105,7 +105,7 @@ class ConfirmationDialog(wx.Dialog):
         message.Wrap(300)
         sizer.Add(message, 0, wx.ALL | wx.CENTER, 10)
 
-        line = wx.StaticLine(self, -1, size=(20,-1), style=wx.LI_HORIZONTAL)
+        line = wx.StaticLine(self, -1, size=(20, -1), style=wx.LI_HORIZONTAL)
         sizer.Add(line, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 6)
 
         button_sizer = wx.StdDialogButtonSizer()
@@ -121,7 +121,7 @@ class ConfirmationDialog(wx.Dialog):
         button_sizer.Realize()
         sizer.Fit(self)
 
-    def show(self): # pragma: no cover
+    def show(self):  # pragma: no cover
         self.CenterOnParent()
         value = self.ShowModal()
 
@@ -201,7 +201,7 @@ class EventStaticText(wx.StaticText):
         """
         return self._cp.get_click_position(self.__type_name)
 
-    def on_left_down(self, event): # pragma: no cover
+    def on_left_down(self, event):  # pragma: no cover
         obj = event.GetEventObject()
         sizer = obj.GetContainingSizer()
         pos = None

@@ -7,7 +7,6 @@ __docformat__ = "restructuredtext en"
 
 import os
 import sys
-import time
 import datetime as dtime
 from zoneinfo import ZoneInfo
 
@@ -19,7 +18,6 @@ from timezonefinder import TimezoneFinder
 
 from badidatetime import UTC, datetime
 
-from ..database import Database
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))))
@@ -92,7 +90,7 @@ class DatabaseSchema:
              'total_membership_month': '16'}
 
     def __init__(self):
-        self._year_data = [] # Updated later
+        self._year_data = []  # Updated later
         self.timezone = self.lat = self.lon = ''
         asyncio.run(self.start())
 
@@ -163,7 +161,7 @@ class DatabaseSchema:
         values = await self._do_select_query(query)
         return len(values)
 
-    async def add_data(self, month, data:dict) -> list:
+    async def add_data(self, month: int, data: dict) -> list:
         query = (f"INSERT INTO {self.__DATA} (value, c_time, m_time, ffk, mfk)"
                  " VALUES (?, ?, ?, "
                  f"(SELECT pk FROM {self.__FIELD_TYPE} WHERE field = ?), "
@@ -173,22 +171,22 @@ class DatabaseSchema:
                  for field, value in data.items()]
         await self._do_insert_query(query, items)
 
-    async def _get_current_year(self, year:int) -> list:
+    async def _get_current_year(self, year: int) -> list:
         query = f"SELECT * FROM {self.__YEAR} WHERE start_date LIKE ?"
         return await self._do_select_query(query, params=(f"{year}%",))
 
-    async def _get_current_month(self, month:str) -> list:
+    async def _get_current_month(self, month: str) -> list:
         query = f"SELECT * FROM {self.__MONTH} WHERE month = ?"
         return await self._do_select_query(query, params=(month,))
 
-    async def _do_select_query(self, query:str, params:tuple=()) -> list:
+    async def _do_select_query(self, query: str, params: tuple=()) -> list:
         async with aiosqlite.connect(self._DB_PATH) as db:
             async with db.execute(query, params) as cursor:
                 values = await cursor.fetchall()
 
         return values
 
-    async def _do_insert_query(self, query:str, data:list) -> None:
+    async def _do_insert_query(self, query: str, data: list) -> None:
         async with aiosqlite.connect(self._DB_PATH) as db:
             await db.executemany(query, data)
             await db.commit()
@@ -196,7 +194,6 @@ class DatabaseSchema:
     def _find_timezone(self, address):
         geolocator = Nominatim(user_agent='nc-bookkeeper')
         location = geolocator.geocode(address)
-        tz = ''
 
         if location:
             raw = location.raw

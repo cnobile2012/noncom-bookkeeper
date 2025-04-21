@@ -9,7 +9,7 @@ import re
 import unittest
 import wx
 
-from . import log, check_flag, FakeFrame, FakeWidget, FakeEvent
+from . import check_flag, FakeFrame, FakeWidget, FakeEvent
 
 from src.bases import find_dict, version, BasePanel, BaseGenerated
 

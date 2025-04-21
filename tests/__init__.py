@@ -17,6 +17,7 @@ def setup_logging():
     logger.config(LOGGER_NAME, full_path, logging.DEBUG, initial_msg=False)
     return logging.getLogger(LOGGER_NAME)
 
+
 log = setup_logging()
 
 

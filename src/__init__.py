@@ -3,7 +3,6 @@
 #
 __docformat__ = "restructuredtext en"
 
-import os
 import sys
 import logging
 
@@ -57,11 +56,11 @@ class Logger:
             formatter = logging.Formatter(self._format)
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
-        elif file_path: # Creates a file root logger.
+        elif file_path:  # Creates a file root logger.
             logging.basicConfig(filename=file_path, format=self._format,
                                 level=level, force=True)
             self.logger = logging.getLogger()
-        else: # Creates a stdout root logger.
+        else:  # Creates a stdout root logger.
             logging.basicConfig(stream=sys.stdout, format=self._format,
                                 level=level, force=True)
             self.logger = logging.getLogger()
@@ -83,6 +82,7 @@ class Logger:
     def level(self, level):
         assert self.logger, "The 'config()' method must be called first."
         self.logger.setLevel(level)
+
 
 # The lines below runs the Bootstrap class for the first time.
 _logger = Logger()

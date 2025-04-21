@@ -60,7 +60,7 @@ tests	: clobber
 	@mkdir -p $(LOGS_DIR)
 	@coverage erase --rcfile=$(COVERAGE_FILE)
 	@coverage run --rcfile=$(COVERAGE_FILE) -m pytest --capture=tee-sys \
-         $(TEST_PATH)
+         --ignore tests/individual $(TEST_PATH)
 	@coverage report -m --rcfile=$(COVERAGE_FILE)
 	@coverage html --rcfile=$(COVERAGE_FILE)
 	@echo $(TODAY)

@@ -13,7 +13,7 @@ from contextlib import redirect_stdout
 from appdirs import AppDirs
 from testfixtures import LogCapture
 
-from . import log, check_flag
+from . import check_flag
 from src import Bootstrap, Logger
 from src.config import Settings
 
@@ -37,7 +37,7 @@ class TestBootstrap(unittest.TestCase):
         Test that all directory paths are created.
         """
         if os.path.exists(self.ad.user_data_dir):
-            shutil.rmtree(self.ad.user_data_dir) # ignore_errors=True)
+            shutil.rmtree(self.ad.user_data_dir)  # ignore_errors=True)
 
         if os.path.exists(self.ad.user_config_dir):
             shutil.rmtree(self.ad.user_config_dir)
@@ -85,7 +85,6 @@ class TestLogger(unittest.TestCase):
         test_msg_2 = kwargs.pop('test_msg_2', '')
         cb = kwargs.pop('callback', None)
         data = ''
-        log = None
 
         with LogCapture() as l:
             with io.StringIO() as buff:
@@ -142,7 +141,8 @@ class TestLogger(unittest.TestCase):
                 data = f.read()
 
             name = 'root'
-            msg = f"Should find a {name} logger with {test_msg} found in {data}"
+            msg = (f"Should find a {name} logger with {test_msg} found "
+                   f"in {data}")
             self.assertIn(test_msg, data, msg)
             self.assertIn(name, data, msg)
 
@@ -185,7 +185,7 @@ class TestLogger(unittest.TestCase):
         """
         def callback(logger, log, msg):
             logger.level = logging.WARNING
-            log.info(msg) # should_not_be_in_log message
+            log.info(msg)  # should_not_be_in_log message
 
         name = 'TestLoggerName'
         should_be_in_log = "This message should be in the log file."

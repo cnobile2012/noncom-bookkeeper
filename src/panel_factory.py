@@ -10,10 +10,8 @@ from .config import TomlMetaData
 from .bases import find_dict
 
 import wx
-import wx.adv
-from wx.lib.scrolledpanel import ScrolledPanel
 # https://pwwang.github.io/python-varname/
-#from varname import varname, nameof
+# from varname import varname, nameof
 
 
 class PanelFactory(TomlMetaData):
@@ -59,7 +57,7 @@ class PanelFactory(TomlMetaData):
         self._bg_color = panel_kwargs.get('bg_color')
         klass.write(f"        self._bg_color = {self._bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
-                    f"*self._bg_color))\n")
+                    "*self._bg_color))\n")
         self._w_bg_color_1 = panel_kwargs.get('w_bg_color_1')
         self._w_bg_color_2 = panel_kwargs.get('w_bg_color_2')
         self._w_bg_color_3 = panel_kwargs.get('w_bg_color_3')
@@ -241,7 +239,6 @@ class PanelFactory(TomlMetaData):
 
     def choice_combo_box(self, klass, widget, value):
         dict_ = find_dict(value)
-        args = dict_.get('args')
         parent, id, name = dict_.get('args')
         widget_type = value[0]
         months = [f"{idx:>2} {month}"

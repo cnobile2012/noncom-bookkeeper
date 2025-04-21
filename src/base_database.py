@@ -52,12 +52,12 @@ class BaseDatabase:
         (_T_DATA,
          'pk INTEGER NOT NULL PRIMARY KEY',  # dfk in report_pivot
          'value NOT NULL',
-         'c_time TEXT NOT NULL',
-         'm_time TEXT NOT NULL',
+         'fy1fk INTEGER NOT NULL',
+         'fy2fk INTEGER NOT NULL',
          'mfk INTEGER NULL',
          'ffk INTEGER NOT NULL',
-         'fy1fk INTEGER NOT NULL',
-         'fy2fk INTEGER NOT NULL'),
+         'c_time TEXT NOT NULL',
+         'm_time TEXT NOT NULL'),
         (_T_REPORT_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
          'report TEXT UNIQUE NOT NULL',
@@ -81,8 +81,8 @@ class BaseDatabase:
         """
         Create the database based on the fields currently defined.
         """
-        if (not os.path.exists(self.user_data_fullpath)
-            or not await self.has_schema):
+        if (not os.path.exists(self.user_data_fullpath) or
+            not await self.has_schema):
             async with aiosqlite.connect(self.user_data_fullpath) as db:
                 for params in self._SCHEMA:
                     table = params[0]
@@ -185,7 +185,7 @@ class BaseDatabase:
                 if name1 == 'TextCtrl':
                     financial = True if c_set[1].financial else False
                     data[field_name] = self._scrub_value(value,
-                                                        financial=financial)
+                                                         financial=financial)
                 elif name1 == 'DatePickerCtrl':
                     data[field_name] = self._scrub_value(value, convert_to_utc)
 
@@ -312,22 +312,28 @@ class BaseDatabase:
                           {<field name>: <value>,...}.
         """
         values = await self.select_from_data_table(data, year, month)
-        #              field     pk
-        items = dict([(item[1], item[0]) for item in values])
-        insert_data = {}
-        update_data = {}
+        print('POOP0: data\n', data)
+        print('POOP1: values\n', values)
 
-        for field, pk in data.items():
-            if field in items:  # Field value already exists.
-                update_data[field] = (pk, data[field])
-            else:  # Field value does not exist.
-                insert_data[field] = data[field]
+        if not values:  # Do insert
+            await self.insert_into_data_table(year, month, data)
+        else:
+            items = dict([(pk, (field, value))
+                          for pk, field, value, y1, y2, c, m in values])
+            insert_data = {}
+            update_data = {}
 
-        if insert_data:  # Do insert
-            await self.insert_into_data_table(year, month, insert_data)
+            for pk, (field, value) in items.items():
+                if field in data:  # Field value already exists.
+                    update_data[field] = (pk, data[field])
+                else:  # Field value does not exist.
+                    insert_data[field] = data[field]
 
-        if update_data:  # Do update
-            await self.update_data_table(year, month, update_data)
+            if insert_data:  # Do insert
+                await self.insert_into_data_table(year, month, insert_data)
+
+            if update_data:  # Do update
+                await self.update_data_table(year, month, update_data)
 
     async def _do_select_query(self, query: str, params: tuple=()) -> list:
         """
@@ -424,11 +430,6 @@ class BaseDatabase:
         """
         value = int(value)
         return f"{value/100:.2f}"
-
-    async def _do_insert_query(self, query:str, data:list) -> None:
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
-            await db.executemany(query, data)
-            await db.commit()
 
     def _find_timezone(self, address: str):
         """

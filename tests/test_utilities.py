@@ -7,7 +7,7 @@ __docformat__ = "restructuredtext en"
 import unittest
 import wx
 
-from . import log, check_flag
+from . import check_flag
 from src.utilities import (GridBagSizer, ConfirmationDialog, _ClickPosition,
                            EventStaticText)
 
@@ -86,14 +86,14 @@ class TestGridBagSizer(BaseTests):
             else:
                 break
 
-    ## def check_children(self):
-    ##     for idx in range(14):
-    ##         item = self.gbs.GetItem(idx)
-    ##         label = item.GetWindow().GetLabel()
-    ##         pos = item.GetPos()
-    ##         print(f"Label: {label}, Position: {pos}")
+    # def check_children(self):
+    #     for idx in range(14):
+    #         item = self.gbs.GetItem(idx)
+    #         label = item.GetWindow().GetLabel()
+    #         pos = item.GetPos()
+    #         print(f"Label: {label}, Position: {pos}")
 
-    ##     print()
+    #     print()
 
     #@unittest.skip("Temporarily skipped")
     def test_gbs_swap_rows_3_items_in_row(self):
@@ -211,13 +211,13 @@ class TestConfirmationDialog(unittest.TestCase):
             if name == "StaticText":
                 found_color = child.GetBackgroundColour()
                 self.assertEqual(bg_color, found_color,
-                                  color_msg.format(found_color))
+                                 color_msg.format(found_color))
                 found_color = child.GetForegroundColour()
                 self.assertEqual(fg_color, found_color,
-                                  color_msg.format(found_color))
+                                 color_msg.format(found_color))
                 found_msg = child.GetLabel()
                 self.assertEqual(msg, found_msg,
-                                  message_msg.format(found_msg))
+                                 message_msg.format(found_msg))
             elif name == "Button":
                 text = child.GetLabelText()
                 msg = (f"Button text expected one of '{buttom_labels}' "
@@ -258,8 +258,8 @@ class TestConfirmationDialog(unittest.TestCase):
         """
         dlg_msg = "Test Updated Message"
         caption = "Test Updated Caption"
-        new_bg_color = (255, 247, 236, 255) # Oyster
-        new_fg_color = (0, 0, 127, 255) # Dark Gray
+        new_bg_color = (255, 247, 236, 255)  # Oyster
+        new_fg_color = (0, 0, 127, 255)      # Dark Gray
         self.setup_config_dialog(dlg_msg, caption, bg_color=new_bg_color,
                                  fg_color=new_fg_color)
         dialog = self.frame.GetChildren()[0]

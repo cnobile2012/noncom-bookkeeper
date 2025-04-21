@@ -4,9 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
-import types
 from io import StringIO
-from pprint import pprint # *** TODO *** Remove later
 
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel
@@ -36,7 +34,7 @@ class ShortCuts(wx.Frame):
         self.sizer.Add(self.short_cut_text, 1, wx.EXPAND | wx.ALL, 10)
         dismiss = wx.Button(self, id=wx.ID_OK, label="&Dismiss")
         dismiss.Bind(wx.EVT_BUTTON, self.close_frame)
-        self.sizer.Add(dismiss, 0, wx.ALL|wx.ALIGN_CENTER,5)
+        self.sizer.Add(dismiss, 0, wx.ALL | wx.ALIGN_CENTER, 5)
         self.SetSizer(self.sizer)
         self.CenterOnParent(dir=wx.BOTH)
         self.Show()
@@ -54,7 +52,7 @@ class ShortCuts(wx.Frame):
     def __recurse_menu(self, map_, buff, indent=''):
         for item in map_:
             values = map_[item]
-            if len(values) == 0: continue # seperator
+            if len(values) == 0: continue  # seperator
             id, nk, disc, cb, mo, tf, od = values
             if not tf: continue
             name, tab, key = nk.partition('\t')
@@ -193,12 +191,12 @@ class FieldEdit(BasePanel, wx.Panel):
         update_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
         embed_sizer.Add(update_button, 0, but_flags, 6)
         remove_button = wx.Button(panel,  wx.ID_ANY, "Remove")
-        remove_button.SetMinSize((62 , 32))
+        remove_button.SetMinSize((62, 32))
         remove_button.SetBackgroundColour(wx.Colour(*w_bg_color))
         remove_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
         embed_sizer.Add(remove_button, 0, but_flags, 6)
         undo_button = wx.Button(panel,  wx.ID_ANY, "Undo")
-        undo_button.SetMinSize((62 , 32))
+        undo_button.SetMinSize((62, 32))
         undo_button.SetBackgroundColour(wx.Colour(*w_bg_color))
         undo_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
         embed_sizer.Add(undo_button, 0, but_flags, 6)
@@ -226,13 +224,12 @@ class FieldEdit(BasePanel, wx.Panel):
         arg_dict['update_button'] = update_button
         arg_dict['remove_button'] = remove_button
         arg_dict['undo_buttom'] = undo_button
-        #print(f"Top panel size: {panel.GetSize()}")
         return panel
 
     def _panel_bot(self, arg_dict):
         w_bg_color = arg_dict['w_bg_color']
         w_fg_color_0 = arg_dict['w_fg_color_0']
-        w_fg_color_1 = arg_dict['w_fg_color_1']
+        #w_fg_color_1 = arg_dict['w_fg_color_1']
         spin_ctrl = arg_dict['spin_ctrl']
         panel = ScrolledPanel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -277,27 +274,27 @@ class FieldEdit(BasePanel, wx.Panel):
         return panel
 
     def bind_events(self, arg_dict):
-        spin_ctrl = arg_dict['spin_ctrl']
-        grid_sizer = arg_dict['bot_grid_sizer']
+        #spin_ctrl = arg_dict['spin_ctrl']
+        #grid_sizer = arg_dict['bot_grid_sizer']
         w_bg_color = arg_dict['w_bg_color']
         add_button = arg_dict['add_button']
         update_button = arg_dict['update_button']
         remove_button = arg_dict['remove_button']
         undo_button = arg_dict['undo_buttom']
 
-        evt_b = add_button.Unbind(wx.EVT_BUTTON)
+        #evt_b = add_button.Unbind(wx.EVT_BUTTON)
         add_button.Bind(wx.EVT_BUTTON, self.add_closuer(arg_dict))
 
-        evt_u = update_button.Unbind(wx.EVT_BUTTON)
+        #evt_u = update_button.Unbind(wx.EVT_BUTTON)
         update_button.Bind(wx.EVT_BUTTON, self.update_closuer(arg_dict))
 
-        evt_r = remove_button.Unbind(wx.EVT_BUTTON)
+        #evt_r = remove_button.Unbind(wx.EVT_BUTTON)
         remove_button.Bind(wx.EVT_BUTTON, self.remove_closuer(arg_dict))
 
-        evt_d = undo_button.Unbind(wx.EVT_BUTTON)
+        #evt_d = undo_button.Unbind(wx.EVT_BUTTON)
         undo_button.Bind(wx.EVT_BUTTON, self.undo_closuer(arg_dict))
 
-        evt_s = self.Unbind(wx.EVT_SPINCTRL)
+        #evt_s = self.Unbind(wx.EVT_SPINCTRL)
         self.Bind(wx.EVT_SPINCTRL, self.swap_rows_closure(
             arg_dict, wx.Colour(*w_bg_color)))
 
@@ -380,7 +377,7 @@ class FieldEdit(BasePanel, wx.Panel):
         panel = self._panel_bot(arg_dict)
         parent_sizer.Add(panel, 0, wx.CENTER | wx.ALL, 6)
         width, height = arg_dict['top_grid_sizer'].GetMinSize()
-        bot_grid_sizer = arg_dict['bot_grid_sizer']
+        #bot_grid_sizer = arg_dict['bot_grid_sizer']
         self._update_screen_size(arg_dict)
 
     def _destroy_panel(self, panel, parent_sizer):
@@ -396,7 +393,7 @@ class FieldEdit(BasePanel, wx.Panel):
             w_fg_color_0 = arg_dict['w_fg_color_0']
             grid_sizer = arg_dict.get('bot_grid_sizer')
             field_name = arg_dict['new_field_name']
-            spin_ctrl = arg_dict['spin_ctrl']
+            #spin_ctrl = arg_dict['spin_ctrl']
             value = field_name.GetValue()
 
             if value:
@@ -495,7 +492,6 @@ class FieldEdit(BasePanel, wx.Panel):
 
     #         if value.endswith(':'):
     #             self._tcp.undo_name(name)
-
 
     #     return undo_button
 

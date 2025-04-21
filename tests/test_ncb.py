@@ -6,7 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import unittest
 
-from . import log, check_flag
+from . import check_flag
 from src.ncb import CheckPanelConfig, CheckAppConfig
 
 

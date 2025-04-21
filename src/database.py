@@ -4,7 +4,6 @@
 #
 __docformat__ = "restructuredtext en"
 
-import time
 import datetime as dtime
 import copy
 import wx
@@ -87,6 +86,7 @@ class Database(TomlMetaData, BaseDatabase):
                     iana, lat, lon = self._find_timezone(location_city_name)
 
                 if start_of_fiscal_year:
+                    # Remove the time from the fiscal year.
                     if start_of_fiscal_year[10] in (' ', 'T'):
                         start_of_fiscal_year = start_of_fiscal_year[:10]
 
@@ -139,7 +139,7 @@ class Database(TomlMetaData, BaseDatabase):
         if year:
             where = f"WHERE year={year}"
         elif month:
-             where = f"WHERE month={month}"
+            where = f"WHERE month={month}"
         elif day:
             where = f"WHERE day={day}"
         else:
@@ -184,7 +184,7 @@ class Database(TomlMetaData, BaseDatabase):
         """
         assert ((name and not order) or (not name and order)
                 or (not name and not order)), (
-                f"Cannot query for both the 'name' and 'order'.")
+                "Cannot query for both the 'name' and 'order'.")
 
         if name:
             where = f"WHERE month={name}"
@@ -282,8 +282,8 @@ class Database(TomlMetaData, BaseDatabase):
         if month:
             params = (year, year+1, month)
             query = (
-                "SELECT d.pk, f.field, d.value, d.c_time, d.m_time, "
-                "       y1.year, y2.year "
+                "SELECT d.pk, f.field, d.value, y1.year, y2.year, "
+                "       d.c_time, d.m_time "
                 f"FROM {self._T_DATA} AS d "
                 f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
                 f"     AND f.field IN (\"{fields}\")"
@@ -320,20 +320,20 @@ class Database(TomlMetaData, BaseDatabase):
         fy1 = await self.select_from_fiscal_year_table(current=1)
         fy2 = await self.select_from_fiscal_year_table(year=fy1[0][1]+1)
         query = (
-            f"INSERT INTO {self._T_DATA} (value, c_time, m_time, mfk, "
-            "ffk, fy1fk, fy2fk) VALUES (:value, :c_time, :m_time, :mfk, "
-            ":ffk, :fy1fk, :fy2fk);"
+            f"INSERT INTO {self._T_DATA} (value, fy1fk, fy2fk, mfk, ffk, "
+            "c_time, m_time) VALUES (:value, :fy1fk, :fy2fk, :mfk, :ffk, "
+            ":c_time, :m_time);"
             )
         values = []
 
         for item in f_items:
             pk, field, c_time, m_time = item
             mfk = f_month[0][0]
-            fy1fk = fy1[0][0]
-            fy2fk = fy2[0][0]
-            values.append({'value': data[field], 'c_time': now,
-                           'm_time': now, 'mfk': mfk, 'ffk': pk,
-                           'fy1fk': fy1fk, 'fy2fk': fy2fk})
+            fy1fk = fy1[0][0]  # We want the fk not the year.
+            fy2fk = fy2[0][0]  # We want the fk not the year.
+            values.append({'value': data[field], 'fy1fk': fy1fk,
+                           'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
+                           'c_time': now, 'm_time': now})
 
         await self._do_insert_query(query, values)
 

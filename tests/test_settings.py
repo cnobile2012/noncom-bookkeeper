@@ -10,7 +10,7 @@ import wx
 
 from src.settings import Paths
 
-from . import log, check_flag
+from . import check_flag
 
 
 class FakeFrame(wx.Frame):
@@ -32,8 +32,8 @@ class TestPaths(unittest.TestCase):
         """
         Test that the constructor creates eight widgets.
         """
-        app = wx.App()
-        paths = Paths(FakeFrame(None))
+        #app = wx.App()
+        #paths = Paths(FakeFrame(None))
         should_be_num = 8
         widgets = [var for var in Paths.create_display.__code__.co_varnames
                    if var.startswith('widget')]

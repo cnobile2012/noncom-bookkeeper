@@ -10,7 +10,7 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 
-def find_dict(value:list) -> dict:
+def find_dict(value: list) -> dict:
     """
     Fine the dict in the Toml data that is in the widget value list.
 
@@ -60,8 +60,8 @@ class BasePanel:
     def background_color(self) -> list:
         return self._bg_color
 
-    def _setup_sizer_height_correctly(self, sizer:wx.GridBagSizer,
-                                      swidth:int=None) -> None:
+    def _setup_sizer_height_correctly(self, sizer: wx.GridBagSizer,
+                                      swidth: int=None) -> None:
         """
         Add the height of the status bar to the Sizer height so that the
         call to SetupScrolling creates the correct virtual window size.

@@ -4,7 +4,6 @@
 #
 __docformat__ = "restructuredtext en"
 
-import asyncio
 from collections import OrderedDict
 
 from .config import TomlAppConfig, TomlMetaData
@@ -12,7 +11,6 @@ from .config import TomlAppConfig, TomlMetaData
 import wx
 from wx.lib.inspection import InspectionTool
 
-from .database import Database
 from .tools import ShortCuts, FieldEdit
 from .settings import Paths
 
@@ -190,7 +188,7 @@ class MenuBar:
                         used += 1
                         self._menu.Enable(id, tf)
                         self.__recurse_menu(od, bind_map, menu=mo)
-            except Exception as e:
+            except Exception:
                 self._log.error("One of the menu items failed: %s, %s",
                                 values, menu, exc_info=True)
 
@@ -364,7 +362,6 @@ class MenuBar:
         self._hide_all_panels()
         self.panel = self.panels['paths']
         self._set_panel()
-
 
     def app_manual(self, event):
         pass

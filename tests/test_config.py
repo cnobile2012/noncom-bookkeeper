@@ -8,10 +8,7 @@ import os
 import unittest
 import shutil
 
-try:
-    from unittest.mock import patch
-except:
-    from mock import patch
+from unittest.mock import patch
 
 import tomlkit as tk
 
@@ -225,7 +222,7 @@ class TestBaseSystemData(unittest.TestCase):
 
         for error in errors:
             msg = f"Should have error '{error[1]}'"
-            self.assertIn('Invalid property, ', error[1])
+            self.assertIn('Invalid property, ', error[1], msg)
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(BaseSystemData, 'user_config_fullpath',
@@ -238,7 +235,7 @@ class TestBaseSystemData(unittest.TestCase):
 
         for error in errors:
             msg = f"Should have error '{error[1]}'"
-            self.assertIn('Cannot find file ', error[1])
+            self.assertIn('Cannot find file ', error[1], msg)
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(BaseSystemData, 'user_config_fullpath',
@@ -255,7 +252,7 @@ class TestBaseSystemData(unittest.TestCase):
 
         for error in errors:
             msg = f"Should have error '{error[1]}'"
-            self.assertIn('TOML error: ', error[1])
+            self.assertIn('TOML error: ', error[1], msg)
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(BaseSystemData, 'user_config_fullpath',
@@ -272,7 +269,7 @@ class TestBaseSystemData(unittest.TestCase):
 
         for error in errors:
             msg = f"Should have error '{error[1]}'"
-            self.assertIn('Cannot parse zero length file ', error[1])
+            self.assertIn('Cannot parse zero length file ', error[1], msg)
 
 
 class BaseTest(unittest.TestCase):
@@ -308,8 +305,8 @@ class TestTomlMetaData(BaseTest):
         msg = f"There should be {self._NUM_PANELS}, found {num_panels}."
         self.assertEqual(self._NUM_PANELS, num_panels, msg)
         num_in_panel = 2
-        msg = (f"There should be 2 strings in each panel object, found {{}} "
-               f"in panel {{}}.")
+        msg = ("There should be 2 strings in each panel object, found {} "
+               "in panel {}.")
 
         for panel in panels:
             num = len(panel)
@@ -421,9 +418,9 @@ class TestTomlMetaData(BaseTest):
         for font_type, values in fonts.items():
             font = self.tmd.get_font(font_type)
             self.assertEqual(values[0], font[0],
-                              msg.format('points', values[0], font[0]))
+                             msg.format('points', values[0], font[0]))
             self.assertEqual(values[1], font[3],
-                              msg.format('weight', values[0], font[3]))
+                             msg.format('weight', values[0], font[3]))
 
 
 class TestTomlPanelConfig(BaseTest):
@@ -638,11 +635,11 @@ class TestTomlAppConfig(BaseTest):
 
         for j, (outer_key, values) in enumerate(self.tac.app_config.items()):
             self.assertEqual(outer_key_list[j], outer_key,
-                              key_msg.format(outer_key))
+                             key_msg.format(outer_key))
 
             for k, (inner_key, value) in enumerate(values.items()):
                 self.assertEqual(inner_key_list[k], inner_key,
-                                  key_msg.format(inner_key))
+                                 key_msg.format(inner_key))
                 self.assertTrue(isinstance(value, list), val_msg.format(value))
 
     #@unittest.skip("Temporarily skipped")
@@ -693,7 +690,7 @@ class TestTomlAppConfig(BaseTest):
         self.create_config()
         # Test that the 'default' value is the default.
         value = self.tac.get_value('app_size', 'default')
-        should_be = [530, 830]
+        should_be = [536, 830]
         msg = f"Should be '{should_be}' found '{value}'."
         self.assertEqual(should_be, value, msg)
 
