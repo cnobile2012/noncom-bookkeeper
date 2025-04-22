@@ -51,7 +51,7 @@ widget_06 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Treasurer:'
 widget_07 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[260, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], financial=false}]
 
 widget_08 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Start of Fiscal Year:'], min=[-1, -1], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1]}]
-widget_09 = ['DatePickerCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[140, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1]}]
+widget_09 = ['BadiDatePickerCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[130, 30], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1]}]
 
 widget_10 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "The following Location field is needed to determine the timezone."], font='font_10_bold', min=[420, 56], style='ALIGN_CENTER_HORIZONTAL | ALIGN_CENTER_VERTICAL | TE_MULTILINE | TE_WORDWRAP', add=[0, 'ALIGN_CENTER | ALL', 6], pos=[5, 0], span=[1, 2]}]
 

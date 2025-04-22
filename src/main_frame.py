@@ -10,6 +10,7 @@ import logging
 from .config import TomlAppConfig
 from .database import Database
 from .utilities import StoreObjects
+from .custom_widgits import BadiDatePickerCtrl
 
 import wx
 import wx.adv

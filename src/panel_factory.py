@@ -9,7 +9,6 @@ from io import StringIO
 from .config import TomlMetaData
 from .bases import find_dict
 
-import wx
 # https://pwwang.github.io/python-varname/
 # from varname import varname, nameof
 
@@ -92,7 +91,7 @@ class PanelFactory(TomlMetaData):
                 self.static_text(klass, widget, value)
             elif value[0] == 'TextCtrl':
                 self.text_ctrl(klass, widget, value)
-            elif value[0] == 'DatePickerCtrl':
+            elif value[0] == 'BadiDatePickerCtrl':
                 self.date_picker_ctrl(klass, widget, value)
             elif value[0] in ('Choice', 'ComboBox'):
                 self.choice_combo_box(klass, widget, value)
@@ -225,8 +224,8 @@ class PanelFactory(TomlMetaData):
     def date_picker_ctrl(self, klass, widget, value):
         dict_ = find_dict(value)
         parent, id, _ = dict_.get('args')
-        klass.write(f"        {widget} = wx.adv.DatePickerCtrl("
-                    f"{parent}, wx.{id})\n")
+        klass.write(f"        {widget} = BadiDatePickerCtrl({parent}, "
+                    f"wx.{id})\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
 

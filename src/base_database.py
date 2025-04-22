@@ -186,7 +186,7 @@ class BaseDatabase:
                     financial = True if c_set[1].financial else False
                     data[field_name] = self._scrub_value(value,
                                                          financial=financial)
-                elif name1 == 'DatePickerCtrl':
+                elif name1 == 'BadiDatePickerCtrl':
                     data[field_name] = self._scrub_value(value, convert_to_utc)
 
         return data
@@ -223,9 +223,10 @@ class BaseDatabase:
                             elif not value and field_name == 'treasurer_month':
                                 value = self._org_data['treasurer']
                         c_set[1].SetValue(value)
-                    elif name1 == 'DatePickerCtrl':
+                    elif name1 == 'BadiDatePickerCtrl':
                         year, month, day = self._convert_date_to_yymmdd(value)
                         dt = wx.DateTime(year=year, month=month, day=day)
+                        print('POOP', value, year, month, day)
                         c_set[1].SetValue(dt)
 
     def _find_children(self, panel: wx.Panel) -> list:
@@ -279,26 +280,29 @@ class BaseDatabase:
         else:  # Insert only months and their order if not in the database.
             # We only need month and order.
             data = [item[1:3] for item in items]
+            con_months = [(month, order) for order, month in months.items()]
 
-            for idx, item in enumerate(data):
-                if item not in months:
+            for item in data:
+                if item not in con_months:
                     await self.insert_into_month_table(item)
 
-    async def _insert_update_fiscal_year_table(self, field_data: tuple
+    async def _insert_update_fiscal_year_table(self, date: tuple, current: int
                                                ) -> None:
         """
         Insert or update `fiscal_year` table.
 
-        :param tuple field_data: This is the year, month, day, and current
-                                 values (year, month, day, current).
+        :param tuple date: This is the year, month, day, and current values
+                           (year, month, day).
+        :param int current: This will return the current fiscal year if `1`
+                            or the next year if `0`. If set to `None`
+                            (default) then do a query for the provided year.
         """
-        year = field_data[0]
-        values = await self.select_from_fiscal_year_table(year=year)
+        values = await self.select_from_fiscal_year_table(year=date[0])
 
         if values:
-            await self.update_fiscal_year_table(year, field_data[3])  # current
+            await self.update_fiscal_year_table(date[0], current)
         else:
-            await self.insert_into_fiscal_year_table(field_data)
+            await self.insert_into_fiscal_year_table(date, current)
 
     async def _insert_update_data_table(self, year: int, month: int,
                                         data: dict) -> None:
@@ -311,9 +315,9 @@ class BaseDatabase:
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: <value>,...}.
         """
+        #print('POOP0: data\n', year, month, data)
         values = await self.select_from_data_table(data, year, month)
-        print('POOP0: data\n', data)
-        print('POOP1: values\n', values)
+        #print('POOP1: values\n', values)
 
         if not values:  # Do insert
             await self.insert_into_data_table(year, month, data)

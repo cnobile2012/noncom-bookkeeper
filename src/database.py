@@ -10,6 +10,7 @@ import wx
 
 from .config import TomlMetaData
 from .base_database import BaseDatabase
+from .custom_widgits import ordered_month
 
 from zoneinfo import ZoneInfo
 import badidatetime
@@ -26,17 +27,7 @@ class Database(TomlMetaData, BaseDatabase):
         BaseDatabase.__init__(self)
 
     def _ordered_month(self):
-        """
-        Numerically order Badí' months.
-
-        :returns: A list of tuples in the form of
-                  [(<month name>, <order>), ...]]
-        :rtype: list
-        """
-        numbers = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-                   12, 13, 14, 15, 16, 17, 18, 0, 19)
-        return [(month, numbers[idx])
-                for idx, month in enumerate(badidatetime.MONTHNAMES)]
+        return ordered_month()
 
     async def populate_panels(self):
         """
@@ -85,30 +76,12 @@ class Database(TomlMetaData, BaseDatabase):
                 if location_city_name:
                     iana, lat, lon = self._find_timezone(location_city_name)
 
-                if start_of_fiscal_year:
-                    # Remove the time from the fiscal year.
-                    if start_of_fiscal_year[10] in (' ', 'T'):
-                        start_of_fiscal_year = start_of_fiscal_year[:10]
-
-                    year = int(start_of_fiscal_year[:4])
-
-                    if year > 1800:  # Must be a Gregorian date.
-                        gdt = dtime.date.fromisoformat(start_of_fiscal_year)
-                        bc = badidatetime.BahaiCalendar()
-                        b_date = bc.badi_date_from_gregorian_date(
-                            (gdt.year, gdt.month, gdt.day), short=True)[:3]
-                        bdt = badidatetime.date(*b_date)
-                        data['start_of_fiscal_year'] = bdt.isoformat()
-                    else:
-                        bdt = badidatetime.date.fromisoformat(
-                            start_of_fiscal_year, short=True)
-                        b_date = (bdt.year, bdt.month, bdt.day)
-
+                b_date = start_of_fiscal_year.b_date
+                data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
                 # Create or update the current and next year.
-                b_date += (1,)
-                await self._insert_update_fiscal_year_table(b_date)
-                next_date = (b_date[0]+1, b_date[1], b_date[2], 0)
-                await self._insert_update_fiscal_year_table(next_date)
+                await self._insert_update_fiscal_year_table(b_date, 1)
+                next_date = (b_date[0]+1, b_date[1], b_date[2])
+                await self._insert_update_fiscal_year_table(next_date, 0)
             else:
                 bdt = badidatetime.datetime.now(badidatetime.UTC, short=True)
                 b_date = bdt.b_date0
@@ -118,17 +91,16 @@ class Database(TomlMetaData, BaseDatabase):
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,
-                                            current: bool=None) -> list:
+                                            current: int=None) -> list:
         """
         Select from the `fiscal_year` table. Only the year is needed to
         select the correct row of data.
 
         :param int year: The year is used to query if the `current`
                          argument is `None`.
-        :param bool current: This will return the current fiscal year if
-                             `True` or the next year if `False`. If set to
-                             `None` (default) then do a query for the
-                             provided year.
+        :param int current: This will return the current fiscal year if `1`
+                            or the next year if `0`. If set to `None`
+                            (default) then do a query for the provided year.
         :returns: A list of the `fiscal_year` table data for the year
                   requested.
         :rtype: list
@@ -148,16 +120,20 @@ class Database(TomlMetaData, BaseDatabase):
         query = (f"SELECT * FROM {self._T_FISCAL_YEAR} {where};")
         return await self._do_select_query(query)
 
-    async def insert_into_fiscal_year_table(self, field_data: tuple) -> None:
+    async def insert_into_fiscal_year_table(self, date: tuple, current: int
+                                            ) -> None:
         """
         Insert a row of data into the `fiscal_year` table.
 
-        :param tuple field_data: This is the year, month, day, and current
-                                 values (year, month, day, current).
+        :param tuple date: This is the year, month, day, and current values
+                           (year, month, day).
+        :param int current: This will return the current fiscal year if `1`
+                            or the next year if `0`. If set to `None`
+                            (default) then do a query for the provided year.
         """
         now = badidatetime.datetime.now(badidatetime.UTC,
                                         short=True).isoformat()
-        data = [field_data + (now, now),]
+        data = [date + (current, now, now),]
         query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
                  "current, c_time, m_time) VALUES (?, ?, ?, ?, ?, ?)")
         await self._do_insert_query(query, data)
@@ -196,17 +172,16 @@ class Database(TomlMetaData, BaseDatabase):
         query = (f"SELECT * FROM {self._T_MONTH} {where};")
         return await self._do_select_query(query)
 
-    async def insert_into_month_table(self, field_data: list) -> None:
+    async def insert_into_month_table(self, months: dict) -> None:
         """
         Insert into the `month` table.
 
-        :param list month: A list of tuples where the tuple represents the
-                           [(month, order), ...] used when transactions are
-                           made.
+        :param list months: A dict where the key is the order of the month
+                            and the value is the month name.
         """
         now = badidatetime.datetime.now(badidatetime.UTC,
                                         short=True).isoformat()
-        data = [data + (now, now) for data in field_data]
+        data = [(name, order, now, now) for order, name in months.items()]
         query = (f"INSERT INTO {self._T_MONTH} (month, ord, c_time, m_time) "
                  "VALUES (?, ?, ?, ?)")
         await self._do_insert_query(query, data)
