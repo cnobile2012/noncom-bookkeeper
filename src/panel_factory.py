@@ -91,8 +91,10 @@ class PanelFactory(TomlMetaData):
                 self.static_text(klass, widget, value)
             elif value[0] == 'TextCtrl':
                 self.text_ctrl(klass, widget, value)
-            elif value[0] == 'BadiDatePickerCtrl':
+            elif value[0] == 'DatePickerCtrl':
                 self.date_picker_ctrl(klass, widget, value)
+            elif value[0] == 'BadiDatePickerCtrl':
+                self.badi_date_picker_ctrl(klass, widget, value)
             elif value[0] in ('Choice', 'ComboBox'):
                 self.choice_combo_box(klass, widget, value)
             elif value[0] == 'StaticLine':
@@ -224,7 +226,7 @@ class PanelFactory(TomlMetaData):
     def date_picker_ctrl(self, klass, widget, value):
         dict_ = find_dict(value)
         parent, id, _ = dict_.get('args')
-        klass.write(f"        {widget} = BadiDatePickerCtrl({parent}, "
+        klass.write(f"        {widget} = wx.adv.DatePickerCtrl({parent}, "
                     f"wx.{id})\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
@@ -233,6 +235,21 @@ class PanelFactory(TomlMetaData):
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
         klass.write(f"        {widget}.Bind(wx.adv.EVT_DATE_CHANGED, "
+                    "self.set_dirty_flag)\n")
+        self._set_add_to_sizer(klass, widget, value)
+
+    def badi_date_picker_ctrl(self, klass, widget, value):
+        dict_ = find_dict(value)
+        parent, id, _ = dict_.get('args')
+        klass.write(f"        {widget} = BadiDatePickerCtrl({parent}, "
+                    f"wx.{id})\n")
+        self._set_colors(klass, widget, value)
+        min_size = dict_.get('min')
+
+        if min_size:
+            klass.write(f"        {widget}.SetMinSize({min_size})\n")
+
+        klass.write(f"        {widget}.Bind(EVT_BADI_DATE_CHANGED, "
                     "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 

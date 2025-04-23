@@ -341,4 +341,4 @@ class Database(TomlMetaData, BaseDatabase):
 
         :param str value: A ISO formatting date string.
         """
-        return badidatetime.date.fromisoformat(value, short=True).b_date
+        return badidatetime.date.fromisoformat(value, short=True)

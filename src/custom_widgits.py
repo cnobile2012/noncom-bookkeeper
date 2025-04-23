@@ -41,31 +41,79 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
     def __init__(self, parent, bdate: badidatetime.date):
         super().__init__(parent, wx.BORDER_SIMPLE)
         self.panel = wx.Panel(self)
+        self.panel.SetBackgroundColour(wx.Colour(255, 253, 208))
+        self.panel.SetForegroundColour(wx.Colour(0, 0, 0))
+        self.panel.Bind(wx.EVT_PAINT, self.on_paint_border)
         self.bdate = bdate
         self.on_date_selected = None  # callback
-
         self.grid_sizer = wx.GridSizer(rows=4, cols=5, hgap=5, vgap=5)
         self._populate_days()
 
         vbox = wx.BoxSizer(wx.VERTICAL)
-        label = ordered_month()[bdate.month]
-        header = wx.StaticText(self.panel, label=label)
-        font = header.GetFont()
+        # Navigation header
+        nav_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # Create nav buttons
+        prev_year = wx.Button(self.panel, label="⏮", size=(20, 20),
+                              style=wx.BORDER_NONE)
+        prev_month = wx.Button(self.panel, label="◀", size=(20, 20),
+                               style=wx.BORDER_NONE)
+        next_month = wx.Button(self.panel, label="▶", size=(20, 20),
+                               style=wx.BORDER_NONE)
+        next_year = wx.Button(self.panel, label="⏭", size=(20, 20),
+                              style=wx.BORDER_NONE)
+        # Bind nav buttons
+        prev_year.Bind(wx.EVT_BUTTON, self.on_prev_year)
+        next_year.Bind(wx.EVT_BUTTON, self.on_next_year)
+        prev_month.Bind(wx.EVT_BUTTON, self.on_prev_month)
+        next_month.Bind(wx.EVT_BUTTON, self.on_next_month)
+        # Header label
+        self.header = wx.StaticText(
+            self.panel, label="",  # updated later
+            style=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
+        font = self.header.GetFont()
         font.SetWeight(wx.FONTWEIGHT_BOLD)
-        header.SetFont(font)
+        font.SetPointSize(font.GetPointSize() - 1)  # reduce by 1pt
+        self.header.SetFont(font)
+        # Layout buttons and header
+        nav_sizer.Add(prev_year, 0, wx.RIGHT, 4)
+        nav_sizer.Add(prev_month, 0, wx.RIGHT, 5)
+        nav_sizer.Add(self.header, 2, wx.ALL | wx.EXPAND)
+        nav_sizer.Add(next_month, 0, wx.LEFT, 5)
+        nav_sizer.Add(next_year, 0, wx.LEFT, 4)
 
-        vbox.Add(header, 0, wx.ALL | wx.ALIGN_CENTER, 5)
+        vbox.Add(nav_sizer, 0, wx.ALL | wx.EXPAND, 5)
         vbox.Add(self.grid_sizer, 0, wx.ALL | wx.ALIGN_CENTER, 5)
 
         self.panel.SetSizer(vbox)
+        vbox.Fit(self.panel)
         self.Fit()
+        self.update_header()
+
+    def on_paint_border(self, event):
+        dc = wx.PaintDC(self.panel)
+        size = self.panel.GetSize()
+        dc.SetPen(wx.Pen(wx.Colour(100, 100, 100)))  # gray border
+        dc.SetBrush(wx.TRANSPARENT_BRUSH)
+        dc.DrawRectangle(0, 0, size.width - 1, size.height - 1)
 
     def _populate_days(self):
         self.grid_sizer.Clear(delete_windows=True)
         max_day = self._max_days_in_month(self.bdate.year, self.bdate.month)
+        today = badidatetime.date.today(short=True)
 
         for day in range(1, max_day + 1):
-            btn = wx.Button(self.panel, label=str(day), size=(32, 32))
+            btn = wx.Button(self.panel, label=str(day), size=(28, 28))
+
+            # Set today to a different color.
+            if (day == today.day and self.bdate.month == today.month
+                and self.bdate.year == today.year):
+                btn.SetBackgroundColour(wx.Colour(230, 240, 255))
+                btn.SetForegroundColour(wx.Colour(0, 70, 160))
+            else:
+                btn.SetForegroundColour(wx.Colour(0, 0, 0))
+                btn.SetBackgroundColour(wx.Colour(180, 180, 180))
+
+            btn.SetWindowStyle(wx.BORDER_NONE | wx.BU_EXACTFIT)
             btn.Bind(wx.EVT_BUTTON, self._on_day_clicked)
             btn.day = day
             self.grid_sizer.Add(btn, 0, wx.ALL, 2)
@@ -82,11 +130,53 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
 
         self.Dismiss()
 
+    def update_header(self):
+        label = ordered_month()[self.bdate.month]
+        self.header.SetLabel(f"{label} {self.bdate.year}")
+        self._populate_days()
+        self.Layout()
+        self.panel.Layout()
+        self.Fit()
+
+    def on_prev_year(self, event):
+        self.bdate = badidatetime.date(self.bdate.year - 1,
+                                       self.bdate.month, 1)
+        self.update_header()
+
+    def on_next_year(self, event):
+        self.bdate = badidatetime.date(self.bdate.year + 1,
+                                       self.bdate.month, 1)
+        self.update_header()
+
+    MONTH_ORDER = list(ordered_month().keys())  # [1..18, 0, 19]
+
+    def _shift_month(self, direction):
+        idx = self.MONTH_ORDER.index(self.bdate.month)
+        new_idx = (idx + direction) % len(self.MONTH_ORDER)
+        new_month = self.MONTH_ORDER[new_idx]
+        year = self.bdate.year
+
+        if direction == 1 and self.bdate.month == 19:
+            year += 1
+        elif direction == -1 and self.bdate.month == 1:
+            year -= 1
+
+        self.bdate = badidatetime.date(year, new_month, 1)
+        self.update_header()
+
+    def on_prev_month(self, event):
+        self._shift_month(-1)
+
+    def on_next_month(self, event):
+        self._shift_month(1)
+
 
 class BadiDatePickerCtrl(wx.Panel):
     """
     Customized Badí' date widget.
     """
+    _DATE_RANGES = {0: (1, 4), 1: (2, 2), 2: (2, 2)}
+
     def __init__(self, parent: wx.Window, id: int=wx.ID_ANY,
                  dt: badidatetime.date=None, pos=wx.DefaultPosition,
                  size=wx.DefaultSize,
@@ -94,7 +184,6 @@ class BadiDatePickerCtrl(wx.Panel):
                  validator=wx.DefaultValidator, name: str="badidatectrl"
                  ) -> None:
         super().__init__(parent)
-        #self.SetSize(260, 20)
         # Default date
         self.bdate = dt or badidatetime.date.today(short=True)
 
@@ -124,8 +213,10 @@ class BadiDatePickerCtrl(wx.Panel):
     def on_change(self, event):
         text = self.text_ctrl.GetValue()
         parts = re.split(r'[-/.]', text)
+        res = [self._DATE_RANGES[i][0] <= len(p) <= self._DATE_RANGES[i][1]
+               for i, p in enumerate(parts)]
 
-        if len(parts) == 3:
+        if len(parts) == 3 and all(res):
             date = [int(p) for p in parts]
             self.bdate = badidatetime.date(*date)
             wx.PostEvent(self, BadiDateChangedEvent(self, self.bdate))
@@ -140,16 +231,11 @@ class BadiDatePickerCtrl(wx.Panel):
 
     def _on_popup_date_selected(self, new_bdate):
         self.SetValue(new_bdate)
-        evt = BadiDateChangedEvent(self, new_bdate)
-        wx.PostEvent(self, evt)
+        wx.PostEvent(self, BadiDateChangedEvent(self, new_bdate))
 
     def GetValue(self):
         return self.bdate
 
-    def SetValue(self, b_date: badidatetime.date):
-        self.bdate = b_date
-        self.year_spin.SetValue(b_date.year)
-        self.month_choice.SetSelection(b_date.month)
-        self.day_spin.SetRange(
-            1, self._max_days_in_month(b_date.year, b_date.month))
-        self.day_spin.SetValue(b_date.day)
+    def SetValue(self, bdate: badidatetime.date):
+        self.bdate = bdate
+        self.text_ctrl.SetValue(bdate.isoformat())

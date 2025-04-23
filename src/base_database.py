@@ -186,7 +186,7 @@ class BaseDatabase:
                     financial = True if c_set[1].financial else False
                     data[field_name] = self._scrub_value(value,
                                                          financial=financial)
-                elif name1 == 'BadiDatePickerCtrl':
+                elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                     data[field_name] = self._scrub_value(value, convert_to_utc)
 
         return data
@@ -223,11 +223,8 @@ class BaseDatabase:
                             elif not value and field_name == 'treasurer_month':
                                 value = self._org_data['treasurer']
                         c_set[1].SetValue(value)
-                    elif name1 == 'BadiDatePickerCtrl':
-                        year, month, day = self._convert_date_to_yymmdd(value)
-                        dt = wx.DateTime(year=year, month=month, day=day)
-                        print('POOP', value, year, month, day)
-                        c_set[1].SetValue(dt)
+                    elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
+                        c_set[1].SetValue(self._convert_date_to_yymmdd(value))
 
     def _find_children(self, panel: wx.Panel) -> list:
         """
