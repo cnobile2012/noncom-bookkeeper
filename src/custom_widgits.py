@@ -23,7 +23,7 @@ def ordered_month():
                  for idx, month in enumerate(badidatetime.MONTHNAMES)])
 
 
-# Custom event
+# Custom Badi date event
 wxEVT_BADI_DATE_CHANGED_TYPE = wx.NewEventType()
 EVT_BADI_DATE_CHANGED = wx.PyEventBinder(wxEVT_BADI_DATE_CHANGED_TYPE, 1)
 
@@ -239,3 +239,91 @@ class BadiDatePickerCtrl(wx.Panel):
     def SetValue(self, bdate: badidatetime.date):
         self.bdate = bdate
         self.text_ctrl.SetValue(bdate.isoformat())
+
+
+# Custom event
+wxEVT_COLOR_CHECKBOX = wx.NewEventType()
+EVT_COLOR_CHECKBOX = wx.PyEventBinder(wxEVT_COLOR_CHECKBOX, 1)
+
+
+class ColorCheckBoxEvent(wx.PyCommandEvent):
+    def __init__(self, source, state):
+        super().__init__(wxEVT_COLOR_CHECK_BOX, source.GetId())
+        self._state = state
+
+    def GetColorCheckBoxState(self):
+        return self._state
+
+
+class ColorCheckBox(wx.Panel):
+    def __init__(self, parent: wx.Window, id: int=wx.ID_ANY, label: str="",
+                 checked: bool=False,
+                 fg=wx.Colour(0, 0, 0),
+                 bg=wx.Colour(255, 255, 255),
+                 check_color=wx.Colour(0, 120, 215),
+                 disabled_color=wx.Colour(160, 160, 160)):
+        super().__init__(parent)
+        self.checked = checked
+        self.enabled = True
+        self.label = label
+        self.fg = fg
+        self.bg = bg
+        self.check_color = check_color
+        self.disabled_color = disabled_color
+
+        self.SetBackgroundColour(bg)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
+
+        self.SetMinSize((120, 24))  # tweak size if needed
+
+    def OnClick(self, event):
+        if self.enabled:
+            self.checked = not self.checked
+            self.Refresh()
+            evt = wx.CommandEvent(EVT_COLOR_CHECKBOX.typeId, self.GetId())
+            evt.SetEventObject(self)
+            evt.SetInt(int(self.checked))
+            wx.PostEvent(self, evt)
+
+    def OnPaint(self, event):
+        dc = wx.PaintDC(self)
+        dc.Clear()
+        size = self.GetSize()
+        padding = 6
+
+        box_size = 16
+        box_x = padding
+        box_y = (size.height - box_size) // 2
+
+        text_x = box_x + box_size + 8
+        text_y = (size.height - dc.GetTextExtent(self.label)[1]) // 2
+
+        # Set colors based on state
+        fg = self.fg if self.enabled else self.disabled_color
+        check_color = self.check_color if self.enabled else self.disabled_color
+
+        # Draw checkbox square
+        dc.SetPen(wx.Pen(check_color))
+        dc.SetBrush(wx.Brush(wx.WHITE))
+        dc.DrawRectangle(box_x, box_y, box_size, box_size)
+
+        # Draw checkmark if checked
+        if self.checked:
+            dc.SetBrush(wx.Brush(check_color))
+            dc.DrawRectangle(box_x + 3, box_y + 3, box_size - 6, box_size - 6)
+
+        # Draw label
+        dc.SetTextForeground(fg)
+        dc.DrawText(self.label, text_x, text_y)
+
+    def GetValue(self):
+        return self.checked
+
+    def SetValue(self, value: bool):
+        self.checked = bool(value)
+        self.Refresh()
+
+    def Enable(self, enable: bool=True):
+        self.enabled = enable
+        self.Refresh()

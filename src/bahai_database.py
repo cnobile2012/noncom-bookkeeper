@@ -37,6 +37,9 @@ class Database(TomlMetaData, BaseDatabase):
             data = self._collect_panel_values(panel)
             await self._add_fields_to_field_type_table(data)
             await self._insert_into_month_table()
+            # Get the current fiscal year
+
+
             dt = badidatetime.datetime.now(badidatetime.UTC, short=True)
             values = await self.select_from_data_table(data, dt.year, dt.month)
 
@@ -69,7 +72,7 @@ class Database(TomlMetaData, BaseDatabase):
                 self._log.warning(msg)
                 self._mf.statusbar_warning = msg
 
-            if name == 'organization' and self.config_type == 'bahai':
+            if name == 'organization':
                 location_city_name = data_copy['location_city_name']
                 start_of_fiscal_year = data_copy['start_of_fiscal_year']
 
@@ -84,7 +87,7 @@ class Database(TomlMetaData, BaseDatabase):
                 await self._insert_update_fiscal_year_table(next_date, 0)
             else:
                 bdt = badidatetime.datetime.now(badidatetime.UTC, short=True)
-                b_date = bdt.b_date0
+                b_date = bdt.b_date
 
         await self._insert_update_data_table(b_date[0], b_date[1], data)
         panel.dirty = False
@@ -288,29 +291,34 @@ class Database(TomlMetaData, BaseDatabase):
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: <value>,...}.
         """
-        now = badidatetime.datetime.now(badidatetime.UTC,
-                                        short=True).isoformat()
         f_items = await self.select_from_field_type_table(data)
         f_month = await self.select_from_month_table(order=month)
         fy1 = await self.select_from_fiscal_year_table(current=1)
-        fy2 = await self.select_from_fiscal_year_table(year=fy1[0][1]+1)
-        query = (
-            f"INSERT INTO {self._T_DATA} (value, fy1fk, fy2fk, mfk, ffk, "
-            "c_time, m_time) VALUES (:value, :fy1fk, :fy2fk, :mfk, :ffk, "
-            ":c_time, :m_time);"
-            )
-        values = []
 
-        for item in f_items:
-            pk, field, c_time, m_time = item
-            mfk = f_month[0][0]
-            fy1fk = fy1[0][0]  # We want the fk not the year.
-            fy2fk = fy2[0][0]  # We want the fk not the year.
-            values.append({'value': data[field], 'fy1fk': fy1fk,
-                           'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
-                           'c_time': now, 'm_time': now})
+        if fy1:
+            now = badidatetime.datetime.now(badidatetime.UTC,
+                                            short=True).isoformat()
+            f_items = await self.select_from_field_type_table(data)
+            f_month = await self.select_from_month_table(order=month)
+            fy2 = await self.select_from_fiscal_year_table(year=fy1[0][1]+1)
 
-        await self._do_insert_query(query, values)
+            query = (
+                f"INSERT INTO {self._T_DATA} (value, fy1fk, fy2fk, mfk, ffk, "
+                "c_time, m_time) VALUES (:value, :fy1fk, :fy2fk, :mfk, :ffk, "
+                ":c_time, :m_time);"
+                )
+            values = []
+
+            for item in f_items:
+                pk, field, c_time, m_time = item
+                mfk = f_month[0][0]
+                fy1fk = fy1[0][0]  # We want the fk not the year.
+                fy2fk = fy2[0][0]  # We want the fk not the year.
+                values.append({'value': data[field], 'fy1fk': fy1fk,
+                               'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
+                               'c_time': now, 'm_time': now})
+
+            await self._do_insert_query(query, values)
 
     async def update_data_table(self, year: int, month: int, data: dict
                                 ) -> None:

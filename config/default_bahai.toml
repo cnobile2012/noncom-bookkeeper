@@ -14,7 +14,8 @@
 [meta]
 panels = [['Organization Info', 'organization'],
           ['Budget', 'budget'],
-          ['Month', 'month']]
+          ['Month', 'month'],
+          ['Choose Fiscal Year', 'choose']]
 months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimát',
           'Kamál', "Asmá'", "'Izzat", 'Mashíyyat', "'Ilm", 'Qudrat', 'Qawl',
           'Masá’il', 'Sharaf', 'Sulṭán', 'Mulk', 'Ayyám-i-Há', "'Alá'"]
@@ -166,7 +167,7 @@ widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The followi
 
 widget_01 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[1, 0], span=[1, 2]}]
 
-widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monthly'], style='TE_READONLY', min=[228, -1], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[2, 0], span=[1, 1]}]
+widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Month of Year'], style='TE_READONLY', min=[228, -1], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[2, 0], span=[1, 1]}]
 
 widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Participation:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], update='widget_1', pos=[3, 0], span=[1, 1]}]
 widget_04 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[60, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], financial=false}]
@@ -189,3 +190,28 @@ widget_14 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 
 widget_15 = ['RadioBox', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Locality Prefix (Month)'], choices=['LSA', 'Group'], dim=1, style='RA_SPECIFY_ROWS', font='font_10_bold', tip="Choose if your community is an LSA or a group.", focus=false, select=0, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[11, 0], span=[1, 1], callback='locality_prefix', update='widget_16'}]
 widget_16 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font='font_10_normal', min=[260, -1], wrap=240, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[11, 1], span=[1, 1], instance=true, dirty_event=false, financial=false}]
+
+[choose]
+
+[choose.meta]
+title = 'Choose Fiscal Year'
+bg_color = [210, 190, 255]
+w_bg_color_1 = [222, 237, 230]
+w_fg_color_1 = [50, 50, 204]
+
+[choose.sizers]
+sizer_0 = ['BoxSizer', 'VERTICAL']
+sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
+
+[choose.widgets]
+widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Choose the fiscal year you want to view or edit'], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[0, 0], span=[1, 1]}]
+
+widget_01 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[1, 0], span=[1, 2]}]
+
+widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Fiscal Year'], style='TE_READONLY', min=[228, -1], focus=true, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[2, 0], span=[1, 1]}]
+
+widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Audit Complete:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 0], span=[1, 1], update='widget_04'}]
+widget_04 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font='font_10_normal', min=[60, -1], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], instance=true, dirty_event=false, financial=false}]
+
+widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Current Fiscal Year:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1], update='widget_06'}]
+widget_06 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], font='font_10_normal', min=[80, 20], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1], instance=true, dirty_event=true, financial=false}]

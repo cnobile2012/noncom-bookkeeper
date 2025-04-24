@@ -86,17 +86,21 @@ class PanelFactory(TomlMetaData):
         for widget, value in self.panel_config.get(
             panel, {}).get('widgets', {}).items():
             if value[0] == 'RadioBox':
-                self.radio_box(klass, widget, value)
+                self.radio_box(klass, panel, widget, value)
             elif value[0] == 'StaticText':
-                self.static_text(klass, widget, value)
+                self.static_text(klass, panel, widget, value)
             elif value[0] == 'TextCtrl':
-                self.text_ctrl(klass, widget, value)
+                self.text_ctrl(klass, panel, widget, value)
             elif value[0] == 'DatePickerCtrl':
-                self.date_picker_ctrl(klass, widget, value)
+                self.date_picker_ctrl(klass, panel, widget, value)
             elif value[0] == 'BadiDatePickerCtrl':
-                self.badi_date_picker_ctrl(klass, widget, value)
+                self.badi_date_picker_ctrl(klass, panel, widget, value)
             elif value[0] in ('Choice', 'ComboBox'):
-                self.choice_combo_box(klass, widget, value)
+                self.choice_combo_box(klass, panel, widget, value)
+            elif value[0] == 'CheckBox':
+                self.check_box(klass, panel, widget, value)
+            elif value[0] == 'ColorCheckBox':
+                self.color_check_box(klass, panel, widget, value)
             elif value[0] == 'StaticLine':
                 self.static_line(klass, widget, value)
             elif value == 'sizer_span':
@@ -131,7 +135,7 @@ class PanelFactory(TomlMetaData):
         klass.write(f"        {sizer} = wx.GridBagSizer(*{gap})\n")
         self._set_add_to_sizer(klass, sizer, value)
 
-    def radio_box(self, klass, widget, value):
+    def radio_box(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, label = dict_.get('args')
         style = dict_.get('style', 0)
@@ -167,7 +171,7 @@ class PanelFactory(TomlMetaData):
             klass.write(f"        {widget}.Bind(wx.EVT_RADIOBOX, "
                         "self.set_dirty_flag)\n")
 
-    def static_text(self, klass, widget, value):
+    def static_text(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, label = dict_.get('args')
         label = f"'''{label}'''"
@@ -194,7 +198,7 @@ class PanelFactory(TomlMetaData):
         if dict_.get('instance'):
             klass.write(f"        self.{widget} = {widget}\n")
 
-    def text_ctrl(self, klass, widget, value):
+    def text_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, label = dict_.get('args')
         label = f"'''{label}'''"
@@ -215,6 +219,7 @@ class PanelFactory(TomlMetaData):
         if dict_.get('dirty_event', True):
             klass.write(f"        {widget}.Bind(wx.EVT_TEXT, "
                         "self.set_dirty_flag)\n")
+
         self._set_add_to_sizer(klass, widget, value)
 
         if dict_.get('instance'):
@@ -223,7 +228,7 @@ class PanelFactory(TomlMetaData):
         value = dict_.get('financial', False)
         klass.write(f"        {widget}.financial = {value}\n")
 
-    def date_picker_ctrl(self, klass, widget, value):
+    def date_picker_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, _ = dict_.get('args')
         klass.write(f"        {widget} = wx.adv.DatePickerCtrl({parent}, "
@@ -238,7 +243,7 @@ class PanelFactory(TomlMetaData):
                     "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 
-    def badi_date_picker_ctrl(self, klass, widget, value):
+    def badi_date_picker_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, _ = dict_.get('args')
         klass.write(f"        {widget} = BadiDatePickerCtrl({parent}, "
@@ -253,24 +258,30 @@ class PanelFactory(TomlMetaData):
                     "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 
-    def choice_combo_box(self, klass, widget, value):
+    def choice_combo_box(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, name = dict_.get('args')
         widget_type = value[0]
-        months = [f"{idx:>2} {month}"
-                  for idx, month in enumerate(self.months, start=1)]
 
         if widget_type == 'ComboBox':
-            first = 'Choose Current Month'
-            months.insert(0, first)
-            label = f"value='''{first}''',"
+            if panel == 'month':
+                choices = [f"{idx:>2} {month}"
+                          for idx, month in enumerate(self.months, start=1)]
+                first = 'Choose Current Month'
+                choices.insert(0, first)
+                label = f"value='''{first}''',"
+            elif panel == 'choose':
+                choices = []
+                first = 'Choose Fiscal Year'
+                label = f"value='''{first}''',"
+                choices.insert(0, first)
         else:
             label = ''
 
         style = dict_.get('style', 0)
         style = style if style == 0 else self._fix_flags(style)
         klass.write(f"        {widget} = wx.{widget_type}({parent}, wx.{id}, "
-                    f"{label} choices={months}, style={style})\n")
+                    f"{label} choices={choices}, style={style})\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
 
@@ -279,6 +290,34 @@ class PanelFactory(TomlMetaData):
 
         klass.write(f"        {widget}.SetLabel('{name}')\n")
         klass.write(f"        {widget}.Bind(wx.EVT_COMBOBOX, "
+                    "self.set_dirty_flag)\n")
+        self._set_add_to_sizer(klass, widget, value)
+
+    def check_box(self, klass, panel, widget, value):
+        dict_ = find_dict(value)
+        parent, id, name = dict_.get('args')
+        klass.write(f"        {widget} = wx.CheckBox({parent}, wx.{id})\n")
+        self._set_colors(klass, widget, value)
+        min_size = dict_.get('min')
+
+        if min_size:
+            klass.write(f"        {widget}.SetMinSize({min_size})\n")
+
+        klass.write(f"        {widget}.Bind(wx.EVT_CHECKBOX, "
+                    "self.set_dirty_flag)\n")
+        self._set_add_to_sizer(klass, widget, value)
+
+    def color_check_box(self, klass, panel, widget, value):
+        dict_ = find_dict(value)
+        parent, id, name = dict_.get('args')
+        klass.write(f"        {widget} = ColorCheckBox({parent}, wx.{id})\n")
+        self._set_colors(klass, widget, value)
+        min_size = dict_.get('min')
+
+        if min_size:
+            klass.write(f"        {widget}.SetMinSize({min_size})\n")
+
+        klass.write(f"        {widget}.Bind(EVT_COLOR_CHECKBOX, "
                     "self.set_dirty_flag)\n")
         self._set_add_to_sizer(klass, widget, value)
 

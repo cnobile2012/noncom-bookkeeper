@@ -267,7 +267,7 @@ class BaseDatabase:
 
     async def _insert_into_month_table(self) -> None:
         """
-        Insert data into the `month` table.
+        Populate the `month` table with all months.
         """
         items = await self.select_from_month_table()
         months = self._ordered_month()

@@ -8,9 +8,9 @@ import asyncio
 import logging
 
 from .config import TomlAppConfig
-from .database import Database
 from .utilities import StoreObjects
-from .custom_widgits import BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED
+from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
+                             ColorCheckBox, EVT_COLOR_CHECKBOX)
 
 import wx
 import wx.adv
@@ -83,6 +83,11 @@ class MainFrame(MenuBar, wx.Frame):
         Check that the db has the Organization Information. If not start
         the 'Organization Information' panel.
         """
+        if self._tac.config_type == 'bahai':
+            from .bahai_database import Database
+        else:  # generic
+            pass
+
         db = Database()
         self._log.info("Create the database if it does not exist.")
         await db.create_db()

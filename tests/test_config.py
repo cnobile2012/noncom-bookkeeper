@@ -282,7 +282,7 @@ class BaseTest(unittest.TestCase):
 
 
 class TestTomlMetaData(BaseTest):
-    _NUM_PANELS = 3
+    _NUM_PANELS = 4
 
     def __init__(self, name):
         super().__init__(name)
