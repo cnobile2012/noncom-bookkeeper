@@ -114,7 +114,8 @@ alldocs	: sphinx epub latexpdf
 
 .PHONY	: install-dev
 install-dev:
-	pip install $(PIP_ARGS) -r requirements/development.txt
+	pip install $(PIP_ARGS) -r requirements/development.txt \
+            --log logs/pip.log
 
 .PHONY	: uninstall-dev
 uninstall-dev:

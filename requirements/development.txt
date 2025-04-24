@@ -1,14 +1,15 @@
 # Include the bare minimum.
 -r base.txt
 
-coverage
 wheel
-#twine
-flake8
-hatch
 pytest
-testfixtures
+coverage
+flake8
 ipython
+hatch
+hatchling
+testfixtures
+twine
 
 Sphinx
 sphinx_rtd_theme
