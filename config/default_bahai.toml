@@ -61,6 +61,8 @@ widget_11 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EX
 widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Location (City name):'], min=[-1, -1], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[7, 0], span=[1, 1]}]
 widget_13 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[260, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[7, 1], span=[1, 1], financial=false}]
 
+#widget_14 = ['']
+
 [budget]
 
 [budget.meta]

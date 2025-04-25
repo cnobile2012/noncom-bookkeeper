@@ -275,7 +275,7 @@ class ColorCheckBox(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
 
-        self.SetMinSize((120, 24))  # tweak size if needed
+        self.SetMinSize((120, 24))
 
     def OnClick(self, event):
         if self.enabled:

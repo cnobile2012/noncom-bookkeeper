@@ -191,7 +191,7 @@ class BaseDatabase:
 
         return data
 
-    def populate_panel_values(self, name: str, panel: wx.Panel,
+    def populate_panel_values(self, panel_name: str, panel: wx.Panel,
                               values: list) -> None:
         """
         Poplulate the named panel with the database values.
@@ -215,13 +215,15 @@ class BaseDatabase:
                     if name1 == 'TextCtrl':
                         financial = True if c_set[1].financial else False
                         value = self.db_to_value(value) if financial else value
+                        #print('POOP', panel_name, field_name, value)
 
-                        if name == 'month':
+                        if panel_name == 'month':
                             if (not value
                                 and field_name == 'total_membership_month'):
                                 value = self._org_data['total_membership']
                             elif not value and field_name == 'treasurer_month':
                                 value = self._org_data['treasurer']
+
                         c_set[1].SetValue(value)
                     elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                         c_set[1].SetValue(self._convert_date_to_yymmdd(value))

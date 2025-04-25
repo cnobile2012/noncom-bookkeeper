@@ -70,9 +70,9 @@ class MainFrame(MenuBar, wx.Frame):
 
             if code:
                 #print(code)   # *** TODO *** Remove later
-                exec(code)
+                exec(code, globals())
                 class_name = sf.get_class_name(panel)
-                self.__panel_classes[panel] = eval(class_name)(self)
+                self.__panel_classes[panel] = globals()[class_name](self)
 
         self.create_menu()
         StoreObjects().set_object(self.__class__.__name__, self)
@@ -105,11 +105,11 @@ class MainFrame(MenuBar, wx.Frame):
             # *** TODO *** Display a panel that offers the user ability
             #              to add or change fields.
             self.edit_budget(None)
-        # elif not db.has_month_data:
-        #     self._log.info("The month data has not been entered yet.")
-        #     # *** TODO *** Display a panel that offers the user ability
-        #     #              to add or change fields.
-        #     self.edit_month(None)
+        elif not db.has_month_data:
+            self._log.info("The month data has not been entered yet.")
+            # *** TODO *** Display a panel that offers the user ability
+            #              to add or change fields.
+            self.edit_month(None)
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)
