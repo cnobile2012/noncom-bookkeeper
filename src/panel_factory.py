@@ -71,6 +71,7 @@ class PanelFactory(TomlMetaData):
 
         self.main_sizer = None
         self.second_sizer = None
+        self.third_sizer = None
 
         # Create all the sizers.
         for sizer, value in self.panel_config.get(
@@ -105,6 +106,16 @@ class PanelFactory(TomlMetaData):
                 self.static_line(klass, widget, value)
             elif value == 'sizer_span':
                 self.sizer_span(klass)
+
+        # Create all the buttons.
+        values = []
+
+        for item, value in self.panel_config.get(
+            panel, {}).get('buttons', {}).items():
+            values.append((item, value))
+
+        if values:
+            self.assemble_buttons(klass, panel, values)
 
         if self.main_sizer:
             klass.write(f"        self.SetSizer({self.main_sizer})\n")
@@ -333,6 +344,68 @@ class PanelFactory(TomlMetaData):
         if self.span:
             klass.write(f"        {self.second_sizer}.Add(*{self.span})\n")
 
+    def assemble_buttons(self, klass, panel, values):
+        """
+        Assemble the buttons for this panel.
+
+        :param StringIO klass: A `StringIO` object.
+        :param str, panel: The current panel name.
+        :param list values: This is a list of tuples as in [(<item>, value),
+                            ...]. Where `<item>` is the variable name for a
+                            panel, sizer, or widget and `value` is the list
+                            of values from the toml config file.
+        """
+        for items in values:
+            name, value = items
+            dict_ = find_dict(value)
+
+            if value[0] == 'Panel':
+                panel_parent = dict_.get('args')
+                items = dict_.get('add', ())
+                prop, flags, panel_border = items
+                panel_flags = self._fix_flags(flags)
+                panel_pos = dict_.get('pos')
+                panel_span = dict_.get('span')
+                btn_panel = name
+            elif value[0] == 'StdDialogButtonSizer':
+                btn_sizer = name
+            elif value[0] == 'Button':
+                prop, flags, label = dict_.get('args')
+
+                if 'ID_CANCEL' == flags:
+                    c_parent = prop  # Should be the same as btn_panel above.
+                    c_flags = self._fix_flags(flags)
+                    c_label = label
+                    c_widget = name
+                else:
+                    f_parent = prop  # Should be the same as btn_panel above.
+                    f_flags = self._fix_flags(flags)
+                    f_label = label
+                    f_widget = name
+            elif value[0] == 'StaticLine':
+                sl_value = value
+                sl_parent, flags = dict_.get('args')
+                sl_flags = self._fix_flags(flags)
+                sl_widget = name
+
+        klass.write(f"        {sl_widget} = wx.StaticLine({sl_parent}, "
+                    f"{sl_flags})\n")
+        self._set_colors(klass, sl_widget, sl_value)
+        self._set_add_to_sizer(klass, sl_widget, sl_value)
+        klass.write(f"        {btn_panel} = wx.Panel({panel_parent})\n")
+        klass.write(f"        {btn_sizer} = wx.StdDialogButtonSizer()\n")
+        klass.write(f"        {f_widget} = wx.Button({f_parent}, {f_flags}, "
+                    f"label='{f_label}')\n")
+        klass.write(f"        {c_widget} = wx.Button({c_parent}, {c_flags}, "
+                    f"label='{c_label}')\n")
+        klass.write(f"        {btn_sizer}.AddButton({f_widget})\n")
+        klass.write(f"        {btn_sizer}.AddButton({c_widget})\n")
+        klass.write(f"        {btn_sizer}.Realize()\n")
+        klass.write(f"        {btn_panel}.SetSizer({btn_sizer})\n")
+        klass.write(f"        {self.second_sizer}.Add({btn_panel}, "
+                    f"{panel_pos}, {panel_span}, {panel_flags}, "
+                    f"{panel_border})\n")
+
     def _set_colors(self, klass, widget, value):
         """
         Sets the background and/or foreground color. Also raise an
@@ -392,9 +465,14 @@ class PanelFactory(TomlMetaData):
 
         return item
 
-    def _set_add_to_sizer(self, klass, widget, value):
+    def _set_add_to_sizer(self, klass: StringIO, widget: str,
+                          value: list) -> None:
         """
-        Sets the widget to the sizer add.
+        Sets the item to the sizer add.
+
+        :param StringIO klass: A `StringIO` object.
+        :param str item: Can be a widget, panel, or sizer.
+        :param list value: Various values used to add items to a sizer.
         """
         sizer = self.main_sizer if 'Sizer' in value[0] else self.second_sizer
         dict_ = find_dict(value)

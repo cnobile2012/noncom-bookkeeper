@@ -69,7 +69,9 @@ class MainFrame(MenuBar, wx.Frame):
             code = sf.get_panel_code(panel)
 
             if code:
-                #print(code)   # *** TODO *** Remove later
+                # if panel == 'organization':
+                #     print(code)   # *** TODO *** Remove later
+
                 exec(code, globals())
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = globals()[class_name](self)

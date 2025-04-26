@@ -192,16 +192,16 @@ class BaseSystemData(Settings):
                 try:
                     with open(fname, 'r') as f:
                         raw_doc = f.read()
-                except FileNotFoundError:
-                    msg = "Cannot find file {fname}, {str(e)}"
+                except FileNotFoundError as e:
+                    msg = f"Cannot find file {fname}, {str(e)}"
                     self._log.error(msg)
                     errors.append((file_type, msg, self.CANNOT_FIND_FILE))
                 else:
                     if raw_doc != "":
                         try:
                             doc = tk.parse(raw_doc)
-                        except tk.exceptions.TOMLKitError:
-                            msg = "TOML error: {str(e)}"
+                        except tk.exceptions.TOMLKitError as e:
+                            msg = f"TOML error: {str(e)}"
                             self._log.error(msg)
                             errors.append((file_type, msg, self.TOML_ERROR))
                         else:
@@ -665,7 +665,7 @@ class TomlCreatePanel(BaseSystemData):
                     break
                 elif key_num is not None:
                     value = self.__panel.get(self._make_key(key_num), [])
-                    print(key_num, value)
+                    #print(key_num, value)
                     assert value, "An invalid key_num was provided."
                     dict_ = find_dict(value)
                     pos = dict_['pos']

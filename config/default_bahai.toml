@@ -54,14 +54,20 @@ widget_07 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_08 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Start of Fiscal Year:'], min=[-1, -1], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1]}]
 widget_09 = ['BadiDatePickerCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[130, 30], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1]}]
 
-widget_10 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "The following Location field is needed to determine the timezone."], font='font_10_bold', min=[420, 56], style='ALIGN_CENTER_HORIZONTAL | ALIGN_CENTER_VERTICAL | TE_MULTILINE | TE_WORDWRAP', add=[0, 'ALIGN_CENTER | ALL', 6], pos=[5, 0], span=[1, 2]}]
+widget_10 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "The following Location field is needed to determine the timezone."], font='font_10_bold', min=[420, 42], style='ALIGN_CENTER_HORIZONTAL | ALIGN_CENTER_VERTICAL | TE_MULTILINE | TE_WORDWRAP', add=[0, 'ALIGN_CENTER | ALL', 6], pos=[5, 0], span=[1, 2]}]
 
-widget_11 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[6, 0], span=[1, 2]}]
+widget_11 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | BOTTOM', 4], pos=[6, 0], span=[1, 2]}]
 
 widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Location (City name):'], min=[-1, -1], focus=false, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[7, 0], span=[1, 1]}]
 widget_13 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[260, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[7, 1], span=[1, 1], financial=false}]
 
-#widget_14 = ['']
+[organization.buttons]
+widget_14 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 10], pos=[8, 0], span=[1, 2]}]
+
+panel_0 = ['Panel', {args='self', add=[0, 'ALL | EXPAND', 10], pos=[9, 1], span=[1, 2]}]
+sizer_2 = ['StdDialogButtonSizer', {panel='panel_0'}]
+widget_15 = ['Button', {args=['panel_0', 'ID_FORWARD', '&Continue'], dirty_event=false}]
+widget_16 = ['Button', {args=['panel_0', 'ID_CANCEL', ''], dirty_event=false}]
 
 [budget]
 
@@ -216,4 +222,4 @@ widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Audit Compl
 widget_04 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font='font_10_normal', min=[60, -1], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], instance=true, dirty_event=false, financial=false}]
 
 widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Current Fiscal Year:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1], update='widget_06'}]
-widget_06 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], font='font_10_normal', min=[80, 20], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1], instance=true, dirty_event=true, financial=false}]
+widget_06 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], font='font_10_normal', min=[80, 20], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1], dirty_event=true, financial=false}]

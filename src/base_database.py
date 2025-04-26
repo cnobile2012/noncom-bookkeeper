@@ -171,8 +171,10 @@ class BaseDatabase:
         data = {}
 
         for c_set in self._find_children(panel):
+            if isinstance(c_set[0], wx.Panel):
+                continue
+
             name0 = c_set[0].__class__.__name__
-            name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
             field_name = self._make_field_name(c_set[0].GetLabelText())
 
             if name0 == 'RadioBox':
@@ -180,6 +182,7 @@ class BaseDatabase:
             elif name0 == 'ComboBox':
                 data[field_name] = c_set[0].GetSelection()
             elif name0 == 'StaticText':
+                name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
                 value = c_set[1].GetValue()
 
                 if name1 == 'TextCtrl':
