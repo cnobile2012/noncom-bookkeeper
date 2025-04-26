@@ -28,6 +28,7 @@ class Settings(AppDirs):
     _LOGFILE_NAME = "ncbookkeeper.log"
     _LOCAL_CONFIG = os.path.join(_BASE_DIR, 'config')
     _DATA_FILE = 'data.sqlite3'
+    _PANEL_FACTORY_DIR = 'factory'
     _CONFIG_FILES = {'local': {'bahai': 'default_bahai.toml',
                                'generic': 'default_generic.toml'},
                      'user': {'bahai': 'bahai.toml',
@@ -57,6 +58,9 @@ class Settings(AppDirs):
 
         if not os.path.exists(self.user_log_dir):
             os.makedirs(self.user_log_dir, mode=0o775, exist_ok=True)
+
+        if not os.path.exists(self.cached_factory_dir):
+            os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
 
     @staticmethod
     def base_dir():
@@ -93,6 +97,10 @@ class Settings(AppDirs):
         return self._DATA_FILE
 
     @property
+    def panel_factory_name(self):
+        return self._PANEL_FACTORY_DIR
+
+    @property
     def user_data_fullpath(self):
         return os.path.join(self.user_data_dir, self.data_file_name)
 
@@ -107,6 +115,10 @@ class Settings(AppDirs):
     @property
     def user_log_fullpath(self):
         return os.path.join(self.user_log_dir, self.logfile_name)
+
+    @property
+    def cached_factory_dir(self):
+        return os.path.join(self.user_cache_dir, self.panel_factory_name)
 
     @property
     def local_config_fullpath(self):

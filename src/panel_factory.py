@@ -384,14 +384,9 @@ class PanelFactory(TomlMetaData):
                     f_widget = name
             elif value[0] == 'StaticLine':
                 sl_value = value
-                sl_parent, flags = dict_.get('args')
-                sl_flags = self._fix_flags(flags)
                 sl_widget = name
 
-        klass.write(f"        {sl_widget} = wx.StaticLine({sl_parent}, "
-                    f"{sl_flags})\n")
-        self._set_colors(klass, sl_widget, sl_value)
-        self._set_add_to_sizer(klass, sl_widget, sl_value)
+        self.static_line(klass, sl_widget, sl_value)
         klass.write(f"        {btn_panel} = wx.Panel({panel_parent})\n")
         klass.write(f"        {btn_sizer} = wx.StdDialogButtonSizer()\n")
         klass.write(f"        {f_widget} = wx.Button({f_parent}, {f_flags}, "

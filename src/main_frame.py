@@ -4,6 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
+import os
 import asyncio
 import logging
 
@@ -40,7 +41,8 @@ class MainFrame(MenuBar, wx.Frame):
 
     def __init__(self, parent=None, id=wx.ID_ANY,
                  pos=wx.DefaultPosition,
-                 style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL):
+                 style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
+                 options=None):
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         super().__init__(parent, id=id, pos=pos, style=style)
@@ -69,8 +71,13 @@ class MainFrame(MenuBar, wx.Frame):
             code = sf.get_panel_code(panel)
 
             if code:
-                # if panel == 'organization':
-                #     print(code)   # *** TODO *** Remove later
+                if options.file_dump:  # Write the code files to the cache.
+                    filename = f"{panel}.py"
+                    pathname = os.path.join(self._tac.cached_factory_dir,
+                                            filename)
+
+                    with open(pathname, 'w') as f:
+                        f.write(code)
 
                 exec(code, globals())
                 class_name = sf.get_class_name(panel)
