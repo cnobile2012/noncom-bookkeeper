@@ -40,6 +40,8 @@ class BadiDateChangedEvent(wx.PyCommandEvent):
 class BadiCalendarPopup(wx.PopupTransientWindow):
     """
     https://symbl.cc/en/emoji/symbols/
+    https://www.freepik.com/icons/bitmap
+    https://www.flaticon.com/free-icons/bitmap
     """
     def __init__(self, parent: wx.Window, flags=wx.BORDER_NONE,
                  bdate: badidatetime.date=None):
@@ -57,23 +59,26 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
         # Navigation header
         nav_sizer = wx.BoxSizer(wx.HORIZONTAL)
         # Create nav buttons
-        size = self.FromDIP((32, 32))
-        prev_year = wx.Button(self.panel, label="⏪", size=size,
-                              style=wx.BORDER_NONE)
-        prev_year.SetBackgroundColour(bg_color)
-        prev_year.SetForegroundColour(fg_color)
-        prev_month = wx.Button(self.panel, label="◀", size=size,
-                               style=wx.BORDER_NONE)
-        prev_month.SetBackgroundColour(bg_color)
-        prev_month.SetForegroundColour(fg_color)
-        next_month = wx.Button(self.panel, label="▶", size=size,
-                               style=wx.BORDER_NONE)
-        next_month.SetBackgroundColour(bg_color)
-        next_month.SetForegroundColour(fg_color)
-        next_year = wx.Button(self.panel, label="⏩", size=(size),
-                              style=wx.BORDER_NONE)
-        next_year.SetBackgroundColour(bg_color)
-        next_year.SetForegroundColour(fg_color)
+        size = self.FromDIP((26, 26))
+        py_art = wx.ArtProvider.GetBitmapBundle(wx.ART_GOTO_FIRST,
+                                                wx.ART_BUTTON)
+        prev_year = wx.BitmapButton(self.panel, bitmap=py_art, size=size)
+        #prev_year.SetBackgroundColour(fg_color)
+        #prev_year.SetForegroundColour(fg_color)
+        pm_art = wx.ArtProvider.GetBitmapBundle(wx.ART_GO_BACK, wx.ART_BUTTON)
+        prev_month = wx.BitmapButton(self.panel, bitmap=pm_art, size=size)
+        #prev_month.SetBackgroundColour(bg_color)
+        #prev_month.SetForegroundColour(fg_color)
+        nm_art = wx.ArtProvider.GetBitmapBundle(wx.ART_GO_FORWARD,
+                                                wx.ART_BUTTON)
+        next_month = wx.BitmapButton(self.panel, bitmap=nm_art, size=size)
+        #next_month.SetBackgroundColour(bg_color)
+        #next_month.SetForegroundColour(fg_color)
+        ny_art = wx.ArtProvider.GetBitmapBundle(wx.ART_GOTO_LAST,
+                                                wx.ART_BUTTON)
+        next_year = wx.BitmapButton(self.panel, bitmap=ny_art, size=size)
+        #next_year.SetBackgroundColour(bg_color)
+        #next_year.SetForegroundColour(fg_color)
         # Bind nav buttons
         prev_year.Bind(wx.EVT_BUTTON, self.on_prev_year)
         next_year.Bind(wx.EVT_BUTTON, self.on_next_year)
@@ -90,7 +95,7 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
         # Layout buttons and header
         nav_sizer.Add(prev_year, 0, wx.RIGHT, self.FromDIP(4))
         nav_sizer.Add(prev_month, 0, wx.RIGHT, self.FromDIP(8))
-        nav_sizer.Add(self.header, 2, wx.ALL | wx.EXPAND)
+        nav_sizer.Add(self.header, 1, wx.ALL | wx.EXPAND)
         nav_sizer.Add(next_month, 0, wx.LEFT, self.FromDIP(8))
         nav_sizer.Add(next_year, 0, wx.LEFT, self.FromDIP(4))
 
@@ -133,7 +138,16 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
             btn.SetWindowStyle(wx.BORDER_NONE | wx.BU_EXACTFIT)
             btn.Bind(wx.EVT_BUTTON, self._on_day_clicked)
             btn.day = day
-            self.grid_sizer.Add(btn, 0, wx.ALL, 2)
+            self.grid_sizer.Add(btn, 0, wx.ALL, self.FromDIP(2))
+
+    def update_header(self):
+        label = ordered_month()[self.bdate.month]
+        self.header.SetLabel(f"{label} {self.bdate.year}")
+        self.header.Wrap(self.FromDIP(150)) # Prevent clipping if name is long
+        self._populate_days()
+        self.Layout()
+        self.panel.Layout()
+        self.Fit()
 
     def _max_days_in_month(self, year, month):
         return 4 + self.bdate._is_leap_year(year) if month == 0 else 19
@@ -146,15 +160,6 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
             self.on_date_selected(new_date)
 
         self.Dismiss()
-
-    def update_header(self):
-        label = ordered_month()[self.bdate.month]
-        self.header.SetLabel(f"{label} {self.bdate.year}")
-        self.header.Wrap(self.FromDIP(150)) # Prevent clipping if name is long
-        self._populate_days()
-        self.Layout()
-        self.panel.Layout()
-        self.Fit()
 
     def on_prev_year(self, event):
         self.bdate = badidatetime.date(self.bdate.year - 1,
