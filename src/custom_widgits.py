@@ -4,10 +4,12 @@
 #
 __docformat__ = "restructuredtext en"
 
+import os
 import re
 import wx
 import wx.adv
 import badidatetime
+from src.config import Settings
 
 
 def ordered_month():
@@ -58,32 +60,26 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
         vbox = wx.BoxSizer(wx.VERTICAL)
         # Navigation header
         nav_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
         # Create nav buttons
-        size = self.FromDIP((26, 26))
-        py_art = wx.ArtProvider.GetBitmapBundle(wx.ART_GOTO_FIRST,
-                                                wx.ART_BUTTON)
-        prev_year = wx.BitmapButton(self.panel, bitmap=py_art, size=size)
-        #prev_year.SetBackgroundColour(fg_color)
-        #prev_year.SetForegroundColour(fg_color)
-        pm_art = wx.ArtProvider.GetBitmapBundle(wx.ART_GO_BACK, wx.ART_BUTTON)
-        prev_month = wx.BitmapButton(self.panel, bitmap=pm_art, size=size)
-        #prev_month.SetBackgroundColour(bg_color)
-        #prev_month.SetForegroundColour(fg_color)
-        nm_art = wx.ArtProvider.GetBitmapBundle(wx.ART_GO_FORWARD,
-                                                wx.ART_BUTTON)
-        next_month = wx.BitmapButton(self.panel, bitmap=nm_art, size=size)
-        #next_month.SetBackgroundColour(bg_color)
-        #next_month.SetForegroundColour(fg_color)
-        ny_art = wx.ArtProvider.GetBitmapBundle(wx.ART_GOTO_LAST,
-                                                wx.ART_BUTTON)
-        next_year = wx.BitmapButton(self.panel, bitmap=ny_art, size=size)
-        #next_year.SetBackgroundColour(bg_color)
-        #next_year.SetForegroundColour(fg_color)
+        def make_button(image):
+            path = os.path.join(Settings.base_dir(), 'images', image)
+            bitmap = wx.Bitmap(path, wx.BITMAP_TYPE_BMP)
+            button = wx.BitmapButton(self.panel, bitmap=bitmap, size=size,
+                                     style=wx.BORDER_NONE)
+            button.SetBackgroundColour(bg_color)
+            return button
+
+        size = self.FromDIP((30, 36))
+        prev_year = make_button('rewind-30x36.bmp')
+        prev_month = make_button('reverse-30x36.bmp')
+        next_month = make_button('play-30x36.bmp')
+        next_year = make_button('foward-30x36.bmp')
         # Bind nav buttons
         prev_year.Bind(wx.EVT_BUTTON, self.on_prev_year)
-        next_year.Bind(wx.EVT_BUTTON, self.on_next_year)
         prev_month.Bind(wx.EVT_BUTTON, self.on_prev_month)
         next_month.Bind(wx.EVT_BUTTON, self.on_next_month)
+        next_year.Bind(wx.EVT_BUTTON, self.on_next_year)
         # Header label
         self.header = wx.StaticText(
             self.panel, label="",  # updated later

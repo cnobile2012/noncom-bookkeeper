@@ -72,6 +72,38 @@ flake8  :
         # Warn on everything else.
 	flake8 . --exit-zero
 
+# --------------------------------------------------------------------
+
+.PHONY	: sphinx
+sphinx  : clean
+	(cd $(DOCS_DIR); make html)
+
+.PHONY  : latexpdf
+latexpdf:
+	(cd $(DOCS_DIR); make latexpdf)
+
+.PHONY	: epub
+epub	:
+	(cd $(DOCS_DIR); make epub)
+
+.PHONY	: alldocs
+alldocs	: sphinx epub latexpdf
+
+# --- Install and uninstall environments -----------------------------
+
+.PHONY	: install-dev
+install-dev:
+	pip install $(PIP_ARGS) -r requirements/development.txt \
+            --log logs/pip.log
+
+.PHONY	: uninstall-dev
+uninstall-dev:
+	@rm -rf ${HOME}/.local/share/${APP_NAME}
+	@rm -rf ${HOME}/.config/${APP_NAME}
+	@rm -rf ${HOME}/.cache/${APP_NAME}
+
+# --- Build final executables ----------------------------------------
+
 .PHONY	: logo
 logo	:
 	povray +w1280 +h1280 +p +x +d0 -v -icontrib/icon/logo.pov
@@ -93,35 +125,9 @@ icons	:
 	convert $(PREFIX)/contrib/icon/logo.png -resize 16x16 \
                 $(PREFIX)/images/bookkeeper-16x16.png
 
-# --------------------------------------------------------------------
-
-.PHONY	: sphinx
-sphinx  : clean
-	(cd $(DOCS_DIR); make html)
-
-.PHONY  : latexpdf
-latexpdf:
-	(cd $(DOCS_DIR); make latexpdf)
-
-.PHONY	: epub
-epub	:
-	(cd $(DOCS_DIR); make epub)
-
-.PHONY	: alldocs
-alldocs	: sphinx epub latexpdf
-
-# --------------------------------------------------------------------
-
-.PHONY	: install-dev
-install-dev:
-	pip install $(PIP_ARGS) -r requirements/development.txt \
-            --log logs/pip.log
-
-.PHONY	: uninstall-dev
-uninstall-dev:
-	@rm -rf ${HOME}/.local/share/${APP_NAME}
-	@rm -rf ${HOME}/.config/${APP_NAME}
-	@rm -rf ${HOME}/.cache/${APP_NAME}
+.PHONY	: images
+images	:
+	@cp $(PREFIX)/contrib/images/*-30x36.bmp $(PREFIX)/images/
 
 .PHONY	: build-spec
 build-spec:
