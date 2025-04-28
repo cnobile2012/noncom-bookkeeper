@@ -4,7 +4,6 @@
 #
 __docformat__ = "restructuredtext en"
 
-import datetime as dtime
 import copy
 import wx
 
@@ -38,7 +37,6 @@ class Database(TomlMetaData, BaseDatabase):
             await self._add_fields_to_field_type_table(data)
             await self._insert_into_month_table()
             # Get the current fiscal year
-
 
             dt = badidatetime.datetime.now(badidatetime.UTC, short=True)
             values = await self.select_from_data_table(data, dt.year, dt.month)

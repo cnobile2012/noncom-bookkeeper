@@ -15,3 +15,4 @@ per-file-ignores =
     src/*: E125, E128, E129, E252, E701
     tests/*: E265, E701, E741, F841
     tests/individual/*: E252, E402, E701
+    scripts/*: E402, E701

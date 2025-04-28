@@ -27,7 +27,7 @@ def _parse_arguments():
         '-F', '--file-dump', action='store_true', default=False,
         dest='file_dump', help=("Dump the generated panel factory files "
                                 "(must be used with -D or --debug)."))
-    return parser.parse_args()
+    return parser
 
 
 if __name__ == "__main__":
@@ -41,7 +41,8 @@ if __name__ == "__main__":
 
     if status == 0 and cac.has_valid_data:
         # Try to run display.
-        options = _parse_arguments()
+        parser = _parse_arguments()
+        options = parser.parse_args()
 
         if options.file_dump:  # -F (Must be used with -D)
             if not options.debug:
@@ -55,7 +56,7 @@ if __name__ == "__main__":
             app = wx.App()
             mf = MainFrame(options=options)
             icon_path = os.path.join(Settings.base_dir(), 'images',
-                                    'bookkeeper-48x48.ico')
+                                     'bookkeeper-48x48.ico')
             mf.SetIcon(wx.Icon(icon_path))
             mf.Show(True)
             app.MainLoop()

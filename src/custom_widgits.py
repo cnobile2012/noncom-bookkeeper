@@ -139,7 +139,7 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
     def update_header(self):
         label = ordered_month()[self.bdate.month]
         self.header.SetLabel(f"{label} {self.bdate.year}")
-        self.header.Wrap(self.FromDIP(150)) # Prevent clipping if name is long
+        self.header.Wrap(self.FromDIP(150))  # Prevent clipping if name is long
         self._populate_days()
         self.Layout()
         self.panel.Layout()
@@ -267,7 +267,7 @@ EVT_COLOR_CHECKBOX = wx.PyEventBinder(wxEVT_COLOR_CHECKBOX, 1)
 
 class ColorCheckBoxEvent(wx.PyCommandEvent):
     def __init__(self, source, state):
-        super().__init__(wxEVT_COLOR_CHECK_BOX, source.GetId())
+        super().__init__(wxEVT_COLOR_CHECKBOX, source.GetId())
         self._state = state
 
     def GetColorCheckBoxState(self):
