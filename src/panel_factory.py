@@ -67,11 +67,8 @@ class PanelFactory(TomlMetaData):
                     f"{weight}, {ul}, '{fn}'))\n")
         self.span = panel_kwargs.get('sizer_span')
         klass.write(f"        self.locale_prefix = {self.locale_prefix}\n")
-        klass.write("        self._dirty = False\n")
-
         self.main_sizer = None
         self.second_sizer = None
-        self.third_sizer = None
 
         # Create all the sizers.
         for sizer, value in self.panel_config.get(
@@ -124,6 +121,10 @@ class PanelFactory(TomlMetaData):
                     f"{self.second_sizer})\n")
         klass.write("        self.SetupScrolling(rate_x=20, rate_y=40)\n")
         klass.write("        self.Hide()\n")
+
+        if panel in ('organization', ):
+            self._create_save_cancel_events(klass, panel)
+
         self.__panels[panel] = klass.getvalue()
         klass.close()
 
@@ -371,17 +372,22 @@ class PanelFactory(TomlMetaData):
                 btn_sizer = name
             elif value[0] == 'Button':
                 prop, flags, label = dict_.get('args')
+                callback = dict_.get('callback')
 
                 if 'ID_CANCEL' == flags:
                     c_parent = prop  # Should be the same as btn_panel above.
                     c_flags = self._fix_flags(flags)
                     c_label = label
                     c_widget = name
+                    button_cancel = callback
+                    c_value = value
                 else:
                     f_parent = prop  # Should be the same as btn_panel above.
                     f_flags = self._fix_flags(flags)
                     f_label = label
                     f_widget = name
+                    button_save = callback
+                    f_value = value
             elif value[0] == 'StaticLine':
                 sl_value = value
                 sl_widget = name
@@ -391,15 +397,43 @@ class PanelFactory(TomlMetaData):
         klass.write(f"        {btn_sizer} = wx.StdDialogButtonSizer()\n")
         klass.write(f"        {f_widget} = wx.Button({f_parent}, {f_flags}, "
                     f"label='{f_label}')\n")
+        self._set_colors(klass, f_widget, f_value)
+        klass.write(f"        {f_widget}.Bind(wx.EVT_BUTTON, "
+                    f"self.{button_save})\n")
         klass.write(f"        {c_widget} = wx.Button({c_parent}, {c_flags}, "
                     f"label='{c_label}')\n")
+        self._set_colors(klass, c_widget, c_value)
         klass.write(f"        {btn_sizer}.AddButton({f_widget})\n")
+        klass.write(f"        {c_widget}.Bind(wx.EVT_BUTTON, "
+                    f"self.{button_cancel})\n")
         klass.write(f"        {btn_sizer}.AddButton({c_widget})\n")
         klass.write(f"        {btn_sizer}.Realize()\n")
         klass.write(f"        {btn_panel}.SetSizer({btn_sizer})\n")
         klass.write(f"        {self.second_sizer}.Add({btn_panel}, "
                     f"{panel_pos}, {panel_span}, {panel_flags}, "
                     f"{panel_border})\n")
+
+    def _create_save_cancel_events(self, klass, panel):
+        klass.write("\n        self._save = False\n")
+        klass.write("        self._cancel = False\n\n")
+        klass.write("    def button_save(self, event):\n")
+        klass.write("        self.save = True\n")
+        klass.write("        event.Skip()\n\n")
+        klass.write("    @property\n")
+        klass.write("    def save(self):\n")
+        klass.write("        return self._save\n\n")
+        klass.write("    @save.setter\n")
+        klass.write("    def save(self, value):\n")
+        klass.write("        self._save = value\n\n")
+        klass.write("    def button_cancel(self, event):\n")
+        klass.write("        self.cancel = True\n")
+        klass.write("        event.Skip()\n\n")
+        klass.write("    @property\n")
+        klass.write("    def cancel(self):\n")
+        klass.write("        return self._cancel\n\n")
+        klass.write("    @cancel.setter\n")
+        klass.write("    def cancel(self, value):\n")
+        klass.write("        self._cancel = value\n")
 
     def _set_colors(self, klass, widget, value):
         """

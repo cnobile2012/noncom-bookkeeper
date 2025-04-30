@@ -203,6 +203,8 @@ class BaseDatabase:
         :param list values: The database values to be used to poplulate the
                             panel.
         """
+        panel.initializing = True
+
         if (data := {item[1]: item[2:] for item in values}):
             for c_set in self._find_children(panel):
                 name0 = c_set[0].__class__.__name__
@@ -218,7 +220,6 @@ class BaseDatabase:
                     if name1 == 'TextCtrl':
                         financial = True if c_set[1].financial else False
                         value = self.db_to_value(value) if financial else value
-                        #print('POOP', panel_name, field_name, value)
 
                         if panel_name == 'month':
                             if (not value
@@ -230,6 +231,8 @@ class BaseDatabase:
                         c_set[1].SetValue(value)
                     elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                         c_set[1].SetValue(self._convert_date_to_yymmdd(value))
+
+        panel.initializing = False
 
     def _find_children(self, panel: wx.Panel) -> list:
         """
@@ -245,8 +248,8 @@ class BaseDatabase:
             add = False
             name = child.__class__.__name__
 
-            if (name == 'StaticLine' or
-                name == 'StaticText' and not child.GetLabel().endswith(':')):
+            if (name in ('StaticLine', 'StaticText', 'Panel')
+                and not child.GetLabel().endswith(':')):
                 continue
             elif name == 'ComboBox':
                 add = True
@@ -317,9 +320,7 @@ class BaseDatabase:
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: <value>,...}.
         """
-        #print('POOP0: data\n', year, month, data)
         values = await self.select_from_data_table(data, year, month)
-        #print('POOP1: values\n', values)
 
         if not values:  # Do insert
             await self.insert_into_data_table(year, month, data)
@@ -463,14 +464,27 @@ class BaseDatabase:
 
         return iana, lat, lon
 
-    def _update_organization_constants(self, values: list) -> None:
+    @property
+    def organization_data(self) -> list:
         """
-        This method sets the organization constants that are used throughout
+        This property gets the organization data that are used throughout
         the application without having to do a select on the DB everytime.
 
         .. note::
 
-           It is used in both the `populate_panels` and `save_to_database`
-           methods.
+           It is used in the `main_frame.on_timer_closure` method.
         """
-        self._org_data = {value[0]: value[2] for value in values}
+        return self._org_data
+
+    @organization_data.setter
+    def organization_data(self, values: list) -> None:
+        """
+        This property sets the organization constants that are used throughout
+        the application without having to do a select on the DB everytime.
+
+        .. note::
+
+           It is used in the `bahai_database.populate_panels`, and
+           `generic_database.populate_panels` methods.
+        """
+        self._org_data = [(value[0], value[1], value[2]) for value in values]

@@ -71,6 +71,7 @@ class MainFrame(MenuBar, wx.Frame):
             code = sf.get_panel_code(panel)
 
             if code:
+                # Generally only used for debugging.
                 if options.file_dump:  # Write the code files to the cache.
                     filename = f"{panel}.py"
                     pathname = os.path.join(self._tac.cached_factory_dir,
@@ -128,12 +129,34 @@ class MainFrame(MenuBar, wx.Frame):
         self._timer.Start(seconds)
 
     def on_timer_closure(self, db):
+        def do_save(db, name, panel):
+            c_name = name.capitalize()
+            self.statusbar_message = f"Saving {c_name} data!"
+            asyncio.run(db.save_to_database(name, panel))
+            self.statusbar_message = f"Finished saving {c_name} data!"
+            panel.dirty = False
+            self._log.debug("Checking '%s' for changes, dirty "
+                            "flag '%s'", name, panel.dirty)
+
         def on_timer(event):
             for name, panel in self.panels.items():
                 if panel.dirty:
-                    asyncio.run(db.save_to_database(name, panel))
-                    self._log.debug("Checking '%s' for changes, dirty "
-                                    "flag '%s'", name, panel.dirty)
+                    if name in ('organization',):
+                        if panel.save:
+                            panel.save = False
+                            do_save(db, name, panel)
+                        elif panel.cancel:
+                            panel.cancel = False
+                            c_name = name.capitalize()
+                            self.statusbar_message = (
+                                f"Restoring {c_name} data!")
+                            db.populate_panel_values(name, panel,
+                                                    db.organization_data)
+                            self.statusbar_message = (
+                                f"Finished restoring {c_name} data!")
+                            panel.dirty = False
+                    else:
+                        do_save(db, name, panel)
 
         return on_timer
 
@@ -201,19 +224,22 @@ class MainFrame(MenuBar, wx.Frame):
         self.__set_status(value, 'pink')
     statusbar_error = property(None, statusbar_error)
 
+    def statusbar_message(self, value):
+        self.__set_status(value, 'lightgreen')
+    statusbar_message = property(None, statusbar_message)
+
     def __set_status(self, value, color):
         self._statusbar.SetStatusText(value, 0)
-        bg_color = self._statusbar.GetBackgroundColour()
-        fg_color = self._statusbar.GetForegroundColour()
+        default_color = wx.Colour('black')
         self._statusbar.SetBackgroundColour(color)
         self._statusbar.SetForegroundColour('black')
         # Wait for 10 seconds before resetting the message.
-        wx.CallLater(10000, self.__reset_status, bg_color, fg_color)
+        wx.CallLater(10000, self.__reset_status, default_color)
 
-    def __reset_status(self, bg_color, fg_color):
+    def __reset_status(self, default_color):
         self._statusbar.SetStatusText("", 0)
-        self._statusbar.SetBackgroundColour(bg_color)
-        self._statusbar.SetForegroundColour(fg_color)
+        self._statusbar.SetBackgroundColour(default_color)
+        self._statusbar.SetForegroundColour(default_color)
 
     @property
     def statusbar_size(self):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# src/database.py
+# src/bahai_database.py
 #
 __docformat__ = "restructuredtext en"
 
@@ -42,7 +42,7 @@ class Database(TomlMetaData, BaseDatabase):
             values = await self.select_from_data_table(data, dt.year, dt.month)
 
             if name == 'organization':
-                self._update_organization_constants(values)
+                self.organization_data = values
 
             self.populate_panel_values(name, panel, values)
 
@@ -88,7 +88,6 @@ class Database(TomlMetaData, BaseDatabase):
                 b_date = bdt.b_date
 
         await self._insert_update_data_table(b_date[0], b_date[1], data)
-        panel.dirty = False
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,

@@ -82,6 +82,7 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         super().__init__(parent, id=id, **kwargs)
         self.parent = parent
         self._dirty = False
+        self._initializing = False
 
     def locality_prefix(self, update, dirty_flag):
         """
@@ -121,9 +122,12 @@ class BaseGenerated(BasePanel, ScrolledPanel):
 
     def set_dirty_flag(self, event):
         """
-        Set a dirty flag when any editable widget is modified.
+        Set a dirty flag when any editable widget is modified except when
+        initializing widgets.
         """
-        self.dirty = True
+        if not self.initializing:
+            self.dirty = True
+
         event.Skip()
 
     @property
@@ -133,3 +137,11 @@ class BaseGenerated(BasePanel, ScrolledPanel):
     @dirty.setter
     def dirty(self, value):
         self._dirty = value
+
+    @property
+    def initializing(self):
+        return self._initializing
+
+    @initializing.setter
+    def initializing(self, value):
+        self._initializing = value

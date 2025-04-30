@@ -9,7 +9,7 @@ import re
 import wx
 import wx.adv
 import badidatetime
-from src.config import Settings
+from .config import Settings
 
 
 def ordered_month():
