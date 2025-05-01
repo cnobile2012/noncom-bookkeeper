@@ -62,7 +62,7 @@ class MenuBar:
                           ('month', [202, f"&{names[2]}\tCTRL+M",
                                      "Edit monthy data.",
                                      'edit_month', None, True, None]),
-                          ('choose', [203, f"&{names[3]}\tCTRL+O",
+                          ('fiscal', [203, f"&{names[3]}\tCTRL+O",
                                       "Choose Fiscal Year",
                                       'choose_fiscal_year', None, True, None]),
                           ('hide', [204, "&Close All\tCTRL+L",
@@ -295,7 +295,7 @@ class MenuBar:
     def choose_fiscal_year(self, event):
         self.change_menu_items()
         self._hide_all_panels()
-        self.panel = self.panels['choose']
+        self.panel = self.panels['fiscal']
         self._set_panel()
 
     def _set_panel(self):

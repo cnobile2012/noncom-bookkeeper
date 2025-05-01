@@ -282,7 +282,7 @@ class PanelFactory(TomlMetaData):
                 first = 'Choose Current Month'
                 choices.insert(0, first)
                 label = f"value='''{first}''',"
-            elif panel == 'choose':
+            elif panel == 'fiscal':
                 choices = []
                 first = 'Choose Fiscal Year'
                 label = f"value='''{first}''',"

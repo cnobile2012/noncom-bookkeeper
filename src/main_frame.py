@@ -123,7 +123,7 @@ class MainFrame(MenuBar, wx.Frame):
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)
-        seconds = 1000*10
+        seconds = 1000*10  # 1000*10 = 10 minutes
         self._log.info("Checking panel dirty flag every %s seconds.",
                        seconds/1000)
         self._timer.Start(seconds)
@@ -131,12 +131,11 @@ class MainFrame(MenuBar, wx.Frame):
     def on_timer_closure(self, db):
         def do_save(db, name, panel):
             c_name = name.capitalize()
-            self.statusbar_message = f"Saving {c_name} data!"
+            self.statusbar_message = f"Saving {c_name} data."
             asyncio.run(db.save_to_database(name, panel))
-            self.statusbar_message = f"Finished saving {c_name} data!"
             panel.dirty = False
-            self._log.debug("Checking '%s' for changes, dirty "
-                            "flag '%s'", name, panel.dirty)
+            self.statusbar_message = f"Finished saving {c_name} data."
+            self._log.debug("Checking '%s' for changes, dirty.", name)
 
         def on_timer(event):
             for name, panel in self.panels.items():
@@ -149,12 +148,12 @@ class MainFrame(MenuBar, wx.Frame):
                             panel.cancel = False
                             c_name = name.capitalize()
                             self.statusbar_message = (
-                                f"Restoring {c_name} data!")
+                                f"Restoring {c_name} data.")
                             db.populate_panel_values(name, panel,
-                                                    db.organization_data)
-                            self.statusbar_message = (
-                                f"Finished restoring {c_name} data!")
+                                                     db.organization_data)
                             panel.dirty = False
+                            self.statusbar_message = (
+                                f"Finished restoring {c_name} data.")
                     else:
                         do_save(db, name, panel)
 

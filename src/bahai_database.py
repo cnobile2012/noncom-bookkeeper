@@ -11,7 +11,6 @@ from .config import TomlMetaData
 from .base_database import BaseDatabase
 from .custom_widgits import ordered_month
 
-from zoneinfo import ZoneInfo
 import badidatetime
 badidatetime.enable_geocoder()
 
@@ -32,14 +31,20 @@ class Database(TomlMetaData, BaseDatabase):
         """
         Populate all panels that have data in the database.
         """
+        # Get the current fiscal year
+        year, month = await self._get_fiscal_year()
+
         for name, panel in self._mf.panels.items():
             data = self._collect_panel_values(panel)
+
+            if name == 'organization':
+                data['iana_name'] = ''
+                data['latitude'] = 0.0
+                data['longitude'] = 0.0
+
             await self._add_fields_to_field_type_table(data)
             await self._insert_into_month_table()
-            # Get the current fiscal year
-
-            dt = badidatetime.datetime.now(badidatetime.UTC, short=True)
-            values = await self.select_from_data_table(data, dt.year, dt.month)
+            values = await self.select_from_data_table(data, year, month)
 
             if name == 'organization':
                 self.organization_data = values
@@ -62,32 +67,52 @@ class Database(TomlMetaData, BaseDatabase):
                'location_city_name': ''}
         """
         data = self._collect_panel_values(panel)
-        data_copy = copy.deepcopy(data)
 
-        for field, value in data_copy.items():
+        for field, value in data.items():
             if value in self._EMPTY_FIELDS:
                 msg = f"The '{field}' field must have data in it."
                 self._log.warning(msg)
                 self._mf.statusbar_warning = msg
 
-            if name == 'organization':
-                location_city_name = data_copy['location_city_name']
-                start_of_fiscal_year = data_copy['start_of_fiscal_year']
+        if name == 'organization':
+            year, month, day = await self._set_organization_data(data)
+        else:
+            year, month = await self._get_fiscal_year()
 
-                if location_city_name:
-                    iana, lat, lon = self._find_timezone(location_city_name)
+        await self._insert_update_data_table(year, month, data)
 
-                b_date = start_of_fiscal_year.b_date
-                data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
-                # Create or update the current and next year.
-                await self._insert_update_fiscal_year_table(b_date, 1)
-                next_date = (b_date[0]+1, b_date[1], b_date[2])
-                await self._insert_update_fiscal_year_table(next_date, 0)
-            else:
-                bdt = badidatetime.datetime.now(badidatetime.UTC, short=True)
-                b_date = bdt.b_date
+        if name == 'organization':
+            self.organization_data = await self.select_from_data_table(
+                data, year, month)
 
-        await self._insert_update_data_table(b_date[0], b_date[1], data)
+    async def _set_organization_data(self, data: dict) -> tuple:
+        """
+        Update the incoming dict with current or modified data.
+
+        .. note::
+
+           The `data` argument gets modified in place.
+
+        :param dict data: The database column name and its data.
+        :returns: A tuple in the form of (year, month, day).
+        :rtype: tuple
+        """
+        location_city_name = data['location_city_name']
+
+        if location_city_name:
+            iana, lat, lon = self._find_timezone(location_city_name)
+            data['iana_name'] = iana
+            data['latitude'] = lat
+            data['longitude'] = lon
+
+        start_of_fiscal_year = data['start_of_fiscal_year']
+        year, month, day = start_of_fiscal_year.b_date
+        data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
+        # Create or update the current and next year.
+        await self._insert_update_fiscal_year_table((year, month, day), 1)
+        next_date = (year+1, month, day)
+        await self._insert_update_fiscal_year_table(next_date, 0)
+        return year, month, day
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,
@@ -96,8 +121,11 @@ class Database(TomlMetaData, BaseDatabase):
         Select from the `fiscal_year` table. Only the year is needed to
         select the correct row of data.
 
-        :param int year: The year is used to query if the `current`
-                         argument is `None`.
+        :param int year: The `year` is used to query for a given year.
+        :param int month: The `month` is used to query a given month in
+                          all years.
+        :param int day: The `day` is used to query for a given day in
+                        all years and months.
         :param int current: This will return the current fiscal year if `1`
                             or the next year if `0`. If set to `None`
                             (default) then do a query for the provided year.
@@ -105,17 +133,19 @@ class Database(TomlMetaData, BaseDatabase):
                   requested.
         :rtype: list
         """
-        assert (year, month, day, current).count(None) == 3, (
+        assert (year, month, day, current).count(None) in (3, 4), (
             "Can only query for one of (year, month, day, current)")
 
-        if year:
+        if year:       # Get just the one year.
             where = f"WHERE year={year}"
-        elif month:
+        elif month:    # Get all years with this month.
             where = f"WHERE month={month}"
-        elif day:
+        elif day:      # Get all years and month with this day.
             where = f"WHERE day={day}"
-        else:
+        elif current:  # Get the current fiscal year.
             where = f"WHERE current={int(current)}"
+        else:          # Get all fiscal years.
+            where = ""
 
         query = (f"SELECT * FROM {self._T_FISCAL_YEAR} {where};")
         return await self._do_select_query(query)
@@ -131,8 +161,7 @@ class Database(TomlMetaData, BaseDatabase):
                             or the next year if `0`. If set to `None`
                             (default) then do a query for the provided year.
         """
-        now = badidatetime.datetime.now(badidatetime.UTC,
-                                        short=True).isoformat()
+        now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         data = [date + (current, now, now),]
         query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
                  "current, c_time, m_time) VALUES (?, ?, ?, ?, ?, ?)")
@@ -146,8 +175,7 @@ class Database(TomlMetaData, BaseDatabase):
         :param int year: The year indicating the start of the fiscal year.
         :param int current: The `current` field data.
         """
-        now = badidatetime.datetime.now(badidatetime.UTC,
-                                        short=True).isoformat()
+        now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
                  "SET current = :current, m_time = :m_time WHERE year = :year")
         data = [{'year': year, 'current': current, 'm_time': now}]
@@ -179,8 +207,7 @@ class Database(TomlMetaData, BaseDatabase):
         :param list months: A dict where the key is the order of the month
                             and the value is the month name.
         """
-        now = badidatetime.datetime.now(badidatetime.UTC,
-                                        short=True).isoformat()
+        now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         data = [(name, order, now, now) for order, name in months.items()]
         query = (f"INSERT INTO {self._T_MONTH} (month, ord, c_time, m_time) "
                  "VALUES (?, ?, ?, ?)")
@@ -209,8 +236,7 @@ class Database(TomlMetaData, BaseDatabase):
         :param set fields: The fields from any panel in the form of:
                            {<field name>,...}.
         """
-        now = badidatetime.datetime.now(badidatetime.UTC,
-                                        short=True).isoformat()
+        now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         data = [(field, now, now) for field in fields]
         query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, c_time, m_time) "
                  "VALUES (?, ?, ?)")
@@ -293,7 +319,7 @@ class Database(TomlMetaData, BaseDatabase):
         fy1 = await self.select_from_fiscal_year_table(current=1)
 
         if fy1:
-            now = badidatetime.datetime.now(badidatetime.UTC,
+            now = badidatetime.datetime.now(self.tzinfo,
                                             short=True).isoformat()
             f_items = await self.select_from_field_type_table(data)
             f_month = await self.select_from_month_table(order=month)
@@ -328,8 +354,7 @@ class Database(TomlMetaData, BaseDatabase):
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: (pk, <value>),...}.
         """
-        m_time = badidatetime.datetime.now(badidatetime.UTC,
-                                           short=True).isoformat()
+        m_time = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_DATA} SET value = :value, "
                  "m_time = :m_time WHERE pk = :pk;")
         values = []
@@ -347,3 +372,19 @@ class Database(TomlMetaData, BaseDatabase):
         :param str value: A ISO formatting date string.
         """
         return badidatetime.date.fromisoformat(value, short=True)
+
+    async def _get_fiscal_year(self):
+        """
+        Get the current fiscal year.
+        """
+        fy = await self.select_from_fiscal_year_table(current=1)
+
+        if len(fy):
+            year = fy[0][1]
+            month = fy[0][2]
+        else:  # Only for firt time use.
+            dt = badidatetime.datetime.now(badidatetime.UTC, short=True)
+            year = dt.year
+            month = dt.month
+
+        return year, month

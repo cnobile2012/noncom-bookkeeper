@@ -9,6 +9,7 @@ import wx
 import aiosqlite
 
 from .utilities import StoreObjects
+from zoneinfo import ZoneInfo
 
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
@@ -157,14 +158,14 @@ class BaseDatabase:
         return all([item not in self._EMPTY_FIELDS for item in data.values()])
 
     def _collect_panel_values(self, panel: wx.Panel,
-                              convert_to_utc: bool=False) -> dict:
+                              convert_to_tz: bool=False) -> dict:
         """
         Collects the data from the panel's widgets.
 
         :param wx.Panel panel: The panel to collect data from.
         :param convert_to_utc: True if wx.DateTime field's should be
-                               converted to UTC and False if they are not
-                               to be converted (default is False).
+                               converted to the local timezone and False if
+                               they are not to be converted (default is False).
         :returns: A dictonary of db field names and values.
         :rtype: dict
         """
@@ -190,7 +191,9 @@ class BaseDatabase:
                     data[field_name] = self._scrub_value(value,
                                                          financial=financial)
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
-                    data[field_name] = self._scrub_value(value, convert_to_utc)
+                    data[field_name] = self._scrub_value(value, convert_to_tz)
+                elif name1 in ('ColorCheckBox', 'CheckBox'):
+                    data[field_name] = c_set[1].GetValue()
 
         return data
 
@@ -203,9 +206,9 @@ class BaseDatabase:
         :param list values: The database values to be used to poplulate the
                             panel.
         """
-        panel.initializing = True
-
         if (data := {item[1]: item[2:] for item in values}):
+            panel.initializing = True
+
             for c_set in self._find_children(panel):
                 name0 = c_set[0].__class__.__name__
                 name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
@@ -215,6 +218,11 @@ class BaseDatabase:
                 if name0 == 'RadioBox':
                     c_set[0].SetSelection(value)
                 elif name0 == 'ComboBox':
+                    if panel_name == 'fiscal':
+                        choices = c_set[0].GetItems()
+                        print('POOP', data, choices)
+
+
                     c_set[0].SetSelection(value)
                 elif name0 == 'StaticText':
                     if name1 == 'TextCtrl':
@@ -232,7 +240,7 @@ class BaseDatabase:
                     elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                         c_set[1].SetValue(self._convert_date_to_yymmdd(value))
 
-        panel.initializing = False
+            panel.initializing = False
 
     def _find_children(self, panel: wx.Panel) -> list:
         """
@@ -396,7 +404,7 @@ class BaseDatabase:
         name = name.replace('(', '').replace(')', '')
         return name.replace(' ', '_').replace(':', '').lower()
 
-    def _scrub_value(self, value, convert_to_utc: bool=False,
+    def _scrub_value(self, value, convert_to_tz: bool=False,
                      financial: bool=False):
         if financial:
             value = self.value_to_db(value) if value != '' else '0'
@@ -404,8 +412,11 @@ class BaseDatabase:
             value = value.strip()
         elif isinstance(value, wx.DateTime):
             # We convert into an ISO 8601 format for the db.
-            if convert_to_utc: value = value.ToUTC()
+            if convert_to_tz: value = value.ToUTC()
             value = value.FormatISOCombined()
+        # *** TODO *** Maybe need not sure yet.
+        #elif isinatance(value, datetime.datetime):  # Python datetime package
+        #elif isinatance(value, badidatetime.datetime):  # Badi datetime package
 
         return value
 
@@ -442,8 +453,8 @@ class BaseDatabase:
         """
         Find the IANA timezone name, latitude, and longitude.
 
-        :param str address: The address, City, town used to find the required
-                            information.
+        :param str address: The address, City, or town used to find the
+                            required information.
         :returns: The IANA timezone name, latitude, and longitude.
         :rtype: tuple
         """
@@ -451,9 +462,8 @@ class BaseDatabase:
         location = geolocator.geocode(address)
 
         if location:
-            raw = location.raw
-            lat = float(raw['lat'])
-            lon = float(raw['lon'])
+            lat = location.latitude
+            lon = location.longitude
             tf = TimezoneFinder()
             iana = tf.timezone_at(lng=lon, lat=lat)
         else:
@@ -484,7 +494,24 @@ class BaseDatabase:
 
         .. note::
 
-           It is used in the `bahai_database.populate_panels`, and
-           `generic_database.populate_panels` methods.
+           1. It is used in the `bahai_database.populate_panels`, and
+              `generic_database.populate_panels` methods.
+           2. Only the first three fields are stored.
+
+        :param list values: A list of tuples where each tuple is the raw data
+                            for one field in the form of (PK, <field name>,
+                            <value>, <fiscal year>, <next year>, <c_time>,
+                            <m_time>).
         """
         self._org_data = [(value[0], value[1], value[2]) for value in values]
+
+    @property
+    def tzinfo(self):
+        iana = 'UTC'
+
+        if self.organization_data:
+            org_data = {field_name: value
+                        for pk, field_name, value in self.organization_data}
+            iana = org_data.get('iana_name', iana)
+
+        return ZoneInfo(iana)
