@@ -4,7 +4,6 @@
 #
 __docformat__ = "restructuredtext en"
 
-import copy
 import wx
 
 from .config import TomlMetaData
@@ -31,25 +30,20 @@ class Database(TomlMetaData, BaseDatabase):
         """
         Populate all panels that have data in the database.
         """
-        # Get the current fiscal year
         year, month = await self._get_fiscal_year()
 
-        for name, panel in self._mf.panels.items():
-            data = self._collect_panel_values(panel)
+        if None not in (year, month):
+            for name, panel in self._mf.panels.items():
+                data = self._collect_panel_values(panel)
+                # Add any new fields to the database.
+                await self._add_fields_to_field_type_table(data)
+                values = await self.select_from_data_table(data, year, month)
 
-            if name == 'organization':
-                data['iana_name'] = ''
-                data['latitude'] = 0.0
-                data['longitude'] = 0.0
+                # Needed when the app has been run at least one time before.
+                if name == 'organization':
+                    self.organization_data = values
 
-            await self._add_fields_to_field_type_table(data)
-            await self._insert_into_month_table()
-            values = await self.select_from_data_table(data, year, month)
-
-            if name == 'organization':
-                self.organization_data = values
-
-            self.populate_panel_values(name, panel, values)
+                self.populate_panel_values(name, panel, values)
 
     async def save_to_database(self, name: str, panel: wx.Panel) -> None:
         """
@@ -75,27 +69,21 @@ class Database(TomlMetaData, BaseDatabase):
                 self._mf.statusbar_warning = msg
 
         if name == 'organization':
-            year, month, day = await self._set_organization_data(data)
+            data = self._add_location_data(data)
+            year, month, day = await self._initialize_database(data)
         else:
             year, month = await self._get_fiscal_year()
 
         await self._insert_update_data_table(year, month, data)
 
-        if name == 'organization':
-            self.organization_data = await self.select_from_data_table(
-                data, year, month)
-
-    async def _set_organization_data(self, data: dict) -> tuple:
+    def _add_location_data(self, data: dict) -> dict:
         """
-        Update the incoming dict with current or modified data.
+        Add the location data `iana_name`, `latitude` and, `longitude` to
+        the organization data.
 
-        .. note::
-
-           The `data` argument gets modified in place.
-
-        :param dict data: The database column name and its data.
-        :returns: A tuple in the form of (year, month, day).
-        :rtype: tuple
+        :param dict data: The `organization` data.
+        :returns: The updated `organization` data.
+        :rtype: dict
         """
         location_city_name = data['location_city_name']
 
@@ -104,15 +92,53 @@ class Database(TomlMetaData, BaseDatabase):
             data['iana_name'] = iana
             data['latitude'] = lat
             data['longitude'] = lon
+        else:
+            self._log.warning("The 'location_city_name' field was not found, "
+                              "causing some dates to be set to the wrong "
+                              "timezone.")
 
-        start_of_fiscal_year = data['start_of_fiscal_year']
+        self.organization_data = data
+        return data
+
+    async def _initialize_database(self, org_data: dict) -> None:
+        """
+        Initializes the database with initial data.
+
+        .. note::
+
+           Can only be run after organization data has been entered but
+           before it has been saved to the database.
+
+        :param dict org_data: The `organization` data.
+        :returns: The year, month and, day as a tuple.
+        :rtype: tuple
+        """
+        start_of_fiscal_year = org_data['start_of_fiscal_year']
         year, month, day = start_of_fiscal_year.b_date
-        data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
-        # Create or update the current and next year.
+        org_data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
+        # Create or update the current fiscal and the following year.
         await self._insert_update_fiscal_year_table((year, month, day), 1)
-        next_date = (year+1, month, day)
+        next_date = (year + 1, month, day)
         await self._insert_update_fiscal_year_table(next_date, 0)
+        # Populate the Badi months in the database.
+        await self._insert_into_month_table()
+
+        for name, panel in self._mf.panels.items():
+            data = self._collect_panel_values(panel)
+
+            if name == 'organization':
+                data['iana_name'] = None
+                data['latitude'] = None
+                data['longitude'] = None
+
+            # Populate all fields in the database.
+            await self._add_fields_to_field_type_table(data)
+
         return year, month, day
+
+    #
+    # Fiscal Year SELECT, INSERT and, UPDATE methods.
+    #
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,
@@ -181,6 +207,10 @@ class Database(TomlMetaData, BaseDatabase):
         data = [{'year': year, 'current': current, 'm_time': now}]
         await self._do_update_query(query, data)
 
+    #
+    # Month SELECT and INSERT methods.
+    #
+
     async def select_from_month_table(self, *, name: str=None, order: int=None
                                       ) -> list:
         """
@@ -213,6 +243,10 @@ class Database(TomlMetaData, BaseDatabase):
                  "VALUES (?, ?, ?, ?)")
         await self._do_insert_query(query, data)
 
+    #
+    # Field Names SELECT, INSERT and, UPDATE methods.
+    #
+
     async def select_from_field_type_table(self, data: dict) -> list:
         """
         Select from the field_type table.
@@ -241,6 +275,10 @@ class Database(TomlMetaData, BaseDatabase):
         query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, c_time, m_time) "
                  "VALUES (?, ?, ?)")
         await self._do_insert_query(query, data)
+
+    #
+    # Data SELECT, INSERT and, UPDATE methods.
+    #
 
     async def select_from_data_table(self, data: dict, year: int=None,
                                      month: int=None,) -> list:
@@ -335,8 +373,8 @@ class Database(TomlMetaData, BaseDatabase):
             for item in f_items:
                 pk, field, c_time, m_time = item
                 mfk = f_month[0][0]
-                fy1fk = fy1[0][0]  # We want the fk not the year.
-                fy2fk = fy2[0][0]  # We want the fk not the year.
+                fy1fk = fy1[0][0]  # We want the FK not the year.
+                fy2fk = fy2[0][0]  # We want the FK not the year.
                 values.append({'value': data[field], 'fy1fk': fy1fk,
                                'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
                                'c_time': now, 'm_time': now})
@@ -364,6 +402,10 @@ class Database(TomlMetaData, BaseDatabase):
 
         await self._do_update_query(query, values)
 
+    #
+    # Miscellaneous method
+    #
+
     def _convert_date_to_yymmdd(self, value):
         """
         Converts the ISO date string to a tiple contaning the
@@ -383,8 +425,6 @@ class Database(TomlMetaData, BaseDatabase):
             year = fy[0][1]
             month = fy[0][2]
         else:  # Only for firt time use.
-            dt = badidatetime.datetime.now(badidatetime.UTC, short=True)
-            year = dt.year
-            month = dt.month
+            year = month = None
 
         return year, month

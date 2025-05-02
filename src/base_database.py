@@ -166,7 +166,8 @@ class BaseDatabase:
         :param convert_to_utc: True if wx.DateTime field's should be
                                converted to the local timezone and False if
                                they are not to be converted (default is False).
-        :returns: A dictonary of db field names and values.
+        :returns: A dictonary of db field names and values as in
+                  {<field name>: <value>}.
         :rtype: dict
         """
         data = {}
@@ -291,7 +292,6 @@ class BaseDatabase:
         if not items:  # Insert all months and their order.
             await self.insert_into_month_table(months)
         else:  # Insert only months and their order if not in the database.
-            # We only need month and order.
             data = [item[1:3] for item in items]
             con_months = [(month, order) for order, month in months.items()]
 
@@ -475,14 +475,13 @@ class BaseDatabase:
         return iana, lat, lon
 
     @property
-    def organization_data(self) -> list:
+    def organization_data(self) -> dict:
         """
         This property gets the organization data that are used throughout
         the application without having to do a select on the DB everytime.
 
-        .. note::
-
-           It is used in the `main_frame.on_timer_closure` method.
+        :returns: The organization data as defined by {<field name>: <value>}.
+        :rtype: dict
         """
         return self._org_data
 
@@ -496,22 +495,20 @@ class BaseDatabase:
 
            1. It is used in the `bahai_database.populate_panels`, and
               `generic_database.populate_panels` methods.
-           2. Only the first three fields are stored.
+           2. Only the second and three fields are stored when the incoming
+              values are a list otherwise the dict is used as is.
 
-        :param list values: A list of tuples where each tuple is the raw data
-                            for one field in the form of (PK, <field name>,
-                            <value>, <fiscal year>, <next year>, <c_time>,
-                            <m_time>).
+        :param list or dict values: A list of tuples where each tuple is the
+                                    raw data for one field in the form of
+                                    (PK, <field name>, <value>, <fiscal year>,
+                                    <next year>, <c_time>, <m_time>).
         """
-        self._org_data = [(value[0], value[1], value[2]) for value in values]
+        if isinstance(values, list):
+            self._org_data = {value[1]: value[2] for value in values}
+        else:
+            self._org_data = values
 
     @property
     def tzinfo(self):
-        iana = 'UTC'
-
-        if self.organization_data:
-            org_data = {field_name: value
-                        for pk, field_name, value in self.organization_data}
-            iana = org_data.get('iana_name', iana)
-
-        return ZoneInfo(iana)
+        iana_name = self.organization_data.get('iana_name')
+        return ZoneInfo(iana_name if iana_name else 'UTC')
