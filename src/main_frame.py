@@ -149,8 +149,8 @@ class MainFrame(MenuBar, wx.Frame):
                             c_name = name.capitalize()
                             self.statusbar_message = (
                                 f"Restoring {c_name} data.")
-                            db.populate_panel_values(name, panel,
-                                                     db.organization_data)
+                            db.populate_panel_values(
+                                name, panel, db.organization_data)
                             panel.dirty = False
                             self.statusbar_message = (
                                 f"Finished restoring {c_name} data.")
@@ -231,7 +231,7 @@ class MainFrame(MenuBar, wx.Frame):
         self._statusbar.SetStatusText(value, 0)
         default_color = wx.Colour('black')
         self._statusbar.SetBackgroundColour(color)
-        self._statusbar.SetForegroundColour('black')
+        self._statusbar.SetForegroundColour(default_color)
         # Wait for 10 seconds before resetting the message.
         wx.CallLater(10000, self.__reset_status, default_color)
 

@@ -196,6 +196,11 @@ class BaseDatabase:
                 elif name1 in ('ColorCheckBox', 'CheckBox'):
                     data[field_name] = c_set[1].GetValue()
 
+            if panel.__class__.__name__ == 'OrganizationPanel':
+                data['iana_name'] = None
+                data['latitude'] = None
+                data['longitude'] = None
+
         return data
 
     def populate_panel_values(self, panel_name: str, panel: wx.Panel,
@@ -220,9 +225,7 @@ class BaseDatabase:
                     c_set[0].SetSelection(value)
                 elif name0 == 'ComboBox':
                     if panel_name == 'fiscal':
-                        choices = c_set[0].GetItems()
-                        print('POOP', data, choices)
-
+                        self._add_fiscal_year_choices(c_set=c_set)
 
                     c_set[0].SetSelection(value)
                 elif name0 == 'StaticText':
@@ -242,6 +245,8 @@ class BaseDatabase:
                         c_set[1].SetValue(self._convert_date_to_yymmdd(value))
 
             panel.initializing = False
+        elif panel_name == 'fiscal':
+            self._add_fiscal_year_choices(panel_name, panel)
 
     def _find_children(self, panel: wx.Panel) -> list:
         """
@@ -267,6 +272,30 @@ class BaseDatabase:
             if add: children.append(None)
 
         return [children[i:i+2] for i in range(0, len(children), 2)]
+
+    def _add_fiscal_year_choices(self, panel_name: str=None,
+                                 panel: wx.Panel=None, c_set=None):
+        assert (panel_name and panel) or c_set, (
+            "Can only pass 'panel_name' and 'panel' or just 'c_set' alone.")
+
+        if panel_name == 'fiscal':
+            all_c_sets = self._find_children(panel)
+            c_set = [item[0] for item in all_c_sets
+                     if item[0].__class__.__name__ == 'ComboBox']
+
+        if c_set:
+            choices = c_set[0].GetItems()
+            c_set[0].SetItems(choices + self._fiscal_choices)
+            c_set[0].SetSelection(0)
+
+    async def _find_all_fiscal_years(self):
+        """
+        Find all fiscal years
+        """
+        values = await self.select_from_fiscal_year_table()
+        data = list(zip((t[1] for t in values[:-1]),
+                        (t[1] for t in values[1:])))
+        return [f"{t[0]}-{t[1]}"  for t in data]
 
     async def _add_fields_to_field_type_table(self, data: dict) -> None:
         """

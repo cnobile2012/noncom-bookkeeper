@@ -33,16 +33,18 @@ class Database(TomlMetaData, BaseDatabase):
         year, month = await self._get_fiscal_year()
 
         if None not in (year, month):
+            self._fiscal_choices = await self._find_all_fiscal_years()
+
             for name, panel in self._mf.panels.items():
                 data = self._collect_panel_values(panel)
-                # Add any new fields to the database.
-                await self._add_fields_to_field_type_table(data)
                 values = await self.select_from_data_table(data, year, month)
 
                 # Needed when the app has been run at least one time before.
                 if name == 'organization':
                     self.organization_data = values
 
+                # Add any new fields to the database.
+                await self._add_fields_to_field_type_table(data)
                 self.populate_panel_values(name, panel, values)
 
     async def save_to_database(self, name: str, panel: wx.Panel) -> None:
@@ -94,8 +96,8 @@ class Database(TomlMetaData, BaseDatabase):
             data['longitude'] = lon
         else:
             self._log.warning("The 'location_city_name' field was not found, "
-                              "causing some dates to be set to the wrong "
-                              "timezone.")
+                              "this will cause some dates to be set to the "
+                              "wrong timezone, most likely UTC:00:00.")
 
         self.organization_data = data
         return data
@@ -125,15 +127,10 @@ class Database(TomlMetaData, BaseDatabase):
 
         for name, panel in self._mf.panels.items():
             data = self._collect_panel_values(panel)
-
-            if name == 'organization':
-                data['iana_name'] = None
-                data['latitude'] = None
-                data['longitude'] = None
-
             # Populate all fields in the database.
             await self._add_fields_to_field_type_table(data)
 
+        await self.populate_panels()
         return year, month, day
 
     #

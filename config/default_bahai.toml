@@ -216,7 +216,7 @@ widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Choose the 
 
 widget_01 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[1, 0], span=[1, 2]}]
 
-widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Fiscal Year'], style='TE_READONLY', min=[228, -1], focus=true, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[2, 0], span=[1, 1]}]
+widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Fiscal Year Choice'], style='TE_READONLY', min=[228, -1], focus=true, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[2, 0], span=[1, 1]}]
 
 widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Audit Complete:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 0], span=[1, 1], update='widget_04'}]
 widget_04 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font='font_10_normal', min=[60, -1], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], instance=true, financial=false}]
