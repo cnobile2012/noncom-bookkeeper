@@ -40,12 +40,14 @@ class Database(TomlMetaData, BaseDatabase):
                 values = await self.select_from_data_table(data, year, month)
 
                 # Needed when the app has been run at least one time before.
-                if name == 'organization':
+                if name == 'organization' and values:
                     self.organization_data = values
 
                 # Add any new fields to the database.
                 await self._add_fields_to_field_type_table(data)
+                panel.initializing = True
                 self.populate_panel_values(name, panel, values)
+                panel.initializing = False
 
     async def save_to_database(self, name: str, panel: wx.Panel) -> None:
         """
@@ -72,7 +74,13 @@ class Database(TomlMetaData, BaseDatabase):
 
         if name == 'organization':
             data = self._add_location_data(data)
-            year, month, day = await self._initialize_database(data)
+
+            if data:
+                self.organization_data = data
+                year, month, day = await self._initialize_database(data)
+                await self.populate_panels()
+            else:
+                return 'error'
         else:
             year, month = await self._get_fiscal_year()
 
@@ -98,8 +106,8 @@ class Database(TomlMetaData, BaseDatabase):
             self._log.warning("The 'location_city_name' field was not found, "
                               "this will cause some dates to be set to the "
                               "wrong timezone, most likely UTC:00:00.")
+            data = None
 
-        self.organization_data = data
         return data
 
     async def _initialize_database(self, org_data: dict) -> None:
@@ -130,7 +138,6 @@ class Database(TomlMetaData, BaseDatabase):
             # Populate all fields in the database.
             await self._add_fields_to_field_type_table(data)
 
-        await self.populate_panels()
         return year, month, day
 
     #

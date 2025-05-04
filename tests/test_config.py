@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# test/test_config.py
+# tests/test_config.py
 #
 __docformat__ = "restructuredtext en"
 

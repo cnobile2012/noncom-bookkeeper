@@ -16,7 +16,7 @@ from .config import TomlPanelConfig, TomlAppConfig
 
 # 1 -- Has app been run before?
 # 1.1 -- If no, create data, config, cache, and logging directories.
-# 1.1.1 -- Open Config Page.
+# 1.1.1 -- Open Organization Page.
 # 1.2 -- Has Budget Information been entered?
 # 1.2.1 -- If no, open Budget Information page.
 # 1.2.2 -- If yes, open General Ledger.

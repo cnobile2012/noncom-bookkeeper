@@ -9,6 +9,8 @@ import re
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
+from .utilities import StoreObjects
+
 
 def find_dict(value: list) -> dict:
     """
@@ -81,7 +83,10 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
         super().__init__(parent, id=id, **kwargs)
         self.parent = parent
+        self._mf = StoreObjects().get_object('MainFrame')
         self._dirty = False
+        self._save = False
+        self._cancel = False
         self._initializing = False
 
     def locality_prefix(self, update, dirty_flag):
@@ -126,6 +131,7 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         initializing widgets.
         """
         if not self.initializing:
+            #print('POOP0', event)
             self.dirty = True
 
         event.Skip()

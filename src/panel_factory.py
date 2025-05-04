@@ -414,9 +414,7 @@ class PanelFactory(TomlMetaData):
                     f"{panel_border})\n")
 
     def _create_save_cancel_events(self, klass, panel):
-        klass.write("\n        self._save = False\n")
-        klass.write("        self._cancel = False\n\n")
-        klass.write("    def button_save(self, event):\n")
+        klass.write("\n    def button_save(self, event):\n")
         klass.write("        self.save = True\n")
         klass.write("        event.Skip()\n\n")
         klass.write("    @property\n")
@@ -424,6 +422,9 @@ class PanelFactory(TomlMetaData):
         klass.write("        return self._save\n\n")
         klass.write("    @save.setter\n")
         klass.write("    def save(self, value):\n")
+        klass.write("        if self.dirty:\n")
+        klass.write("            self._mf.statusbar_message = "
+                    "'Saving data.'\n")
         klass.write("        self._save = value\n\n")
         klass.write("    def button_cancel(self, event):\n")
         klass.write("        self.cancel = True\n")
@@ -433,6 +434,9 @@ class PanelFactory(TomlMetaData):
         klass.write("        return self._cancel\n\n")
         klass.write("    @cancel.setter\n")
         klass.write("    def cancel(self, value):\n")
+        klass.write("        if self.dirty:\n")
+        klass.write("            self._mf.statusbar_message = "
+                    "'Restoring data.'\n")
         klass.write("        self._cancel = value\n")
 
     def _set_colors(self, klass, widget, value):

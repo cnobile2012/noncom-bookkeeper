@@ -64,6 +64,7 @@ class MainFrame(MenuBar, wx.Frame):
         self.Layout()
         self.SetAutoLayout(True)
         # self.Center()
+        StoreObjects().set_object(self.__class__.__name__, self)
         sf = PanelFactory()
         sf.parse()
 
@@ -85,7 +86,6 @@ class MainFrame(MenuBar, wx.Frame):
                 self.__panel_classes[panel] = globals()[class_name](self)
 
         self.create_menu()
-        StoreObjects().set_object(self.__class__.__name__, self)
         asyncio.run(self.start())
 
     async def start(self):
@@ -107,35 +107,36 @@ class MainFrame(MenuBar, wx.Frame):
         if not db.has_org_info_data:
             self._log.info("The Organization Information has not been "
                            "entered yet.")
-            # *** TODO *** Display a panel that offers the user ability
+            # *** TODO *** Display a panel that offers the user the ability
             #              to add or change fields.
             self.edit_config(None)
         elif not db.has_budget_data:
             self._log.info("The budget data has not been entered yet.")
-            # *** TODO *** Display a panel that offers the user ability
+            # *** TODO *** Display a panel that offers the user the ability
             #              to add or change fields.
             self.edit_budget(None)
         elif not db.has_month_data:
             self._log.info("The month data has not been entered yet.")
-            # *** TODO *** Display a panel that offers the user ability
+            # *** TODO *** Display a panel that offers the user the ability
             #              to add or change fields.
             self.edit_month(None)
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)
-        seconds = 1000*10  # 1000*10 = 10 minutes
+        seconds = 1000*10  # 1000*10 = 10 seconds
         self._log.info("Checking panel dirty flag every %s seconds.",
                        seconds/1000)
         self._timer.Start(seconds)
 
     def on_timer_closure(self, db):
         def do_save(db, name, panel):
-            c_name = name.capitalize()
-            self.statusbar_message = f"Saving {c_name} data."
-            asyncio.run(db.save_to_database(name, panel))
-            panel.dirty = False
-            self.statusbar_message = f"Finished saving {c_name} data."
-            self._log.debug("Checking '%s' for changes, dirty.", name)
+            error = asyncio.run(db.save_to_database(name, panel))
+
+            if error is None:
+                panel.dirty = False
+                c_name = name.capitalize()
+                self.statusbar_message = f"Finished saving {c_name} data."
+                self._log.debug("Checking '%s' for changes.", name)
 
         def on_timer(event):
             for name, panel in self.panels.items():
@@ -146,12 +147,10 @@ class MainFrame(MenuBar, wx.Frame):
                             do_save(db, name, panel)
                         elif panel.cancel:
                             panel.cancel = False
-                            c_name = name.capitalize()
-                            self.statusbar_message = (
-                                f"Restoring {c_name} data.")
                             db.populate_panel_values(
                                 name, panel, db.organization_data)
                             panel.dirty = False
+                            c_name = name.capitalize()
                             self.statusbar_message = (
                                 f"Finished restoring {c_name} data.")
                     else:
@@ -233,7 +232,7 @@ class MainFrame(MenuBar, wx.Frame):
         self._statusbar.SetBackgroundColour(color)
         self._statusbar.SetForegroundColour(default_color)
         # Wait for 10 seconds before resetting the message.
-        wx.CallLater(10000, self.__reset_status, default_color)
+        wx.CallLater(15000, self.__reset_status, default_color)
 
     def __reset_status(self, default_color):
         self._statusbar.SetStatusText("", 0)

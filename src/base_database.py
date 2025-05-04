@@ -12,6 +12,7 @@ from .utilities import StoreObjects
 from zoneinfo import ZoneInfo
 
 from geopy.geocoders import Nominatim
+from geopy import exc
 from timezonefinder import TimezoneFinder
 
 
@@ -209,17 +210,23 @@ class BaseDatabase:
         Poplulate the named panel with the database values.
 
         :param str name: The name of the panel.
-        :param list values: The database values to be used to poplulate the
-                            panel.
+        :param wx.Panel panel: The panel object.
+        :param list or dict values: The database values to be used to
+                                    poplulate the panel.
         """
-        if (data := {item[1]: item[2:] for item in values}):
-            panel.initializing = True
+        data = {}
 
+        if isinstance(values, list):
+            data = {v[1]: v[2] for v in values}
+        elif isinstance(values, dict):
+            data = values
+
+        if data:
             for c_set in self._find_children(panel):
                 name0 = c_set[0].__class__.__name__
                 name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
                 field_name = self._make_field_name(c_set[0].GetLabelText())
-                value = data[field_name][0]
+                value = data[field_name]
 
                 if name0 == 'RadioBox':
                     c_set[0].SetSelection(value)
@@ -243,8 +250,6 @@ class BaseDatabase:
                         c_set[1].SetValue(value)
                     elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                         c_set[1].SetValue(self._convert_date_to_yymmdd(value))
-
-            panel.initializing = False
         elif panel_name == 'fiscal':
             self._add_fiscal_year_choices(panel_name, panel)
 
@@ -401,8 +406,12 @@ class BaseDatabase:
         :param list data: Data to insert into the Data table.
         """
         async with aiosqlite.connect(self.user_data_fullpath) as db:
-            await db.executemany(query, data)
-            await db.commit()
+            try:
+                await db.executemany(query, data)
+            except Exception as e:
+                self._log.error(str(e), exc_info=True)
+            else:
+                await db.commit()
 
     async def _do_update_query(self, query: str, data: list) -> None:
         """
@@ -412,8 +421,12 @@ class BaseDatabase:
         :param list data: Data to update into the Data table.
         """
         async with aiosqlite.connect(self.user_data_fullpath) as db:
-            await db.executemany(query, data)
-            await db.commit()
+            try:
+                await db.executemany(query, data)
+            except Exception as e:
+                self._log.error(str(e), exc_info=True)
+            else:
+                await db.commit()
 
     def _find_fields(self, new: list, old: list) -> set:
         """
@@ -487,17 +500,26 @@ class BaseDatabase:
         :returns: The IANA timezone name, latitude, and longitude.
         :rtype: tuple
         """
+        error = None
         geolocator = Nominatim(user_agent='nc-bookkeeper')
-        location = geolocator.geocode(address)
+
+        try:
+            location = geolocator.geocode(address)
+        except exc.GeocoderError as e:
+            error = str(e)
+        else:
+            error = None
 
         if location:
             lat = location.latitude
             lon = location.longitude
             tf = TimezoneFinder()
             iana = tf.timezone_at(lng=lon, lat=lat)
+        elif error:
+            iana = lat = lon = None
+            self._mf.statusbar_error = f"{error}"
         else:
-            address = "Not Known"
-            iana = lat = lon = ''
+            iana = lat = lon = None
             msg = f"Cannot find the timezone for '{address}'."
             self._mf.statusbar_error = msg
 
