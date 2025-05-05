@@ -17,8 +17,6 @@ from . import check_flag
 from src import Bootstrap, Logger
 from src.config import Settings
 
-#from src import Logger; Logger().config()
-
 
 class TestBootstrap(unittest.TestCase):
 
@@ -31,7 +29,7 @@ class TestBootstrap(unittest.TestCase):
         appauthor = Settings._DEVELOPERS[0]
         self.ad = AppDirs(appname=appname, appauthor=appauthor)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_constructor(self):
         """
         Test that all directory paths are created.
@@ -86,16 +84,15 @@ class TestLogger(unittest.TestCase):
         cb = kwargs.pop('callback', None)
         data = ''
 
-        with LogCapture() as l:
-            with io.StringIO() as buff:
-                with redirect_stdout(buff) as buff:
-                    logger = Logger()
-                    logger.config(**kwargs)
-                    log = logging.getLogger(logger_name)
-                    if test_msg_1: log.info(test_msg_1)
-                    result = cb(logger, log, test_msg_2) if cb else None
+        with io.StringIO() as buff:
+            with redirect_stdout(buff) as buff:
+                logger = Logger()
+                logger.config(**kwargs)
+                log = logging.getLogger(logger_name)
+                if test_msg_1: log.info(test_msg_1)
+                result = cb(logger, log, test_msg_2) if cb else None
 
-                data = buff.getvalue()
+            data = buff.getvalue()
 
         return data, result
 
@@ -124,27 +121,28 @@ class TestLogger(unittest.TestCase):
             self.assertIn(test_msg, data, msg)
             self.assertIn(name, data, msg)
 
-    @unittest.skip("Temporarily skipped")
+        l.uninstall()
+
+    #@unittest.skip("Temporarily skipped")
     def test_config_root_logger_to_file(self):
         """
         Test that with only the 'file_path' argument a root logger
         object is created.
         """
-        with LogCapture() as l:
-            Logger().config(file_path=self._TMP_LOGGER_FILE, initial_msg=False)
-            log = logging.getLogger()
-            test_msg = "Test logging to file."
-            log.info(test_msg)
-            data = ""
+        Logger().config(file_path=self._TMP_LOGGER_FILE, initial_msg=False)
+        log = logging.getLogger()
+        test_msg = "Test logging to file."
+        log.info(test_msg)
+        data = ""
 
-            with open(self._TMP_LOGGER_FILE, 'r') as f:
-                data = f.read()
+        with open(self._TMP_LOGGER_FILE, 'r') as f:
+            data = f.read()
 
-            name = 'root'
-            msg = (f"Should find a {name} logger with {test_msg} found "
-                   f"in {data}")
-            self.assertIn(test_msg, data, msg)
-            self.assertIn(name, data, msg)
+        name = 'root'
+        msg = (f"Should find a {name} logger with {test_msg} found "
+               f"in {data}")
+        self.assertIn(test_msg, data, msg)
+        self.assertIn(name, data, msg)
 
     @unittest.skip("Temporarily skipped")
     def test_config_root_logger_to_stdout(self):
@@ -176,7 +174,7 @@ class TestLogger(unittest.TestCase):
         should_be_level = logging.getLevelName(logging.INFO)
         msg = (f"The logging level should be '{should_be_level}' "
                f"found '{found_level}'")
-        self.assertEquals(should_be_level, found_level, msg)
+        self.assertEqual(should_be_level, found_level, msg)
 
     @unittest.skip("Temporarily skipped")
     def test_level_set(self):

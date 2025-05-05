@@ -13,11 +13,8 @@ from unittest.mock import patch, PropertyMock
 
 import tomlkit as tk
 
-PWD = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.dirname(PWD)
-sys.path.append(BASE_DIR)
-
 from . import LOGGER_NAME, LOGFILE_NAME, log, check_flag
+from .base_dir import BASE_DIR
 
 PATH = os.path.join(BASE_DIR, 'logs')
 
@@ -71,18 +68,27 @@ class TestSettings(unittest.TestCase):
 
     #@unittest.skip("Temporarily skipped")
     def test_logger_name_patcher(self):
+        """
+        Test that the logger_name property was patch correctly.
+        """
         log.debug("The 'logger_name' property was patched with %s.",
                   self.set.logger_name)
         self.assertEqual(self.set.logger_name, LOGGER_NAME)
 
     #@unittest.skip("Temporarily skipped")
     def test_logfile_path_patcher(self):
+        """
+        Test that the user_log_fullpath property was patched correctly.
+        """
         log.debug("The 'user_log_fullpath' property was patched with %s.",
                   self.set.user_log_fullpath)
         self.assertEqual(self.set.user_log_fullpath, PATH)
 
     #@unittest.skip("Temporarily skipped")
     def test_logfile_name_patcher(self):
+        """
+        Test that the logfile_name property was patched correctly.
+        """
         log.debug("The 'logfile_name' property was patched with %s.",
                   self.set.logfile_name)
         self.assertEqual(self.set.logfile_name, LOGFILE_NAME)
@@ -162,7 +168,7 @@ class TestSettings(unittest.TestCase):
         """
         fp = self.set.user_data_fullpath
         expected = os.path.join(self.set.user_data_dir,
-                                    self.set.data_file_name)
+                                self.set.data_file_name)
         msg = f"Expected '{expected}' found '{fp}'."
         self.assertEqual(expected, fp, msg)
 

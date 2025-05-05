@@ -40,7 +40,7 @@ to install `pip` system wide.
 .. code-block:: console
 
     $ curl -sSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    $ sudo -H python3.11 get-pip.py
+    $ sudo -H python3.13 get-pip.py
 
 You may get warnings about installing it in the system and not in a
 *virtualenv*, but we want it in the system at this point.
@@ -63,7 +63,7 @@ Then add the following lines to the bottom of the *.bashrc* file.
 .. code-block:: bash
 
     # Setup the Python virtual environment.
-    VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3.11
+    VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3.13
     source /usr/local/bin/virtualenvwrapper.sh
 
 You may need to resource the *.bashrc* file.
@@ -85,7 +85,7 @@ Create a VE for *noncom-bookkeeper*.
 .. code-block:: console
 
     $ cd /path/to/noncom-bookkeeper
-    $ mkvirtualenv -p python3.11 nc-bookkeeper
+    $ mkvirtualenv -p python3.13 nc3.13
 
 Next we install the packages required for developing *noncom-bookkeeper*.
 
@@ -98,7 +98,7 @@ and deactivate a VE.
 
 .. code-block:: console
 
-    $ workon bookkeeper
+    $ workon nc3.13
     $ deactivate
 
 Running Tests
@@ -118,14 +118,11 @@ the tests pass, but will be invaluable if any fail.
 .. code-block:: console
 
     $ make tests
-    $ make tests TEST_PATH=tests.test_config.TestTomlMetaData
-    $ make tests TEST_PATH=tests/test_config.py:TestTomlMetaData
-    $ make tests TEST_PATH=tests/test_config.py:TestTomlMetaData.test_panels_property
+    $ make tests TEST_PATH=tests/test_config.py::TestTomlMetaData
+    $ make tests TEST_PATH=tests/test_config.py::TestTomlMetaData::test_panels_property
 
 * The 1st example will run all tests.
 * The 2nd example will run tests for a specific class in the *test_config.py*
-  module.
-* The 3rd example give the same result as the 2nd. Be sure to notice the :
-  (colon) just before the class name.
-* The 4th example will run a specific test in the TestClassMethods. This also
-  needs a : just before the class name.
+  module. This needs a :: between the filename and the class name.
+* The 3th example will run a specific test in the TestClassMethods. This also
+  needs a :: just before the class name and again just before the actual test name.

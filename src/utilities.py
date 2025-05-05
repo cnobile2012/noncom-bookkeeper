@@ -25,6 +25,9 @@ class Borg:
     def __setattr__(self, item, value):
         self._state.setdefault(self, {})[item] = value
 
+    def clear_state(self):
+        self._state.clear()
+
 
 class GridBagSizer(wx.GridBagSizer):
 
@@ -139,15 +142,15 @@ class _ClickPosition(Borg):
     A borg pattern to hold new widget type IDs.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self._new_types = {}
 
     def get_new_event_type(self, w_name):
         return self._new_types.setdefault(w_name, wx.NewEventType())
 
     def get_click_position(self, w_name):
-        assert w_name in self._new_types, ("The 'get_new_event_type' method "
-                                           "must be called first.")
+        assert w_name in self._new_types, (
+            "The 'get_new_event_type' method must be called first.")
         return wx.PyEventBinder(self._new_types[w_name], 1)
 
 
@@ -177,14 +180,14 @@ class WidgetEvent(wx.PyCommandEvent):
 
 class EventStaticText(wx.StaticText):
     __type_name = 'event_static_text'
-    _cp = _ClickPosition()
-    _type_id = _cp.get_new_event_type(__type_name)
 
     def __init__(self, parent=None, id=wx.ID_ANY, label="",
                  pos=wx.DefaultPosition, size=wx.DefaultSize,
                  style=0, name=wx.StaticTextNameStr):
         super().__init__(parent=parent, id=id, label=label, pos=pos,
                          size=size, style=style, name=name)
+        self._cp = _ClickPosition()
+        self._type_id = self._cp.get_new_event_type(self.__type_name)
         self.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
 
     @property

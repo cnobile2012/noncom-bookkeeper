@@ -4,8 +4,6 @@ import os
 import logging
 
 from .base_dir import BASE_DIR
-from src import Logger
-
 from .fixtures import FakeFrame, FakeWidget, FakeEvent
 
 
@@ -14,6 +12,8 @@ LOGFILE_NAME = 'config.log'
 
 
 def setup_logging():
+    from src import Logger
+
     full_path = os.path.abspath(os.path.join(BASE_DIR, 'logs', LOGFILE_NAME))
     logger = Logger()
     logger.config(LOGGER_NAME, full_path, logging.DEBUG, initial_msg=False)

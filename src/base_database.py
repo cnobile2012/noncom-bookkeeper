@@ -300,7 +300,7 @@ class BaseDatabase:
         values = await self.select_from_fiscal_year_table()
         data = list(zip((t[1] for t in values[:-1]),
                         (t[1] for t in values[1:])))
-        return [f"{t[0]}-{t[1]}"  for t in data]
+        return [f"{t[0]}-{t[1]}" for t in data]
 
     async def _add_fields_to_field_type_table(self, data: dict) -> None:
         """
@@ -453,12 +453,13 @@ class BaseDatabase:
         elif isinstance(value, str):
             value = value.strip()
         elif isinstance(value, wx.DateTime):
-            # We convert into an ISO 8601 format for the db.
+            # We convert into an ISO 8601 format for the db in local time.
+            # *** TODO *** Change to local time.
             if convert_to_tz: value = value.ToUTC()
             value = value.FormatISOCombined()
         # *** TODO *** Maybe need not sure yet.
         #elif isinatance(value, datetime.datetime):  # Python datetime package
-        #elif isinatance(value, badidatetime.datetime):  # Badi datetime package
+        #elif isinatance(value, badidatetime.datetime): # Badi datetime package
 
         return value
 

@@ -13,6 +13,6 @@ per-file-ignores =
     src/menu.py: F841, E701
     src/panel_factory.py: E125, F401
     src/*: E125, E128, E129, E252, E701
-    tests/*: E265, E701, E741, F841
+    tests/*: E265, E701, E741, F821, F841
     tests/individual/*: E252, E402, E701
     scripts/*: E402, E701

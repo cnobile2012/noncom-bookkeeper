@@ -8,6 +8,7 @@ import logging
 
 from .config import Settings
 
+
 __all__ = ('Logger',)
 
 
@@ -19,6 +20,8 @@ class Bootstrap(Settings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.create_dirs()
+        Logger().config(logger_name=self.logger_name,
+                        file_path=self.user_log_fullpath)
 
 
 class Logger:
@@ -85,6 +88,4 @@ class Logger:
 
 
 # The lines below runs the Bootstrap class for the first time.
-_logger = Logger()
-_logger.config(logger_name=Bootstrap().logger_name,
-               file_path=Bootstrap().user_log_fullpath)
+Bootstrap()

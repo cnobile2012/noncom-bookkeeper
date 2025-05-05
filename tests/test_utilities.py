@@ -9,7 +9,7 @@ import wx
 
 from . import check_flag
 from src.utilities import (GridBagSizer, ConfirmationDialog, _ClickPosition,
-                           EventStaticText)
+                           EventStaticText, StoreObjects)
 
 
 class BaseTests(unittest.TestCase):
@@ -374,7 +374,7 @@ class TestEventStaticText(BaseTests):
         msg = f"Event type expected an integer found {event_type}."
         self.assertTrue(isinstance(event_type, int), msg)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_EVT_CLICK_POSITION(self):
         """
         Test that a new event is returned.
@@ -386,7 +386,7 @@ class TestEventStaticText(BaseTests):
         msg = f"Event expected '{expected}' found {event}."
         self.assertIn(expected, str(event), msg)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_WidgetEvent_data(self):
         """
         Test that the WidgetEvent data returns properly.
@@ -414,3 +414,40 @@ class TestEventStaticText(BaseTests):
                         id=widget.GetId())
         self.simulate_left_click(widget)
         self.app.MainLoop()
+
+
+class TestStoreObjects(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        StoreObjects().clear_state()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_shared_state(self):
+        a = StoreObjects()
+        b = StoreObjects()
+        expected = 'bar'
+        a.set_object('foo', expected)
+        value = b.get_object('foo')
+        msg = f"Expected {expected}, found {value}"
+        self.assertEqual(expected, value, msg)  # Shared state
+
+    #@unittest.skip("Temporarily skipped")
+    def test_get_nonexistent_key(self):
+        value = StoreObjects().get_object('missing')
+        msg = f"Expected 'None', found {value}"
+        self.assertIsNone(value)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_set_and_get_object(self):
+        """
+        Test that the set_object method correctly sets an object.
+        """
+        key = 'NS'
+        expect = 'Nothing special'
+        StoreObjects().set_object(key, expect)
+        found = StoreObjects().get_object(key)
+        msg = f"Expected {expect}, found {found}."
+        self.assertEqual(expect, found, msg)
