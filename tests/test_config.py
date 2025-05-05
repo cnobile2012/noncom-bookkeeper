@@ -5,19 +5,58 @@
 __docformat__ = "restructuredtext en"
 
 import os
+import sys
 import unittest
 import shutil
 
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 
 import tomlkit as tk
 
-from . import log, check_flag
-from src.config import (Settings, BaseSystemData, TomlMetaData,
-                        TomlPanelConfig, TomlAppConfig, TomlCreatePanel)
-from src.ncb import CheckPanelConfig, CheckAppConfig
+PWD = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(PWD)
+sys.path.append(BASE_DIR)
 
-#from src import Logger; Logger().config()
+from . import LOGGER_NAME, LOGFILE_NAME, log, check_flag
+
+PATH = os.path.join(BASE_DIR, 'logs')
+
+
+def import_in_globals():
+    import src
+    from src import config, ncb
+    globals()['src'] = src.__init__
+    globals()['Settings'] = config.Settings
+    globals()['BaseSystemData'] = config.BaseSystemData
+    globals()['TomlMetaData'] = config.TomlMetaData
+    globals()['TomlPanelConfig'] = config.TomlPanelConfig
+    globals()['TomlAppConfig'] = config.TomlAppConfig
+    globals()['TomlCreatePanel'] = config.TomlCreatePanel
+    globals()['CheckPanelConfig'] = ncb.CheckPanelConfig
+    globals()['CheckAppConfig'] = ncb.CheckAppConfig
+
+
+def patchers(self):
+    sys.modules.pop('src', None)
+
+    logger_name_patcher = patch('src.config.Settings.logger_name',
+                                new_callable=PropertyMock)
+    mock_name_patcher = logger_name_patcher.start()
+    self.addCleanup(logger_name_patcher.stop)
+    mock_name_patcher.return_value = LOGGER_NAME
+
+    logfile_path_patcher = patch('src.config.Settings.user_log_fullpath',
+                                 new_callable=PropertyMock)
+    mock_logfile_path = logfile_path_patcher.start()
+    self.addCleanup(logfile_path_patcher.stop)
+    mock_logfile_path.return_value = PATH
+
+    logfile_name_patcher = patch('src.config.Settings.logfile_name',
+                                 new_callable=PropertyMock)
+    mock_logfile_name = logfile_name_patcher.start()
+    self.addCleanup(logfile_name_patcher.stop)
+    mock_logfile_name.return_value = LOGFILE_NAME
+    import_in_globals()
 
 
 class TestSettings(unittest.TestCase):
@@ -27,18 +66,38 @@ class TestSettings(unittest.TestCase):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        patchers(self)
         self.set = Settings()
 
     #@unittest.skip("Temporarily skipped")
+    def test_logger_name_patcher(self):
+        log.debug("The 'logger_name' property was patched with %s.",
+                  self.set.logger_name)
+        self.assertEqual(self.set.logger_name, LOGGER_NAME)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_logfile_path_patcher(self):
+        log.debug("The 'user_log_fullpath' property was patched with %s.",
+                  self.set.user_log_fullpath)
+        self.assertEqual(self.set.user_log_fullpath, PATH)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_logfile_name_patcher(self):
+        log.debug("The 'logfile_name' property was patched with %s.",
+                  self.set.logfile_name)
+        self.assertEqual(self.set.logfile_name, LOGFILE_NAME)
+
+    #@unittest.skip("Temporarily skipped")
+    @patch('src.config.Settings._BASE_DIR', PATH)
     def test_base_dir(self):
         """
         Test that this static method returns the base directory without
         instantiating the class.
         """
         path = Settings.base_dir()
-        should_be = Settings._BASE_DIR
-        msg = f"Path should be '{should_be}' found '{path}'."
-        self.assertEqual(should_be, path, msg)
+        expected = Settings._BASE_DIR
+        msg = f"Expected path '{expected}' found '{path}'."
+        self.assertEqual(expected, path, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_primary_developer(self):
@@ -46,9 +105,9 @@ class TestSettings(unittest.TestCase):
         Test that the primary developer is returned.
         """
         dev = self.set.primary_developer
-        should_be_dev = self.set._DEVELOPERS[0]
-        msg = f"Should be '{should_be_dev}' found '{dev}'"
-        self.assertEqual(should_be_dev, dev, msg)
+        expected = self.set._DEVELOPERS[0]
+        msg = f"Expected '{expected}' found '{dev}'"
+        self.assertEqual(expected, dev, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_contributors(self):
@@ -57,15 +116,14 @@ class TestSettings(unittest.TestCase):
         """
         # Test that a list is returned.
         cont = self.set.contributors(True)
-        should_be_cont = self.set._DEVELOPERS
-        msg = f"Should be '{should_be_cont}' found '{cont}'"
-        self.assertEqual(should_be_cont, cont, msg)
+        expected = self.set._DEVELOPERS
+        msg = f"Expected '{expected}' found '{cont}'"
+        self.assertEqual(expected, cont, msg)
         # Test that a srting is returned.
         cont = self.set.contributors()
-        should_be_cont = ''.join([s+'\n' for s in self.set._DEVELOPERS]
-                                 ).strip()
-        msg = f"Should be '{should_be_cont}' found '{cont}'"
-        self.assertEqual(should_be_cont, cont, msg)
+        expected = ''.join([s+'\n' for s in self.set._DEVELOPERS]).strip()
+        msg = f"Expected '{expected}' found '{cont}'"
+        self.assertEqual(expected, cont, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_logger_name(self):
@@ -73,9 +131,9 @@ class TestSettings(unittest.TestCase):
         Test that the data logger name is returned.
         """
         name = self.set.logger_name
-        should_be_name = self.set._LOGGER_NAME
-        msg = f"Should be '{should_be_name}' found '{name}'."
-        self.assertEqual(should_be_name, name, msg)
+        expected = LOGGER_NAME
+        msg = f"Expected '{expected}' found '{name}'."
+        self.assertEqual(expected, name, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_logfile_name(self):
@@ -83,9 +141,9 @@ class TestSettings(unittest.TestCase):
         Test that the data logfile name is returned.
         """
         name = self.set.logfile_name
-        should_be_name = self.set._LOGFILE_NAME
-        msg = f"Should be '{should_be_name}' found '{name}'."
-        self.assertEqual(should_be_name, name, msg)
+        expected = LOGFILE_NAME
+        msg = f"Expected '{expected}' found '{name}'."
+        self.assertEqual(expected, name, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_data_file_name(self):
@@ -93,9 +151,9 @@ class TestSettings(unittest.TestCase):
         Test that the data file name is returned.
         """
         df = self.set.data_file_name
-        should_be_df = self.set._DATA_FILE
-        msg = f"Should be '{should_be_df}' found '{df}'."
-        self.assertEqual(should_be_df, df, msg)
+        expected = self.set._DATA_FILE
+        msg = f"Expected '{expected}' found '{df}'."
+        self.assertEqual(expected, df, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_user_data_fullpath(self):
@@ -103,10 +161,10 @@ class TestSettings(unittest.TestCase):
         Test that the user data file path is returned.
         """
         fp = self.set.user_data_fullpath
-        should_be_fp = os.path.join(self.set.user_data_dir,
+        expected = os.path.join(self.set.user_data_dir,
                                     self.set.data_file_name)
-        msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEqual(should_be_fp, fp, msg)
+        msg = f"Expected '{expected}' found '{fp}'."
+        self.assertEqual(expected, fp, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_user_config_fullpath(self):
@@ -114,10 +172,10 @@ class TestSettings(unittest.TestCase):
         Test that the user config file path is returned.
         """
         fp = self.set.user_config_fullpath
-        should_be_fp = os.path.join(self.set.user_config_dir,
-                                    self.set._Settings__user_toml)
-        msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEqual(should_be_fp, fp, msg)
+        expected = os.path.join(self.set.user_config_dir,
+                                self.set._Settings__user_toml)
+        msg = f"Expected '{expected}' found '{fp}'."
+        self.assertEqual(expected, fp, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_user_app_config_fullpath(self):
@@ -125,10 +183,10 @@ class TestSettings(unittest.TestCase):
         Test that the user app config file path is returned.
         """
         fp = self.set.user_app_config_fullpath
-        should_be_fp = os.path.join(self.set.user_config_dir,
-                                    self.set._Settings__app_toml)
-        msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEqual(should_be_fp, fp, msg)
+        expected = os.path.join(self.set.user_config_dir,
+                                self.set._Settings__app_toml)
+        msg = f"Expected '{expected}' found '{fp}'."
+        self.assertEqual(expected, fp, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_user_log_fullpath(self):
@@ -136,10 +194,9 @@ class TestSettings(unittest.TestCase):
         Test that the user log file path is returned.
         """
         fp = self.set.user_log_fullpath
-        should_be_fp = os.path.join(self.set.user_log_dir,
-                                    self.set.logfile_name)
-        msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEqual(should_be_fp, fp, msg)
+        expected = os.path.join(BASE_DIR, 'logs')
+        msg = f"Expected '{expected}' found '{fp}'."
+        self.assertEqual(expected, fp, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_local_config_fullpath(self):
@@ -147,10 +204,10 @@ class TestSettings(unittest.TestCase):
         Test that the local data file path is returned.
         """
         fp = self.set.local_config_fullpath
-        should_be_fp = os.path.join(self.set._LOCAL_CONFIG,
-                                    self.set._Settings__local_toml)
-        msg = f"Should be '{should_be_fp}' found '{fp}'."
-        self.assertEqual(should_be_fp, fp, msg)
+        expected = os.path.join(self.set._LOCAL_CONFIG,
+                                self.set._Settings__local_toml)
+        msg = f"Expected '{expected}' found '{fp}'."
+        self.assertEqual(expected, fp, msg)
 
 
 class TestBaseSystemData(unittest.TestCase):
@@ -162,6 +219,7 @@ class TestBaseSystemData(unittest.TestCase):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        patchers(self)
         self.bsd = BaseSystemData()
 
     def tearDown(self):
@@ -172,10 +230,10 @@ class TestBaseSystemData(unittest.TestCase):
             pass
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(BaseSystemData, 'user_app_config_fullpath',
-                  _TMP_USER_APP_CONFIG_FILE)
-    @patch.object(BaseSystemData, 'user_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.BaseSystemData.user_app_config_fullpath',
+           _TMP_USER_APP_CONFIG_FILE)
+    @patch('src.config.BaseSystemData.user_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_parse_toml_user_app_config(self):
         """
         Test that toml files get parsed correctly.
@@ -225,8 +283,8 @@ class TestBaseSystemData(unittest.TestCase):
             self.assertIn('Invalid property, ', error[1], msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(BaseSystemData, 'user_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.BaseSystemData.user_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_parse_toml_file_not_found_error(self):
         """
         Test that an exception is raised when a file is not found.
@@ -238,8 +296,8 @@ class TestBaseSystemData(unittest.TestCase):
             self.assertIn('Cannot find file ', error[1], msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(BaseSystemData, 'user_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.BaseSystemData.user_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_parse_toml_parse_error(self):
         """
         Test that an exception is raised when a parse error is found.
@@ -255,8 +313,8 @@ class TestBaseSystemData(unittest.TestCase):
             self.assertIn('TOML error: ', error[1], msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(BaseSystemData, 'user_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.BaseSystemData.user_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_parse_toml_empty_file_error(self):
         """
         Test that an exception is raised when a zero length file is found.
@@ -273,11 +331,14 @@ class TestBaseSystemData(unittest.TestCase):
 
 
 class BaseTest(unittest.TestCase):
-    _cpd = CheckPanelConfig()
-    _cad = CheckAppConfig()
 
     def __init__(self, name):
         super().__init__(name)
+
+    def setUp(self):
+        patchers(self)
+        self._cpd = CheckPanelConfig()
+        self._cad = CheckAppConfig()
         self._cpd.has_valid_data
 
 
@@ -289,6 +350,7 @@ class TestTomlMetaData(BaseTest):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        super().setUp()
         self.tmd = TomlMetaData()
         self.NUM_MONTHS = {'bahai': 20, 'generic': 12}.get(
             self.tmd.config_type)
@@ -332,9 +394,9 @@ class TestTomlMetaData(BaseTest):
         if self.tmd.config_type == 'bahai':
             locale_prefix = self.tmd.locale_prefix
             found_num_prefix = len(locale_prefix)
-            should_be_num = 2
-            msg = f"There should be {should_be_num}, found {found_num_prefix}."
-            self.assertEqual(should_be_num, found_num_prefix, msg)
+            expected = 2
+            msg = f"There should be {expected}, found {found_num_prefix}."
+            self.assertEqual(expected, found_num_prefix, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_font_12_normal_property(self):
@@ -343,15 +405,15 @@ class TestTomlMetaData(BaseTest):
         """
         font_12_normal = self.tmd.font_12_normal
         # Test points
-        should_be_points = 12
+        expected = 12
         found_points = font_12_normal[0]
-        msg = f"The points should be {should_be_points}, found {found_points}."
-        self.assertEqual(should_be_points, found_points, msg)
+        msg = f"The points should be {expected}, found {found_points}."
+        self.assertEqual(expected, found_points, msg)
         # Test weight
-        should_be_weight = 'FONTWEIGHT_NORMAL'
+        expected = 'FONTWEIGHT_NORMAL'
         found_weight = font_12_normal[3]
-        msg = f"The weight should be {should_be_weight}, found {found_weight}."
-        self.assertEqual(should_be_weight, found_weight, msg)
+        msg = f"The weight should be {expected}, found {found_weight}."
+        self.assertEqual(expected, found_weight, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_font_12_bold_property(self):
@@ -360,15 +422,15 @@ class TestTomlMetaData(BaseTest):
         """
         font_12_bold = self.tmd.font_12_bold
         # Test points
-        should_be_points = 12
+        expected = 12
         found_points = font_12_bold[0]
-        msg = f"The points should be {should_be_points}, found {found_points}."
-        self.assertEqual(should_be_points, found_points, msg)
+        msg = f"The points should be {expected}, found {found_points}."
+        self.assertEqual(expected, found_points, msg)
         # Test weight
-        should_be_weight = 'FONTWEIGHT_BOLD'
+        expected = 'FONTWEIGHT_BOLD'
         found_weight = font_12_bold[3]
-        msg = f"The weight should be {should_be_weight}, found {found_weight}."
-        self.assertEqual(should_be_weight, found_weight, msg)
+        msg = f"The weight should be {expected}, found {found_weight}."
+        self.assertEqual(expected, found_weight, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_font_10_normal_property(self):
@@ -377,15 +439,15 @@ class TestTomlMetaData(BaseTest):
         """
         font_10_normal = self.tmd.font_10_normal
         # Test points
-        should_be_points = 10
+        expected = 10
         found_points = font_10_normal[0]
-        msg = f"The points should be {should_be_points}, found {found_points}."
-        self.assertEqual(should_be_points, found_points, msg)
+        msg = f"The points should be {expected}, found {found_points}."
+        self.assertEqual(expected, found_points, msg)
         # Test weight
-        should_be_weight = 'FONTWEIGHT_NORMAL'
+        expected = 'FONTWEIGHT_NORMAL'
         found_weight = font_10_normal[3]
-        msg = f"The weight should be {should_be_weight}, found {found_weight}."
-        self.assertEqual(should_be_weight, found_weight, msg)
+        msg = f"The weight should be {expected}, found {found_weight}."
+        self.assertEqual(expected, found_weight, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_font_10_bold_property(self):
@@ -394,15 +456,15 @@ class TestTomlMetaData(BaseTest):
         """
         font_10_bold = self.tmd.font_10_bold
         # Test points
-        should_be_points = 10
+        expected = 10
         found_points = font_10_bold[0]
-        msg = f"The points should be {should_be_points}, found {found_points}."
-        self.assertEqual(should_be_points, found_points, msg)
+        msg = f"The points should be {expected}, found {found_points}."
+        self.assertEqual(expected, found_points, msg)
         # Test weight
-        should_be_weight = 'FONTWEIGHT_BOLD'
+        expected = 'FONTWEIGHT_BOLD'
         found_weight = font_10_bold[3]
-        msg = f"The weight should be {should_be_weight}, found {found_weight}."
-        self.assertEqual(should_be_weight, found_weight, msg)
+        msg = f"The weight should be {expected}, found {found_weight}."
+        self.assertEqual(expected, found_weight, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_get_font(self):
@@ -432,6 +494,7 @@ class TestTomlPanelConfig(BaseTest):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        super().setUp()
         self.tpc = TomlPanelConfig()
 
     def tearDown(self):
@@ -451,19 +514,19 @@ class TestTomlPanelConfig(BaseTest):
             pass
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlPanelConfig, '_FILE_LIST', ('user_invalid_property',
-                                                  'local_invalid_property'))
+    @patch('src.config.TomlPanelConfig._FILE_LIST', ('user_invalid_property',
+                                                     'local_invalid_property'))
     def test_is_valid_property_invalid(self):
         """
         Test that an invalid property causes an error.
         """
         ret = self.tpc.is_valid
-        msg = f"Should be False, found {ret}."
+        msg = f"Expected False, found {ret}."
         self.assertFalse(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlPanelConfig, 'user_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.TomlPanelConfig.user_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_is_valid_property(self):
         """
         Test that the is_valid property returns a True for normal operation.
@@ -473,12 +536,12 @@ class TestTomlPanelConfig(BaseTest):
                      self._TMP_USER_CONFIG_FILE)
         # Run test
         ret = self.tpc.is_valid
-        msg = f"Should be True, found {ret}."
+        msg = f"Expected True, found {ret}."
         self.assertTrue(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlPanelConfig, 'user_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.TomlPanelConfig.user_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_is_valid_property_user_bad_file(self):
         """
         Test that the is_valid property returns a True for a bad file in
@@ -487,12 +550,12 @@ class TestTomlPanelConfig(BaseTest):
         Note: The responds to error code 4.
         """
         ret = self.tpc.is_valid
-        msg = f"Should be True, found {ret}."
+        msg = f"Expected True, found {ret}."
         self.assertTrue(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlPanelConfig, 'user_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.TomlPanelConfig.user_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_is_valid_property_user_unparsable(self):
         """
         Test that the is_valid property returns a True for an unparsable
@@ -506,12 +569,12 @@ class TestTomlPanelConfig(BaseTest):
             f.write('')
 
         ret = self.tpc.is_valid
-        msg = f"Should be True, found {ret}."
+        msg = f"Expected True, found {ret}."
         self.assertTrue(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlPanelConfig, 'local_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.TomlPanelConfig.local_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_is_valid_property_local_not_found(self):
         """
         Test that the is_valid property returns a False for a not found
@@ -520,13 +583,13 @@ class TestTomlPanelConfig(BaseTest):
         Note: Responds to error code 2.
         """
         ret = self.tpc.is_valid
-        msg = f"Should be False, found {ret}."
+        msg = f"Expected False, found {ret}."
         self.assertFalse(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlPanelConfig, '_LOCAL_CONFIG', '/tmp')
-    @patch.object(TomlPanelConfig, 'user_config_fullpath',
-                  _TMP_USER_CONFIG_FILE)
+    @patch('src.config.TomlPanelConfig._LOCAL_CONFIG', '/tmp')
+    @patch('src.config.TomlPanelConfig.user_config_fullpath',
+           _TMP_USER_CONFIG_FILE)
     def test_is_valid_property_local_unparsable(self):
         """
         Test that the is_valid property returns a False for an unparsable
@@ -537,7 +600,7 @@ class TestTomlPanelConfig(BaseTest):
             f.write("[meta]\nsomevar = {junk='some_value'")
 
         ret = self.tpc.is_valid
-        msg = f"Should be False, found {ret}."
+        msg = f"Expected False, found {ret}."
         self.assertFalse(ret, msg)
 
 
@@ -550,6 +613,7 @@ class TestTomlAppConfig(BaseTest):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        super().setUp()
         self.tac = TomlAppConfig()
 
     def tearDown(self):
@@ -568,13 +632,13 @@ class TestTomlAppConfig(BaseTest):
         return self.tac.is_valid
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, '_FILE_LIST', ('user_invalid_property',))
+    @patch('src.config.TomlAppConfig._FILE_LIST', ('user_invalid_property',))
     def test_is_valid_property_invalid(self):
         """
         Test that an invalid property causes an error.
         """
         ret = self.tac.is_valid
-        msg = f"Should be False, found {ret}."
+        msg = f"Expected False, found {ret}."
         self.assertFalse(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
@@ -584,24 +648,24 @@ class TestTomlAppConfig(BaseTest):
         operation.
         """
         ret = self.tac.is_valid
-        msg = f"Should be True, found {ret}."
+        msg = f"Expected True, found {ret}."
         self.assertTrue(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_USER_APP_FILE)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_is_valid_property_user_not_found(self):
         """
         Test that the is_valid property returns a boolean for a bad
         path in the `user_app_config_fullpath` property.
         """
         ret = self.tac.is_valid
-        msg = f"Should be True, found {ret}."
+        msg = f"Expected True, found {ret}."
         self.assertTrue(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_USER_APP_FILE)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_is_valid_property_user_unparsable(self):
         """
         Test that the is_valid property returns a boolean for a bad
@@ -612,12 +676,12 @@ class TestTomlAppConfig(BaseTest):
             f.write('')
 
         ret = self.tac.is_valid
-        msg = f"Should be True, found {ret}."
+        msg = f"Expected True, found {ret}."
         self.assertTrue(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_USER_APP_FILE)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_create_app_config(self):
         """
         Test that the application config file is created.
@@ -626,7 +690,7 @@ class TestTomlAppConfig(BaseTest):
         {'app_size': {'default': [530, 830], 'size': [530, 830]}}
         """
         ret = self.create_config()
-        msg = f"Should be True, found {ret}."
+        msg = f"Expected True, found {ret}."
         self.assertTrue(ret, msg)
         outer_key_list = ('app_size',)
         inner_key_list = ('default', 'size')
@@ -643,8 +707,8 @@ class TestTomlAppConfig(BaseTest):
                 self.assertTrue(isinstance(value, list), val_msg.format(value))
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_USER_APP_FILE)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_get_value(self):
         """
         Test that a value can be found.
@@ -658,8 +722,8 @@ class TestTomlAppConfig(BaseTest):
         self.assertTrue(isinstance(value, list), msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_USER_APP_FILE)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_get_value_invalid_key(self):
         """
         Test that an invalid key is logged.
@@ -678,8 +742,8 @@ class TestTomlAppConfig(BaseTest):
         self.assertIn('invalid', ex, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_USER_APP_FILE)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_update_app_config(self):
         """
         Test that a value can be updated.
@@ -690,20 +754,20 @@ class TestTomlAppConfig(BaseTest):
         self.create_config()
         # Test that the 'default' value is the default.
         value = self.tac.get_value('app_size', 'default')
-        should_be = [536, 830]
-        msg = f"Should be '{should_be}' found '{value}'."
-        self.assertEqual(should_be, value, msg)
+        expected = [536, 830]
+        msg = f"Expected '{expected}' found '{value}'."
+        self.assertEqual(expected, value, msg)
 
         # Test that the update works properly.
         changed_value = [600, 900]
         self.tac.update_app_config('app_size', 'default', changed_value)
         value = self.tac.get_value('app_size', 'default')
-        msg = f"Should be '{changed_value}' found '{value}'."
+        msg = f"Expected '{changed_value}' found '{value}'."
         self.assertEqual(changed_value, value, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_USER_APP_FILE)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_update_app_config_key_not_found(self):
         """
         Test that a value for a new key gets added properly.
@@ -726,12 +790,12 @@ class TestTomlAppConfig(BaseTest):
         new_value = 'Test Value'
         self.tac.update_app_config('app_size', new_key, new_value)
         value = self.tac.get_value('app_size', new_key)
-        msg = f"Should be '{new_value}' found '{value}'."
+        msg = f"Expected '{new_value}' found '{value}'."
         self.assertEqual(new_value, value, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_USER_APP_FILE)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_update_app_config_table_not_found(self):
         """
         Test that a value for a new table and key gets added properly.
@@ -755,12 +819,12 @@ class TestTomlAppConfig(BaseTest):
         new_value = 'Test Value'
         self.tac.update_app_config(new_table, new_key, new_value)
         value = self.tac.get_value(new_table, new_key)
-        msg = f"Should be '{new_value}' found '{value}'."
+        msg = f"Expected '{new_value}' found '{value}'."
         self.assertEqual(new_value, value, msg)
 
     #@unittest.skip("Temporarily skipped")
-    @patch.object(TomlAppConfig, 'user_app_config_fullpath',
-                  _TMP_UNWRITABE_PATH)
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_UNWRITABE_PATH)
     def test__write_file_open_failed(self):
         """
         Test that writing to a file fails when a unwritable path is provided.

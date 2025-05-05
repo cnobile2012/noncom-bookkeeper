@@ -7,12 +7,13 @@ __docformat__ = "restructuredtext en"
 from .config import TomlPanelConfig, TomlAppConfig
 
 
-# appname: NC-Bookkeeper
+# appname: nc-bookkeeper
 # appauthor: Carl J. Nobile
-# user_data_dir: /home/cnobile/.local/share/NC-Bookkeeper
-# user_config_dir: /home/cnobile/.config/NC-Bookkeeper
-# user_cache_dir: /home/cnobile/.cache/NC-Bookkeeper
-# user_log_dir: /home/cnobile/.cache/NC-Bookkeeper/log
+# user_data_dir: /home/cnobile/.local/share/nc-bookkeeper
+# user_config_dir: /home/cnobile/.config/nc-bookkeeper
+# user_cache_dir: /home/cnobile/.cache/nc-bookkeeper
+# user_log_dir: /home/cnobile/.cache/nc-bookkeeper/log
+# user_log_dir: /home/cnobile/.cache/nc-bookkeeper/factory
 
 # 1 -- Has app been run before?
 # 1.1 -- If no, create data, config, cache, and logging directories.

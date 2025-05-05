@@ -9,10 +9,12 @@ from src import Logger
 from .fixtures import FakeFrame, FakeWidget, FakeEvent
 
 
+LOGGER_NAME = 'config'
+LOGFILE_NAME = 'config.log'
+
+
 def setup_logging():
-    LOGGER_NAME = 'config'
-    filename = 'config.log'
-    full_path = os.path.abspath(os.path.join(BASE_DIR, 'logs', filename))
+    full_path = os.path.abspath(os.path.join(BASE_DIR, 'logs', LOGFILE_NAME))
     logger = Logger()
     logger.config(LOGGER_NAME, full_path, logging.DEBUG, initial_msg=False)
     return logging.getLogger(LOGGER_NAME)

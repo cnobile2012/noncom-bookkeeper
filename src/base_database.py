@@ -506,6 +506,7 @@ class BaseDatabase:
         try:
             location = geolocator.geocode(address)
         except exc.GeocoderError as e:
+            self._log.error("Could not get information on %s, %s", address, e)
             error = str(e)
         else:
             error = None
