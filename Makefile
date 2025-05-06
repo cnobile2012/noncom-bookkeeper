@@ -21,6 +21,7 @@ BUILD_PKG_DIR	= $(PREFIX)/package
 RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
                   -exec rm {} \;
+COVERAGE_FILE	= $(PREFIX)/.coveragerc
 PIP_ARGS	= # Pass variables for pip install.
 TEST_PATH	= # The path to run tests on.
 TEST_TAG	= # Define the rc<version>

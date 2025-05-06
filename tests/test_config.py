@@ -842,3 +842,42 @@ class TestTomlAppConfig(BaseTest):
         msg = (f"The file '{self._TMP_UNWRITABE_PATH}' could not be "
                f"written, {ex}")
         self.assertIn(self._TMP_UNWRITABE_PATH, ex, msg)
+
+
+class TestTomlCreatePanel(BaseTest):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        super().setUp()
+        self.tcp = TomlCreatePanel()
+
+    def create_toml_doc(self):
+        full_path = os.path.join(BASE_DIR, 'tests', 'test_panel.toml')
+
+        with open(full_path, mode='r') as f:
+            data = f.read()
+
+        return tk.loads(data)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_set_and_get_panel(self):
+        """
+        Test both the setter and getter for the current_panel properties.
+        """
+        expect = self.create_toml_doc()
+        self.tcp.current_panel = expect
+        value = self.tcp.current_panel
+        msg = f"Expected {expect}, found {value}."
+        self.assertEqual(expect, value, msg)
+
+    @unittest.skip("Temporarily skipped")
+    def test_field_names(self):
+        """
+        Test that the field_names property returns just field names.
+        """
+        self.tcp.current_panel = self.create_toml_doc()
+        names = self.tcp.field_names
+        print(names)

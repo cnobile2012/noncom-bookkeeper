@@ -322,9 +322,6 @@ class TomlPanelConfig(BaseSystemData):
                         self.parse_toml((ufname,))
                         msg = f"Warning {error[1]}"
                         self._log.warning(msg)
-                        #self.parent.statusbar_warning = msg
-                        # *** TODO *** This needs to be shown on the screen
-                        #              if detected.
                     elif error[2] in (self.TOML_ERROR, self.ZERO_LENGTH_FILE):
                         bad_file = f'{ufname}.bad'
                         shutil.copy2(ufname, bad_file)
@@ -334,19 +331,9 @@ class TomlPanelConfig(BaseSystemData):
                                f"bad file has been backed up to {bad_file}, "
                                f"{error[1]}")
                         self._log.warning(msg)
-                        #self.parent.statusbar_warning = msg
-                        # *** TODO *** This needs to be shown on the screen
-                        #              if detected.
-                else:
-                    pass
-                    #self.parent.statusbar_error = msg
-                    # *** TODO *** This needs to be shown on the screen
-                    #              if detected.
             elif error[0] == 'local_config_fullpath':
                 msg = f"Error: {error[2]}"
                 self._log.critical(msg)
-                #self.parent.statusbar_error = msg
-                # *** TODO *** This needs to be shown on the screen if detected.
                 ret = False
 
         return ret
@@ -496,20 +483,22 @@ class TomlCreatePanel(BaseSystemData):
         """
         Make a copy of the Toml doc of the current panel.
 
-        :param current: The current panel's Toml doc.
-        :type current: Toml doc
+        :param  current: The current panel's Toml doc.
+        :type current: tomlkit.toml_document.TOMLDocument
         """
         self.__panel = current.copy()
 
     @property
-    def field_names(self):
+    def field_names(self) -> list:
         """
         A list of field names not including title names.
         """
-        assert self.__panel, "Current panel not set."
+        assert self.__panel, (
+            "There is no panel that is currently being worked on.")
         names = []
 
         for item in self.__panel.values():
+            #print(item)
             list_ = find_dict(item).get('args', [])
 
             if len(list_) >= 3:
@@ -523,10 +512,8 @@ class TomlCreatePanel(BaseSystemData):
         Toml file. If `key_num` is provided the `key_num is the y coordinate
         and 0 will be the y continent.
 
-        :param name: The value name of the StaticText widget.
-        :type name: str
-        :param key_num: The key number to use.
-        :type key_num: int
+        :param str name: The value name of the StaticText widget.
+        :param int key_num: The key number to use.
         """
         assert self.__panel, "Current panel not set."
 

@@ -1,9 +1,9 @@
 [run]
-source = tborg
+source = src
 omit =
-    *tests*
-    *mock*
-    *examples*
+    */tests/*
+    */mock/*
+    */examples/*
 
 [report]
 show_missing = True
