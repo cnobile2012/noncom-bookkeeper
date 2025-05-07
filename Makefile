@@ -5,8 +5,12 @@
 # 1. The 'logo' and 'icons' target requires povray and imagemagick to be
 #    installed.
 # 2. To build Linux packages the ruby gem fpm needs to be installed.
-#    sudo apt-get install ruby
+#    sudo apt install ruby
+#    sudo add-apt-repository universe
+#    sudo apt install rpm rpm2cpio alien
 #    gem install fpm --user-install
+#    Then put `.local/share/gem/ruby/<version>/bin in $PATH.
+#    Logout then login again.
 #
 include include.mk
 
@@ -130,14 +134,6 @@ icons	:
 images	:
 	@cp $(PREFIX)/contrib/images/*-30x36.bmp $(PREFIX)/images/
 
-.PHONY	: build-spec
-build-spec:
-	@pyinstaller nc-bookkeeper.spec
-
-.PHONY	: package
-package	:
-	./scripts/package.py
-
 # To add a pre-release candidate such as 'rc1' to a test package name an
 # environment variable needs to be set that setup.py can read.
 #
@@ -146,6 +142,21 @@ package	:
 #
 # For example a deb file might look like 'nc-bookkeeper-0.10rc1-amd64.deb'.
 #
+# Steps to build packages.
+# 1. make build-all
+# or
+# 1. make build-spec
+# 2. make package
+# 3. make build-deb or make build-rpm
+#
+.PHONY	: build-spec
+build-spec:
+	@pyinstaller nc-bookkeeper.spec
+
+.PHONY	: package
+package	:
+	./scripts/package.py
+
 .PHONY	: build-all
 build-all: clobber build-spec package build-deb build-rpm
 

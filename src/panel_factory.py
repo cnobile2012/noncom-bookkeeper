@@ -124,6 +124,8 @@ class PanelFactory(TomlMetaData):
 
         if panel in ('organization', ):
             self._create_save_cancel_events(klass, panel)
+        elif panel == 'fiscal':
+            self._create_combobox_select_event(klass, panel)
 
         self.__panels[panel] = klass.getvalue()
         klass.close()
@@ -294,15 +296,21 @@ class PanelFactory(TomlMetaData):
         style = style if style == 0 else self._fix_flags(style)
         klass.write(f"        {widget} = wx.{widget_type}({parent}, wx.{id}, "
                     f"{label} choices={choices}, style={style})\n")
+        klass.write(f"        {widget}.SetLabel('{name}')\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
+        dirty_flag = dict_.get('dirty_event', True)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        klass.write(f"        {widget}.SetLabel('{name}')\n")
-        klass.write(f"        {widget}.Bind(wx.EVT_COMBOBOX, "
-                    "self.set_dirty_flag)\n")
+        if dirty_flag:
+            klass.write(f"        {widget}.Bind(wx.EVT_COMBOBOX, "
+                        "self.set_dirty_flag)\n")
+        else:
+            klass.write(f"        {widget}.Bind(wx.EVT_COMBOBOX, "
+                        "self.get_selection)\n")
+
         self._set_add_to_sizer(klass, widget, value)
 
     def check_box(self, klass, panel, widget, value):
@@ -325,12 +333,15 @@ class PanelFactory(TomlMetaData):
         klass.write(f"        {widget} = ColorCheckBox({parent}, wx.{id})\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
+        dirty_flag = dict_.get('dirty_event', True)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        klass.write(f"        {widget}.Bind(EVT_COLOR_CHECKBOX, "
-                    "self.set_dirty_flag)\n")
+        if dirty_flag:
+            klass.write(f"        {widget}.Bind(EVT_COLOR_CHECKBOX, "
+                        "self.set_dirty_flag)\n")
+
         self._set_add_to_sizer(klass, widget, value)
 
     def static_line(self, klass, widget, value):
@@ -438,6 +449,12 @@ class PanelFactory(TomlMetaData):
         klass.write("            self._mf.statusbar_message = "
                     "'Restoring data.'\n")
         klass.write("        self._cancel = value\n")
+
+    def _create_combobox_select_event(self, klass, panel):
+        klass.write("\n    def get_selection(self, event):\n")
+        klass.write("        value = event.GetString()\n")
+        klass.write("        index = event.GetSelection()\n")
+        klass.write("        print(f'{value}, {index}')\n")
 
     def _set_colors(self, klass, widget, value):
         """

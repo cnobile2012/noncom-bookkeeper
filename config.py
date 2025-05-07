@@ -40,7 +40,7 @@ class EditPyProject:
         status = re.search(regex1.format('STATUS'), ver).group('status')
         # Look for a tag indicating a pre-release candidate. ex. rc1
         env_value = os.environ.get('PR_TAG', '')
-        data['version'] = "{}.{}.{}{}".format(major, minor, patch, env_value)
+        data['version'] = f"{major}.{minor}.{patch}{env_value}"
         data['classifiers'] = status
         return data
 

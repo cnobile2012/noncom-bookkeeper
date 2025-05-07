@@ -194,8 +194,8 @@ class BaseDatabase:
                                                          financial=financial)
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                     data[field_name] = self._scrub_value(value, convert_to_tz)
-                elif name1 in ('ColorCheckBox', 'CheckBox'):
-                    data[field_name] = c_set[1].GetValue()
+                #elif name1 in ('ColorCheckBox', 'CheckBox'):
+                #    data[field_name] = c_set[1].GetValue()
 
             if panel.__class__.__name__ == 'OrganizationPanel':
                 data['iana_name'] = None
@@ -221,7 +221,7 @@ class BaseDatabase:
         elif isinstance(values, dict):
             data = values
 
-        if data:
+        if data:  # When run after first time.
             for c_set in self._find_children(panel):
                 name0 = c_set[0].__class__.__name__
                 name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
@@ -237,8 +237,8 @@ class BaseDatabase:
                     c_set[0].SetSelection(value)
                 elif name0 == 'StaticText':
                     if name1 == 'TextCtrl':
-                        financial = True if c_set[1].financial else False
-                        value = self.db_to_value(value) if financial else value
+                        value = (self.db_to_value_currency(value)
+                                 if c_set[1].financial else value)
 
                         if panel_name == 'month':
                             if (not value
@@ -250,7 +250,7 @@ class BaseDatabase:
                         c_set[1].SetValue(value)
                     elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                         c_set[1].SetValue(self._convert_date_to_yymmdd(value))
-        elif panel_name == 'fiscal':
+        elif panel_name == 'fiscal':  # When run during first time.
             self._add_fiscal_year_choices(panel_name, panel)
 
     def _find_children(self, panel: wx.Panel) -> list:
@@ -279,28 +279,21 @@ class BaseDatabase:
         return [children[i:i+2] for i in range(0, len(children), 2)]
 
     def _add_fiscal_year_choices(self, panel_name: str=None,
-                                 panel: wx.Panel=None, c_set=None):
+                                 panel: wx.Panel=None, *, c_set=None):
         assert (panel_name and panel) or c_set, (
             "Can only pass 'panel_name' and 'panel' or just 'c_set' alone.")
 
-        if panel_name == 'fiscal':
+        if panel_name == 'fiscal':  # First time run.
             all_c_sets = self._find_children(panel)
             c_set = [item[0] for item in all_c_sets
                      if item[0].__class__.__name__ == 'ComboBox']
 
         if c_set:
+            data = list(zip((t[1] for t in self._fiscal_data[:-1]),
+                            (t[1] for t in self._fiscal_data[1:])))
             choices = c_set[0].GetItems()
-            c_set[0].SetItems(choices + self._fiscal_choices)
+            c_set[0].SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
             c_set[0].SetSelection(0)
-
-    async def _find_all_fiscal_years(self):
-        """
-        Find all fiscal years
-        """
-        values = await self.select_from_fiscal_year_table()
-        data = list(zip((t[1] for t in values[:-1]),
-                        (t[1] for t in values[1:])))
-        return [f"{t[0]}-{t[1]}" for t in data]
 
     async def _add_fields_to_field_type_table(self, data: dict) -> None:
         """
@@ -480,7 +473,7 @@ class BaseDatabase:
                                         f"string found {type(value)}")
         return int(float(value)*100)
 
-    def db_to_value(self, value: str) -> str:
+    def db_to_value_currency(self, value: str) -> str:
         """
         Convert an integer from the database into a value sutable for
         displaying in a widget.

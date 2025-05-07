@@ -610,7 +610,7 @@ class TomlCreatePanel(BaseSystemData):
     def _create_hole(self, start):
         """
         Create a hole in the widget panel. All widgets after the hole
-        will gets its key bumped up by two.
+        will get its key bumped up by two.
 
         :param start: Where to start the reordering. Should be the widget
                       set that will be after the hole.

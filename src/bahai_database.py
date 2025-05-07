@@ -22,6 +22,7 @@ class Database(TomlMetaData, BaseDatabase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         BaseDatabase.__init__(self)
+        self._fiscal_data = None
 
     def _ordered_month(self):
         return ordered_month()
@@ -33,7 +34,7 @@ class Database(TomlMetaData, BaseDatabase):
         year, month = await self._get_fiscal_year()
 
         if None not in (year, month):
-            self._fiscal_choices = await self._find_all_fiscal_years()
+            self._fiscal_data = await self.select_from_fiscal_year_table()
 
             for name, panel in self._mf.panels.items():
                 data = self._collect_panel_values(panel)

@@ -32,8 +32,8 @@ def find_dict(value: list) -> dict:
 
 def version() -> str:
     """
-    Opens the 'include.mk' file and reads the version information. It
-    also reads from the environment a pre-release version if it exists.
+    Opens the 'include.mk' file and reads the version information. If the
+    `PR_TAG` environment variable exists the pre-release candidate is added.
 
     :return: A formatted version number.
     :rtype: str
@@ -54,7 +54,7 @@ def version() -> str:
 
 class BasePanel:
     """
-    This base class is used in the FieldEdit class in Tools and the
+    This base class is used in the FieldEdit class in Tools and in the
     panels created by the PanelFactory.
     """
 
