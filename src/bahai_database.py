@@ -78,7 +78,7 @@ class Database(TomlMetaData, BaseDatabase):
 
             if data:
                 self.organization_data = data
-                year, month, day = await self._initialize_database(data)
+                year, month = await self._initialize_database(data)
                 await self.populate_panels()
             else:
                 return 'error'
@@ -121,16 +121,17 @@ class Database(TomlMetaData, BaseDatabase):
            before it has been saved to the database.
 
         :param dict org_data: The `organization` data.
-        :returns: The year, month and, day as a tuple.
+        :returns: The year and month as a tuple.
         :rtype: tuple
         """
         start_of_fiscal_year = org_data['start_of_fiscal_year']
         year, month, day = start_of_fiscal_year.b_date
         org_data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
         # Create or update the current fiscal and the following year.
-        await self._insert_update_fiscal_year_table((year, month, day), 1)
-        next_date = (year + 1, month, day)
-        await self._insert_update_fiscal_year_table(next_date, 0)
+        items = []
+        items.append((year, month, day, 0, 1))
+        items.append((year + 1, month, day, 0, 0))
+        await self._insert_update_fiscal_year_table(items)
         # Populate the Badi months in the database.
         await self._insert_into_month_table()
 
@@ -139,7 +140,7 @@ class Database(TomlMetaData, BaseDatabase):
             # Populate all fields in the database.
             await self._add_fields_to_field_type_table(data)
 
-        return year, month, day
+        return year, month
 
     #
     # Fiscal Year SELECT, INSERT and, UPDATE methods.
@@ -147,7 +148,8 @@ class Database(TomlMetaData, BaseDatabase):
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,
-                                            current: int=None) -> list:
+                                            audit: int=None, current: int=None
+                                            ) -> list:
         """
         Select from the `fiscal_year` table. Only the year is needed to
         select the correct row of data.
@@ -157,6 +159,8 @@ class Database(TomlMetaData, BaseDatabase):
                           all years.
         :param int day: The `day` is used to query for a given day in
                         all years and months.
+        :param int audit: The `audit` is used to query all years audited or
+                          not audited.
         :param int current: This will return the current fiscal year if `1`
                             or the next year if `0`. If set to `None`
                             (default) then do a query for the provided year.
@@ -173,6 +177,8 @@ class Database(TomlMetaData, BaseDatabase):
             where = f"WHERE month={month}"
         elif day:      # Get all years and month with this day.
             where = f"WHERE day={day}"
+        elif audit:  # Get all years that have or have not been audited.
+            where = f"WHERE audit={audit}"
         elif current:  # Get the current fiscal year.
             where = f"WHERE current={int(current)}"
         else:          # Get all fiscal years.
@@ -181,35 +187,32 @@ class Database(TomlMetaData, BaseDatabase):
         query = (f"SELECT * FROM {self._T_FISCAL_YEAR} {where};")
         return await self._do_select_query(query)
 
-    async def insert_into_fiscal_year_table(self, date: tuple, current: int
-                                            ) -> None:
+    async def insert_into_fiscal_year_table(self, data: list) -> None:
         """
         Insert a row of data into the `fiscal_year` table.
 
-        :param tuple date: This is the year, month, day, and current values
-                           (year, month, day).
-        :param int current: This will return the current fiscal year if `1`
-                            or the next year if `0`. If set to `None`
-                            (default) then do a query for the provided year.
+        :param list data: The data to be inserted.
         """
         now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
-        data = [date + (current, now, now),]
-        query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
-                 "current, c_time, m_time) VALUES (?, ?, ?, ?, ?, ?)")
-        await self._do_insert_query(query, data)
+        items = [t + (now, now) for t in data]  # Add the times to the end.
+        query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, audit,"
+                 " current, c_time, m_time) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        await self._do_insert_query(query, items)
 
-    async def update_fiscal_year_table(self, year: int, current: int) -> None:
+    async def update_fiscal_year_table(self, year: int, data: dict) -> None:
         """
         Update the `fiscal_year` table. Only the year and current values
         are needed to do updates.
 
         :param int year: The year indicating the start of the fiscal year.
-        :param int current: The `current` field data.
+        :param dict data: The data to be updated.
         """
         now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
-                 "SET current = :current, m_time = :m_time WHERE year = :year")
-        data = [{'year': year, 'current': current, 'm_time': now}]
+                 "SET audit = :audit, current = :current, m_time = :m_time "
+                 "WHERE year = :year")
+        data = [{'year': year, 'audit': data[3], 'current': data[4],
+                 'm_time': now}]
         await self._do_update_query(query, data)
 
     #

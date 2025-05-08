@@ -5,8 +5,8 @@ exclude =
     docs/source/conf.py,
     old,
     build,
-    dist
-    txt
+    dist,
+    tmp
 
 per-file-ignores =
     src/main_frame.py: F401

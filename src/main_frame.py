@@ -72,7 +72,7 @@ class MainFrame(MenuBar, wx.Frame):
             code = sf.get_panel_code(panel)
 
             if code:
-                # Generally only used for debugging.
+                # Only used for debugging.
                 if options.file_dump:  # Write the code files to the cache.
                     filename = f"{panel}.py"
                     pathname = os.path.join(self._tac.cached_factory_dir,
@@ -81,6 +81,7 @@ class MainFrame(MenuBar, wx.Frame):
                     with open(pathname, 'w') as f:
                         f.write(code)
 
+                # Create the panels.
                 exec(code, globals())
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = globals()[class_name](self)
@@ -99,6 +100,7 @@ class MainFrame(MenuBar, wx.Frame):
             pass
 
         db = Database()
+        StoreObjects().set_object(db.__class__.__name__, db)
         self._log.info("Create the database if it does not exist.")
         await db.create_db()
         self._log.info("Populating all panels.")

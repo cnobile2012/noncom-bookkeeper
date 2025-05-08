@@ -12,10 +12,11 @@ __pycache__/
 !LICENSE.txt
 !requirements/*.txt
 *.pdf
+tmp/
 docs/api
 docs/htmlcov
 !docs/*.pdf
-logs
+logs/
 package
 
 # C extensions

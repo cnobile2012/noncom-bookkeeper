@@ -37,6 +37,7 @@ class BaseDatabase:
          'year INTEGER UNIQUE NOT NULL',
          'month INTEGER NOT NULL',
          'day INTEGER NOT NULL',
+         'audit INTEGER NOT NULL',
          'current INTEGER NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
@@ -194,8 +195,11 @@ class BaseDatabase:
                                                          financial=financial)
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                     data[field_name] = self._scrub_value(value, convert_to_tz)
-                #elif name1 in ('ColorCheckBox', 'CheckBox'):
-                #    data[field_name] = c_set[1].GetValue()
+                elif name1 in ('ColorCheckBox', 'CheckBox'):
+                    if field_name == 'current_fiscal_year':
+                        pass  # The `current_fiscal_year` field is not needed.
+                    else:
+                        data[field_name] = c_set[1].GetValue()
 
             if panel.__class__.__name__ == 'OrganizationPanel':
                 data['iana_name'] = None
@@ -237,7 +241,7 @@ class BaseDatabase:
                     c_set[0].SetSelection(value)
                 elif name0 == 'StaticText':
                     if name1 == 'TextCtrl':
-                        value = (self.db_to_value_currency(value)
+                        value = (self._db_to_value_currency(value)
                                  if c_set[1].financial else value)
 
                         if panel_name == 'month':
@@ -283,17 +287,20 @@ class BaseDatabase:
         assert (panel_name and panel) or c_set, (
             "Can only pass 'panel_name' and 'panel' or just 'c_set' alone.")
 
-        if panel_name == 'fiscal':  # First time run.
+        if not c_set:  # First time run.
             all_c_sets = self._find_children(panel)
             c_set = [item[0] for item in all_c_sets
                      if item[0].__class__.__name__ == 'ComboBox']
 
-        if c_set:
-            data = list(zip((t[1] for t in self._fiscal_data[:-1]),
-                            (t[1] for t in self._fiscal_data[1:])))
-            choices = c_set[0].GetItems()
-            c_set[0].SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
-            c_set[0].SetSelection(0)
+        data = list(zip((t[1] for t in self._fiscal_data[:-1]),
+                        (t[1] for t in self._fiscal_data[1:])))
+        choices = c_set[0].GetItems()
+        c_set[0].SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
+        c_set[0].SetSelection(0)
+
+    #
+    # Database access methods.
+    #
 
     async def _add_fields_to_field_type_table(self, data: dict) -> None:
         """
@@ -326,23 +333,24 @@ class BaseDatabase:
                 if item not in con_months:
                     await self.insert_into_month_table(item)
 
-    async def _insert_update_fiscal_year_table(self, date: tuple, current: int
-                                               ) -> None:
+    async def _insert_update_fiscal_year_table(self, data: list) -> None:
         """
         Insert or update `fiscal_year` table.
 
-        :param tuple date: This is the year, month, day, and current values
-                           (year, month, day).
-        :param int current: This will return the current fiscal year if `1`
-                            or the next year if `0`. If set to `None`
-                            (default) then do a query for the provided year.
+        .. note::
+
+           The data argument is in the form of:
+           (year, month, day, audit, current, c_time, m_time).
+
+        :param list data: The data to insert or update the fiscal year table.
         """
-        values = await self.select_from_fiscal_year_table(year=date[0])
+        year = data[0][0]
+        values = await self.select_from_fiscal_year_table(year=year)
 
         if values:
-            await self.update_fiscal_year_table(date[0], current)
+            await self.update_fiscal_year_table(data)
         else:
-            await self.insert_into_fiscal_year_table(date, current)
+            await self.insert_into_fiscal_year_table(data)
 
     async def _insert_update_data_table(self, year: int, month: int,
                                         data: dict) -> None:
@@ -421,6 +429,10 @@ class BaseDatabase:
             else:
                 await db.commit()
 
+    #
+    # Utilitu methods
+    #
+
     def _find_fields(self, new: list, old: list) -> set:
         """
         Find the fields to select or insert.
@@ -442,7 +454,7 @@ class BaseDatabase:
     def _scrub_value(self, value, convert_to_tz: bool=False,
                      financial: bool=False):
         if financial:
-            value = self.value_to_db(value) if value != '' else '0'
+            value = self._value_to_db(value) if value != '' else '0'
         elif isinstance(value, str):
             value = value.strip()
         elif isinstance(value, wx.DateTime):
@@ -456,7 +468,7 @@ class BaseDatabase:
 
         return value
 
-    def value_to_db(self, value: str) -> int:
+    def _value_to_db(self, value: str) -> int:
         """
         Convert the text currency value to an integer.
 
@@ -473,7 +485,7 @@ class BaseDatabase:
                                         f"string found {type(value)}")
         return int(float(value)*100)
 
-    def db_to_value_currency(self, value: str) -> str:
+    def _db_to_value_currency(self, value: str) -> str:
         """
         Convert an integer from the database into a value sutable for
         displaying in a widget.
@@ -520,6 +532,10 @@ class BaseDatabase:
 
         return iana, lat, lon
 
+    #
+    # Properties
+    #
+
     @property
     def organization_data(self) -> dict:
         """
@@ -558,3 +574,52 @@ class BaseDatabase:
     def tzinfo(self):
         iana_name = self.organization_data.get('iana_name')
         return ZoneInfo(iana_name if iana_name else 'UTC')
+
+    #
+    # Methods called from panels
+    #
+
+    def populate_fiscal_panel(self, year: int=None):
+        """
+        Populate the fiscal panel. This is called by an event from the
+        ComboBox widget.
+
+        :param str panel_name: The internal panel name.
+        """
+        current = self._get_fiscal_year_value(year, current=True)
+        audit = self._get_fiscal_year_value(year, audit=True)
+
+        for c_set in self._find_children(self._mf.panels['fiscal']):
+            #name0 = c_set[0].__class__.__name__
+            name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
+            field_name = self._make_field_name(c_set[0].GetLabelText())
+
+            if (field_name == 'audit_complete' and name1 == 'ColorCheckBox'):
+                c_set[1].SetValue(audit)
+            elif (field_name == 'current_fiscal_year'
+                  and name1 == 'ColorCheckBox'):
+                c_set[1].SetValue(current)
+
+    def _get_fiscal_year_value(self, year: int, *, pk: bool=False,
+                               date: bool=False, audit: bool=False,
+                               current: bool=False, time: bool=False):
+        # Create dict from list of raw fiscal data.
+        assert 1 == [v for v in (pk, date, audit, current, time)
+                     if v].count(True), (f"Only one argument can be `True`, "
+                                         f"found ({date}, {current}, {time}).")
+        data = {item[1]: item for item in self._fiscal_data}
+        items = data.get(year)
+        assert items, f"Invalid year {year}, options are {list(data)}."
+
+        if pk:
+            result = items[0]
+        elif date:
+            result = (items[1], items[2], items[3])
+        elif audit:
+            result = items[4]
+        elif current:
+            result = items[5]
+        else:  # time
+            result = (items[6], items[7])
+
+        return result

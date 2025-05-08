@@ -43,11 +43,18 @@ class PanelFactory(TomlMetaData):
                                    str(e), exc_info=True)
                 # *** TODO *** This needs to be shown on the panel if detected.
 
+    def import_store_objects(self, klass):
+        klass.write("from .utilities import StoreObjects\n\n\n")
+
     def setup_panel(self, panel):
         class_name = f"{panel.capitalize()}Panel"
         self.__class_names[panel] = class_name
         panel_kwargs = self.panel_config.get(panel, {}).get('meta')
         klass = StringIO()
+
+        if panel == 'fiscal':
+            self.import_store_objects(klass)
+
         klass.write(f"class {class_name}(BaseGenerated):\n")
         klass.write("    def __init__(self, parent, **kwargs):\n")
         klass.write("        super().__init__(parent, **kwargs)\n")
@@ -122,6 +129,7 @@ class PanelFactory(TomlMetaData):
         klass.write("        self.SetupScrolling(rate_x=20, rate_y=40)\n")
         klass.write("        self.Hide()\n")
 
+        # Add methods to specific panels.
         if panel in ('organization', ):
             self._create_save_cancel_events(klass, panel)
         elif panel == 'fiscal':
@@ -341,6 +349,8 @@ class PanelFactory(TomlMetaData):
         if dirty_flag:
             klass.write(f"        {widget}.Bind(EVT_COLOR_CHECKBOX, "
                         "self.set_dirty_flag)\n")
+        else:
+            klass.write(f"        {widget}.Enable(False)\n")
 
         self._set_add_to_sizer(klass, widget, value)
 
@@ -453,8 +463,9 @@ class PanelFactory(TomlMetaData):
     def _create_combobox_select_event(self, klass, panel):
         klass.write("\n    def get_selection(self, event):\n")
         klass.write("        value = event.GetString()\n")
-        klass.write("        index = event.GetSelection()\n")
-        klass.write("        print(f'{value}, {index}')\n")
+        klass.write("        year, _, nyear = value.partition('-')\n")
+        klass.write("        db = StoreObjects().get_object('Database')\n")
+        klass.write("        db.populate_fiscal_panel(int(year))\n")
 
     def _set_colors(self, klass, widget, value):
         """

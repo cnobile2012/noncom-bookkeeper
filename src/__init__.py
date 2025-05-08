@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # src/__init__.py
 #
@@ -87,5 +88,5 @@ class Logger:
         self.logger.setLevel(level)
 
 
-# The lines below runs the Bootstrap class for the first time.
+# The line below runs the Bootstrap class for the first time.
 Bootstrap()

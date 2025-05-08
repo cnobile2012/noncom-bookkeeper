@@ -131,7 +131,6 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         initializing widgets.
         """
         if not self.initializing:
-            #print('POOP0', event)
             self.dirty = True
 
         event.Skip()
