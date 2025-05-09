@@ -6,7 +6,6 @@ __docformat__ = "restructuredtext en"
 
 import wx
 
-from .config import TomlMetaData
 from .base_database import BaseDatabase
 from .custom_widgits import ordered_month
 
@@ -14,7 +13,7 @@ import badidatetime
 badidatetime.enable_geocoder()
 
 
-class Database(TomlMetaData, BaseDatabase):
+class Database(BaseDatabase):
     """
     Create, and update the database for the Bahá'í Bookkeeping application.
     """
@@ -39,6 +38,7 @@ class Database(TomlMetaData, BaseDatabase):
             for name, panel in self._mf.panels.items():
                 data = self._collect_panel_values(panel)
                 values = await self.select_from_data_table(data, year, month)
+                #print('POOP0', data, values, year)
 
                 # Needed when the app has been run at least one time before.
                 if name == 'organization' and values:
@@ -76,7 +76,14 @@ class Database(TomlMetaData, BaseDatabase):
         if name == 'organization':
             data = self._add_location_data(data)
 
+            # *** TODO *** If data is not for the current fiscal year do not
+            #              save in organization_data.
             if data:
+                # start_of_fiscal_year = data['start_of_fiscal_year']
+                # year, month, day = start_of_fiscal_year.b_date
+                # current = self._get_fiscal_year_value(year, current=True)
+                # curr_data = self.organization_data
+                # self.organization_data = data if current else curr_data
                 self.organization_data = data
                 year, month = await self._initialize_database(data)
                 await self.populate_panels()
@@ -129,8 +136,26 @@ class Database(TomlMetaData, BaseDatabase):
         org_data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
         # Create or update the current fiscal and the following year.
         items = []
-        items.append((year, month, day, 0, 1))
-        items.append((year + 1, month, day, 0, 0))
+        all_years = await self.select_from_fiscal_year_table()
+        item_dict = {item[1]: item for item in all_years}
+        oldest_year = min(list(item_dict.keys())) if item_dict else None
+        prev_year = [item[1]-1 for item in all_years if item[5] == 1]
+        prev_data = item_dict.get(prev_year[0]) if prev_year else None
+
+        if year not in item_dict and year+1 == oldest_year:
+            items.append((year, month, day, 0, 0))  # Not exist
+        elif prev_data:
+            p_year = prev_data[1]
+            p_month = prev_data[2]
+            p_day = prev_data[3]
+            audit = prev_data[4]
+            items.append((p_year, p_month, p_day, audit, 0))  # Exists
+            items.append((year, month, day, 0, 1))            # Exists
+            items.append((year+1, month, day, 0, 0))          # Not exist
+        else:
+            items.append((year, month, day, 0, 1))    # Not exist
+            items.append((year+1, month, day, 0, 0))  # Not exist
+
         await self._insert_update_fiscal_year_table(items)
         # Populate the Badi months in the database.
         await self._insert_into_month_table()
@@ -199,21 +224,24 @@ class Database(TomlMetaData, BaseDatabase):
                  " current, c_time, m_time) VALUES (?, ?, ?, ?, ?, ?, ?)")
         await self._do_insert_query(query, items)
 
-    async def update_fiscal_year_table(self, year: int, data: dict) -> None:
+    async def update_fiscal_year_table(self, data: list) -> None:
         """
         Update the `fiscal_year` table. Only the year and current values
         are needed to do updates.
 
-        :param int year: The year indicating the start of the fiscal year.
         :param dict data: The data to be updated.
+
+        .. note::
+
+           Incoming date [(year, month, day, audit, current), ...]
         """
         now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
                  "SET audit = :audit, current = :current, m_time = :m_time "
                  "WHERE year = :year")
-        data = [{'year': year, 'audit': data[3], 'current': data[4],
-                 'm_time': now}]
-        await self._do_update_query(query, data)
+        items = [{'year': item[0], 'audit': item[3], 'current': item[4],
+                  'm_time': now} for item in data]
+        await self._do_update_query(query, items)
 
     #
     # Month SELECT and INSERT methods.
@@ -432,7 +460,7 @@ class Database(TomlMetaData, BaseDatabase):
         if len(fy):
             year = fy[0][1]
             month = fy[0][2]
-        else:  # Only for firt time use.
+        else:  # Only for first time use.
             year = month = None
 
         return year, month

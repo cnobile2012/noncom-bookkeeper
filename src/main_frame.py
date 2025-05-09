@@ -31,7 +31,7 @@ except ImportError:
     pass
 
 
-class MainFrame(MenuBar, wx.Frame):
+class MainFrame(wx.Frame, MenuBar):
     """
     The main frame of the application.
     """

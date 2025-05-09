@@ -35,8 +35,8 @@ class Settings(AppDirs):
                               'generic': 'generic.toml'}}
 
     def __init__(self, *args, **kwargs):
-        super().__init__(appname=self.app_name,
-                         appauthor=self.primary_developer)
+        super().__init__(*args, appname=self.app_name,
+                         appauthor=self.primary_developer, **kwargs)
         # The two lines below read an environment variable which is used
         # during the app build process. The default is to use the Baha'i
         # configuration.
