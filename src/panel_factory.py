@@ -286,7 +286,7 @@ class PanelFactory(TomlMetaData):
         widget_type = value[0]
 
         if widget_type == 'ComboBox':
-            if panel == 'month':
+            if panel == 'monthly':
                 choices = [f"{idx:>2} {month}"
                            for idx, month in enumerate(self.months, start=1)]
                 first = 'Choose Current Month'

@@ -9,6 +9,7 @@ __pycache__/
 .DS_Store
 *.txt
 *.bak
+*.~lock*
 !LICENSE.txt
 !requirements/*.txt
 *.pdf

@@ -59,7 +59,7 @@ class MenuBar:
                           ('budget', [201, f"&{names[1]}\tCTRL+B",
                                       "Edit yearly budget.",
                                       'edit_budget', None, True, None]),
-                          ('month', [202, f"&{names[2]}\tCTRL+M",
+                          ('monthly', [202, f"&{names[2]}\tCTRL+M",
                                      "Edit monthy data.",
                                      'edit_month', None, True, None]),
                           ('fiscal', [203, f"&{names[3]}\tCTRL+O",
@@ -289,7 +289,7 @@ class MenuBar:
     def edit_month(self, event):
         self.change_menu_items()
         self._hide_all_panels()
-        self.panel = self.panels['month']
+        self.panel = self.panels['monthly']
         self._set_panel()
 
     def choose_fiscal_year(self, event):
