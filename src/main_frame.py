@@ -87,7 +87,8 @@ class MainFrame(wx.Frame, MenuBar):
                 self.__panel_classes[panel] = globals()[class_name](self)
 
         self.create_menu()
-        asyncio.run(self.start())
+        self.options = options
+        asyncio.run(self.start(), debug=options.debug)
 
     async def start(self):
         """
@@ -132,7 +133,8 @@ class MainFrame(wx.Frame, MenuBar):
 
     def on_timer_closure(self, db):
         def do_save(db, name, panel):
-            error = asyncio.run(db.save_to_database(name, panel))
+            error = asyncio.run(db.save_to_database(name, panel),
+                                debug=self.options.debug)
 
             if error is None:
                 panel.dirty = False

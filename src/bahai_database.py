@@ -30,7 +30,7 @@ class Database(BaseDatabase):
         """
         Populate all panels that have data in the database.
         """
-        year, month = await self._get_fiscal_year()
+        year, month = await self._get_current_fiscal_year()
 
         if None not in (year, month):
             self._fiscal_data = await self.select_from_fiscal_year_table()
@@ -59,8 +59,8 @@ class Database(BaseDatabase):
 
         .. note::
 
-           1. Empty organization data:
-              {'locality_prefix': 0, 'locale_name': 'Harrnett',
+           1. Empty (default) organization data:
+              {'locality_prefix': 0, 'locale_name': '',
                'total_membership': '', 'treasurer': '',
                'start_of_fiscal_year': '<today>',
                'location_city_name': ''}
@@ -69,7 +69,7 @@ class Database(BaseDatabase):
 
         for field, value in data.items():
             if value in self._EMPTY_FIELDS:
-                msg = f"The '{field}' field must have data in it."
+                msg = f"The '{field}' field must not be empty."
                 self._log.warning(msg)
                 self._mf.statusbar_warning = msg
 
@@ -90,7 +90,7 @@ class Database(BaseDatabase):
             else:
                 return 'error'
         else:
-            year, month = await self._get_fiscal_year()
+            year, month = await self._get_current_fiscal_year()
 
         await self._insert_update_data_table(year, month, data)
 
@@ -189,12 +189,12 @@ class Database(BaseDatabase):
         :param int current: This will return the current fiscal year if `1`
                             or the next year if `0`. If set to `None`
                             (default) then do a query for the provided year.
-        :returns: A list of the `fiscal_year` table data for the year
-                  requested.
+        :returns: The `fiscal_year` table data for the year requested.
         :rtype: list
         """
-        assert (year, month, day, current).count(None) in (3, 4), (
-            "Can only query for one of (year, month, day, current)")
+        assert (year, month, day, audit, current).count(None) in (4, 5), (
+            "Can only query for one of (year, month, day, audit, current) "
+            "or none meaning all.")
 
         if year:       # Get just the one year.
             where = f"WHERE year={year}"
@@ -205,7 +205,7 @@ class Database(BaseDatabase):
         elif audit:  # Get all years that have or have not been audited.
             where = f"WHERE audit={audit}"
         elif current:  # Get the current fiscal year.
-            where = f"WHERE current={int(current)}"
+            where = f"WHERE current={current}"
         else:          # Get all fiscal years.
             where = ""
 
@@ -451,7 +451,7 @@ class Database(BaseDatabase):
         """
         return badidatetime.date.fromisoformat(value, short=True)
 
-    async def _get_fiscal_year(self):
+    async def _get_current_fiscal_year(self):
         """
         Get the current fiscal year.
         """
