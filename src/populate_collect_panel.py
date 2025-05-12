@@ -57,14 +57,13 @@ class PopulateCollect:
         return all([item not in self._EMPTY_FIELDS for item in data.values()])
 
     def _collect_panel_values(self, panel: wx.Panel,
-                              convert_to_tz: bool=False) -> dict:
+                              convert_tz: bool=False) -> dict:
         """
         Collects the data from the panel's widgets.
 
         :param wx.Panel panel: The panel to collect data from.
-        :param convert_to_utc: True if wx.DateTime field's should be
-                               converted to the local timezone and False if
-                               they are not to be converted (default is False).
+        :param convert_tz: If `True` convert to the local timezone and if False
+                               do not to be convert (default is False).
         :returns: A dictonary of db field names and values as in
                   {<field name>: <value>}.
         :rtype: dict
@@ -91,7 +90,7 @@ class PopulateCollect:
                     data[field_name] = self._scrub_value(value,
                                                          financial=financial)
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
-                    data[field_name] = self._scrub_value(value, convert_to_tz)
+                    data[field_name] = self._scrub_value(value, convert_tz)
                 elif name1 in ('ColorCheckBox', 'CheckBox'):
                     data[field_name] = c_set[1].GetValue()
 
@@ -196,7 +195,7 @@ class PopulateCollect:
         name = name.replace('(', '').replace(')', '')
         return name.replace(' ', '_').replace(':', '').lower()
 
-    def _scrub_value(self, value, convert_to_tz: bool=False,
+    def _scrub_value(self, value, convert_tz: bool=False,
                      financial: bool=False):
         if financial:
             value = self._value_to_db(value) if value != '' else '0'
@@ -205,12 +204,11 @@ class PopulateCollect:
         elif isinstance(value, wx.DateTime):
             # We convert into an ISO 8601 format for the db in local time.
             # *** TODO *** Change to local time.
-            if convert_to_tz: value = value.ToUTC()
+            if convert_tz: value = value.ToUTC()
             value = value.FormatISOCombined()
         # *** TODO *** Maybe need not sure yet.
-        #elif isinatance(value, datetime.datetime):  # Python datetime package
         #elif isinatance(value, badidatetime.datetime): # Badi datetime package
-
+        #elif isinatance(value, datetime.datetime):  # Python datetime package
         return value
 
     def _value_to_db(self, value: str) -> int:
@@ -255,25 +253,30 @@ class PopulateCollect:
         """
         current = self._get_fiscal_year_value(year, current=True)
         audit = self._get_fiscal_year_value(year, audit=True)
+        work_on = self._get_fiscal_year_value(year, work_on=True)
 
         for c_set in self._find_children(self._mf.panels['fiscal']):
             #name0 = c_set[0].__class__.__name__
             name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
             field_name = self._make_field_name(c_set[0].GetLabelText())
 
-            if (field_name == 'audit_complete' and name1 == 'ColorCheckBox'):
-                c_set[1].SetValue(audit)
-            elif (field_name == 'current_fiscal_year'
-                  and name1 == 'ColorCheckBox'):
+            if (field_name == 'current_fiscal_year'
+                and name1 == 'ColorCheckBox'):
                 c_set[1].SetValue(current)
+            elif field_name == 'audit_complete' and name1 == 'ColorCheckBox':
+                c_set[1].SetValue(audit)
+            elif field_name == 'work_on' and name1 == 'ColorCheckBox':
+                c_set[1].SetValue(work_on)
 
     def _get_fiscal_year_value(self, year: int, *, pk: bool=False,
-                               date: bool=False, audit: bool=False,
-                               current: bool=False, time: bool=False):
+                               date: bool=False, current: bool=False,
+                               audit: bool=False, work_on: bool=False,
+                               time: bool=False):
         # Create dict from list of raw fiscal data.
-        assert 1 == [v for v in (pk, date, audit, current, time)
-                     if v].count(True), (f"Only one argument can be `True`, "
-                                         f"found ({date}, {current}, {time}).")
+        assert (pk, date, current, audit,
+                work_on, time).count(True) == 1, (
+                    f"Only one argument can be `True`, found ({date}, "
+                    f"{current}, {audit}, {work_on}, {time}).")
         data = {item[1]: item for item in self._fiscal_data}
         items = data.get(year)
         assert items, f"Invalid year {year}, options are {list(data)}."
@@ -282,11 +285,13 @@ class PopulateCollect:
             result = items[0]
         elif date:
             result = (items[1], items[2], items[3])
-        elif audit:
-            result = items[4]
         elif current:
+            result = items[4]
+        elif work_on:
             result = items[5]
+        elif audit:
+            result = items[6]
         else:  # time
-            result = (items[6], items[7])
+            result = (items[7], items[8])
 
         return result

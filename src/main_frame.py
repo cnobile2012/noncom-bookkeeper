@@ -135,12 +135,15 @@ class MainFrame(wx.Frame, MenuBar):
         def do_save(db, name, panel):
             error = asyncio.run(db.save_to_database(name, panel),
                                 debug=self.options.debug)
+            panel.dirty = False
 
             if error is None:
-                panel.dirty = False
                 c_name = name.capitalize()
                 self.statusbar_message = f"Finished saving {c_name} data."
                 self._log.debug("Checking '%s' for changes.", name)
+            else:
+                self.statusbar_warning = error
+                # *** TODO *** Reset to default all values in panel.
 
         def on_timer(event):
             for name, panel in self.panels.items():

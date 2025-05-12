@@ -5,7 +5,6 @@
 __docformat__ = "restructuredtext en"
 
 import os
-import wx
 import aiosqlite
 
 from zoneinfo import ZoneInfo
@@ -39,8 +38,9 @@ class BaseDatabase(PopulateCollect, Settings):
          'year INTEGER UNIQUE NOT NULL',
          'month INTEGER NOT NULL',
          'day INTEGER NOT NULL',
-         'audit INTEGER NOT NULL',
          'current INTEGER NOT NULL',
+         'work_on INTEGER NOT NULL',
+         'audit INTEGER NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
         (_T_MONTH,
@@ -154,44 +154,19 @@ class BaseDatabase(PopulateCollect, Settings):
                 if item not in con_months:
                     await self.insert_into_month_table(item)
 
-    async def _insert_update_fiscal_year_table(self, data: list) -> None:
-        """
-        Insert or update `fiscal_year` table.
-
-        .. note::
-
-           1. The data argument is in the form of:
-              [(year, month, day, audit, current, c_time, m_time), ...].
-           2. If two items then insert current and next year.
-           3. If three items, update the previous current and new current
-              year, then insert the new next year.
-
-        :param list data: The data to insert or update the fiscal year table.
-        """
-        size = len(data)
-        assert 1 <= size <= 3, (
-            f"Must have two or three fiscal year items, found {size}.")
-
-        if size == 1:    # Insert one older year
-            await self.insert_into_fiscal_year_table(data)
-        elif size == 2:  # Insert both (run first time)
-            await self.insert_into_fiscal_year_table(data)
-        elif size == 3:  # Update two insert one (normal after 1st run)
-            await self.update_fiscal_year_table(data[0:2])
-            await self.insert_into_fiscal_year_table([data[2]])
-
-    async def _insert_update_data_table(self, year: int, month: int,
+    async def _insert_update_data_table(self, name: str, year: int, month: int,
                                         data: dict) -> None:
         """
         Insert or update `data` table.
 
+        :param str name: Panel name.
         :param int year: A Baha'i year of the transaction.
         :param int month: A Baha'i month of the transaction. This is the order
                           of the Baha'i month not the name.
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: <value>,...}.
         """
-        values = await self.select_from_data_table(data, year, month)
+        values = await self.select_from_data_table(name, data, year, month)
 
         if not values:  # Do insert
             await self.insert_into_data_table(year, month, data)

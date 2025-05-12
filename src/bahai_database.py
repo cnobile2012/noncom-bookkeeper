@@ -37,8 +37,8 @@ class Database(BaseDatabase):
 
             for name, panel in self._mf.panels.items():
                 data = self._collect_panel_values(panel)
-                values = await self.select_from_data_table(data, year, month)
-                #print('POOP0', data, values, year)
+                values = await self.select_from_data_table(name, data, year,
+                                                           month)
 
                 # Needed when the app has been run at least one time before.
                 if name == 'organization' and values:
@@ -54,7 +54,7 @@ class Database(BaseDatabase):
         """
         Save the given panel data to the database.
 
-        :param str name: The internal name of the current panal.
+        :param str name: The internal name of the current panel.
         :param wx.Panel panel: Any of the panels that have collected data.
 
         .. note::
@@ -66,114 +66,90 @@ class Database(BaseDatabase):
                'location_city_name': ''}
         """
         data = self._collect_panel_values(panel)
+        empty_flag = False
 
         for field, value in data.items():
             if value in self._EMPTY_FIELDS:
-                msg = f"The '{field}' field must not be empty."
-                self._log.warning(msg)
-                self._mf.statusbar_warning = msg
+                error = f"The '{field}' field must not be empty."
+                self._log.warning(error)
+                empty_flag = True
 
-        if name == 'organization':
-            data = self._add_location_data(data)
-
-            # *** TODO *** If data is not for the current fiscal year do not
-            #              save in organization_data.
-            if data:
-                # start_of_fiscal_year = data['start_of_fiscal_year']
-                # year, month, day = start_of_fiscal_year.b_date
-                # current = self._get_fiscal_year_value(year, current=True)
-                # curr_data = self.organization_data
-                # self.organization_data = data if current else curr_data
-                self.organization_data = data
-                year, month = await self._initialize_database(data)
-                await self.populate_panels()
-            else:
-                return 'error'
-        else:
+        if not empty_flag:
             year, month = await self._get_current_fiscal_year()
 
-        await self._insert_update_data_table(year, month, data)
+            if name == 'organization':
+                data = self._add_location_data(data)
+                start_of_fiscal_year = data['start_of_fiscal_year']
+                entered_date = start_of_fiscal_year.b_date
+                # Need ISO date for the DB.
+                data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
 
-    def _add_location_data(self, data: dict) -> dict:
-        """
-        Add the location data `iana_name`, `latitude` and, `longitude` to
-        the organization data.
+                if not year or not month:  # First ever entry
+                    self.organization_data = data
+                    await self.first_run_initialization(entered_date)
+                    year, month, day = entered_date
+                elif (year + 1) == entered_date[0]:  # Next Current Year
+                    self.organization_data = data
+                    await self.entered_year_greater_than(entered_date)
+                elif (year - 1) == entered_date[0]:  # Previous year.
+                    await self.entered_previous_year(entered_date)
+                else:
+                    error = ("Cannot enter a year that is not sequentially "
+                             "before or after the current year.")
 
-        :param dict data: The `organization` data.
-        :returns: The updated `organization` data.
-        :rtype: dict
-        """
-        location_city_name = data['location_city_name']
-
-        if location_city_name:
-            iana, lat, lon = self._find_timezone(location_city_name)
-            data['iana_name'] = iana
-            data['latitude'] = lat
-            data['longitude'] = lon
+            if year and month:
+                await self.populate_panels()
+                await self._insert_update_data_table(name, year, month, data)
+            else:
+                error = ("Cannot enter Fiscal Year data before the "
+                         "Organization Information has been entered.")
+                self._log.warning(error)
+                return error
         else:
-            self._log.warning("The 'location_city_name' field was not found, "
-                              "this will cause some dates to be set to the "
-                              "wrong timezone, most likely UTC:00:00.")
-            data = None
+            return error
 
-        return data
-
-    async def _initialize_database(self, org_data: dict) -> None:
+    async def first_run_initialization(self, date: tuple):
         """
-        Initializes the database with initial data.
+        The first run of the application.
 
-        .. note::
-
-           Can only be run after organization data has been entered but
-           before it has been saved to the database.
-
-        :param dict org_data: The `organization` data.
-        :returns: The year and month as a tuple.
-        :rtype: tuple
+        :param tuple date: This is the UI entered date.
         """
-        start_of_fiscal_year = org_data['start_of_fiscal_year']
-        year, month, day = start_of_fiscal_year.b_date
-        org_data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
-        # Create or update the current fiscal and the following year.
-        items = []
-        all_years = await self.select_from_fiscal_year_table()
-        item_dict = {item[1]: item for item in all_years}
-        oldest_year = min(list(item_dict.keys())) if item_dict else None
-        prev_year = [item[1]-1 for item in all_years if item[5] == 1]
-        prev_data = item_dict.get(prev_year[0]) if prev_year else None
-
-        if year not in item_dict and year+1 == oldest_year:
-            items.append((year, month, day, 0, 0))  # Not exist
-        elif prev_data:
-            p_year = prev_data[1]
-            p_month = prev_data[2]
-            p_day = prev_data[3]
-            audit = prev_data[4]
-            items.append((p_year, p_month, p_day, audit, 0))  # Exists
-            items.append((year, month, day, 0, 1))            # Exists
-            items.append((year+1, month, day, 0, 0))          # Not exist
-        else:
-            items.append((year, month, day, 0, 1))    # Not exist
-            items.append((year+1, month, day, 0, 0))  # Not exist
-
-        await self._insert_update_fiscal_year_table(items)
-        # Populate the Badi months in the database.
+        year, month, day = date
+        # year, month, day, current, audit, work_on
+        data = [(year, month, day, 1, 1, 0), (year+1, month, day, 0, 0, 0)]
+        await self.insert_into_fiscal_year_table(data)
+        # Populate the Badí months in the database.
         await self._insert_into_month_table()
 
+        # Populate all panel fields in the database.
         for name, panel in self._mf.panels.items():
-            data = self._collect_panel_values(panel)
-            # Populate all fields in the database.
-            await self._add_fields_to_field_type_table(data)
+            panel_data = self._collect_panel_values(panel)
+            await self._add_fields_to_field_type_table(panel_data)
 
-        return year, month
+    async def entered_next_year(self, date: tuple):
+        """
+        Follow up years.
 
-    #
-    # Fiscal Year SELECT, INSERT and, UPDATE methods.
-    #
+        :param tuple date: This is the UI entered date.
+        """
+        year, month, day = date
+        data = [(year-1, month, day, 0, 0, 0), (year, month, day, 1, 1, 0)]
+        await self.update_fiscal_year_table(data)
+        await self.insert_into_fiscal_year_table((year+1, month, day, 0, 0, 0))
+
+    async def entered_previous_year(self, date: tuple):
+        """
+        Previous up years.
+
+        :param tuple date: This is the UI entered date.
+        """
+        year, month, day = date
+        await self.insert_into_fiscal_year_table((year, month, day, 0, 0, 0))
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,
-                                            audit: int=None, current: int=None
+                                            current: int=None,
+                                            work_on: int=None, audit: int=None
                                             ) -> list:
         """
         Select from the `fiscal_year` table. Only the year is needed to
@@ -184,17 +160,20 @@ class Database(BaseDatabase):
                           all years.
         :param int day: The `day` is used to query for a given day in
                         all years and months.
-        :param int audit: The `audit` is used to query all years audited or
-                          not audited.
         :param int current: This will return the current fiscal year if `1`
                             or the next year if `0`. If set to `None`
                             (default) then do a query for the provided year.
+        :param int work_on: The `work_on` is used to switch the fiscal year
+                            that is being worked on..
+        :param int audit: The `audit` is used to query all years audited or
+                          not audited.
         :returns: The `fiscal_year` table data for the year requested.
         :rtype: list
         """
-        assert (year, month, day, audit, current).count(None) in (4, 5), (
-            "Can only query for one of (year, month, day, audit, current) "
-            "or none meaning all.")
+        assert (year, month, day, current,
+                work_on, audit).count(None) in (5, 6), (
+            "Can only query for one of (year, month, day, current, audit, "
+            "work_on) or none meaning all.")
 
         if year:       # Get just the one year.
             where = f"WHERE year={year}"
@@ -202,10 +181,12 @@ class Database(BaseDatabase):
             where = f"WHERE month={month}"
         elif day:      # Get all years and month with this day.
             where = f"WHERE day={day}"
-        elif audit:  # Get all years that have or have not been audited.
-            where = f"WHERE audit={audit}"
         elif current:  # Get the current fiscal year.
             where = f"WHERE current={current}"
+        elif work_on:  # Switch years to work on.
+            where = f"WHERE work_on={work_on}"
+        elif audit:    # Get all years that have or have not been audited.
+            where = f"WHERE audit={audit}"
         else:          # Get all fiscal years.
             where = ""
 
@@ -220,8 +201,9 @@ class Database(BaseDatabase):
         """
         now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         items = [t + (now, now) for t in data]  # Add the times to the end.
-        query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, audit,"
-                 " current, c_time, m_time) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
+                 "current, work_on, audit, c_time, m_time) "
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
         await self._do_insert_query(query, items)
 
     async def update_fiscal_year_table(self, data: list) -> None:
@@ -233,14 +215,15 @@ class Database(BaseDatabase):
 
         .. note::
 
-           Incoming date [(year, month, day, audit, current), ...]
+           Incoming data:
+           [(year, month, day, current, work_on, audit, current), ...]
         """
         now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
-                 "SET audit = :audit, current = :current, m_time = :m_time "
-                 "WHERE year = :year")
-        items = [{'year': item[0], 'audit': item[3], 'current': item[4],
-                  'm_time': now} for item in data]
+                 "SET current = :current, audit = :audit, work_on = :work_on "
+                 "m_time = :m_time WHERE year = :year")
+        items = [{'year': item[0], 'current': item[3], 'work_on': item[4],
+                  'audit': item[5], 'm_time': now} for item in data]
         await self._do_update_query(query, items)
 
     #
@@ -316,11 +299,12 @@ class Database(BaseDatabase):
     # Data SELECT, INSERT and, UPDATE methods.
     #
 
-    async def select_from_data_table(self, data: dict, year: int=None,
-                                     month: int=None,) -> list:
+    async def select_from_data_table(self, name: str, data: dict,
+                                     year: int=None, month: int=None,) -> list:
         """
         Reads a row or rows from the `data` table.
 
+        :param str name: Panel name.
         :param int year: A Baha'i year used to select the current fiscal year.
         :param dict data: The data from the any panel in the form of:
                           {<field name>: <value>,...}.
@@ -352,7 +336,12 @@ class Database(BaseDatabase):
              '0182-02-12T05:27:17.251199+00:00', 182, 183)
            ]
         """
-        fields = '", "'.join(data)
+        field_names = list(data.keys())
+
+        if name == 'fiscal':
+            fields = '", "'.join([f"y1.{fn}" for fn in field_names])
+        else:
+            fields = '", "'.join(field_names)
 
         if month:
             params = (year, year+1, month)
@@ -361,9 +350,9 @@ class Database(BaseDatabase):
                 "       d.c_time, d.m_time "
                 f"FROM {self._T_DATA} AS d "
                 f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
-                f"     AND f.field IN (\"{fields}\")"
-                f"JOIN {self._T_FISCAL_YEAR} AS y1 ON y1.year = ?"
-                f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.year = ?"
+                f"     AND f.field IN (\"{fields}\") "
+                f"JOIN {self._T_FISCAL_YEAR} AS y1 ON y1.year = ? "
+                f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.year = ? "
                 f"JOIN {self._T_MONTH} AS m ON m.pk = d.mfk AND m.ord = ?;"
                 )
         else:
@@ -439,12 +428,12 @@ class Database(BaseDatabase):
         await self._do_update_query(query, values)
 
     #
-    # Miscellaneous method
+    # Miscellaneous methods
     #
 
     def _convert_date_to_yymmdd(self, value):
         """
-        Converts the ISO date string to a tiple contaning the
+        Converts the ISO date string to a tuple containing the
         (year, month, day).
 
         :param str value: A ISO formatting date string.
@@ -464,3 +453,27 @@ class Database(BaseDatabase):
             year = month = None
 
         return year, month
+
+    def _add_location_data(self, data: dict) -> dict:
+        """
+        Add the location data `iana_name`, `latitude` and, `longitude` to
+        the organization data.
+
+        :param dict data: The `organization` data.
+        :returns: The updated `organization` data.
+        :rtype: dict
+        """
+        location_city_name = data['location_city_name']
+
+        if location_city_name:
+            iana, lat, lon = self._find_timezone(location_city_name)
+            data['iana_name'] = iana
+            data['latitude'] = lat
+            data['longitude'] = lon
+        else:
+            self._log.warning("The 'location_city_name' field was not found, "
+                              "this will cause some dates to be set to the "
+                              "wrong timezone, most likely UTC:00:00.")
+            data = None
+
+        return data
