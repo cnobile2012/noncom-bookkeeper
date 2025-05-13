@@ -56,6 +56,8 @@ class Database(BaseDatabase):
 
         :param str name: The internal name of the current panel.
         :param wx.Panel panel: Any of the panels that have collected data.
+        :returns: None if no errors, otherwise the error message.
+        :rtype: None or str
 
         .. note::
 
@@ -65,17 +67,19 @@ class Database(BaseDatabase):
                'start_of_fiscal_year': '<today>',
                'location_city_name': ''}
         """
+        error = None
         data = self._collect_panel_values(panel)
-        empty_flag = False
+        # Make sure all fields were entered.
+        empty_list = [field for field, value in data.items()
+                      if value in self._EMPTY_FIELDS]
 
-        for field, value in data.items():
-            if value in self._EMPTY_FIELDS:
-                error = f"The '{field}' field must not be empty."
-                self._log.warning(error)
-                empty_flag = True
-
-        if not empty_flag:
+        if len(empty_list) != 0:
+            ef = ', '.join([f for f in empty_list])
+            error = f"The '{ef}' field(s) must not be empty."
+            self._log.warning(error)
+        else:
             year, month = await self._get_current_fiscal_year()
+            seq_flag = False
 
             if name == 'organization':
                 data = self._add_location_data(data)
@@ -84,29 +88,34 @@ class Database(BaseDatabase):
                 # Need ISO date for the DB.
                 data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
 
-                if not year or not month:  # First ever entry
+                if not year or not month:            # First ever entry
                     self.organization_data = data
                     await self.first_run_initialization(entered_date)
                     year, month, day = entered_date
                 elif (year + 1) == entered_date[0]:  # Next Current Year
                     self.organization_data = data
-                    await self.entered_year_greater_than(entered_date)
+                    await self.entered_next_year(entered_date)
+                    year, month, day = entered_date
                 elif (year - 1) == entered_date[0]:  # Previous year.
                     await self.entered_previous_year(entered_date)
+                    year, month, day = entered_date
                 else:
+                    year = month = None
+                    seq_flag = True
                     error = ("Cannot enter a year that is not sequentially "
                              "before or after the current year.")
 
             if year and month:
                 await self.populate_panels()
                 await self._insert_update_data_table(name, year, month, data)
-            else:
+            elif seq_flag:
+                self._log.warning(error)
+            else:  # If no org data was entered.
                 error = ("Cannot enter Fiscal Year data before the "
                          "Organization Information has been entered.")
                 self._log.warning(error)
-                return error
-        else:
-            return error
+
+        return error
 
     async def first_run_initialization(self, date: tuple):
         """
@@ -130,12 +139,19 @@ class Database(BaseDatabase):
         """
         Follow up years.
 
+        .. note::
+
+           1. Update the previous current year.
+           2. Update the previous next year to the current year.
+           3. Insert a new next year.
+
         :param tuple date: This is the UI entered date.
         """
         year, month, day = date
         data = [(year-1, month, day, 0, 0, 0), (year, month, day, 1, 1, 0)]
         await self.update_fiscal_year_table(data)
-        await self.insert_into_fiscal_year_table((year+1, month, day, 0, 0, 0))
+        await self.insert_into_fiscal_year_table(
+            [(year+1, month, day, 0, 0, 0)])
 
     async def entered_previous_year(self, date: tuple):
         """
@@ -144,7 +160,7 @@ class Database(BaseDatabase):
         :param tuple date: This is the UI entered date.
         """
         year, month, day = date
-        await self.insert_into_fiscal_year_table((year, month, day, 0, 0, 0))
+        await self.insert_into_fiscal_year_table([(year, month, day, 0, 0, 0)])
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,

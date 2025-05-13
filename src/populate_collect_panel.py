@@ -195,6 +195,8 @@ class PopulateCollect:
         name = name.replace('(', '').replace(')', '')
         return name.replace(' ', '_').replace(':', '').lower()
 
+    # *** TODO *** make the inverse of _make_field_name() above.
+
     def _scrub_value(self, value, convert_tz: bool=False,
                      financial: bool=False):
         if financial:
