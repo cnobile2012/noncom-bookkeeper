@@ -287,7 +287,7 @@ class Database(BaseDatabase):
 
             await self._do_insert_query(query, values)
 
-    async def update_data_table(self, year: int, month: int, data: dict
+    async def update_data_table(self, year: int, month: int, data: list
                                 ) -> None:
         """
         Update the `data` table.
@@ -300,17 +300,13 @@ class Database(BaseDatabase):
         :param int year: A Baha'i year of the transaction.
         :param int month: A Baha'i month of the transaction. This is the order
                           of the Baha'i month not the name.
-        :param dict data: The data from the any panel  in the form of:
-                          {<field name>: (pk, <value>),...}.
+        :param list data: The data from the any panel  in the form of:
+                          [(pk, <value>), ...}.
         """
         m_time = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_DATA} SET value = :value, "
                  "m_time = :m_time WHERE pk = :pk;")
-        values = []
-
-        for field, (pk, value) in data.items():
-            values.append((value, m_time, pk))
-
+        values = [(value, m_time, pk) for pk, value in data]
         await self._do_update_query(query, values)
 
     #
@@ -332,30 +328,6 @@ class Database(BaseDatabase):
         :param str value: A ISO formatting date string.
         """
         return badidatetime.date.fromisoformat(value, short=True)
-
-    def _add_location_data(self, data: dict) -> dict:
-        """
-        Add the location data `iana_name`, `latitude` and, `longitude` to
-        the organization data.
-
-        :param dict data: The `organization` data.
-        :returns: The updated `organization` data.
-        :rtype: dict
-        """
-        location_city_name = data['location_city_name']
-
-        if location_city_name:
-            iana, lat, lon = self._find_timezone(location_city_name)
-            data['iana_name'] = iana
-            data['latitude'] = lat
-            data['longitude'] = lon
-        else:
-            self._log.warning("The 'location_city_name' field was not found, "
-                              "this will cause some dates to be set to the "
-                              "wrong timezone, most likely UTC:00:00.")
-            data = None
-
-        return data
 
     def _ymd_from_iso(self, iso: str) -> tuple:
         """

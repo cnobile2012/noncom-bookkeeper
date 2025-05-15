@@ -187,41 +187,48 @@ class BaseDatabase(PopulateCollect, Settings):
 
             if name == 'organization':
                 data = self._add_location_data(data)
-                start_of_fiscal_year = data['start_of_fiscal_year']
-                entered_date = start_of_fiscal_year.b_date
-                earliest_year = self.earliest_year
-                # Need ISO date for the DB.
-                data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
 
-                if not year or not month:            # First ever entry
-                    self.organization_data = data
-                    await self.first_run_initialization(entered_date)
-                    year, month, day = entered_date
-                elif (year + 1) == entered_date[0]:  # Next Current Year
-                    self.organization_data = data
-                    await self.entered_next_year(entered_date)
-                    year, month, day = entered_date
-                # Previous year.
-                elif earliest_year and (earliest_year - 1) == entered_date[0]:
-                    await self.entered_previous_year(entered_date)
-                    year, month, day = entered_date
+                if not isinstance(data, dict):
+                    error = data
                 else:
-                    year = month = None
-                    seq_flag = True
-                    error = ("Cannot enter a year that is not immediately "
-                             "before or after the earliest or current year.")
-                    self._log.warning(error)
+                    sofy = data['start_of_fiscal_year']
+                    entered_date = sofy.b_date
+                    earliest_year = self.earliest_year
+                    # Need ISO date for the DB.
+                    data['start_of_fiscal_year'] = sofy.isoformat()
 
-            if year and month:
-                await self.populate_panels()
-                error = await self._insert_update_data_table(name, year,
-                                                             month, data)
-            elif seq_flag:
-                self._log.warning(error)
-            else:  # If no org data was entered.
-                error = ("Cannot enter Fiscal Year data before the "
-                         "Organization Information has been entered.")
-                self._log.warning(error)
+                    if not year or not month:            # First ever entry
+                        self.organization_data = data
+                        await self.first_run_initialization(entered_date)
+                        year, month, day = entered_date
+                    elif year == entered_date[0]:        # Update current year
+                        self.organization_data = data
+                        year, month, day = entered_date
+                    elif (year + 1) == entered_date[0]:  # Next current year
+                        self.organization_data = data
+                        await self.entered_next_year(entered_date)
+                        year, month, day = entered_date
+                    elif (earliest_year and              # Previous year.
+                          (earliest_year - 1) == entered_date[0]):
+                        await self.entered_previous_year(entered_date)
+                        year, month, day = entered_date
+                    else:
+                        year = month = None
+                        seq_flag = True
+                        error = ("Cannot enter a year that is not immediately "
+                                 "before or after the earliest or current "
+                                 "year.")
+
+                    if year and month:
+                        error = await self._insert_update_data_table(
+                            name, year, month, data)
+                        await self.populate_panels()
+                    elif seq_flag:
+                        self._log.warning(error)
+                    else:  # If no org data was entered.
+                        error = ("Cannot enter Fiscal Year data before the "
+                                "Organization Information has been entered.")
+                        self._log.warning(error)
 
         return error
 
@@ -352,7 +359,7 @@ class BaseDatabase(PopulateCollect, Settings):
             await self.insert_into_data_table(year, month, data)
         else:
             insert_data = {}
-            update_data = {}
+            update_data = []
             #        field,    pk,      y1
             items = {item[1]: (item[0], item[3]) for item in values}
 
@@ -367,11 +374,7 @@ class BaseDatabase(PopulateCollect, Settings):
                 if year != y1:                 # Insert
                     insert_data[field] = value
                 else:                          # Update
-                    # Incoming data does not have a PK.
-                    if 'pk' not in update_data:
-                        update_data['pk'] = pk
-
-                    update_data[field] = value
+                    update_data.append((pk, value))
 
             if insert_data:  # Do insert
                 await self.insert_into_data_table(year, month, insert_data)
@@ -443,6 +446,37 @@ class BaseDatabase(PopulateCollect, Settings):
         old_fields = set(old)
         return new_fields - old_fields
 
+    def _add_location_data(self, data: dict) -> dict:
+        """
+        Add the location data `iana_name`, `latitude` and, `longitude` to
+        the organization data.
+
+        :param dict data: The `organization` data.
+        :returns: The updated `organization` data.
+        :rtype: dict
+        """
+        location_city_name = data['location_city_name']
+
+        if location_city_name:
+            result = self._find_timezone(location_city_name)
+
+            if isinstance(result, tuple):
+                iana, lat, lon = result
+                data['iana_name'] = iana
+                data['latitude'] = lat
+                data['longitude'] = lon
+            else:
+                data = None
+                error = result
+        else:
+            error = ("The 'location_city_name' field was not found, this "
+                     "will cause some dates to be set to the wrong timezone, "
+                     "most likely UTC:00:00.")
+            self._log.warning(error)
+            data = None
+
+        return data if isinstance(data, dict) else error
+
     def _find_timezone(self, address: str):
         """
         Find the IANA timezone name, latitude, and longitude.
@@ -458,8 +492,8 @@ class BaseDatabase(PopulateCollect, Settings):
         try:
             location = geolocator.geocode(address)
         except exc.GeocoderError as e:
-            self._log.error("Could not get information on %s, %s", address, e)
-            error = str(e)
+            error = f"Could not get information on {address}"
+            self._log.error(error + ", %s", e)
         else:
             error = None
 
@@ -470,13 +504,11 @@ class BaseDatabase(PopulateCollect, Settings):
             iana = tf.timezone_at(lng=lon, lat=lat)
         elif error:
             iana = lat = lon = None
-            self._mf.statusbar_error = f"{error}"
         else:
             iana = lat = lon = None
-            msg = f"Cannot find the timezone for '{address}'."
-            self._mf.statusbar_error = msg
+            error = f"Cannot find the timezone for '{address}'."
 
-        return iana, lat, lon
+        return error if error else (iana, lat, lon)
 
     #
     # Properties
