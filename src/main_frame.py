@@ -104,7 +104,6 @@ class MainFrame(wx.Frame, MenuBar):
         StoreObjects().set_object(db.__class__.__name__, db)
         self._log.info("Create the database if it does not exist.")
         await db.create_db()
-        self._log.info("Populating all panels.")
         await db.populate_panels()
 
         if not db.has_org_info_data:

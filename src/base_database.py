@@ -5,6 +5,7 @@
 __docformat__ = "restructuredtext en"
 
 import os
+import wx
 import aiosqlite
 
 from zoneinfo import ZoneInfo
@@ -79,7 +80,12 @@ class BaseDatabase(PopulateCollect, Settings):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._org_data = None
+        self._org_data = {}
+        self._fiscal_data = []
+
+    #
+    # Schema methods
+    #
 
     async def create_db(self):
         """
@@ -118,6 +124,176 @@ class BaseDatabase(PopulateCollect, Settings):
             self._mf.statusbar_error = msg
 
         return check
+
+    #
+    # Initialization methods
+    #
+
+    async def populate_panels(self):
+        """
+        Populate all panels that have data in the database.
+        """
+        year, month = await self._get_current_fiscal_year()
+
+        if None not in (year, month):
+            self._log.info("Populating all panels.")
+            self._fiscal_data = await self.select_from_fiscal_year_table()
+
+            for name, panel in self._mf.panels.items():
+                data = self._collect_panel_values(panel)
+                values = await self.select_from_data_table(name, data, year,
+                                                           month)
+
+                # Needed when the app has been run at least one time before.
+                if name == 'organization' and values:
+                    self.organization_data = values
+
+                # Add any new fields to the database.
+                await self._add_fields_to_field_type_table(data)
+                panel.initializing = True
+                self.populate_panel_values(name, panel, values)
+                panel.initializing = False
+
+    async def save_to_database(self, name: str, panel: wx.Panel) -> None:
+        """
+        Save the given panel data to the database.
+
+        :param str name: The internal name of the current panel.
+        :param wx.Panel panel: Any of the panels that have collected data.
+        :returns: None if no errors, otherwise the error message.
+        :rtype: None or str
+
+        .. note::
+
+           1. Empty (default) organization data:
+              {'locality_prefix': 0, 'locale_name': '',
+               'total_membership': '', 'treasurer': '',
+               'start_of_fiscal_year': '<today>',
+               'location_city_name': ''}
+        """
+        error = None
+        data = self._collect_panel_values(panel)
+        # Make sure all fields were entered.
+        empty_list = [field for field, value in data.items()
+                      if value in self._EMPTY_FIELDS]
+
+        if len(empty_list) != 0:
+            ef = ', '.join([f for f in empty_list])
+            error = f"The '{ef}' field(s) must not be empty."
+            self._log.warning(error)
+        else:
+            year, month = await self._get_current_fiscal_year()
+            seq_flag = False
+
+            if name == 'organization':
+                data = self._add_location_data(data)
+                start_of_fiscal_year = data['start_of_fiscal_year']
+                entered_date = start_of_fiscal_year.b_date
+                earliest_year = self.earliest_year
+                # Need ISO date for the DB.
+                data['start_of_fiscal_year'] = start_of_fiscal_year.isoformat()
+
+                if not year or not month:            # First ever entry
+                    self.organization_data = data
+                    await self.first_run_initialization(entered_date)
+                    year, month, day = entered_date
+                elif (year + 1) == entered_date[0]:  # Next Current Year
+                    self.organization_data = data
+                    await self.entered_next_year(entered_date)
+                    year, month, day = entered_date
+                # Previous year.
+                elif earliest_year and (earliest_year - 1) == entered_date[0]:
+                    await self.entered_previous_year(entered_date)
+                    year, month, day = entered_date
+                else:
+                    year = month = None
+                    seq_flag = True
+                    error = ("Cannot enter a year that is not immediately "
+                             "before or after the earliest or current year.")
+                    self._log.warning(error)
+
+            if year and month:
+                await self.populate_panels()
+                error = await self._insert_update_data_table(name, year,
+                                                             month, data)
+            elif seq_flag:
+                self._log.warning(error)
+            else:  # If no org data was entered.
+                error = ("Cannot enter Fiscal Year data before the "
+                         "Organization Information has been entered.")
+                self._log.warning(error)
+
+        return error
+
+    async def first_run_initialization(self, date: tuple):
+        """
+        The first run of the application.
+
+        .. note::
+
+           1. Insert a year marked as current.
+           2. Insert the next year.
+           3. Insert all months.
+           4. Insert fields from all panels.
+
+        :param tuple date: This is the UI entered date.
+        """
+        year, month, day = date
+        # year, month, day, current, audit, work_on
+        data = [(year, month, day, 1, 1, 0), (year+1, month, day, 0, 0, 0)]
+        await self.insert_into_fiscal_year_table(data)
+        # Populate the Badí months in the database.
+        await self._insert_into_month_table()
+
+        # Populate all panel fields in the database.
+        for name, panel in self._mf.panels.items():
+            panel_data = self._collect_panel_values(panel)
+            await self._add_fields_to_field_type_table(panel_data)
+
+    async def entered_next_year(self, date: tuple):
+        """
+        Follow up years.
+
+        .. note::
+
+           1. Update the previous current year.
+           2. Update the previous next year to the current year.
+           3. Insert a new next year.
+
+        :param tuple date: This is the UI entered date.
+        """
+        year, month, day = date
+        data = [(year-1, month, day, 0, 0, 0), (year, month, day, 1, 1, 0)]
+        await self.update_fiscal_year_table(data)
+        await self.insert_into_fiscal_year_table(
+            [(year+1, month, day, 0, 0, 0)])
+
+    async def entered_previous_year(self, date: tuple):
+        """
+        Previous up years.
+
+        .. note::
+
+           Insert previous year.
+
+        :param tuple date: This is the UI entered date.
+        """
+        year, month, day = date
+        await self.insert_into_fiscal_year_table([(year, month, day, 0, 0, 0)])
+
+    async def _get_current_fiscal_year(self):
+        """
+        Get the current fiscal year.
+        """
+        fy = await self.select_from_fiscal_year_table(current=1)
+
+        if len(fy):
+            year = fy[0][1]
+            month = fy[0][2]
+        else:  # Only for first time use.
+            year = month = None
+
+        return year, month
 
     #
     # Database access methods.
@@ -165,28 +341,45 @@ class BaseDatabase(PopulateCollect, Settings):
                           of the Baha'i month not the name.
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: <value>,...}.
+        :returns: None if no errors. If an error a, error message.
+        :rtype: None or str
         """
-        values = await self.select_from_data_table(name, data, year, month)
+        error = None
+        c_year, c_month = await self._get_current_fiscal_year()
+        values = await self.select_from_data_table(name, data, c_year, c_month)
 
         if not values:  # Do insert
             await self.insert_into_data_table(year, month, data)
         else:
-            items = dict([(pk, (field, value))
-                          for pk, field, value, y1, y2, c, m in values])
             insert_data = {}
             update_data = {}
+            #        field,    pk,      y1
+            items = {item[1]: (item[0], item[3]) for item in values}
 
-            for pk, (field, value) in items.items():
-                if field in data:  # Field value already exists.
-                    update_data[field] = (pk, data[field])
-                else:  # Field value does not exist.
-                    insert_data[field] = data[field]
+            for field, value in data.items():  # Loop through incoming data.
+                pk, y1 = items.get(field, (None, None))  # Selected data
+
+                if not pk or not y1:           # Error condition
+                    error = f"Could not find field {field} in {data}."
+                    self._log.error(error)
+                    break
+
+                if year != y1:                 # Insert
+                    insert_data[field] = value
+                else:                          # Update
+                    # Incoming data does not have a PK.
+                    if 'pk' not in update_data:
+                        update_data['pk'] = pk
+
+                    update_data[field] = value
 
             if insert_data:  # Do insert
                 await self.insert_into_data_table(year, month, insert_data)
 
             if update_data:  # Do update
                 await self.update_data_table(year, month, update_data)
+
+        return error
 
     async def _do_select_query(self, query: str, params: tuple=()) -> list:
         """
@@ -327,3 +520,11 @@ class BaseDatabase(PopulateCollect, Settings):
     def tzinfo(self):
         iana_name = self.organization_data.get('iana_name')
         return ZoneInfo(iana_name if iana_name else 'UTC')
+
+    @property
+    def earliest_year(self):
+        """
+        Get the earliest year in the `fiscal_year` table.
+        """
+        years = [items[1] for items in self._fiscal_data]
+        return min(years) if years else None
