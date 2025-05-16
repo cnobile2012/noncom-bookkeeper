@@ -185,8 +185,8 @@ class PopulateCollect:
             c_set = [item[0] for item in all_c_sets
                      if item[0].__class__.__name__ == 'ComboBox']
 
-        data = list(zip((t[1] for t in self._fiscal_data[:-1]),
-                        (t[1] for t in self._fiscal_data[1:])))
+        years = sorted([item[1] for item in self._fiscal_data])
+        data = [(year, year+1) for year in years[:-1]]
         choices = c_set[0].GetItems()
         c_set[0].SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
         c_set[0].SetSelection(0)
@@ -258,7 +258,6 @@ class PopulateCollect:
         work_on = self._get_fiscal_year_value(year, work_on=True)
 
         for c_set in self._find_children(self._mf.panels['fiscal']):
-            #name0 = c_set[0].__class__.__name__
             name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
             field_name = self._make_field_name(c_set[0].GetLabelText())
 
@@ -272,8 +271,20 @@ class PopulateCollect:
 
     def _get_fiscal_year_value(self, year: int, *, pk: bool=False,
                                date: bool=False, current: bool=False,
-                               audit: bool=False, work_on: bool=False,
+                               work_on: bool=False, audit: bool=False,
                                time: bool=False):
+        """
+        Return a specific value from the `fiscal_year` table.
+
+        :param bool pk: Get the Primary Key.
+        :param bool date: Get the date, (year, month, day).
+        :param bool current: Get the current fiscal year.
+        :param bool work_on: Get which fiscal year is being worked on.
+        :param bool audit: Get the audit status for the gived year.
+        :param bool time: Get the create and modified dates and times.
+        :returns: The value asked for.
+        :rtype: int or tuple
+        """
         # Create dict from list of raw fiscal data.
         assert (pk, date, current, audit,
                 work_on, time).count(True) == 1, (
@@ -293,7 +304,7 @@ class PopulateCollect:
             result = items[5]
         elif audit:
             result = items[6]
-        else:  # time
+        elif time:
             result = (items[7], items[8])
 
         return result

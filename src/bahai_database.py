@@ -234,7 +234,7 @@ class Database(BaseDatabase):
         else:
             params = ()
             query = (
-                "SELECT d.pk, f.field, d.value, d.c_time, d.m_time, "
+                "SELECT d.pk, f.field, d.value, d.c_time, d.m_time "
                 f"FROM {self._T_DATA} AS d "
                 f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
                 f"     AND f.field IN (\"{fields}\");"
@@ -286,6 +286,8 @@ class Database(BaseDatabase):
                                'c_time': now, 'm_time': now})
 
             await self._do_insert_query(query, values)
+        else:
+            self._log.error("No current fiscal_year data in the database.")
 
     async def update_data_table(self, year: int, month: int, data: list
                                 ) -> None:

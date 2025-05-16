@@ -173,62 +173,61 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         error = None
         data = self._collect_panel_values(panel)
-        # Make sure all fields were entered.
-        empty_list = [field for field, value in data.items()
-                      if value in self._EMPTY_FIELDS]
+        year, month = await self._get_current_fiscal_year()
 
-        if len(empty_list) != 0:
-            ef = ', '.join([f for f in empty_list])
-            error = f"The '{ef}' field(s) must not be empty."
-            self._log.warning(error)
-        else:
-            year, month = await self._get_current_fiscal_year()
-            seq_flag = False
+        if name == 'organization':
+            if data:
+                # Make sure all fields were entered.
+                empty_list = [field for field, value in data.items()
+                            if value in self._EMPTY_FIELDS]
 
-            if name == 'organization':
-                data = self._add_location_data(data)
-
-                if not isinstance(data, dict):
-                    error = data
+                if len(empty_list) != 0:
+                    ef = ', '.join([f for f in empty_list])
+                    error = f"The '{ef}' field(s) must not be empty."
+                    self._log.warning(error)
                 else:
-                    sofy = data['start_of_fiscal_year']
-                    entered_date = sofy.b_date
-                    earliest_year = self.earliest_year
-                    # Need ISO date for the DB.
-                    data['start_of_fiscal_year'] = sofy.isoformat()
+                    data = self._add_location_data(data)
 
-                    if not year or not month:            # First ever entry
-                        self.organization_data = data
-                        await self.first_run_initialization(entered_date)
-                        year, month, day = entered_date
-                    elif year == entered_date[0]:        # Update current year
-                        self.organization_data = data
-                        year, month, day = entered_date
-                    elif (year + 1) == entered_date[0]:  # Next current year
-                        self.organization_data = data
-                        await self.entered_next_year(entered_date)
-                        year, month, day = entered_date
-                    elif (earliest_year and              # Previous year.
-                          (earliest_year - 1) == entered_date[0]):
-                        await self.entered_previous_year(entered_date)
-                        year, month, day = entered_date
+                    if not isinstance(data, dict):
+                        error = data
                     else:
-                        year = month = None
-                        seq_flag = True
-                        error = ("Cannot enter a year that is not immediately "
-                                 "before or after the earliest or current "
-                                 "year.")
+                        sofy = data['start_of_fiscal_year']
+                        entered_date = sofy.b_date
+                        # Need ISO date for the DB.
+                        data['start_of_fiscal_year'] = sofy.isoformat()
+                        earliest_year = self.earliest_year
 
-                    if year and month:
-                        error = await self._insert_update_data_table(
-                            name, year, month, data)
-                        await self.populate_panels()
-                    elif seq_flag:
-                        self._log.warning(error)
-                    else:  # If no org data was entered.
-                        error = ("Cannot enter Fiscal Year data before the "
-                                "Organization Information has been entered.")
-                        self._log.warning(error)
+                        if not year or not month:         # First ever entry
+                            self.organization_data = data
+                            await self.first_run_initialization(entered_date)
+                            year, month, day = entered_date
+                        elif year == entered_date[0]:     # Update current year
+                            self.organization_data = data
+                            year, month, day = entered_date
+                        # Next current year
+                        elif (year + 1) == entered_date[0]:
+                            self.organization_data = data
+                            await self.entered_next_year(entered_date)
+                            year, month, day = entered_date
+                        elif (earliest_year and           # Previous year.
+                              (earliest_year - 1) == entered_date[0]):
+                            await self.entered_previous_year(entered_date)
+                            year, month, day = entered_date
+                        else:
+                            year = month = None
+                            error = ("Cannot enter a year that is not "
+                                     "immediately before or after the "
+                                     "earliest or current year.")
+                            self._log.warning(error)
+            else:  # If no org data was entered.
+                error = ("Organization Information data must be entered "
+                         "before any other data can be entered.")
+                self._log.warning(error)
+
+        if year and month:
+            error = await self._insert_update_data_table(name, year,
+                                                         month, data)
+            await self.populate_panels()
 
         return error
 
@@ -285,8 +284,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
         :param tuple date: This is the UI entered date.
         """
-        year, month, day = date
-        await self.insert_into_fiscal_year_table([(year, month, day, 0, 0, 0)])
+        await self.insert_into_fiscal_year_table([(*date, 0, 0, 0)])
 
     async def _get_current_fiscal_year(self):
         """
@@ -352,8 +350,7 @@ class BaseDatabase(PopulateCollect, Settings):
         :rtype: None or str
         """
         error = None
-        c_year, c_month = await self._get_current_fiscal_year()
-        values = await self.select_from_data_table(name, data, c_year, c_month)
+        values = await self.select_from_data_table(name, data, year, month)
 
         if not values:  # Do insert
             await self.insert_into_data_table(year, month, data)
