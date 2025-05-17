@@ -272,7 +272,7 @@ class MenuBar:
 
     def app_quit(self, event):
         # *** TODO *** We need to check for unsaved files.
-        self.parent.Destroy()
+        self.frame.Destroy()
 
     def edit_config(self, event):
         self.change_menu_items()
@@ -300,12 +300,13 @@ class MenuBar:
 
     def _set_panel(self):
         self.sizer.Detach(self.panel)
-        size = self.parent.GetSize()
+        size = self.frame.GetSize()
+        self.frame.SetTitle(self.panel.title)
         self.panel.SetSize(*size)
         self.sizer.Add(self.panel, 1, wx.EXPAND)
-        self.parent.SetTitle(self.panel.title)
         self.panel.Show()
         self.parent.Layout()
+        self.panel.FitInside()
 
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
@@ -316,7 +317,7 @@ class MenuBar:
         self.panel = None
 
         if self.__short_cut:
-            self._update_short_cuts(self.parent_bg_color)
+            self._update_short_cuts(self.frame_bg_color)
 
     def _hide_all_panels(self):
         [obj.Hide() for obj in self.panels.values() if obj.IsShown()]
@@ -327,17 +328,17 @@ class MenuBar:
 
     def tool_short_cuts(self, event):
         if not self.__short_cut:
-            self.__short_cut = ShortCuts(self.parent)
+            self.__short_cut = ShortCuts(self.frame)
 
         if self.panel:
             color = self.panel.background_color
         else:
-            color = self.parent_bg_color
+            color = self.frame_bg_color
 
         self._update_short_cuts(color)
 
     def _update_short_cuts(self, color):
-        self.__short_cut.set_text(self.parent)
+        self.__short_cut.set_text(self.frame)
         self.__short_cut.SetBackgroundColour(wx.Colour(*color))
 
     def tool_inspection(self, event):
@@ -354,7 +355,7 @@ class MenuBar:
 
     def tool_fields(self, event):
         if 'fields' not in self.panels:
-            self.set_panel('fields', FieldEdit(self.parent))
+            self.set_panel('fields', FieldEdit(self.frame))
 
         self.change_menu_items()
         self._hide_all_panels()
@@ -365,7 +366,7 @@ class MenuBar:
 
     def settings_paths(self, event):
         if 'paths' not in self.panels:
-            self.set_panel('paths', Paths(self.parent))
+            self.set_panel('paths', Paths(self.frame))
 
         self.change_menu_items()
         self._hide_all_panels()

@@ -108,6 +108,8 @@ class PanelFactory(TomlMetaData):
                 self.color_check_box(klass, panel, widget, value)
             elif value[0] == 'StaticLine':
                 self.static_line(klass, widget, value)
+            elif value[0] == 'invisable_spacer':
+                self.invisable_spacer(klass, value)
             elif value == 'sizer_span':
                 self.sizer_span(klass)
 
@@ -124,8 +126,6 @@ class PanelFactory(TomlMetaData):
         if self.main_sizer:
             klass.write(f"        self.SetSizer({self.main_sizer})\n")
 
-        klass.write("        self._setup_sizer_height_correctly("
-                    f"{self.second_sizer})\n")
         klass.write("        self.SetupScrolling(rate_x=20, rate_y=40)\n")
         klass.write("        self.Hide()\n")
 
@@ -362,6 +362,16 @@ class PanelFactory(TomlMetaData):
         self._set_colors(klass, widget, value)
         self._set_add_to_sizer(klass, widget, value)
 
+    def invisable_spacer(self, klass, value):
+        dict_ = find_dict(value)
+        size = dict_.get('size')
+
+        if size:
+            self._set_add_to_sizer(klass, size, value)
+        else:
+            self._log.critical("Invalid size in 'invisable_spacer', check "
+                               "toml config file.")
+
     def sizer_span(self, klass):
         if self.span:
             klass.write(f"        {self.second_sizer}.Add(*{self.span})\n")
@@ -538,7 +548,7 @@ class PanelFactory(TomlMetaData):
         sizer = self.main_sizer if 'Sizer' in value[0] else self.second_sizer
         dict_ = find_dict(value)
         prop, flags, border = dict_.get('add')
-        flags = self._fix_flags(flags)
+        flags = self._fix_flags(flags) if flags != 0 else flags
         pos = dict_.get('pos')
         span = dict_.get('span')
 

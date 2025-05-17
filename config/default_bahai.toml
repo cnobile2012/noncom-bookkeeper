@@ -157,6 +157,8 @@ widget_43 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_44 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Membership (Beginning of Year):"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[26, 0], span=[1, 1]}]
 widget_45 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[50, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[26, 1], span=[1, 1], financial=false}]
 
+widget_46 = ['invisable_spacer', {add=['', 0, 0], size=[0, 1], pos=[27, 0], span=[1, 2]}]
+
 [monthly]
 
 [monthly.meta]

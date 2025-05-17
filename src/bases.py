@@ -62,17 +62,6 @@ class BasePanel:
     def background_color(self) -> list:
         return self._bg_color
 
-    def _setup_sizer_height_correctly(self, sizer: wx.GridBagSizer,
-                                      swidth: int=None) -> None:
-        """
-        Add the height of the status bar to the Sizer height so that the
-        call to SetupScrolling creates the correct virtual window size.
-        """
-        width, height = sizer.GetMinSize()
-        width = swidth if swidth else width
-        height += self.parent.statusbar_size[1]
-        sizer.SetMinSize((width, height))
-
     def _find_dict(self, value):
         return find_dict(value)
 
@@ -83,6 +72,7 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
         super().__init__(parent, id=id, **kwargs)
         self.parent = parent
+        self.frame = parent.GetParent()
         self._mf = StoreObjects().get_object('MainFrame')
         self._dirty = False
         self._save = False

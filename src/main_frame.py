@@ -47,10 +47,11 @@ class MainFrame(wx.Frame, MenuBar):
         self._log = logging.getLogger(self._tac.logger_name)
         super().__init__(parent, id=id, pos=pos, style=style)
         self.SetTitle(self.title)
-        self.parent_bg_color = (128, 128, 128)
-        self.SetBackgroundColour(wx.Colour(*self.parent_bg_color))
+        self.container = wx.Panel(self)
+        self.container_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.frame_bg_color = (128, 128, 128)
+        self.SetBackgroundColour(wx.Colour(*self.frame_bg_color))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
-        self.__box_sizer = wx.BoxSizer(wx.VERTICAL)
         self.setup_resize_event()
 
         # Status Bar
@@ -60,10 +61,10 @@ class MainFrame(wx.Frame, MenuBar):
         self._statusbar.SetStatusWidths(status_widths)
         size = (500, 800)
         self.set_size(size)
-        self.SetSizer(self.__box_sizer)
+        self.SetSizer(wx.BoxSizer(wx.VERTICAL))
+        self.GetSizer().Add(self.container, 1, wx.EXPAND)
         self.Layout()
         self.SetAutoLayout(True)
-        # self.Center()
         StoreObjects().set_object(self.__class__.__name__, self)
         sf = PanelFactory()
         sf.parse()
@@ -84,7 +85,8 @@ class MainFrame(wx.Frame, MenuBar):
                 # Create the panels.
                 exec(code, globals())
                 class_name = sf.get_class_name(panel)
-                self.__panel_classes[panel] = globals()[class_name](self)
+                self.__panel_classes[panel] = globals(
+                    )[class_name](self.parent)
 
         self.create_menu()
         self.options = options
@@ -194,7 +196,7 @@ class MainFrame(wx.Frame, MenuBar):
 
             for panel in self.panels.values():
                 panel.SetSize((width, height))
-                height = height - self.parent.statusbar_size[1]
+                height = height - self.frame.statusbar_size[1]
                 panel.SetSizeHints(width, height)
 
     @property
@@ -213,12 +215,16 @@ class MainFrame(wx.Frame, MenuBar):
         self.__active_panel = value
 
     @property
-    def parent(self):
+    def frame(self):
         return self
 
     @property
+    def parent(self):
+        return self.container
+
+    @property
     def sizer(self):
-        return self.__box_sizer
+        return self.container_sizer
 
     def statusbar_warning(self, value):
         self.__set_status(value, 'yellow')

@@ -377,7 +377,6 @@ class FieldEdit(BasePanel, wx.Panel):
         panel = self._panel_bot(arg_dict)
         parent_sizer.Add(panel, 0, wx.CENTER | wx.ALL, 6)
         width, height = arg_dict['top_grid_sizer'].GetMinSize()
-        #bot_grid_sizer = arg_dict['bot_grid_sizer']
         self._update_screen_size(arg_dict)
 
     def _destroy_panel(self, panel, parent_sizer):
@@ -512,9 +511,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
     def _update_screen_size(self, arg_dict):
         panel = arg_dict['panel']
-        grid_sizer = arg_dict.get('bot_grid_sizer')
         width, height = arg_dict['top_grid_sizer'].GetMinSize()
-        self._setup_sizer_height_correctly(grid_sizer, swidth=width)
         wx.CallLater(100, panel.SetupScrolling, rate_x=20, rate_y=40)
 
     @property

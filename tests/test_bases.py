@@ -85,32 +85,6 @@ class TestBases(unittest.TestCase):
         self.assertEqual(fs._bg_color, bg_color, msg)
 
     #@unittest.skip("Temporarily skipped")
-    def test__setup_sizer_height_correctly(self):
-        """
-        Test that the sizer SetMinSize() is updated correctly.
-        """
-        class FakeParent:
-
-            @property
-            def statusbar_size(self):
-                return 530, 15
-
-        class FakePanel(BasePanel):
-
-            def __init__(self, parent, size):
-                self.parent = parent
-                self.sizer = wx.GridBagSizer(vgap=2, hgap=2)
-                self.sizer.SetMinSize(size)
-                self._setup_sizer_height_correctly(self.sizer)
-
-        orig_size = (500, 50)
-        fp = FakePanel(FakeParent(), orig_size)
-        size = fp.sizer.GetMinSize()
-        should_be = (500, 65)
-        msg = f"Should have size of '{should_be}' found '{size}'"
-        self.assertEqual(should_be, size, msg)
-
-    #@unittest.skip("Temporarily skipped")
     def test__find_dict_found(self):
         """
         This is a test of the same function above. It is a redirect
