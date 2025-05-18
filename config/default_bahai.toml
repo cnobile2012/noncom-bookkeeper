@@ -221,10 +221,10 @@ widget_01 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EX
 widget_02 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Fiscal Year Choice'], style='TE_READONLY', min=[228, -1], focus=true, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[2, 0], span=[1, 1], dirty_event=false}]
 
 widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Current Fiscal Year:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 0], span=[1, 1], update='widget_04'}]
-widget_04 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], font='font_10_normal', min=[80, 20], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], dirty_event=false, financial=false}]
+widget_04 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', '', 'current'], font='font_10_normal', min=[80, 20], enabled=false, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], dirty_event=true, financial=false}]
 
 widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Work On:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1], update='widget_06'}]
-widget_06 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], font='font_10_normal', min=[80, 20], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1], dirty_event=true, financial=false}]
+widget_06 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', '', 'work_on'], font='font_10_normal', min=[80, 20], enabled=true, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1], dirty_event=true, financial=false}]
 
 widget_07 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Audit Complete:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1], update='widget_08'}]
-widget_08 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], font='font_10_normal', min=[80, 20], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1], dirty_event=true, financial=false}]
+widget_08 = ['ColorCheckBox', 'bg_color', 'w_fg_color_1', {args=['self', 'ID_ANY', '', 'audit'], font='font_10_normal', min=[80, 20], enabled=true, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1], dirty_event=true, financial=false}]

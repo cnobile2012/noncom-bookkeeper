@@ -34,7 +34,7 @@ class TestPaths(unittest.TestCase):
         """
         #app = wx.App()
         #paths = Paths(FakeFrame(None))
-        should_be_num = 8
+        should_be_num = 9
         widgets = [var for var in Paths.create_display.__code__.co_varnames
                    if var.startswith('widget')]
         found = len(widgets)

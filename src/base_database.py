@@ -179,7 +179,7 @@ class BaseDatabase(PopulateCollect, Settings):
             if data:
                 # Make sure all fields were entered.
                 empty_list = [field for field, value in data.items()
-                            if value in self._EMPTY_FIELDS]
+                              if value in self._EMPTY_FIELDS]
 
                 if len(empty_list) != 0:
                     ef = ', '.join([f for f in empty_list])

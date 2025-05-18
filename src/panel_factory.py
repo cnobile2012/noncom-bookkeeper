@@ -166,8 +166,9 @@ class PanelFactory(TomlMetaData):
         callback = dict_.get('callback')
         dim = dict_.get('dim', 0)
         update = dict_.get('update')
+        id = self._fix_flags(id)
         klass.write(f"        {widget} = wx.RadioBox("
-                    f"{parent}, wx.{id}, '{label}', style={style}, "
+                    f"{parent}, {id}, '{label}', style={style}, "
                     f"choices={choices}, majorDimension={dim})\n")
         self._set_colors(klass, widget, value)
         self._set_font(klass, widget, dict_)
@@ -199,8 +200,9 @@ class PanelFactory(TomlMetaData):
         label = f"'''{label}'''"
         style = dict_.get('style', 0)
         style = style if style == 0 else self._fix_flags(style)
+        id = self._fix_flags(id)
         klass.write(f"        {widget} = wx.StaticText("
-                    f"{parent}, wx.{id}, {label}, style={style})\n")
+                    f"{parent}, {id}, {label}, style={style})\n")
         wrap = dict_.get('wrap')
         self._set_colors(klass, widget, value)
         self._set_font(klass, widget, dict_)
@@ -226,8 +228,9 @@ class PanelFactory(TomlMetaData):
         label = f"'''{label}'''"
         style = dict_.get('style', 0)
         style = style if style == 0 else self._fix_flags(style)
+        id = self._fix_flags(id)
         klass.write(f"        {widget} = wx.TextCtrl("
-                    f"{parent}, wx.{id}, {label}, style={style})\n")
+                    f"{parent}, {id}, {label}, style={style})\n")
         self._set_colors(klass, widget, value)
         self._set_font(klass, widget, dict_)
         min_size = dict_.get('min')
@@ -253,8 +256,9 @@ class PanelFactory(TomlMetaData):
     def date_picker_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, _ = dict_.get('args')
+        id = self._fix_flags(id)
         klass.write(f"        {widget} = wx.adv.DatePickerCtrl({parent}, "
-                    f"wx.{id})\n")
+                    f"{id})\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
 
@@ -268,8 +272,9 @@ class PanelFactory(TomlMetaData):
     def badi_date_picker_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, _ = dict_.get('args')
+        id = self._fix_flags(id)
         klass.write(f"        {widget} = BadiDatePickerCtrl({parent}, "
-                    f"wx.{id})\n")
+                    f"{id})\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
 
@@ -302,7 +307,8 @@ class PanelFactory(TomlMetaData):
 
         style = dict_.get('style', 0)
         style = style if style == 0 else self._fix_flags(style)
-        klass.write(f"        {widget} = wx.{widget_type}({parent}, wx.{id}, "
+        id = self._fix_flags(id)
+        klass.write(f"        {widget} = wx.{widget_type}({parent}, {id}, "
                     f"{label} choices={choices}, style={style})\n")
         klass.write(f"        {widget}.SetLabel('{name}')\n")
         self._set_colors(klass, widget, value)
@@ -324,7 +330,8 @@ class PanelFactory(TomlMetaData):
     def check_box(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         parent, id, name = dict_.get('args')
-        klass.write(f"        {widget} = wx.CheckBox({parent}, wx.{id})\n")
+        id = self._fix_flags(id)
+        klass.write(f"        {widget} = wx.CheckBox({parent}, {id})\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
 
@@ -337,11 +344,14 @@ class PanelFactory(TomlMetaData):
 
     def color_check_box(self, klass, panel, widget, value):
         dict_ = find_dict(value)
-        parent, id, name = dict_.get('args')
-        klass.write(f"        {widget} = ColorCheckBox({parent}, wx.{id})\n")
+        parent, id, label, name = dict_.get('args')
+        id = self._fix_flags(id)
+        klass.write(f"        {widget} = ColorCheckBox({parent}, {id}, "
+                    f"label='{label}', name='{name}')\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
         dirty_flag = dict_.get('dirty_event', True)
+        enabled = dict_.get('enabled', True)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
@@ -349,9 +359,8 @@ class PanelFactory(TomlMetaData):
         if dirty_flag:
             klass.write(f"        {widget}.Bind(EVT_COLOR_CHECKBOX, "
                         "self.set_dirty_flag)\n")
-        else:
-            klass.write(f"        {widget}.Enable(False)\n")
 
+        klass.write(f"        {widget}.Enable({enabled})\n")
         self._set_add_to_sizer(klass, widget, value)
 
     def static_line(self, klass, widget, value):

@@ -276,7 +276,7 @@ class ColorCheckBoxEvent(wx.PyCommandEvent):
 
 class ColorCheckBox(wx.Panel):
     def __init__(self, parent: wx.Window, id: int=wx.ID_ANY, label: str="",
-                 checked: bool=False,
+                 name: str="", checked: bool=False,
                  fg=wx.Colour(0, 0, 0),
                  bg=wx.Colour(255, 255, 255),
                  check_color=wx.Colour(0, 120, 215),
@@ -285,6 +285,7 @@ class ColorCheckBox(wx.Panel):
         self.checked = checked
         self.enabled = True
         self.label = label
+        self.SetName(name)
         self.fg = fg
         self.bg = bg
         self.check_color = check_color
@@ -294,7 +295,7 @@ class ColorCheckBox(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
 
-        self.SetMinSize((120, 24))
+        self.SetSize()
 
     def OnClick(self, event):
         if self.enabled:
@@ -346,3 +347,9 @@ class ColorCheckBox(wx.Panel):
     def Enable(self, enable: bool=True):
         self.enabled = enable
         self.Refresh()
+
+    def GetEnableState(self):
+        return self.enabled
+
+    def SetSize(self, size=(120, 24)):
+        self.SetMinSize(size)

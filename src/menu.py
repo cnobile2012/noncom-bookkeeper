@@ -12,7 +12,7 @@ import wx
 from wx.lib.inspection import InspectionTool
 
 from .tools import ShortCuts, FieldEdit
-from .settings import Paths
+from .settings import FiscalSettings, Paths
 
 
 class MenuBar:
@@ -101,7 +101,11 @@ class MenuBar:
                            ])]),
             ('settings', [None, '&Settings\tALT+S', "Application settings",
                           None, wx.Menu(), True, OrderedDict([
-                              ('paths', [500, "&Application Paths\tCTRL+P",
+                              ('fiscal_settings',
+                               [500, "&Fiscal Year Settings\tCTRL+Y",
+                                "Show Fiscal Year Page Settings",
+                                'fiscal_settings', None, True, None]),
+                              ('paths', [501, "&Application Paths\tCTRL+P",
                                          "Show the application paths.",
                                          'settings_paths', None, True, None]),
                               ])]),
@@ -364,9 +368,18 @@ class MenuBar:
                                 [wx.ID_SAVEAS, True],))
         self._set_panel()
 
+    def fiscal_settings(self, event):
+        if 'fiscal_settings' not in self.panels:
+            self.set_panel('fiscal_settings', FiscalSettings(self.parent))
+
+        self.change_menu_items()
+        self._hide_all_panels()
+        self.panel = self.panels['fiscal_settings']
+        self._set_panel()
+
     def settings_paths(self, event):
         if 'paths' not in self.panels:
-            self.set_panel('paths', Paths(self.frame))
+            self.set_panel('paths', Paths(self.parent))
 
         self.change_menu_items()
         self._hide_all_panels()
