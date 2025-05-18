@@ -24,7 +24,6 @@ class FiscalSettings(wx.Panel):
     def create_display(self):
         self.title = '''Fiscal Year Settings'''
         self._bg_color = (210, 190, 255)
-        w_bg_color = (222, 237, 230)
         w_fg_color = (50, 50, 204)
         col_1_wrap = 310
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
@@ -42,8 +41,8 @@ class FiscalSettings(wx.Panel):
         sizer.Add(grid_sizer, 0, wx.CENTER, 0)
 
         w1_msg = ('Enables the "Current Fiscal Year" checkbox on the "Fiscal '
-                  'Year" page and should only be done for the actual current '
-                  'year.')
+                  'Year" page and should only be enabled for the actual '
+                  'current year.')
         widget_01 = wx.StaticText(self, wx.ID_ANY, w1_msg)
         widget_01.Wrap(col_1_wrap)
         widget_01.SetForegroundColour(wx.Colour(50, 50, 204))

@@ -218,7 +218,12 @@ class Database(BaseDatabase):
             fields = '", "'.join(field_names)
 
         if month:
-            params = (year, year+1, month)
+            mon = f"JOIN {self._T_MONTH} AS m ON m.pk = d.mfk AND m.ord = ?"
+        else:
+            mon = ""
+
+        if year:
+            params = (year, year+1)
             query = (
                 "SELECT d.pk, f.field, d.value, y1.year, y2.year, "
                 "       d.c_time, d.m_time "
@@ -229,8 +234,11 @@ class Database(BaseDatabase):
                 "      AND y1.year = ? "
                 f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.pk = d.fy2fk "
                 "      AND y2.year = ? "
-                f"JOIN {self._T_MONTH} AS m ON m.pk = d.mfk AND m.ord = ?;"
                 )
+
+            if mon:
+                query += mon
+                params += (month,)
         else:
             params = ()
             query = (

@@ -187,7 +187,8 @@ class PopulateCollect:
 
         years = sorted([item[1] for item in self._fiscal_data])
         data = [(year, year+1) for year in years[:-1]]
-        choices = c_set[0].GetItems()
+        # Just get the title item, overwrite the rest.
+        choices = [c_set[0].GetItems()[0]]
         c_set[0].SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
         c_set[0].SetSelection(0)
 

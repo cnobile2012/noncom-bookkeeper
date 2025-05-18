@@ -350,7 +350,7 @@ class BaseDatabase(PopulateCollect, Settings):
         :rtype: None or str
         """
         error = None
-        values = await self.select_from_data_table(name, data, year, month)
+        values = await self.select_from_data_table(name, data, year)
 
         if not values:  # Do insert
             await self.insert_into_data_table(year, month, data)
