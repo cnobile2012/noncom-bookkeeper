@@ -78,13 +78,13 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         self._save = False
         self._cancel = False
         self._initializing = False
+        self._selected = False
 
     def locality_prefix(self, update, dirty_flag):
         """
         This is a closure for the 'do_event' callback.
 
-        :param update: The widget that is being updated.
-        :type update: wx.Window
+        :param wx.Window update: The widget that is being updated.
         """
         def do_event(event):
             """
@@ -105,10 +105,8 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         Set value in the widget used for the community type. This method
         is used only when the Baha'i config file is used.
 
-        :param rb: A RadioButton widget object.
-        :type rb: RadioButton
-        :param update: The widget that is being updated.
-        :type update: widget object
+        :param wx.RadioButton rb: A RadioButton widget object.
+        :param wx.Window update: The widget that is being updated.
         """
         selection = rb.GetStringSelection()
         text = self.locale_prefix[selection.lower()]
@@ -120,7 +118,12 @@ class BaseGenerated(BasePanel, ScrolledPanel):
         Set a dirty flag when any editable widget is modified except when
         initializing widgets.
         """
-        if not self.initializing:
+        if hasattr(self, 'get_selection'):
+            sel = self.selected
+        else:
+            sel = True
+
+        if not self.initializing and sel:
             self.dirty = True
 
         event.Skip()
@@ -140,3 +143,11 @@ class BaseGenerated(BasePanel, ScrolledPanel):
     @initializing.setter
     def initializing(self, value):
         self._initializing = value
+
+    @property
+    def selected(self):
+        return self._selected
+
+    @selected.setter
+    def selected(self, value):
+        self._selected = value

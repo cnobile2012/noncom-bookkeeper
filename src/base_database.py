@@ -60,7 +60,7 @@ class BaseDatabase(PopulateCollect, Settings):
          'value NOT NULL',
          'fy1fk INTEGER NOT NULL',
          'fy2fk INTEGER NOT NULL',
-         'mfk INTEGER NULL',
+         'mfk INTEGER NOT NULL',
          'ffk INTEGER NOT NULL',
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
@@ -70,13 +70,17 @@ class BaseDatabase(PopulateCollect, Settings):
          'c_time TEXT NOT NULL',
          'm_time TEXT NOT NULL'),
         (_T_REPORT_PIVOT,
-         'rfk INTERGER NOT NULL', 'dfk INTEGER NOT NULL',
+         'rfk INTERGER NOT NULL',
+         'dfk INTEGER NOT NULL',
          f'FOREIGN KEY (rfk) REFERENCES {_T_REPORT_TYPE} (pk)',
          f'FOREIGN KEY (dfk) REFERENCES {_T_DATA} (pk)'),
         )
     _TABLES = [table[0] for table in _SCHEMA]
     _TABLES.sort()
     _EMPTY_FIELDS = ('', '0')
+    _EXCLUDE_PANELS = ('fiscal',)
+    _FIELDS_NOT_ADDED = ()  # Fields not in the field_table.
+    _MAX_FIELD_LEN = 40  # Max length of fields allowed in the field_table.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -141,15 +145,16 @@ class BaseDatabase(PopulateCollect, Settings):
 
             for name, panel in self._mf.panels.items():
                 data = self._collect_panel_values(panel)
-                values = await self.select_from_data_table(name, data, year,
-                                                           month)
+                values = await self.select_from_data_table(data, year)
 
                 # Needed when the app has been run at least one time before.
                 if name == 'organization' and values:
                     self.organization_data = values
 
-                # Add any new fields to the database.
-                await self._add_fields_to_field_type_table(data)
+                if name not in self._EXCLUDE_PANELS:
+                    # Add any new fields to the database.
+                    await self._add_fields_to_field_type_table(data)
+
                 panel.initializing = True
                 self.populate_panel_values(name, panel, values)
                 panel.initializing = False
@@ -223,10 +228,18 @@ class BaseDatabase(PopulateCollect, Settings):
                 error = ("Organization Information data must be entered "
                          "before any other data can be entered.")
                 self._log.warning(error)
-
+        elif name == 'fiscal':
+            # The day needs to be there but is never used.
+            items = [(year, month, 1, data['current_fiscal_year'],
+                      data['work_on_this_fiscal_year'],
+                      data['audit_complete'])]
+            await self.update_fiscal_year_table(items)
+            year = month = None
+        elif name == 'fiscal_settings':
+            year = month = None
         if year and month:
-            error = await self._insert_update_data_table(name, year,
-                                                         month, data)
+            error = await self._insert_update_data_table(
+                year, month=month, data=data)
             await self.populate_panels()
 
         return error
@@ -253,6 +266,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
         # Populate all panel fields in the database.
         for name, panel in self._mf.panels.items():
+            if name in self._EXCLUDE_PANELS: continue
             panel_data = self._collect_panel_values(panel)
             await self._add_fields_to_field_type_table(panel_data)
 
@@ -313,7 +327,10 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         items = await self.select_from_field_type_table(data)
         old_fields = [item[1] for item in items]
-        fields = self._find_fields(data, old_fields)
+        new_fields = [fd for fd in data if (
+            len(fd) <= self._MAX_FIELD_LEN or
+            fd not in self._FIELDS_NOT_ADDED)]
+        fields = self._find_fields(new_fields, old_fields)
 
         if fields:
             await self.insert_into_field_type_table(fields)
@@ -335,12 +352,11 @@ class BaseDatabase(PopulateCollect, Settings):
                 if item not in con_months:
                     await self.insert_into_month_table(item)
 
-    async def _insert_update_data_table(self, name: str, year: int, month: int,
-                                        data: dict) -> None:
+    async def _insert_update_data_table(self, year: int, *, month: int=None,
+                                        data: dict={}) -> None:
         """
         Insert or update `data` table.
 
-        :param str name: Panel name.
         :param int year: A Baha'i year of the transaction.
         :param int month: A Baha'i month of the transaction. This is the order
                           of the Baha'i month not the name.
@@ -350,7 +366,7 @@ class BaseDatabase(PopulateCollect, Settings):
         :rtype: None or str
         """
         error = None
-        values = await self.select_from_data_table(name, data, year)
+        values = await self.select_from_data_table(data, year)
 
         if not values:  # Do insert
             await self.insert_into_data_table(year, month, data)

@@ -483,8 +483,13 @@ class PanelFactory(TomlMetaData):
         klass.write("\n    def get_selection(self, event):\n")
         klass.write("        value = event.GetString()\n")
         klass.write("        year, _, nyear = value.partition('-')\n")
-        klass.write("        db = StoreObjects().get_object('Database')\n")
-        klass.write("        db.populate_fiscal_panel(int(year))\n")
+        klass.write("        db = StoreObjects().get_object('Database')\n\n")
+        klass.write("        if year.isdecimal():\n")
+        klass.write("            db.populate_fiscal_panel(int(year))\n")
+        klass.write("            self.selected = True\n")
+        klass.write("        else:\n")
+        klass.write("            db.set_fiscal_panel(False, False, False)\n")
+        klass.write("            self.selected = False\n")
 
     def _set_colors(self, klass, widget, value):
         """

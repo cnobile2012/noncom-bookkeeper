@@ -305,14 +305,13 @@ class TomlPanelConfig(BaseSystemData):
                 # the default.
                 ufname = self.user_config_fullpath
                 lfname = self.local_config_fullpath
-                msg = "A critical error was encounted '{}' does not exist."
 
                 if not os.path.exists(ufname):
-                    msg = msg.format(ufname)
+                    msg = f"Warning, '{ufname}' does not exist, creating it."
                     self._log.warning(msg)
 
                 if not os.path.exists(lfname):
-                    msg = msg.format(lfname)
+                    msg = f"Critical error, '{lfname}' does not exist."
                     self._log.critical(msg)
                     ret = False
 

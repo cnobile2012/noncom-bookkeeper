@@ -56,8 +56,8 @@ class PopulateCollect:
         data = self._collect_panel_values(panel)
         return all([item not in self._EMPTY_FIELDS for item in data.values()])
 
-    def _collect_panel_values(self, panel: wx.Panel,
-                              convert_tz: bool=False) -> dict:
+    def _collect_panel_values(self, panel: wx.Panel, convert_tz: bool=False
+                              ) -> dict:
         """
         Collects the data from the panel's widgets.
 
@@ -193,7 +193,7 @@ class PopulateCollect:
         c_set[0].SetSelection(0)
 
     def _make_field_name(self, name: str):
-        name = name.replace('(', '').replace(')', '')
+        name = name.replace('(', '').replace(')', '').replace('"', '')
         return name.replace(' ', '_').replace(':', '').lower()
 
     # *** TODO *** make the inverse of _make_field_name() above.
@@ -255,9 +255,11 @@ class PopulateCollect:
         :param str panel_name: The internal panel name.
         """
         current = self._get_fiscal_year_value(year, current=True)
-        audit = self._get_fiscal_year_value(year, audit=True)
         work_on = self._get_fiscal_year_value(year, work_on=True)
+        audit = self._get_fiscal_year_value(year, audit=True)
+        self.set_fiscal_panel(current, work_on, audit)
 
+    def set_fiscal_panel(self, current, work_on, audit):
         for c_set in self._find_children(self._mf.panels['fiscal']):
             name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
             field_name = self._make_field_name(c_set[0].GetLabelText())
@@ -265,10 +267,11 @@ class PopulateCollect:
             if (field_name == 'current_fiscal_year'
                 and name1 == 'ColorCheckBox'):
                 c_set[1].SetValue(current)
+            elif (field_name == 'work_on_this_fiscal_year'
+                  and name1 == 'ColorCheckBox'):
+                c_set[1].SetValue(work_on)
             elif field_name == 'audit_complete' and name1 == 'ColorCheckBox':
                 c_set[1].SetValue(audit)
-            elif field_name == 'work_on' and name1 == 'ColorCheckBox':
-                c_set[1].SetValue(work_on)
 
     def _get_fiscal_year_value(self, year: int, *, pk: bool=False,
                                date: bool=False, current: bool=False,

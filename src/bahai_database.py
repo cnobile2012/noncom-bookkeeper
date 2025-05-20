@@ -85,16 +85,20 @@ class Database(BaseDatabase):
         Update the `fiscal_year` table. Only the year and current values
         are needed to do updates.
 
-        :param dict data: The data to be updated.
+        :param list data: The data to be updated.
 
         .. note::
 
            Incoming data:
+           From the fiscal year table:
            [(year, month, day, current, work_on, audit, current), ...]
+           From the fiscal panel:
+           [(current_fiscal_year, work_on_this_fiscal_year,
+             audit_complete), ...]
         """
         now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
-                 "SET current = :current, audit = :audit, work_on = :work_on, "
+                 "SET current = :current, work_on = :work_on, audit = :audit, "
                  "m_time = :m_time WHERE year = :year")
         items = [{'year': item[0], 'current': item[3], 'work_on': item[4],
                   'audit': item[5], 'm_time': now} for item in data]
@@ -120,7 +124,7 @@ class Database(BaseDatabase):
         else:
             where = ""
 
-        query = (f"SELECT * FROM {self._T_MONTH} {where};")
+        query = (f"SELECT * FROM {self._T_MONTH} {where}")
         return await self._do_select_query(query)
 
     async def insert_into_month_table(self, months: dict) -> None:
@@ -173,17 +177,13 @@ class Database(BaseDatabase):
     # Data SELECT, INSERT and, UPDATE methods.
     #
 
-    async def select_from_data_table(self, name: str, data: dict,
-                                     year: int=None, month: int=None,) -> list:
+    async def select_from_data_table(self, data: dict, year: int=None) -> list:
         """
         Reads a row or rows from the `data` table.
 
-        :param str name: Panel name.
         :param int year: A Baha'i year used to select the current fiscal year.
         :param dict data: The data from the any panel in the form of:
                           {<field name>: <value>,...}.
-        :param int month: A Baha'i month defined by the numeric designation.
-                          Used to select the current month for the data.
         :returns: A list of rows from the Data table.
         :rtype: list
 
@@ -211,16 +211,7 @@ class Database(BaseDatabase):
            ]
         """
         field_names = list(data.keys())
-
-        if name == 'fiscal':
-            fields = '", "'.join([f"y1.{fn}" for fn in field_names])
-        else:
-            fields = '", "'.join(field_names)
-
-        if month:
-            mon = f"JOIN {self._T_MONTH} AS m ON m.pk = d.mfk AND m.ord = ?"
-        else:
-            mon = ""
+        fields = '", "'.join(field_names)
 
         if year:
             params = (year, year+1)
@@ -235,10 +226,6 @@ class Database(BaseDatabase):
                 f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.pk = d.fy2fk "
                 "      AND y2.year = ? "
                 )
-
-            if mon:
-                query += mon
-                params += (month,)
         else:
             params = ()
             query = (
@@ -266,8 +253,6 @@ class Database(BaseDatabase):
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: <value>,...}.
         """
-        f_items = await self.select_from_field_type_table(data)
-        f_month = await self.select_from_month_table(order=month)
         fy1 = await self.select_from_fiscal_year_table(current=1)
 
         if fy1:
