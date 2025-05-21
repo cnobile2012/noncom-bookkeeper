@@ -8,8 +8,8 @@ import unittest
 import wx
 
 from . import check_flag
-from src.utilities import (GridBagSizer, ConfirmationDialog, _ClickPosition,
-                           EventStaticText, StoreObjects)
+from src.utilities import (Borg, GridBagSizer, ConfirmationDialog,
+                           _ClickPosition, EventStaticText, StoreObjects)
 
 
 class BaseTests(unittest.TestCase):
@@ -36,6 +36,36 @@ class BaseTests(unittest.TestCase):
             widget = EventStaticText(self.frame, -1, label, style=0)
             pos, span = (num, dec), (1, 1)
             self.gbs.Add(widget, pos, span, wx.ALIGN_CENTER | wx.ALL, 6)
+
+
+class TestBorg(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def test_setter_and_getter(self):
+        """
+        """
+        data = (
+            (Borg(), 'Something', Borg(), '', {'value0': 'Something'}),
+            (Borg(), '', Borg(), 'Something', {'value1': 'Something'}),
+            )
+
+        msg = "Expected {} with value0 {} and value1 {}, found {}."
+
+        for borg0, value0, borg1, value1, expected_result in data:
+            borg0.clear_state()
+            borg1.clear_state()
+
+            if value0:
+                borg0.value0 = value0
+                result = borg1.value0
+            elif value1:
+                borg1.value1 = value1
+                result = borg0.value1
+
+            self.assertEqual(expected_result, result, msg.format(
+                expected_result, value0, value1, result))
 
 
 class TestGridBagSizer(BaseTests):

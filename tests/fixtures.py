@@ -6,17 +6,22 @@ __docformat__ = "restructuredtext en"
 
 import wx
 
+from src.bases import BaseGenerated
+from src.custom_widgits import ColorCheckBox, EVT_COLOR_CHECKBOX
+
+__all__ = ('FakeFrame', 'FakeWidget', 'FakeEvent', 'FakePanel')
+
 
 class FakeFrame(wx.Frame):
 
     def __init__(self, parent=None, id=wx.ID_ANY, pos=wx.DefaultPosition,
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL, **kwargs):
-        super().__init__(parent, id=id, pos=pos, style=style)
+        super().__init__(parent, id=id, pos=pos, style=style, **kwargs)
 
 
 class FakeWidget:
 
-    def __init__(self, selection=''):
+    def __init__(self, selection='', *args, **kwargs):
         self._selection = selection
         self._value = ""
 
@@ -38,3 +43,17 @@ class FakeEvent:
 
     def GetEventObject(self):
         return self.event_object
+
+
+class FakePanel(BaseGenerated):
+
+    def __init__(self, parent, *args, **kwarge):
+        super().__init__(parent, *args, **kwarge)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        widget_00 = ColorCheckBox(self, wx.ID_ANY, label='', name='current')
+        widget_00.SetBackgroundColour(wx.Colour(*[210, 190, 255]))
+        widget_00.SetForegroundColour(wx.Colour(*[50, 50, 204]))
+        widget_00.SetMinSize([80, 20])
+        widget_00.Bind(EVT_COLOR_CHECKBOX, self.set_dirty_flag)
+        widget_00.Enable(False)
+        sizer.Add(widget_00, 0, wx.CENTER, 6)

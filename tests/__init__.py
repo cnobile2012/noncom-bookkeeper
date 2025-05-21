@@ -4,8 +4,10 @@ import os
 import logging
 
 from .base_dir import BASE_DIR
-from .fixtures import FakeFrame, FakeWidget, FakeEvent
+from .fixtures import FakeFrame, FakeWidget, FakeEvent, FakePanel
 
+__all__ = ('FakeFrame', 'FakeWidget', 'FakeEvent', 'FakePanel', 'log',
+           'check_flag',)
 
 LOGGER_NAME = 'config'
 LOGFILE_NAME = 'config.log'
@@ -37,6 +39,7 @@ RUN_FLAG = {'TestBootstrap': False,
             'TestTomlAppConfig': False,
             'TestTomlCreatePanel': False,
             'TestExceptions': False,
+            'TestFiscalSettings': False,
             'TestPaths': False,
             'TestCheckPanelConfig': False,
             'TestCheckAppConfig': False,
@@ -50,6 +53,3 @@ def check_flag(name):
     if not RUN_FLAG[name]:
         initial_log_message("Start logging for %s", name)
         RUN_FLAG[name] = True
-
-
-__all__ = (log, check_flag, FakeFrame, FakeWidget, FakeEvent)

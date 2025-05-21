@@ -49,7 +49,8 @@ class FiscalSettings(wx.Panel):
         widget_01.SetMinSize([-1, -1])
         grid_sizer.Add(widget_01, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-        widget_02 = ColorCheckBox(self, wx.ID_ANY)
+        widget_02 = ColorCheckBox(self, wx.ID_ANY, label='',
+                                  name='current_state')
         widget_02.SetSize((24, 24))
         widget_02.SetBackgroundColour(wx.Colour(*self._bg_color))
         widget_02.SetForegroundColour(wx.Colour(*w_fg_color))

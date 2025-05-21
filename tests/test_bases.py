@@ -136,21 +136,45 @@ class TestBases(unittest.TestCase):
         """
         Test that the dirty_flag gets set in the event callback.
         """
-        class FakePanel(BaseGenerated):
+        class FakePanel01(BaseGenerated):
 
-            def __init__(self, parent, **kwargs):
-                selection = kwargs.pop('selection', '')
-                super().__init__(parent)
+            def __init__(self, parent, *args, **kwargs):
+                super().__init__(parent, *args, **kwargs)
                 self.widget_00 = wx.TextCtrl(self, wx.ID_ANY, '')
                 self.widget_00.Bind(wx.EVT_TEXT, self.set_dirty_flag)
 
+        class FakePanel02(FakePanel01):
+
+            def __init__(self, parent, *args, **kwargs):
+                super().__init__(parent, *args, **kwargs)
+
+            #def set_dirty(self, value):  # This is just for testing.
+            #    self.dirty = value
+
+            def get_selection(self, event):
+                pass
+
         app = wx.App()
         frame = FakeFrame()
-        panel = FakePanel(frame)
-        should_be = False
-        msg = "The dirty_flag should be {should_be} found {panel.dirty}."
-        self.assertFalse(panel.dirty, msg)
-        panel.widget_00.SetValue("Something to test")
-        should_be = True
-        msg = "The dirty_flag should be {should_be} found {panel.dirty}."
-        self.assertTrue(panel.dirty, msg)
+        data = (
+            # panel,             value,       init,  sel,   expect
+            (FakePanel01(frame), "",          False, False, True),
+            (FakePanel01(frame), "",          True,  False, False),
+            (FakePanel01(frame), "Something", False, False, True),
+            (FakePanel01(frame), "Something", True,  False, False),
+            (FakePanel02(frame), "",          False, True,  True),
+            (FakePanel02(frame), "",          True,  True,  False),
+            (FakePanel02(frame), '182',       False, True,  True),
+            (FakePanel02(frame), '182',       True,  True,  False),
+            )
+
+        msg = ("The dirty_flag should be {} with initializing {}, selected {} "
+               "and value '{}', found {}.")
+
+        for panel, value, initializing, selected, expected_result in data:
+            panel.initializing = initializing
+            panel.selected = selected
+            panel.widget_00.SetValue(value)
+            result = panel.dirty
+            self.assertEqual(expected_result, result, msg.format(
+                expected_result, initializing, selected, value, result))
