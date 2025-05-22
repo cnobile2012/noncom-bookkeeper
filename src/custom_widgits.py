@@ -46,9 +46,10 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
     https://www.flaticon.com/free-icons/bitmap
     """
     def __init__(self, parent: wx.Window, flags=wx.BORDER_NONE,
-                 bdate: badidatetime.date=None):
+                 bdate: badidatetime.date=None, name: str=""):
         super().__init__(parent, wx.BORDER_SIMPLE)
         self.bdate = bdate
+        self.SetName(name)
         self.panel = wx.Panel(self)
         bg_color = wx.Colour(255, 253, 208)
         self.panel.SetBackgroundColour(bg_color)
@@ -200,9 +201,9 @@ class BadiDatePickerCtrl(wx.Panel):
                  dt: badidatetime.date=None, pos=wx.DefaultPosition,
                  size=wx.DefaultSize,
                  style=wx.adv.DP_DEFAULT | wx.adv.DP_SHOWCENTURY,
-                 validator=wx.DefaultValidator, name: str="badidatectrl"
-                 ) -> None:
+                 validator=wx.DefaultValidator, name: str="") -> None:
         super().__init__(parent)
+        self.SetName(name)
         # Default date
         self.bdate = dt or badidatetime.date.today(short=True)
 

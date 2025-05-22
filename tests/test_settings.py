@@ -29,8 +29,8 @@ class TestFiscalSettings(unittest.TestCase):
 
     def create_fiscal_settings_instance(self):
         self.frame = FakeFrame()
-        fiscal_panel = FakePanel(self.frame)
-        self.frame.panels = {'fiscal': fiscal_panel}
+        fake_fiscal_panel = FakePanel(self.frame)
+        self.frame.panels = {'fiscal': fake_fiscal_panel}
         panel = wx.Panel(self.frame)  # Need to mimic the actual design.
         return FiscalSettings(panel)
 

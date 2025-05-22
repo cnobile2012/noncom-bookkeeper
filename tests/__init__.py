@@ -29,7 +29,10 @@ def initial_log_message(message, *args, **kwargs):
     log.info(message, *args, **kwargs)
 
 
-RUN_FLAG = {'TestBootstrap': False,
+RUN_FLAG = {'TestBadiCalendarPopup': False,
+            'TestBadiDateChangedEvent': False,
+            'TestBootstrap': False,
+            'TestFunctions': False,
             'TestLogger': False,
             'TestBases': False,
             'TestSettings': False,
