@@ -60,7 +60,7 @@ class FiscalSettings(wx.Panel):
     def enable_current(self, event):
         fiscal_panel = self.frame.panels.get('fiscal')
         current_widget = fiscal_panel.FindWindowByName('current')
-        state = current_widget.GetEnableState()
+        state = current_widget.IsEnabled()
         current_widget.Enable(False if state else True)
 
     @property

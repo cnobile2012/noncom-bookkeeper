@@ -277,15 +277,16 @@ class ColorCheckBoxEvent(wx.PyCommandEvent):
 
 class ColorCheckBox(wx.Panel):
     def __init__(self, parent: wx.Window, id: int=wx.ID_ANY, label: str="",
-                 name: str="", checked: bool=False,
-                 fg=wx.Colour(0, 0, 0),
-                 bg=wx.Colour(255, 255, 255),
+                 label_position="right", name: str="", checked: bool=False,
+                 fg=wx.Colour(0, 0, 0),  # Black
+                 bg=wx.Colour(255, 255, 255),  # White
                  check_color=wx.Colour(0, 120, 215),
                  disabled_color=wx.Colour(160, 160, 160)):
         super().__init__(parent)
         self.checked = checked
         self.enabled = True
         self.label = label
+        self.label_position = label_position  # 'right' (default) or 'left'
         self.SetName(name)
         self.fg = fg
         self.bg = bg
@@ -295,7 +296,6 @@ class ColorCheckBox(wx.Panel):
         self.SetBackgroundColour(bg)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
-
         self.SetSize()
 
     def OnClick(self, event):
@@ -308,34 +308,56 @@ class ColorCheckBox(wx.Panel):
             wx.PostEvent(self, evt)
 
     def OnPaint(self, event):
-        dc = wx.PaintDC(self)
+        dc = wx.BufferedPaintDC(self)
         dc.Clear()
+
         size = self.GetSize()
-        padding = 6
+        box_size = min(size.height, 16)
+        margin = 6
 
-        box_size = 16
-        box_x = padding
+        # Get label size
+        text_width, text_height = dc.GetTextExtent(self.label)
+
+        if self.label_position == "left":
+            text_x = 0
+            box_x = text_width + margin
+        else:
+            box_x = 0
+            text_x = box_size + margin
+
         box_y = (size.height - box_size) // 2
+        text_y = (size.height - text_height) // 2
 
-        text_x = box_x + box_size + 8
-        text_y = (size.height - dc.GetTextExtent(self.label)[1]) // 2
+        # Background based on enabled state
+        bg_color = self.GetBackgroundColour()
+        fg_color = (self.GetForegroundColour() if self.enabled
+                    else wx.Colour(120, 120, 120))
+        box_border_color = self.fg if self.enabled else self.disabled_color
 
-        # Set colors based on state
-        fg = self.fg if self.enabled else self.disabled_color
-        check_color = self.check_color if self.enabled else self.disabled_color
+        dc.SetBrush(wx.Brush(bg_color))
+        dc.SetPen(wx.Pen(bg_color))
+        dc.DrawRectangle(0, 0, size.width, size.height)
 
-        # Draw checkbox square
-        dc.SetPen(wx.Pen(check_color))
-        dc.SetBrush(wx.Brush(wx.WHITE))
+        # Checkbox box
+        dc.SetBrush(wx.Brush(
+            wx.WHITE if self.enabled else wx.Colour(230, 230, 230)))
+        dc.SetPen(wx.Pen(box_border_color))
         dc.DrawRectangle(box_x, box_y, box_size, box_size)
 
-        # Draw checkmark if checked
+        # Check mark
         if self.checked:
-            dc.SetBrush(wx.Brush(check_color))
-            dc.DrawRectangle(box_x + 3, box_y + 3, box_size - 6, box_size - 6)
+            dc.SetPen(wx.Pen(fg_color, 2))
+            dc.DrawLine(box_x + 3,
+                        box_y + box_size // 2,
+                        box_x + box_size // 3,
+                        box_y + box_size - 3)
+            dc.DrawLine(box_x + box_size // 3,
+                        box_y + box_size - 3,
+                        box_x + box_size - 3,
+                        box_y + 3)
 
         # Draw label
-        dc.SetTextForeground(fg)
+        dc.SetTextForeground(fg_color)
         dc.DrawText(self.label, text_x, text_y)
 
     def GetValue(self):
@@ -349,7 +371,7 @@ class ColorCheckBox(wx.Panel):
         self.enabled = enable
         self.Refresh()
 
-    def GetEnableState(self):
+    def IsEnabled(self):
         return self.enabled
 
     def SetSize(self, size=(120, 24)):

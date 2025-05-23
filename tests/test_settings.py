@@ -75,12 +75,12 @@ class TestFiscalSettings(unittest.TestCase):
         # Test for normal operation.
         fiscal_panel = self.frame.panels['fiscal']
         fp_widget = fiscal_panel.FindWindowByName('current')
-        state = fp_widget.GetEnableState()
+        state = fp_widget.IsEnabled()
         self.assertFalse(state, msg.format(False, state))
         # Test for event operation.
         widget = fs.FindWindowByName('current_state')
         self.fire_event(widget, EVT_COLOR_CHECKBOX)
-        state = fp_widget.GetEnableState()
+        state = fp_widget.IsEnabled()
         self.assertTrue(state, msg.format(True, state))
 
 

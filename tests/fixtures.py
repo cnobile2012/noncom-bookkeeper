@@ -6,11 +6,9 @@ __docformat__ = "restructuredtext en"
 
 import wx
 
-from badidatetime import date
-
 from src.bases import BaseGenerated
 from src.custom_widgits import (
-    BadiCalendarPopup, ColorCheckBox, EVT_COLOR_CHECKBOX)
+    ColorCheckBox, EVT_COLOR_CHECKBOX)
 
 __all__ = ('FakeFrame', 'FakeWidget', 'FakeEvent', 'FakePanel')
 
@@ -60,12 +58,6 @@ class FakePanel(BaseGenerated):
         widget_00.Bind(EVT_COLOR_CHECKBOX, self.set_dirty_flag)
         widget_00.Enable(False)
         sizer.Add(widget_00, 0, wx.CENTER, 6)
-
-        self.bdate = date.today(short=True)
-        widget_01 = BadiCalendarPopup(self, wx.ID_ANY, self.bdate,
-                                      name='test_popup')
-        widget_01.on_date_selected = self._on_popup_date_selected
-        # widget_01.Popup()
 
     def _on_popup_date_selected(self, new_bdate):
         self.SetValue(new_bdate)
