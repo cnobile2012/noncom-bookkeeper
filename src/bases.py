@@ -57,6 +57,13 @@ class BasePanel:
     This base class is used in the FieldEdit class in Tools and in the
     panels created by the PanelFactory.
     """
+    def __init__(self, parent, id=wx.ID_ANY, *args, **kwargs):
+        super().__init__(parent, id=id, *args, **kwargs)
+        self._dirty = False
+        self._save = False
+        self._cancel = False
+        self._initializing = False
+        self._selected = False
 
     @property
     def background_color(self) -> list:
@@ -64,54 +71,6 @@ class BasePanel:
 
     def _find_dict(self, value):
         return find_dict(value)
-
-
-class BaseGenerated(BasePanel, ScrolledPanel):
-
-    def __init__(self, parent, id=wx.ID_ANY, **kwargs):
-        kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
-        super().__init__(parent, id=id, **kwargs)
-        self.parent = parent
-        self.frame = parent.GetParent()
-        self._mf = StoreObjects().get_object('MainFrame')
-        self._dirty = False
-        self._save = False
-        self._cancel = False
-        self._initializing = False
-        self._selected = False
-
-    def locality_prefix(self, update, dirty_flag):
-        """
-        This is a closure for the 'do_event' callback.
-
-        :param wx.Window update: The widget that is being updated.
-        """
-        def do_event(event):
-            """
-            This event callback updates the locality prefix TextCtrl and
-            setting the dirty flag.
-
-            :param event: This is a wx event.
-            :type event: wx.Event
-            """
-            rb = event.GetEventObject()
-            self._locality_prefix(rb, update)
-            self.dirty = dirty_flag
-
-        return do_event
-
-    def _locality_prefix(self, rb, update):
-        """
-        Set value in the widget used for the community type. This method
-        is used only when the Baha'i config file is used.
-
-        :param wx.RadioButton rb: A RadioButton widget object.
-        :param wx.Window update: The widget that is being updated.
-        """
-        selection = rb.GetStringSelection()
-        text = self.locale_prefix[selection.lower()]
-        prefix_widget = getattr(self, update)
-        prefix_widget.SetValue(text)
 
     def set_dirty_flag(self, event):
         """
@@ -151,3 +110,47 @@ class BaseGenerated(BasePanel, ScrolledPanel):
     @selected.setter
     def selected(self, value):
         self._selected = value
+
+
+class BaseGenerated(BasePanel, ScrolledPanel):
+
+    def __init__(self, parent, id=wx.ID_ANY, *args, **kwargs):
+        super().__init__(parent, id=id, *args, **kwargs)
+        kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
+        super().__init__(parent, id=id, **kwargs)
+        self.parent = parent
+        self.frame = parent.GetParent()
+        self._mf = StoreObjects().get_object('MainFrame')
+
+    def locality_prefix(self, update, dirty_flag):
+        """
+        This is a closure for the 'do_event' callback.
+
+        :param wx.Window update: The widget that is being updated.
+        """
+        def do_event(event):
+            """
+            This event callback updates the locality prefix TextCtrl and
+            setting the dirty flag.
+
+            :param event: This is a wx event.
+            :type event: wx.Event
+            """
+            rb = event.GetEventObject()
+            self._locality_prefix(rb, update)
+            self.dirty = dirty_flag
+
+        return do_event
+
+    def _locality_prefix(self, rb, update):
+        """
+        Set value in the widget used for the community type. This method
+        is used only when the Baha'i config file is used.
+
+        :param wx.RadioButton rb: A RadioButton widget object.
+        :param wx.Window update: The widget that is being updated.
+        """
+        selection = rb.GetStringSelection()
+        text = self.locale_prefix[selection.lower()]
+        prefix_widget = getattr(self, update)
+        prefix_widget.SetValue(text)

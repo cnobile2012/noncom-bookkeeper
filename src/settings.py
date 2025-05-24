@@ -22,7 +22,7 @@ class FiscalSettings(wx.Panel):
         self.dirty = False
 
     def create_display(self):
-        self.title = '''Fiscal Year Settings'''
+        self.title = "Fiscal Year Settings"
         self._bg_color = (210, 190, 255)
         w_fg_color = (50, 50, 204)
         col_1_wrap = 310
@@ -34,7 +34,7 @@ class FiscalSettings(wx.Panel):
                              wx.FONTWEIGHT_BOLD)
         widget_00 = wx.StaticText(self, wx.ID_ANY, self.title)
         widget_00.SetFont(title_font)
-        widget_00.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_00.SetForegroundColour(wx.Colour(*w_fg_color))
         sizer.Add(widget_00, 0, wx.CENTER, 0)
 
         grid_sizer = wx.FlexGridSizer(1, 2, 0, 2)  # rows, cols, vgap, hgap
@@ -45,7 +45,7 @@ class FiscalSettings(wx.Panel):
                     'for the current year.')
         widget_01 = wx.StaticText(self, wx.ID_ANY, w1_label)
         widget_01.Wrap(col_1_wrap)
-        widget_01.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_01.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_01.SetMinSize([-1, -1])
         grid_sizer.Add(widget_01, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
@@ -80,7 +80,7 @@ class Paths(wx.Panel):
         self.dirty = False
 
     def create_display(self):
-        self.title = '''Application Paths'''
+        self.title = "Application Paths"
         self._bg_color = (178, 181, 185)
         w_bg_color = (222, 237, 230)
         w_fg_color = (50, 50, 204)
@@ -91,7 +91,7 @@ class Paths(wx.Panel):
                              wx.FONTWEIGHT_BOLD)
         widget_00 = wx.StaticText(self, wx.ID_ANY, self.title)
         widget_00.SetFont(title_font)
-        widget_00.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_00.SetForegroundColour(wx.Colour(*w_fg_color))
         sizer.Add(widget_00, 0, wx.CENTER, 0)
 
         grid_sizer = wx.FlexGridSizer(1, 2, 0, 2)  # rows, cols, vgap, hgap
@@ -101,7 +101,7 @@ class Paths(wx.Panel):
         sizer.Add(grid_sizer, 0, wx.CENTER, 0)
 
         widget_01 = wx.StaticText(self, wx.ID_ANY, "Data Path:")
-        widget_01.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_01.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_01.SetMinSize([-1, -1])
         grid_sizer.Add(widget_01, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
@@ -113,7 +113,7 @@ class Paths(wx.Panel):
         grid_sizer.Add(widget_02, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
         widget_03 = wx.StaticText(self, wx.ID_ANY, "Panel Path:")
-        widget_03.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_03.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_03.SetMinSize([-1, -1])
         grid_sizer.Add(widget_03, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
@@ -125,7 +125,7 @@ class Paths(wx.Panel):
         grid_sizer.Add(widget_04, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
         widget_05 = wx.StaticText(self, wx.ID_ANY, "Config Path:")
-        widget_05.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_05.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_05.SetMinSize([-1, -1])
         grid_sizer.Add(widget_05, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
@@ -138,7 +138,7 @@ class Paths(wx.Panel):
         grid_sizer.Add(widget_06, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
         widget_07 = wx.StaticText(self, wx.ID_ANY, "Log Path:")
-        widget_07.SetForegroundColour(wx.Colour(50, 50, 204))
+        widget_07.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_07.SetMinSize([-1, -1])
         grid_sizer.Add(widget_07, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
