@@ -42,29 +42,35 @@ class MainFrame(wx.Frame, MenuBar):
     def __init__(self, parent=None, id=wx.ID_ANY,
                  pos=wx.DefaultPosition,
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
-                 options=None):
+                 options=None, size=(500, 800), *args, **kwargs):
+        super().__init__(parent, id=id, pos=pos, style=style)
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
-        super().__init__(parent, id=id, pos=pos, style=style)
         self.SetTitle(self.title)
-        self.container = wx.Panel(self)
-        self.container_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.frame_bg_color = (128, 128, 128)
+        self.frame_bg_color = (128, 128, 128)  # Gray
         self.SetBackgroundColour(wx.Colour(*self.frame_bg_color))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
-        self.setup_resize_event()
+
+        # All content panels switch within this panel.
+        self.container = wx.Panel(self)
+        self.container_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.container.SetSizer(self.container_sizer)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.container, 1, wx.EXPAND)
+        self.SetSizer(sizer)
 
         # Status Bar
         status_widths = (-1,)
         self._statusbar = self.CreateStatusBar(len(status_widths),
                                                wx.STB_DEFAULT_STYLE)
         self._statusbar.SetStatusWidths(status_widths)
-        size = (500, 800)
-        self.set_size(size)
-        self.SetSizer(wx.BoxSizer(wx.VERTICAL))
-        self.GetSizer().Add(self.container, 1, wx.EXPAND)
         self.Layout()
-        self.SetAutoLayout(True)
+
+        # Setup resizer
+        self.set_size(size)
+        self.setup_resize_event()
+
         StoreObjects().set_object(self.__class__.__name__, self)
         sf = PanelFactory()
         sf.parse()
@@ -170,11 +176,9 @@ class MainFrame(wx.Frame, MenuBar):
         """
         Sets the size of the Frame.
 
-        :param size: The size to set as (width, height).
-        :type size: Tuple or List
-        :param key: The key in the TOML config file. Can be 'size' or
-                    'default'. The default is 'size'.
-        :type key: str
+        :param tuple or list size: The size to set as (width, height).
+        :param str key: The key in the TOML config file. Can be 'size' or
+                        'default'. The default is 'size'.
         """
         value = self._tac.get_value('app_size', key)
         self.SetSize(wx.Size(value if value else size))
