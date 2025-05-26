@@ -6,10 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import os
 import re
-import wx
 from wx.lib.scrolledpanel import ScrolledPanel
-
-from .utilities import StoreObjects
 
 
 def find_dict(value: list) -> dict:
@@ -57,8 +54,8 @@ class BasePanel:
     This base class is used in the FieldEdit class in Tools and in the
     panels created by the PanelFactory.
     """
-    def __init__(self, parent, id=wx.ID_ANY, *args, **kwargs):
-        super().__init__(parent, id=id, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._dirty = False
         self._save = False
         self._cancel = False
@@ -112,15 +109,13 @@ class BasePanel:
         self._selected = value
 
 
-class BaseGenerated(BasePanel, ScrolledPanel):
+class BaseGenerated(ScrolledPanel, BasePanel):
 
-    def __init__(self, parent, id=wx.ID_ANY, *args, **kwargs):
-        super().__init__(parent, id=id, *args, **kwargs)
-        kwargs["style"] = kwargs.get("style", 0) | wx.DEFAULT_FRAME_STYLE
-        super().__init__(parent, id=id, **kwargs)
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        BasePanel.__init__(self, *args, **kwargs)
         self.parent = parent
         self.frame = parent.GetParent()
-        self._mf = StoreObjects().get_object('MainFrame')
 
     def locality_prefix(self, update, dirty_flag):
         """

@@ -14,17 +14,13 @@ from . import check_flag, FakeFrame, FakeWidget, FakeEvent
 from src.bases import find_dict, version, BasePanel, BaseGenerated
 
 
-class TestBases(unittest.TestCase):
+class TestBaseFunctions(unittest.TestCase):
 
     def __init__(self, name):
         super().__init__(name)
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-
-    def tearDown(self):
-        if hasattr(self, 'widget_00'):
-            setattr(self, 'widget_00', None)
 
     #@unittest.skip("Temporarily skipped")
     def test_find_dict_found(self):
@@ -69,6 +65,19 @@ class TestBases(unittest.TestCase):
         msg = f"Should find pre-release (rc#) found {ver_list[-1]}"
         self.assertEqual(os.environ['PR_TAG'], ver_list[-1], msg)
 
+
+class TestBasePanel(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+
+    def tearDown(self):
+        if hasattr(self, 'widget_00'):
+            setattr(self, 'widget_00', None)
+
     #@unittest.skip("Temporarily skipped")
     def test_background_color(self):
         """
@@ -98,38 +107,14 @@ class TestBases(unittest.TestCase):
         msg = f"Should find a 'dict' of non zero length found {dict_}"
         self.assertEqual(len(dict_), 2, msg)
 
-    #@unittest.skip("Temporarily skipped")
-    def test_locality_prefix_do_event(self):
-        """
-        Test that returns the 'do_event' callback and the callback updates
-        a widget.
-        """
-        class FakePanel(BaseGenerated):
 
-            def __init__(self, parent, **kwargs):
-                selection = kwargs.pop('selection', '')
-                super().__init__(parent)
-                text = kwargs.get('text', '')
-                self.locale_prefix = {selection: text}
-                self.widget_00 = FakeWidget()
+class TestBaseGenerated(unittest.TestCase):
 
-        app = wx.App()
-        kwargs = {'selection': 'my_selecttion', 'text': "String of text."}
-        frame = FakeFrame()
-        panel = FakePanel(frame, **kwargs)
-        # Test the locality_prefix() method.
-        dirty_flag = True
-        callback = panel.locality_prefix('widget_00', dirty_flag)
-        should_be = 'do_event'
-        msg = f"Should be a callback '{should_be}' found '{callback}'"
-        self.assertIn(should_be, str(callback), msg)
-        # Test the do_event() callback.
-        fake_event = FakeEvent(event_object=FakeWidget(
-            selection=kwargs['selection']))
-        callback(fake_event)
-        # Test dirty_flag
-        msg = f"Should have dirty_flag set to {dirty_flag} found {panel.dirty}"
-        self.assertTrue(panel.dirty, msg)
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
 
     #@unittest.skip("Temporarily skipped")
     def test_set_dirty_flag(self):
@@ -178,3 +163,36 @@ class TestBases(unittest.TestCase):
             result = panel.dirty
             self.assertEqual(expected_result, result, msg.format(
                 expected_result, initializing, selected, value, result))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_locality_prefix_do_event(self):
+        """
+        Test that returns the 'do_event' callback and the callback updates
+        a widget.
+        """
+        class FakePanel(BaseGenerated):
+
+            def __init__(self, parent, **kwargs):
+                selection = kwargs.pop('selection', '')
+                super().__init__(parent)
+                text = kwargs.get('text', '')
+                self.locale_prefix = {selection: text}
+                self.widget_00 = FakeWidget()
+
+        app = wx.App()
+        kwargs = {'selection': 'my_selecttion', 'text': "String of text."}
+        frame = FakeFrame()
+        panel = FakePanel(frame, **kwargs)
+        # Test the locality_prefix() method.
+        dirty_flag = True
+        callback = panel.locality_prefix('widget_00', dirty_flag)
+        should_be = 'do_event'
+        msg = f"Should be a callback '{should_be}' found '{callback}'"
+        self.assertIn(should_be, str(callback), msg)
+        # Test the do_event() callback.
+        fake_event = FakeEvent(event_object=FakeWidget(
+            selection=kwargs['selection']))
+        callback(fake_event)
+        # Test dirty_flag
+        msg = f"Should have dirty_flag set to {dirty_flag} found {panel.dirty}"
+        self.assertTrue(panel.dirty, msg)

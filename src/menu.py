@@ -6,11 +6,11 @@ __docformat__ = "restructuredtext en"
 
 from collections import OrderedDict
 
-from .config import TomlAppConfig, TomlMetaData
-
 import wx
 from wx.lib.inspection import InspectionTool
 
+from .config import TomlAppConfig, TomlMetaData
+from .data_entry import LedgerDataEntry
 from .tools import ShortCuts, FieldEdit
 from .settings import FiscalSettings, Paths
 
@@ -62,10 +62,13 @@ class MenuBar:
                           ('monthly', [202, f"&{names[2]}\tCTRL+M",
                                        "Edit monthy data.",
                                        'edit_month', None, True, None]),
-                          ('fiscal', [203, f"&{names[3]}\tCTRL+O",
+                          ('ledger', [203, "&Ledget Data Entry\tCTRL+L",
+                                      "Ledger Data Entry", 'edit_ledger_data',
+                                      None, True, None]),
+                          ('fiscal', [204, f"&{names[3]}\tCTRL+O",
                                       "Choose Fiscal Year",
-                                      'choose_fiscal_year', None, True, None]),
-                          ('hide', [204, "&Close All\tCTRL+L",
+                                      'edit_fiscal_year', None, True, None]),
+                          ('hide', [205, "&Close All",
                                     "Close all panels.",
                                     'edit_hide_all', None, True, None]),
                           ])]),
@@ -104,7 +107,7 @@ class MenuBar:
                               ('fiscal_settings',
                                [500, "&Fiscal Year Settings\tCTRL+Y",
                                 "Show Fiscal Year Page Settings",
-                                'fiscal_settings', None, True, None]),
+                                'settings_fiscal', None, True, None]),
                               ('paths', [501, "&Application Paths\tCTRL+P",
                                          "Show the application paths.",
                                          'settings_paths', None, True, None]),
@@ -203,14 +206,14 @@ class MenuBar:
     def menu_items(self):
         return self.__item_map
 
-    def change_menu_items(self, list_=()):
+    def change_menu_items(self, menu_list: tuple=()) -> None:
         """
-        list_ = ((id, True|False), ...)
+        menu_list = ((id, True|False), ...)
         """
-        if list_:
+        if menu_list:
             # Enable menu items.
-            [self._menu.Enable(id, value) for id, value in list_]
-            self.set_menu_item(list_)
+            [self._menu.Enable(id, value) for id, value in menu_list]
+            self.set_menu_item(menu_list)
         else:
             # Disable menu items.
             [self._menu.FindItem(id)[0].Enable(False)
@@ -222,16 +225,16 @@ class MenuBar:
 
             self.set_menu_item(self._current_menus)
 
-        self._current_menus = list_
+        self._current_menus = menu_list
 
-    def set_menu_item(self, list_):
-        list_size = len(list_)
+    def set_menu_item(self, menu_list):
+        list_size = len(menu_list)
         changed = []
 
         for items in self.menu_items.values():
             if items[-1]:
                 for inner in items[-1].values():
-                    for item in list_:
+                    for item in menu_list:
                         id, value = item
 
                         if id == inner[0]:
@@ -245,7 +248,7 @@ class MenuBar:
 
         assert len(changed) == list_size, (
             f"Could not find all menu items found: '{changed}', "
-            f"should be: '{list_}'.")
+            f"should be: '{menu_list}'.")
 
     def file_picker(self, event):
         title = "Open config file for editing."
@@ -275,45 +278,26 @@ class MenuBar:
         pass
 
     def app_quit(self, event):
-        # *** TODO *** We need to check for unsaved files.
+        # *** TODO *** We need to check for unsaved panels.
         self.frame.Destroy()
 
-    def edit_config(self, event):
-        self.change_menu_items()
-        self._hide_all_panels()
-        self.panel = self.panels['organization']
-        self._set_panel()
+    def edit_config(self, event) -> None:  # No fill screen issues
+        self._do_panel_switch('organization')
 
-    def edit_budget(self, event):
-        self.change_menu_items()
-        self._hide_all_panels()
-        self.panel = self.panels['budget']
-        self._set_panel()
+    def edit_budget(self, event):  # No fill screen issues
+        self._do_panel_switch('budget')
 
-    def edit_month(self, event):
-        self.change_menu_items()
-        self._hide_all_panels()
-        self.panel = self.panels['monthly']
-        self._set_panel()
+    def edit_month(self, event):  # No fill screen issues
+        self._do_panel_switch('monthly')
 
-    def choose_fiscal_year(self, event):
-        self.change_menu_items()
-        self._hide_all_panels()
-        self.panel = self.panels['fiscal']
-        self._set_panel()
+    def edit_ledger_data(self, event):  # Has screen fill issues
+        if 'ledger' not in self.panels:
+            self.set_panel('ledger', LedgerDataEntry(self.parent))
 
-    def _set_panel(self):
-        self.sizer.Detach(self.panel)
-        size = self.frame.GetSize()
-        self.frame.SetTitle(self.panel.title)
-        self.panel.SetSize(*size)
-        self.sizer.Add(self.panel, 1, wx.EXPAND)
-        self.panel.Show()
-        self.parent.Layout()
-        self.panel.FitInside()
+        self._do_panel_switch('ledger')
 
-        if self.__short_cut:
-            self._update_short_cuts(self.panel.background_color)
+    def edit_fiscal_year(self, event):  # Has screen fill issues
+        self._do_panel_switch('fiscal')
 
     def edit_hide_all(self, event):
         self.change_menu_items()
@@ -359,7 +343,7 @@ class MenuBar:
 
     def tool_fields(self, event):
         if 'fields' not in self.panels:
-            self.set_panel('fields', FieldEdit(self.frame))
+            self.set_panel('fields', FieldEdit(self.parent))
 
         self.change_menu_items()
         self._hide_all_panels()
@@ -368,23 +352,58 @@ class MenuBar:
                                 [wx.ID_SAVEAS, True],))
         self._set_panel()
 
-    def fiscal_settings(self, event):
+    def settings_fiscal(self, event):  # Has screen fill issues
         if 'fiscal_settings' not in self.panels:
             self.set_panel('fiscal_settings', FiscalSettings(self.parent))
 
-        self.change_menu_items()
-        self._hide_all_panels()
-        self.panel = self.panels['fiscal_settings']
-        self._set_panel()
+        self._do_panel_switch('fiscal_settings')
 
-    def settings_paths(self, event):
+    def settings_paths(self, event):  # Has screen fill issues
         if 'paths' not in self.panels:
             self.set_panel('paths', Paths(self.parent))
 
+        self._do_panel_switch('paths')
+
+    def _do_panel_switch(self, panel_name: str) -> None:
         self.change_menu_items()
         self._hide_all_panels()
-        self.panel = self.panels['paths']
+        self.panel = self.panels[panel_name]
         self._set_panel()
+
+    def _set_panel(self):
+        if self.panel in [c.GetWindow() for c in self.sizer.GetChildren()]:
+            self.sizer.Detach(self.panel)
+
+        self.frame.SetTitle(self.panel.title)
+
+        if self.panel not in [c.GetWindow() for c in self.sizer.GetChildren()]:
+            self.sizer.Add(self.panel, 1, wx.EXPAND)
+
+        if self.__short_cut:
+            self._update_short_cuts(self.panel.background_color)
+
+        #self.sizer.SetSize(self.frame.GetSize())
+        self.panel.Show()
+        self.sizer.Layout()
+        self.parent.Layout()
+        self.panel.Layout()
+
+        #self.panel.SetBackgroundColour("dark blue")
+        #self.parent.SetBackgroundColour("orange")
+        #self.frame.SetBackgroundColour("green")
+
+        #print("Panel size:", self.panel.GetSize())
+        #print("Parent size:", self.parent.GetSize())
+        #print("Frame size:", self.frame.GetSize())
+        #print(self.frame.GetSize(), self.panel.GetSize())
+
+        # Force repaint after full layout
+    #     wx.CallAfter(self._finalize_panel_display, self.panel)
+
+    # def _finalize_panel_display(self, panel):
+    #     panel.Layout()
+    #     panel.Refresh()
+    #     panel.Update()
 
     def app_manual(self, event):
         pass

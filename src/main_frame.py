@@ -92,7 +92,7 @@ class MainFrame(wx.Frame, MenuBar):
                 exec(code, globals())
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = globals(
-                    )[class_name](self.parent)
+                    )[class_name](self.parent, *args, **kwargs)
 
         self.create_menu()
         self.options = options

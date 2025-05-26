@@ -31,10 +31,12 @@ def initial_log_message(message, *args, **kwargs):
 
 RUN_FLAG = {'TestBadiCalendarPopup': False,
             'TestBadiDateChangedEvent': False,
+            'TestBaseFunctions': False,
+            'TestBasePanel': False,
+            'TestBaseGenerated': False,
             'TestBootstrap': False,
             'TestFunctions': False,
             'TestLogger': False,
-            'TestBases': False,
             'TestSettings': False,
             'TestBaseSystemData': False,
             'TestTomlMetaData': False,

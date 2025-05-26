@@ -35,10 +35,10 @@ class FiscalSettings(wx.Panel):
         widget_00 = wx.StaticText(self, wx.ID_ANY, self.title)
         widget_00.SetFont(title_font)
         widget_00.SetForegroundColour(wx.Colour(*w_fg_color))
-        sizer.Add(widget_00, 0, wx.CENTER, 0)
+        sizer.Add(widget_00, 0, wx.CENTER | wx.ALL, 6)
 
         grid_sizer = wx.FlexGridSizer(1, 2, 0, 2)  # rows, cols, vgap, hgap
-        sizer.Add(grid_sizer, 0, wx.CENTER, 0)
+        sizer.Add(grid_sizer, 0, wx.CENTER | wx.ALL, 10)
 
         w1_label = ('Enables the "Current Fiscal Year" checkbox on the '
                     '"Fiscal Year" page and should only be enabled for '
@@ -56,6 +56,8 @@ class FiscalSettings(wx.Panel):
         widget_02.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_02.Bind(EVT_COLOR_CHECKBOX, self.enable_current)
         grid_sizer.Add(widget_02, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        #grid_sizer.Add((0, 0), 1, wx.EXPAND, 6)
+        self.Hide()
 
     def enable_current(self, event):
         fiscal_panel = self.frame.panels.get('fiscal')
@@ -65,6 +67,9 @@ class FiscalSettings(wx.Panel):
 
     @property
     def background_color(self):
+        """
+        This is for the ShortCuts panel.
+        """
         return self._bg_color
 
 
@@ -87,6 +92,7 @@ class Paths(wx.Panel):
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
+
         title_font = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD)
         widget_00 = wx.StaticText(self, wx.ID_ANY, self.title)
@@ -94,17 +100,13 @@ class Paths(wx.Panel):
         widget_00.SetForegroundColour(wx.Colour(*w_fg_color))
         sizer.Add(widget_00, 0, wx.CENTER, 0)
 
-        grid_sizer = wx.FlexGridSizer(1, 2, 0, 2)  # rows, cols, vgap, hgap
-        sizer.Add(grid_sizer, 0, wx.CENTER, 0)
-
         grid_sizer = wx.FlexGridSizer(4, 2, 0, 2)  # rows, cols, vgap, hgap
-        sizer.Add(grid_sizer, 0, wx.CENTER, 0)
+        sizer.Add(grid_sizer, 0, wx.CENTER | wx.ALL, 10)
 
         widget_01 = wx.StaticText(self, wx.ID_ANY, "Data Path:")
         widget_01.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_01.SetMinSize([-1, -1])
         grid_sizer.Add(widget_01, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-
         widget_02 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_data_fullpath,
                                style=wx.TE_READONLY)
         widget_02.SetBackgroundColour(wx.Colour(*w_bg_color))
@@ -116,7 +118,6 @@ class Paths(wx.Panel):
         widget_03.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_03.SetMinSize([-1, -1])
         grid_sizer.Add(widget_03, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-
         widget_04 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_config_fullpath,
                                style=wx.TE_READONLY)
         widget_04.SetBackgroundColour(wx.Colour(*w_bg_color))
@@ -128,7 +129,6 @@ class Paths(wx.Panel):
         widget_05.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_05.SetMinSize([-1, -1])
         grid_sizer.Add(widget_05, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-
         widget_06 = wx.TextCtrl(self, wx.ID_ANY,
                                self.sg.user_app_config_fullpath,
                                style=wx.TE_READONLY)
@@ -141,14 +141,18 @@ class Paths(wx.Panel):
         widget_07.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_07.SetMinSize([-1, -1])
         grid_sizer.Add(widget_07, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-
         widget_08 = wx.TextCtrl(self, wx.ID_ANY, self.sg.user_log_fullpath,
                                style=wx.TE_READONLY)
         widget_08.SetBackgroundColour(wx.Colour(*w_bg_color))
         widget_08.SetForegroundColour(wx.Colour(*w_fg_color))
         widget_08.SetMinSize([400, -1])
         grid_sizer.Add(widget_08, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        #grid_sizer.Add((0, 0), 1, wx.EXPAND, 6)
+        self.Hide()
 
     @property
     def background_color(self):
+        """
+        This is for the ShortCuts panel.
+        """
         return self._bg_color

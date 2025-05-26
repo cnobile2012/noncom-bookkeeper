@@ -20,8 +20,8 @@ class PanelFactory(TomlMetaData):
     __panels = {}
     __class_names = {}
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     @property
     def class_name_keys(self):
@@ -43,23 +43,24 @@ class PanelFactory(TomlMetaData):
                                    str(e), exc_info=True)
                 # *** TODO *** This needs to be shown on the panel if detected.
 
-    def import_store_objects(self, klass):
-        klass.write("from .utilities import StoreObjects\n\n\n")
-
     def setup_panel(self, panel):
         class_name = f"{panel.capitalize()}Panel"
         self.__class_names[panel] = class_name
         panel_kwargs = self.panel_config.get(panel, {}).get('meta')
         klass = StringIO()
 
-        if panel == 'fiscal':
-            self.import_store_objects(klass)
+        if panel in ('organization', 'fiscal'):
+            klass.write("from .utilities import StoreObjects\n\n\n")
 
         klass.write(f"class {class_name}(BaseGenerated):\n")
-        klass.write("    def __init__(self, parent, **kwargs):\n")
-        klass.write("        super().__init__(parent, **kwargs)\n")
+        klass.write("    def __init__(self, parent, *args, **kwargs):\n")
+        klass.write("        super().__init__(parent, *args, **kwargs)\n")
+
+        if panel in ('organization', 'fiscal'):
+            klass.write("        self._so = StoreObjects()\n")
+
         title = panel_kwargs.get('title')
-        klass.write(f"        self.title = '''{title}'''\n")
+        klass.write(f"        self.title = '{title}'\n")
         self._bg_color = panel_kwargs.get('bg_color')
         klass.write(f"        self._bg_color = {self._bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("
@@ -463,8 +464,8 @@ class PanelFactory(TomlMetaData):
         klass.write("    @save.setter\n")
         klass.write("    def save(self, value):\n")
         klass.write("        if self.dirty:\n")
-        klass.write("            self._mf.statusbar_message = "
-                    "'Saving data.'\n")
+        klass.write("            self._so.get_object('MainFrame')."
+                    "statusbar_message = 'Saving data.'\n")
         klass.write("        self._save = value\n\n")
         klass.write("    def button_cancel(self, event):\n")
         klass.write("        self.cancel = True\n")
@@ -475,15 +476,15 @@ class PanelFactory(TomlMetaData):
         klass.write("    @cancel.setter\n")
         klass.write("    def cancel(self, value):\n")
         klass.write("        if self.dirty:\n")
-        klass.write("            self._mf.statusbar_message = "
-                    "'Restoring data.'\n")
+        klass.write("            self._so.get_object('MainFrame')."
+                    "statusbar_message = 'Restoring data.'\n")
         klass.write("        self._cancel = value\n")
 
     def _create_combobox_select_event(self, klass, panel):
         klass.write("\n    def get_selection(self, event):\n")
         klass.write("        value = event.GetString()\n")
         klass.write("        year, _, nyear = value.partition('-')\n")
-        klass.write("        db = StoreObjects().get_object('Database')\n\n")
+        klass.write("        db = self._so.get_object('Database')\n\n")
         klass.write("        if year.isdecimal():\n")
         klass.write("            db.populate_fiscal_panel(int(year))\n")
         klass.write("            self.selected = True\n")

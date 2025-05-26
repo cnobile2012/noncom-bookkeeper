@@ -16,13 +16,15 @@ __all__ = ('FakeFrame', 'FakeWidget', 'FakeEvent', 'FakePanel')
 class FakeFrame(wx.Frame):
 
     def __init__(self, parent=None, id=wx.ID_ANY, pos=wx.DefaultPosition,
-                 style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL, **kwargs):
-        super().__init__(parent, id=id, pos=pos, style=style, **kwargs)
+                 style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL, *args,
+                 **kwargs):
+        super().__init__(parent, id=id, pos=pos, style=style, *args, **kwargs)
 
 
 class FakeWidget:
 
     def __init__(self, selection='', *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._selection = selection
         self._value = ""
 
@@ -39,7 +41,8 @@ class FakeWidget:
 
 class FakeEvent:
 
-    def __init__(self, event_object=None):
+    def __init__(self, event_object=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.event_object = event_object
 
     def GetEventObject(self):
@@ -48,8 +51,8 @@ class FakeEvent:
 
 class FakePanel(BaseGenerated):
 
-    def __init__(self, parent, *args, **kwarge):
-        super().__init__(parent, *args, **kwarge)
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
         sizer = wx.BoxSizer(wx.VERTICAL)
         widget_00 = ColorCheckBox(self, wx.ID_ANY, label='', name='current')
         widget_00.SetBackgroundColour(wx.Colour(*[210, 190, 255]))
