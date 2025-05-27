@@ -86,11 +86,12 @@ class FieldEdit(BasePanel, wx.Panel):
 
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
+        self.frame = parent.GetParent()
         self.parent = parent
         self.title = "Add/Remove Fields"
         self._bg_color = (232, 213, 149)
-        w_bg_color = (222, 237, 230)
-        w_fg_color_0 = (50, 50, 204)
+        w_bg_color = (255, 253, 208)   # Cream
+        w_fg_color_0 = (50, 50, 204)   # Dark Blue
         w_fg_color_1 = (197, 75, 108)
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
         # Setup sizers.
@@ -128,7 +129,7 @@ class FieldEdit(BasePanel, wx.Panel):
                     width, height = self.parent.GetSize()
                     tgs_w, tgs_h = top_grid_sizer.GetMinSize()
                     tw, th = panel_top.GetSize()
-                    height = height - th + self.parent.statusbar_size[1]
+                    height = height - th + self.frame.statusbar_size[1]
                     panel_bot.SetSizeHints((tgs_w, height))
                     self.parent.Layout()
 
@@ -419,7 +420,7 @@ class FieldEdit(BasePanel, wx.Panel):
                     self._update_screen_size(arg_dict)
                 else:
                     msg = "Duplicate fields are not allowed."
-                    self.parent.statusbar_warning = msg
+                    self.frame.statusbar_warning = msg
 
                 field_name.SetValue("")
 
@@ -433,7 +434,7 @@ class FieldEdit(BasePanel, wx.Panel):
                 widget = arg_dict['current_widget']
                 widget.SetLabel(value if value.endswith(':') else value + ':')
             elif value:
-                self.parent.statusbar_warning = "Cannot update title fields."
+                self.frame.statusbar_warning = "Cannot update title fields."
 
             # field_name.SetValue("")
 
@@ -481,18 +482,18 @@ class FieldEdit(BasePanel, wx.Panel):
                         gbs.Layout()
                         arg_dict['panel'].Layout()
             elif value:
-                self.parent.statusbar_warning = "Cannot remove title fields."
+                self.frame.statusbar_warning = "Cannot remove title fields."
 
         return remove_button
 
-    # def undo_closuer(self, arg_dict):
-    #     def undo_button(event):
-    #         value = arg_dict['new_field_name'].GetValue()
+    def undo_closuer(self, arg_dict):
+        def undo_button(event):
+            value = arg_dict['new_field_name'].GetValue()
 
-    #         if value.endswith(':'):
-    #             self._tcp.undo_name(name)
+            #if value.endswith(':'):
+            #    self._tcp.undo_name(name)
 
-    #     return undo_button
+        return undo_button
 
     def turn_off_highlight(self, arg_dict, orig_color):
         gbs = arg_dict.get('bot_grid_sizer')

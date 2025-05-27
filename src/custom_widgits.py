@@ -285,6 +285,7 @@ class ColorCheckBox(wx.Panel):
         super().__init__(parent)
         self.checked = checked
         self.enabled = True
+        self.read_only = False
         self.label = label
         self.label_position = label_position  # 'right' (default) or 'left'
         self.SetName(name)
@@ -364,8 +365,16 @@ class ColorCheckBox(wx.Panel):
         return self.checked
 
     def SetValue(self, value: bool):
-        self.checked = bool(value)
-        self.Refresh()
+        if not self.read_only:
+            self.checked = bool(value)
+            self.Refresh()
+
+    def SetReadOnly(self, value=True):
+        self.read_only = value
+        self.Enable(False)
+
+    def IsEditable(self):
+        return not self.read_only
 
     def Enable(self, enable: bool=True):
         self.enabled = enable

@@ -305,12 +305,8 @@ class MenuBar:
         if 'fields' not in self.panels:
             self.panels = ('fields', FieldEdit(self.parent))
 
-        self.change_menu_items()
-        self._hide_all_panels()
-        self.panel = self.panels['fields']
-        self.change_menu_items(([wx.ID_OPEN, True], [wx.ID_SAVE, True],
-                                [wx.ID_SAVEAS, True],))
-        self._set_panel()
+        self._do_panel_switch('fields', (
+            [wx.ID_OPEN, True], [wx.ID_SAVE, True], [wx.ID_SAVEAS, True],))
 
     def settings_fiscal(self, event):  # Has screen fill issues
         if 'fiscal_settings' not in self.panels:
@@ -324,13 +320,14 @@ class MenuBar:
 
         self._do_panel_switch('paths')
 
-    def _do_panel_switch(self, panel_name: str) -> None:
+    def _do_panel_switch(self, panel_name: str, menu_items: tuple=()) -> None:
         self.change_menu_items()
         self._hide_all_panels()
         self.panel = self.panels[panel_name]
-        self._set_panel()
 
-    def _set_panel(self):
+        if menu_items:
+            self.change_menu_items(menu_items)
+
         self.frame.SetTitle(self.panel.title)
 
         if self.panel in [c.GetWindow() for c in self.sizer.GetChildren()]:
@@ -342,13 +339,14 @@ class MenuBar:
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
 
+        #self._setup_sizer_height_correctly(self.sizer)
         self.panel.Show()
         self.parent.Layout()
         self.sizer.Layout()
         self.panel.Layout()
 
         #self.panel.SetBackgroundColour("light blue")
-        self.parent.SetBackgroundColour("orange")
+        #self.parent.SetBackgroundColour("orange")
         #self.frame.SetBackgroundColour("green")
 
         #print("Panel size:", self.panel.GetSize())
@@ -357,9 +355,10 @@ class MenuBar:
         #print(self.frame.GetSize(), self.panel.GetSize())
 
         # Force repaint after full layout
-    #     wx.CallAfter(self._finalize_panel_display, self.panel)
+        #wx.CallAfter(self._finalize_panel_display, self.panel)
 
     # def _finalize_panel_display(self, panel):
+    #     panel.SetSize(536, 808)
     #     panel.Layout()
     #     panel.Refresh()
     #     panel.Update()
@@ -426,6 +425,17 @@ class MenuBar:
             help_ = item.GetHelp()
 
         event.Skip()
+
+    # def _setup_sizer_height_correctly(self, sizer: wx.Sizer,
+    #                                   swidth: int=None) -> None:
+    #     """
+    #     Add the height of the status bar to the Sizer height so that the
+    #     call to SetupScrolling creates the correct virtual window size.
+    #     """
+    #     width, height = sizer.GetMinSize()
+    #     width = swidth if swidth else width
+    #     height += self.frame.statusbar_size[1]
+    #     sizer.SetMinSize((width, height))
 
     @property
     def panel(self):

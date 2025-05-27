@@ -50,14 +50,14 @@ class MainFrame(wx.Frame, MenuBar):
         self.SetBackgroundColour(wx.Colour(*self.frame_bg_color))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
 
+        sizer = wx.BoxSizer(wx.VERTICAL)  # Frame sizer
+        self.SetSizer(sizer)
+
         # All content panels switch within this panel.
         self.container = wx.Panel(self)
         self.container_sizer = wx.BoxSizer(wx.VERTICAL)
         self.container.SetSizer(self.container_sizer)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.container, 1, wx.EXPAND)
-        self.SetSizer(sizer)
 
         # Status Bar
         status_widths = (-1,)
