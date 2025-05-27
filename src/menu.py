@@ -22,6 +22,7 @@ class MenuBar:
     _tmd = TomlMetaData()
     __short_cut = None
     __inspection = None
+    __active_panel = None
     _current_menus = ()
 
     def __init__(self, *args, **kwargs):
@@ -206,50 +207,6 @@ class MenuBar:
     def menu_items(self):
         return self.__item_map
 
-    def change_menu_items(self, menu_list: tuple=()) -> None:
-        """
-        menu_list = ((id, True|False), ...)
-        """
-        if menu_list:
-            # Enable menu items.
-            [self._menu.Enable(id, value) for id, value in menu_list]
-            self.set_menu_item(menu_list)
-        else:
-            # Disable menu items.
-            [self._menu.FindItem(id)[0].Enable(False)
-             for id, values in self._current_menus]
-
-            # Change menu_item states to False in menu_items.
-            for item in self._current_menus:
-                item[-1] = False
-
-            self.set_menu_item(self._current_menus)
-
-        self._current_menus = menu_list
-
-    def set_menu_item(self, menu_list):
-        list_size = len(menu_list)
-        changed = []
-
-        for items in self.menu_items.values():
-            if items[-1]:
-                for inner in items[-1].values():
-                    for item in menu_list:
-                        id, value = item
-
-                        if id == inner[0]:
-                            inner[-2] = value
-                            changed.append(item)
-                            break
-                    if len(changed) == list_size:
-                        break
-            if len(changed) == list_size:
-                break
-
-        assert len(changed) == list_size, (
-            f"Could not find all menu items found: '{changed}', "
-            f"should be: '{menu_list}'.")
-
     def file_picker(self, event):
         title = "Open config file for editing."
         wildcard = "TOML Config File (*.toml)|*.toml"
@@ -267,6 +224,9 @@ class MenuBar:
                     wx.LogError("Cannot open file '%s'." % fullpath)
 
         dlg.Destroy()
+
+    def load_file(self, fullpath):
+        pass
 
     def file_save(self, event):
         pass
@@ -292,7 +252,7 @@ class MenuBar:
 
     def edit_ledger_data(self, event):  # Has screen fill issues
         if 'ledger' not in self.panels:
-            self.set_panel('ledger', LedgerDataEntry(self.parent))
+            self.panels = ('ledger', LedgerDataEntry(self.parent))
 
         self._do_panel_switch('ledger')
 
@@ -343,7 +303,7 @@ class MenuBar:
 
     def tool_fields(self, event):
         if 'fields' not in self.panels:
-            self.set_panel('fields', FieldEdit(self.parent))
+            self.panels = ('fields', FieldEdit(self.parent))
 
         self.change_menu_items()
         self._hide_all_panels()
@@ -354,13 +314,13 @@ class MenuBar:
 
     def settings_fiscal(self, event):  # Has screen fill issues
         if 'fiscal_settings' not in self.panels:
-            self.set_panel('fiscal_settings', FiscalSettings(self.parent))
+            self.panels = ('fiscal_settings', FiscalSettings(self.parent))
 
         self._do_panel_switch('fiscal_settings')
 
     def settings_paths(self, event):  # Has screen fill issues
         if 'paths' not in self.panels:
-            self.set_panel('paths', Paths(self.parent))
+            self.panels = ('paths', Paths(self.parent))
 
         self._do_panel_switch('paths')
 
@@ -371,10 +331,10 @@ class MenuBar:
         self._set_panel()
 
     def _set_panel(self):
+        self.frame.SetTitle(self.panel.title)
+
         if self.panel in [c.GetWindow() for c in self.sizer.GetChildren()]:
             self.sizer.Detach(self.panel)
-
-        self.frame.SetTitle(self.panel.title)
 
         if self.panel not in [c.GetWindow() for c in self.sizer.GetChildren()]:
             self.sizer.Add(self.panel, 1, wx.EXPAND)
@@ -382,14 +342,13 @@ class MenuBar:
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
 
-        #self.sizer.SetSize(self.frame.GetSize())
         self.panel.Show()
-        self.sizer.Layout()
         self.parent.Layout()
+        self.sizer.Layout()
         self.panel.Layout()
 
-        #self.panel.SetBackgroundColour("dark blue")
-        #self.parent.SetBackgroundColour("orange")
+        #self.panel.SetBackgroundColour("light blue")
+        self.parent.SetBackgroundColour("orange")
         #self.frame.SetBackgroundColour("green")
 
         #print("Panel size:", self.panel.GetSize())
@@ -405,6 +364,50 @@ class MenuBar:
     #     panel.Refresh()
     #     panel.Update()
 
+    def change_menu_items(self, menu_list: tuple=()) -> None:
+        """
+        menu_list = ((id, True|False), ...)
+        """
+        if menu_list:
+            # Enable menu items.
+            [self._menu.Enable(id, value) for id, value in menu_list]
+            self.set_menu_item(menu_list)
+        else:
+            # Disable menu items.
+            [self._menu.FindItem(id)[0].Enable(False)
+             for id, values in self._current_menus]
+
+            # Change menu_item states to False in menu_items.
+            for item in self._current_menus:
+                item[-1] = False
+
+            self.set_menu_item(self._current_menus)
+
+        self._current_menus = menu_list
+
+    def set_menu_item(self, menu_list):
+        list_size = len(menu_list)
+        changed = []
+
+        for items in self.menu_items.values():
+            if items[-1]:
+                for inner in items[-1].values():
+                    for item in menu_list:
+                        id, value = item
+
+                        if id == inner[0]:
+                            inner[-2] = value
+                            changed.append(item)
+                            break
+                    if len(changed) == list_size:
+                        break
+            if len(changed) == list_size:
+                break
+
+        assert len(changed) == list_size, (
+            f"Could not find all menu items found: '{changed}', "
+            f"should be: '{menu_list}'.")
+
     def app_manual(self, event):
         pass
 
@@ -412,9 +415,6 @@ class MenuBar:
         pass
 
     def app_about(self, event):
-        pass
-
-    def load_file(self, fullpath):
         pass
 
     def mouse_over(self, event):
@@ -426,3 +426,11 @@ class MenuBar:
             help_ = item.GetHelp()
 
         event.Skip()
+
+    @property
+    def panel(self):
+        return self.__active_panel
+
+    @panel.setter
+    def panel(self, value):
+        self.__active_panel = value

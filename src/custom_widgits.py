@@ -277,11 +277,11 @@ class ColorCheckBoxEvent(wx.PyCommandEvent):
 
 class ColorCheckBox(wx.Panel):
     def __init__(self, parent: wx.Window, id: int=wx.ID_ANY, label: str="",
-                 label_position="right", name: str="", checked: bool=False,
+                 name: str="", label_position="right", checked: bool=False,
                  fg=wx.Colour(0, 0, 0),  # Black
                  bg=wx.Colour(255, 255, 255),  # White
-                 check_color=wx.Colour(0, 120, 215),
-                 disabled_color=wx.Colour(160, 160, 160)):
+                 check_color=wx.Colour(0, 120, 215),  # Dark Blue
+                 disabled_color=wx.Colour(160, 160, 160)):  # Gray
         super().__init__(parent)
         self.checked = checked
         self.enabled = True

@@ -35,9 +35,8 @@ class MainFrame(wx.Frame, MenuBar):
     """
     The main frame of the application.
     """
-    title = 'Main Screen'
-    __active_panel = None
     __panel_classes = {}
+    title = 'Main Screen'
 
     def __init__(self, parent=None, id=wx.ID_ANY,
                  pos=wx.DefaultPosition,
@@ -207,16 +206,12 @@ class MainFrame(wx.Frame, MenuBar):
     def panels(self):
         return self.__panel_classes
 
-    def set_panel(self, name, panel):
-        self.__panel_classes[name] = panel
-
-    @property
-    def panel(self):
-        return self.__active_panel
-
-    @panel.setter
-    def panel(self, value):
-        self.__active_panel = value
+    @panels.setter
+    def panels(self, values):
+        assert isinstance(values, tuple), ("The 'values' argument must be "
+                                           f"a tuple, found {type(values)}.")
+        #                    panel name   panel object
+        self.__panel_classes[values[0]] = values[1]
 
     @property
     def frame(self):
