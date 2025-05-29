@@ -111,8 +111,8 @@ class FieldEdit(BasePanel, wx.Panel):
         self.dirty = False
 
     def on_size(self, event):
-        event.Skip()
         self.__resized = True
+        event.Skip()
 
     def on_idle_closure(self, arg_dict):
         def on_idle(event):
@@ -215,9 +215,6 @@ class FieldEdit(BasePanel, wx.Panel):
         spin_ctrl.SetForegroundColour(wx.Colour(*w_fg_color_0))
         grid_sizer.Add(spin_ctrl, (4, 1), (1, 1), ctrl_but_flags, 4)
 
-        line = wx.StaticLine(panel, wx.ID_ANY)
-        line.SetBackgroundColour(wx.Colour(*w_fg_color_0))
-        grid_sizer.Add(line, (5, 0), (1, 3), wx.EXPAND, 0)
         arg_dict['top_grid_sizer'] = grid_sizer
         arg_dict['spin_ctrl'] = spin_ctrl
         arg_dict['new_field_name'] = field_name

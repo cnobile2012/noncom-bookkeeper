@@ -492,18 +492,40 @@ class TomlCreatePanel(BaseSystemData):
         """
         A list of field names not including title names.
         """
+        return [name for name in self.all_field_names
+                if name and name.endswith(':')]
+
+    @property
+    def field_names_by_category(self):
+        items = {}
+        last_name = 'no-cat'
+
+        for name in self.all_field_names:
+            if name and  not name.endswith(':'):
+                last_name = name
+                items.setdefault(last_name, [])
+            elif name:
+                names = items.setdefault(last_name, [])
+                names.append(name)
+
+        return items
+
+    @property
+    def all_field_names(self):
+        """
+        Get all field names.
+        """
         assert self.__panel, (
             "There is no panel that is currently being worked on.")
         names = []
 
         for item in self.__panel.values():
-            #print(item)
             list_ = find_dict(item).get('args', [])
 
             if len(list_) >= 3:
                 names.append(list_[2])
 
-        return [name for name in names if name and name.endswith(':')]
+        return names
 
     def add_name(self, name, key_num=None):
         """

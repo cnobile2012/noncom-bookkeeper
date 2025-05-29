@@ -4,9 +4,12 @@
 #
 __docformat__ = "restructuredtext en"
 
+import re
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
+from .config import TomlMetaData, TomlCreatePanel
+from .utilities import make_name
 from .bases import BasePanel
 from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
                              ColorCheckBox, EVT_COLOR_CHECKBOX)
@@ -16,6 +19,8 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
     """
     Implements data entry into the ledger.
     """
+    _tmd = TomlMetaData()
+    _tcp = TomlCreatePanel()
 
     def __init__(self, parent, id=wx.ID_ANY, *args, **kwargs):
         super().__init__(parent, id=id, *args, **kwargs)
@@ -25,11 +30,11 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
 
     def create_display(self):
         self.title = "Ledger Data Entry"
-        self._bg_color = (200, 255, 170)   # Green
+        self.bg_color = (200, 255, 170)    # Green
         self.w_bg_color = (255, 253, 208)  # Cream
         self.w_fg_color = (50, 50, 204)    # Dark Blue
         self.tc_width = 120
-        self.SetBackgroundColour(wx.Colour(*self._bg_color))
+        self.SetBackgroundColour(wx.Colour(*self.bg_color))
         self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_NORMAL, 0, ''))
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -51,9 +56,10 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
         self.gbs.Add(widget_01, (0, 0), (1, 1),
                      wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         widget_02 = BadiDatePickerCtrl(self, wx.ID_ANY)
-        widget_02.SetBackgroundColour(wx.Colour(*self._bg_color))
+        widget_02.SetBackgroundColour(wx.Colour(*self.bg_color))
         widget_02.SetForegroundColour(wx.Colour(*self.w_fg_color))
         widget_02.SetMinSize((130, 30))
+        widget_02.SetFocus()
         #widget_02.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
         self.gbs.Add(widget_02, (0, 1), (1, 1),
                      wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
@@ -159,20 +165,12 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
         widget_14.SetMinSize((-1, -1))
         self.gbs.Add(widget_14, (30, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
-        widget_15 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_15.SetBackgroundColour(wx.Colour(*self.w_fg_color))
-        widget_15.SetMinSize((48, 24))
-        self.gbs.Add(widget_15, (30, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.LEFT, 6)
-
-        widget_16 = wx.StaticLine(self, wx.ID_ANY)
-        widget_16.SetBackgroundColour(wx.Colour(*self.w_fg_color))
-        self.gbs.Add(widget_16, (31, 0), (1, 2), wx.EXPAND | wx.TOP
-                     | wx.BOTTOM, 4)
-
-
-
-
+        items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
+        self._tcp.current_panel = items
+        labels = [
+            n[:-1] for n in self._tcp.field_names_by_category['Expenses']]
+        labels.insert(0, '&expenses')
+        self._mutually_exclusive_entries(0, len(labels)-1, 'top', labels, 32)
 
         self.SetupScrolling(rate_x=20, rate_y=40)
         self.Hide()
@@ -180,35 +178,70 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
     def _mutually_exclusive_entries(self, num_cb: int=0, num_txt: int=0,
                                     cb_pos: str='top', labels: tuple=(),
                                     pos_idx: int=0) -> None:
+        """
+        Create ColorCheckBox and TextCtrl widgets that can be mutually
+        exclusive or not.
+
+        .. note::
+
+           1. If the fist character of a label is an asterisk (*) this
+              indicates that the ColorCheckBoxes or TextCtrls is not part
+              of the mutually exclusive group.
+           2. The fist label is the category indicator and must be lowercase.
+              The first character can be (!, $, &) not mutually exclusive
+              group indicators, see 3 below.
+           3. If the first character of the category (the first label in
+              the labels list) is an exclamation point (!) then all the
+              ColorCheckBoxes are not in the mutually exclusive group. If
+              the first character is a dollar sign ($) then all the TextCtrls
+              are not in the mutually exclusive group. If the first character
+              is a apersand (&) then all the ColorCheckBoxes and TextCtrls
+              are not in the mutually exclusive group.
+
+        :param int, num_cb: The number of ColorCheckBoxes.
+        :param int num_txt: The number of TextCtrls.
+        :param str cb_pos: If `top` the ColorCheckBoxes are on the top and
+                           the TextCtrls are on the bottom. If `bottom` the
+                           inverse will happen.
+        :param tuple labels: A list of lables used in the StaticText widgets.
+        :param int pos_idx: The position y index for the GridBagSizer.
+        """
         assert (len(labels) - 1) == (num_cb + num_txt), (
             "The number of labels are not equal to the number of "
             "checkboxes and test controls.")
-        cb_list = self._checkboxes.setdefault(labels[0], [])
-        tc_list = self._textctrles.setdefault(labels[0], [])
+        first_char = labels[0][0]
+        label = labels[0][1:] if first_char in ('!', '$', '&') else labels[0]
+        assert self.is_valid_category(label), (
+            f"Invalid category label {labels[0]}.")
+        cb_list = self._checkboxes.setdefault(label, [])
+        tc_list = self._textctrles.setdefault(label, [])
 
         if cb_pos == 'top':
             pos_idx = self.create_ccbs(cb_list, num_cb, labels[1:], pos_idx)
             self.create_ctrls(tc_list, num_txt, labels[1+num_cb:], pos_idx)
 
-            for cb in cb_list:
-                cb.Bind(EVT_COLOR_CHECKBOX,
-                        self.on_checkbox_selected_wrapper(labels[0]))
+            if first_char not in ('!', '&'):
+                for cb in cb_list:
+                    cb.Bind(EVT_COLOR_CHECKBOX,
+                            self.on_checkbox_selected_wrapper(labels[0]))
 
-            for tc in tc_list:
-                tc.Bind(wx.EVT_SET_FOCUS,
-                        self.on_text_focus_wrapper(labels[0]))
+            if first_char not in ('$', '&'):
+                for tc in tc_list:
+                    tc.Bind(wx.EVT_SET_FOCUS,
+                            self.on_text_focus_wrapper(labels[0]))
         else:
             pos_idx = self.create_ctrls(tc_list, num_txt, labels[1:], pos_idx)
             self.create_ccbs(cb_list, num_cb, labels[1+num_txt:], pos_idx)
 
-            for cb in cb_list:
-                cb.Bind(EVT_COLOR_CHECKBOX,
-                        self.on_checkbox_selected_wrapper(labels[0]))
+            if first_char not in ('!', '&'):
+                for cb in cb_list:
+                    cb.Bind(EVT_COLOR_CHECKBOX,
+                            self.on_checkbox_selected_wrapper(labels[0]))
 
-            for tc in tc_list:
-                self._handling_text_event = False
-                tc.Bind(wx.EVT_SET_FOCUS,
-                        self.on_text_focus_wrapper(labels[0]))
+            if first_char not in ('$', '&'):
+                for tc in tc_list:
+                    tc.Bind(wx.EVT_SET_FOCUS,
+                            self.on_text_focus_wrapper(labels[0]))
 
     def create_ccbs(self, cb_list, num_cb, labels, pos_idx):
         for num in range(num_cb):
@@ -225,9 +258,8 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
             st.SetForegroundColour(wx.Colour(*self.w_fg_color))
             self.gbs.Add(st, (pos_idx, 0), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
-            cb = ColorCheckBox(self, wx.ID_ANY,
-                               name=self._make_name(label))
-            cb.SetBackgroundColour(wx.Colour(*self._bg_color))
+            cb = ColorCheckBox(self, wx.ID_ANY, name=make_name(label))
+            cb.SetBackgroundColour(wx.Colour(*self.bg_color))
             cb.SetForegroundColour(wx.Colour(*self.w_fg_color))
             cb.SetMinSize((20, 20))
             if read_only: cb.SetReadOnly()
@@ -254,7 +286,7 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
             self.gbs.Add(st, (pos_idx, 0), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
             tc = wx.TextCtrl(self, wx.ID_ANY, "", style=style,
-                             name=self._make_name(label))
+                             name=make_name(label))
 
             if style:
                 tc.Enable(False)
@@ -330,13 +362,16 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
 
         return reset_inputs
 
-    def _make_name(self, name: str):
-        name = name.replace('(', '').replace(')', '').replace('"', '')
-        return name.replace(' ', '_').replace(':', '').lower()
+    def is_valid_category(self, s):
+        if re.match(r'^[!$&]?[a-z_]+$', s):
+            # Make sure !, $, & are not anywhere else
+            return all(c not in s[1:] for c in '!$&')
+
+        return False
 
     @property
     def background_color(self):
         """
         This is for the ShortCuts panel.
         """
-        return self._bg_color
+        return self.bg_color

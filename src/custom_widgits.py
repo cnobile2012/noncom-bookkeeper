@@ -260,6 +260,11 @@ class BadiDatePickerCtrl(wx.Panel):
         self.bdate = bdate
         self.text_ctrl.SetValue(bdate.isoformat())
 
+    def AcceptsFocusFromKeyboard(self):
+        return True
+
+    def AcceptsFocus(self):
+        return True
 
 # Custom event
 wxEVT_COLOR_CHECKBOX = wx.NewEventType()

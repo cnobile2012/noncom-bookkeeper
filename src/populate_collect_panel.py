@@ -6,7 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import wx
 
-from .utilities import StoreObjects
+from .utilities import StoreObjects, make_name
 
 
 class PopulateCollect:
@@ -75,7 +75,7 @@ class PopulateCollect:
                 continue
 
             name0 = c_set[0].__class__.__name__
-            field_name = self._make_field_name(c_set[0].GetLabelText())
+            field_name = make_name(c_set[0].GetLabelText())
 
             if name0 == 'RadioBox':
                 data[field_name] = self._scrub_value(c_set[0].GetSelection())
@@ -122,7 +122,7 @@ class PopulateCollect:
             for c_set in self._find_children(panel):
                 name0 = c_set[0].__class__.__name__
                 name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
-                field_name = self._make_field_name(c_set[0].GetLabelText())
+                field_name = make_name(c_set[0].GetLabelText())
                 value = data[field_name]
 
                 if name0 == 'RadioBox':
@@ -192,12 +192,6 @@ class PopulateCollect:
         c_set[0].SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
         c_set[0].SetSelection(0)
 
-    def _make_field_name(self, name: str):
-        name = name.replace('(', '').replace(')', '').replace('"', '')
-        return name.replace(' ', '_').replace(':', '').lower()
-
-    # *** TODO *** make the inverse of _make_field_name() above.
-
     def _scrub_value(self, value, convert_tz: bool=False,
                      financial: bool=False):
         if financial:
@@ -262,7 +256,7 @@ class PopulateCollect:
     def set_fiscal_panel(self, current, work_on, audit):
         for c_set in self._find_children(self._mf.panels['fiscal']):
             name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
-            field_name = self._make_field_name(c_set[0].GetLabelText())
+            field_name = make_name(c_set[0].GetLabelText())
 
             if (field_name == 'current_fiscal_year'
                 and name1 == 'ColorCheckBox'):

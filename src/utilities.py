@@ -4,7 +4,13 @@
 #
 __docformat__ = "restructuredtext en"
 
+import re
 import wx
+
+
+def make_name(name: str):
+    name = re.sub(r"[*\(\):\"'/\\]+", '', name)
+    return re.sub(r"[- \s]+", '_', name).strip('_').lower()
 
 
 class Borg:

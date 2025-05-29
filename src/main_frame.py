@@ -39,10 +39,9 @@ class MainFrame(wx.Frame, MenuBar):
     title = 'Main Screen'
 
     def __init__(self, parent=None, id=wx.ID_ANY,
-                 pos=wx.DefaultPosition,
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
                  options=None, size=(500, 800), *args, **kwargs):
-        super().__init__(parent, id=id, pos=pos, style=style)
+        super().__init__(parent, id=id, style=style)
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         self.SetTitle(self.title)
@@ -64,6 +63,7 @@ class MainFrame(wx.Frame, MenuBar):
         self._statusbar = self.CreateStatusBar(len(status_widths),
                                                wx.STB_DEFAULT_STYLE)
         self._statusbar.SetStatusWidths(status_widths)
+        #self.Center()
         self.Layout()
 
         # Setup resizer
