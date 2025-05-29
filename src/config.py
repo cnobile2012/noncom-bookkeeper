@@ -501,7 +501,7 @@ class TomlCreatePanel(BaseSystemData):
         last_name = 'no-cat'
 
         for name in self.all_field_names:
-            if name and  not name.endswith(':'):
+            if name and not name.endswith(':'):
                 last_name = name
                 items.setdefault(last_name, [])
             elif name:

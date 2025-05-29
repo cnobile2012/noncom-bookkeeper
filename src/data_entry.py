@@ -30,9 +30,10 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
 
     def create_display(self):
         self.title = "Ledger Data Entry"
-        self.bg_color = (200, 255, 170)    # Green
-        self.w_bg_color = (255, 253, 208)  # Cream
-        self.w_fg_color = (50, 50, 204)    # Dark Blue
+        self.bg_color = (200, 255, 170)     # Green
+        self.w_bg_color = (255, 253, 208)   # Cream
+        self.w_fg_color = (50, 50, 204)     # Dark Blue
+        self.w1_bg_color = (222, 237, 230)  # Gray
         self.tc_width = 120
         self.SetBackgroundColour(wx.Colour(*self.bg_color))
         self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
@@ -107,8 +108,9 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("entry_type", "Check Number", "Recept", "Debit", "OCS")
-        self._mutually_exclusive_entries(3, 1, 'bottom', labels, 10)
+        labels = ("entry_type", "Check Number", "Receipt Number", "Debit",
+                  "OCS")
+        self._mutually_exclusive_entries(2, 2, 'bottom', labels, 10)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
         widget_06.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
@@ -130,9 +132,9 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("bank", "*Balance", "Deposit", "Check Amount",
-                  "Receipt Amount", "Debit", "OCS")
-        self._mutually_exclusive_entries(2, 4, 'bottom', labels, 17)
+        labels = ("bank", "%Balance", "@Deposit Amount", "@Check Amount",
+                  "@Receipt Amount", "@Debit Amount", "@OCS Amount")
+        self._mutually_exclusive_entries(0, 6, 'bottom', labels, 17)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
         widget_09.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
@@ -154,7 +156,7 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("income", "Local Fund", "Contributed Expense", "Misc")
+        labels = ("income", "@Local Fund", "@Contributed Expense", "@Misc")
         self._mutually_exclusive_entries(0, 3, 'bottom', labels, 26)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
@@ -165,10 +167,14 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
         widget_14.SetMinSize((-1, -1))
         self.gbs.Add(widget_14, (30, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
+        widget_15 = wx.StaticLine(self, wx.ID_ANY)
+        widget_15.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        self.gbs.Add(widget_15, (31, 0), (1, 2), wx.EXPAND | wx.TOP
+                     | wx.BOTTOM, 4)
         items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
         self._tcp.current_panel = items
-        labels = [
-            n[:-1] for n in self._tcp.field_names_by_category['Expenses']]
+        labels = [f"@{n[:-1]}"
+                  for n in self._tcp.field_names_by_category['Expenses']]
         labels.insert(0, '&expenses')
         self._mutually_exclusive_entries(0, len(labels)-1, 'top', labels, 32)
 
@@ -184,35 +190,42 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
 
         .. note::
 
-           1. If the fist character of a label is an asterisk (*) this
-              indicates that the ColorCheckBoxes or TextCtrls is not part
-              of the mutually exclusive group.
-           2. The fist label is the category indicator and must be lowercase.
+           1. The fist label is the category indicator and must be lowercase.
               The first character can be (!, $, &) not mutually exclusive
               group indicators, see 3 below.
-           3. If the first character of the category (the first label in
+           2. If the first character of the category (the first label in
               the labels list) is an exclamation point (!) then all the
               ColorCheckBoxes are not in the mutually exclusive group. If
               the first character is a dollar sign ($) then all the TextCtrls
               are not in the mutually exclusive group. If the first character
-              is a apersand (&) then all the ColorCheckBoxes and TextCtrls
+              is an ampersand (&) then all the ColorCheckBoxes and TextCtrls
               are not in the mutually exclusive group.
+           3. Labels 2 - n are the labels of the StaticText widgets. The
+              first character can be (*, @, %), see 4 for descriptions.
+           4. If the fist character of a label is an asterisk (*) this
+              indicates that the ColorCheckBoxes or TextCtrls is not part of
+              the mutually exclusive group and is read only. if the first
+              character is an at sign (@) then the TextCtrl is right aligned.
+              If the fist character is a percent sign (%) then the TextCtrl is
+              not part of the mutually exclusive group and is right aligned.
 
         :param int, num_cb: The number of ColorCheckBoxes.
         :param int num_txt: The number of TextCtrls.
         :param str cb_pos: If `top` the ColorCheckBoxes are on the top and
                            the TextCtrls are on the bottom. If `bottom` the
                            inverse will happen.
-        :param tuple labels: A list of lables used in the StaticText widgets.
+        :param tuple labels: A list of labels used in the StaticText widgets.
         :param int pos_idx: The position y index for the GridBagSizer.
         """
         assert (len(labels) - 1) == (num_cb + num_txt), (
             "The number of labels are not equal to the number of "
             "checkboxes and test controls.")
         first_char = labels[0][0]
-        label = labels[0][1:] if first_char in ('!', '$', '&') else labels[0]
-        assert self.is_valid_category(label), (
+        assert self.is_valid_label(labels[0], '!$&', 'a-z_'), (
             f"Invalid category label {labels[0]}.")
+        label = labels[0][1:] if first_char in ('!', '$', '&') else labels[0]
+        assert all(self.is_valid_label(lb, '*@%', "áí'a-xA-Z ")
+                   for lb in labels[1:]), f"Invalid label(s) in {labels[1:]}."
         cb_list = self._checkboxes.setdefault(label, [])
         tc_list = self._textctrles.setdefault(label, [])
 
@@ -278,6 +291,12 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
             if label[0] == '*':
                 label = label[1:]
                 style = wx.TE_READONLY
+            elif label[0] == '@':
+                label = label[1:]
+                style = wx.TE_RIGHT
+            elif label[0] == '%':
+                label = label[1:]
+                style = wx.TE_READONLY | wx.TE_RIGHT
             else:
                 style = 0
 
@@ -288,14 +307,15 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
             tc = wx.TextCtrl(self, wx.ID_ANY, "", style=style,
                              name=make_name(label))
 
-            if style:
+            if style in (wx.TE_READONLY, wx.TE_READONLY | wx.TE_RIGHT):
                 tc.Enable(False)
-                tc.SetBackgroundColour(wx.Colour(222, 237, 230))
+                tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
             else:
                 tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
 
             tc.SetForegroundColour(wx.Colour(*self.w_fg_color))
             tc.SetMinSize([self.tc_width, 26])
+            tc.financial = False if style == 0 else True
             self.gbs.Add(tc, (pos_idx, 1), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
             tc_list.append(tc)
@@ -319,6 +339,7 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
                 if tc.IsEditable():
                     tc.Enable(False)
                     tc.SetValue("")
+                    tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
 
         return on_checkbox_selected
 
@@ -338,7 +359,13 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
             # Disable all TextCtrls except the selected one.
             for tc in tc_list:
                 if tc.IsEditable():
-                    tc.Enable(tc == selected_tc)
+                    if tc == selected_tc:
+                        tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
+                        tc.Enable(True)
+                    else:
+                        tc.Enable(False)
+                        tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
+
                     tc.SetValue("")
 
             event.Skip()
@@ -359,13 +386,13 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
                 if tc.IsEditable():
                     tc.Enable(True)
                     tc.SetValue("")
+                    tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
 
         return reset_inputs
 
-    def is_valid_category(self, s):
-        if re.match(r'^[!$&]?[a-z_]+$', s):
-            # Make sure !, $, & are not anywhere else
-            return all(c not in s[1:] for c in '!$&')
+    def is_valid_label(self, s, chars, regex):
+        if re.match(rf'^[{chars}]?[{regex}]+$', s):
+            return all(c not in s[1:] for c in chars)
 
         return False
 

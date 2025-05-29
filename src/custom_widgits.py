@@ -266,6 +266,7 @@ class BadiDatePickerCtrl(wx.Panel):
     def AcceptsFocus(self):
         return True
 
+
 # Custom event
 wxEVT_COLOR_CHECKBOX = wx.NewEventType()
 EVT_COLOR_CHECKBOX = wx.PyEventBinder(wxEVT_COLOR_CHECKBOX, 1)

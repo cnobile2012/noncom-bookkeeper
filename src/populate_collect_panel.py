@@ -86,9 +86,8 @@ class PopulateCollect:
                 value = c_set[1].GetValue()
 
                 if name1 == 'TextCtrl':
-                    financial = True if c_set[1].financial else False
-                    data[field_name] = self._scrub_value(value,
-                                                         financial=financial)
+                    data[field_name] = self._scrub_value(
+                        value, financial=c_set[1].financial)
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
                     data[field_name] = self._scrub_value(value, convert_tz)
                 elif name1 in ('ColorCheckBox', 'CheckBox'):
@@ -134,7 +133,7 @@ class PopulateCollect:
                     c_set[0].SetSelection(value)
                 elif name0 == 'StaticText':
                     if name1 == 'TextCtrl':
-                        value = (self._db_to_value_currency(value)
+                        value = (self._db_to_value(value)
                                  if c_set[1].financial else value)
 
                         if panel_name == 'month':
@@ -225,7 +224,7 @@ class PopulateCollect:
                                         f"string found {type(value)}")
         return int(float(value)*100)
 
-    def _db_to_value_currency(self, value: str) -> str:
+    def _db_to_value(self, value: str) -> str:
         """
         Convert an integer from the database into a value sutable for
         displaying in a widget.
