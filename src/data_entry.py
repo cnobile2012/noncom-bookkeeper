@@ -9,13 +9,12 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData, TomlCreatePanel
-from .utilities import make_name
+from .utilities import MutuallyExclusiveEntries, make_name
 from .bases import BasePanel
-from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
-                             ColorCheckBox, EVT_COLOR_CHECKBOX)
+from .custom_widgits import BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED
 
 
-class LedgerDataEntry(BasePanel, ScrolledPanel):
+class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveEntries):
     """
     Implements data entry into the ledger.
     """
@@ -60,7 +59,7 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
         widget_02.SetBackgroundColour(wx.Colour(*self.bg_color))
         widget_02.SetForegroundColour(wx.Colour(*self.w_fg_color))
         widget_02.SetMinSize((130, 30))
-        widget_02.SetFocus()
+        #widget_02.SetFocus()
         #widget_02.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
         self.gbs.Add(widget_02, (0, 1), (1, 1),
                      wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
@@ -86,7 +85,7 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
         # 1st is the category name the rest are the StaticText labels.
         labels = ("description", "Contribution", "Distribution", "Expense",
                   "Other")
-        self._mutually_exclusive_entries(3, 1, 'top', labels, 3)
+        self.create_widgets(3, 1, 'top', labels, 3)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
         widget_04.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
@@ -110,7 +109,7 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
         # 1st is the category name the rest are the StaticText labels.
         labels = ("entry_type", "Check Number", "Receipt Number", "Debit",
                   "OCS")
-        self._mutually_exclusive_entries(2, 2, 'bottom', labels, 10)
+        self.create_widgets(2, 2, 'bottom', labels, 10)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
         widget_06.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
@@ -132,9 +131,9 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("bank", "%Balance", "@Deposit Amount", "@Check Amount",
-                  "@Receipt Amount", "@Debit Amount", "@OCS Amount")
-        self._mutually_exclusive_entries(0, 6, 'bottom', labels, 17)
+        labels = ("bank", "@Deposit Amount", "@Check/Dedit/OCS Amount",
+                  "%Balance")
+        self.create_widgets(0, 3, 'top', labels, 17)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
         widget_09.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
@@ -142,22 +141,22 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
         widget_11 = wx.StaticText(self, wx.ID_ANY, "Income")
         widget_11.SetForegroundColour(wx.Colour(*self.w_fg_color))
         widget_11.SetMinSize((-1, -1))
-        self.gbs.Add(widget_11, (24, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(widget_11, (21, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
         widget_12 = wx.Button(self, wx.ID_CLEAR, label='')
         widget_12.SetBackgroundColour(wx.Colour(*self.w_fg_color))
         widget_12.SetMinSize((48, 24))
-        self.gbs.Add(widget_12, (24, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(widget_12, (21, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.LEFT, 6)
 
         widget_13 = wx.StaticLine(self, wx.ID_ANY)
         widget_13.SetBackgroundColour(wx.Colour(*self.w_fg_color))
-        self.gbs.Add(widget_13, (25, 0), (1, 2), wx.EXPAND | wx.TOP
+        self.gbs.Add(widget_13, (22, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
         labels = ("income", "@Local Fund", "@Contributed Expense", "@Misc")
-        self._mutually_exclusive_entries(0, 3, 'bottom', labels, 26)
+        self.create_widgets(0, 3, 'bottom', labels, 23)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
         widget_12.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
@@ -165,236 +164,21 @@ class LedgerDataEntry(BasePanel, ScrolledPanel):
         widget_14 = wx.StaticText(self, wx.ID_ANY, "Expenses")
         widget_14.SetForegroundColour(wx.Colour(*self.w_fg_color))
         widget_14.SetMinSize((-1, -1))
-        self.gbs.Add(widget_14, (30, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(widget_14, (27, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
         widget_15 = wx.StaticLine(self, wx.ID_ANY)
         widget_15.SetBackgroundColour(wx.Colour(*self.w_fg_color))
-        self.gbs.Add(widget_15, (31, 0), (1, 2), wx.EXPAND | wx.TOP
+        self.gbs.Add(widget_15, (28, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
         items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
         self._tcp.current_panel = items
         labels = [f"@{n[:-1]}"
                   for n in self._tcp.field_names_by_category['Expenses']]
         labels.insert(0, '&expenses')
-        self._mutually_exclusive_entries(0, len(labels)-1, 'top', labels, 32)
+        self.create_widgets(0, len(labels)-1, 'top', labels, 29)
 
         self.SetupScrolling(rate_x=20, rate_y=40)
         self.Hide()
-
-    def _mutually_exclusive_entries(self, num_cb: int=0, num_txt: int=0,
-                                    cb_pos: str='top', labels: tuple=(),
-                                    pos_idx: int=0) -> None:
-        """
-        Create ColorCheckBox and TextCtrl widgets that can be mutually
-        exclusive or not.
-
-        .. note::
-
-           1. The fist label is the category indicator and must be lowercase.
-              The first character can be (!, $, &) not mutually exclusive
-              group indicators, see 3 below.
-           2. If the first character of the category (the first label in
-              the labels list) is an exclamation point (!) then all the
-              ColorCheckBoxes are not in the mutually exclusive group. If
-              the first character is a dollar sign ($) then all the TextCtrls
-              are not in the mutually exclusive group. If the first character
-              is an ampersand (&) then all the ColorCheckBoxes and TextCtrls
-              are not in the mutually exclusive group.
-           3. Labels 2 - n are the labels of the StaticText widgets. The
-              first character can be (*, @, %), see 4 for descriptions.
-           4. If the fist character of a label is an asterisk (*) this
-              indicates that the ColorCheckBoxes or TextCtrls is not part of
-              the mutually exclusive group and is read only. if the first
-              character is an at sign (@) then the TextCtrl is right aligned.
-              If the fist character is a percent sign (%) then the TextCtrl is
-              not part of the mutually exclusive group and is right aligned.
-
-        :param int, num_cb: The number of ColorCheckBoxes.
-        :param int num_txt: The number of TextCtrls.
-        :param str cb_pos: If `top` the ColorCheckBoxes are on the top and
-                           the TextCtrls are on the bottom. If `bottom` the
-                           inverse will happen.
-        :param tuple labels: A list of labels used in the StaticText widgets.
-        :param int pos_idx: The position y index for the GridBagSizer.
-        """
-        assert (len(labels) - 1) == (num_cb + num_txt), (
-            "The number of labels are not equal to the number of "
-            "checkboxes and test controls.")
-        first_char = labels[0][0]
-        assert self.is_valid_label(labels[0], '!$&', 'a-z_'), (
-            f"Invalid category label {labels[0]}.")
-        label = labels[0][1:] if first_char in ('!', '$', '&') else labels[0]
-        assert all(self.is_valid_label(lb, '*@%', "áí'a-xA-Z ")
-                   for lb in labels[1:]), f"Invalid label(s) in {labels[1:]}."
-        cb_list = self._checkboxes.setdefault(label, [])
-        tc_list = self._textctrles.setdefault(label, [])
-
-        if cb_pos == 'top':
-            pos_idx = self.create_ccbs(cb_list, num_cb, labels[1:], pos_idx)
-            self.create_ctrls(tc_list, num_txt, labels[1+num_cb:], pos_idx)
-
-            if first_char not in ('!', '&'):
-                for cb in cb_list:
-                    cb.Bind(EVT_COLOR_CHECKBOX,
-                            self.on_checkbox_selected_wrapper(labels[0]))
-
-            if first_char not in ('$', '&'):
-                for tc in tc_list:
-                    tc.Bind(wx.EVT_SET_FOCUS,
-                            self.on_text_focus_wrapper(labels[0]))
-        else:
-            pos_idx = self.create_ctrls(tc_list, num_txt, labels[1:], pos_idx)
-            self.create_ccbs(cb_list, num_cb, labels[1+num_txt:], pos_idx)
-
-            if first_char not in ('!', '&'):
-                for cb in cb_list:
-                    cb.Bind(EVT_COLOR_CHECKBOX,
-                            self.on_checkbox_selected_wrapper(labels[0]))
-
-            if first_char not in ('$', '&'):
-                for tc in tc_list:
-                    tc.Bind(wx.EVT_SET_FOCUS,
-                            self.on_text_focus_wrapper(labels[0]))
-
-    def create_ccbs(self, cb_list, num_cb, labels, pos_idx):
-        for num in range(num_cb):
-            label = labels[num]
-
-            # An asterisk as the 1st char indicates non-editable.
-            if label[0] == '*':
-                label = label[1:]
-                read_only = True
-            else:
-                read_only = False
-
-            st = wx.StaticText(self, wx.ID_ANY, label)
-            st.SetForegroundColour(wx.Colour(*self.w_fg_color))
-            self.gbs.Add(st, (pos_idx, 0), (1, 1),
-                         wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
-            cb = ColorCheckBox(self, wx.ID_ANY, name=make_name(label))
-            cb.SetBackgroundColour(wx.Colour(*self.bg_color))
-            cb.SetForegroundColour(wx.Colour(*self.w_fg_color))
-            cb.SetMinSize((20, 20))
-            if read_only: cb.SetReadOnly()
-            self.gbs.Add(cb, (pos_idx, 1), (1, 1),
-                         wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
-            cb_list.append(cb)
-            pos_idx += 1
-
-        return pos_idx
-
-    def create_ctrls(self, tc_list, num_txt, labels, pos_idx):
-        for num in range(num_txt):
-            label = labels[num]
-
-            # An asterisk as the 1st char indicates non-editable.
-            if label[0] == '*':
-                label = label[1:]
-                style = wx.TE_READONLY
-            elif label[0] == '@':
-                label = label[1:]
-                style = wx.TE_RIGHT
-            elif label[0] == '%':
-                label = label[1:]
-                style = wx.TE_READONLY | wx.TE_RIGHT
-            else:
-                style = 0
-
-            st = wx.StaticText(self, wx.ID_ANY, label)
-            st.SetForegroundColour(wx.Colour(*self.w_fg_color))
-            self.gbs.Add(st, (pos_idx, 0), (1, 1),
-                         wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
-            tc = wx.TextCtrl(self, wx.ID_ANY, "", style=style,
-                             name=make_name(label))
-
-            if style in (wx.TE_READONLY, wx.TE_READONLY | wx.TE_RIGHT):
-                tc.Enable(False)
-                tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
-            else:
-                tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
-
-            tc.SetForegroundColour(wx.Colour(*self.w_fg_color))
-            tc.SetMinSize([self.tc_width, 26])
-            tc.financial = False if style == 0 else True
-            self.gbs.Add(tc, (pos_idx, 1), (1, 1),
-                         wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
-            tc_list.append(tc)
-            pos_idx += 1
-
-        return pos_idx
-
-    def on_checkbox_selected_wrapper(self, category_name):
-        cb_list = self._checkboxes[category_name]
-        tc_list = self._textctrles[category_name]
-
-        def on_checkbox_selected(event):
-            selected_cb = event.GetEventObject()
-
-            for cb in cb_list:
-                if cb.IsEditable():
-                    cb.Enable(cb == selected_cb)
-                    cb.SetValue(cb == selected_cb)
-
-            for tc in tc_list:
-                if tc.IsEditable():
-                    tc.Enable(False)
-                    tc.SetValue("")
-                    tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
-
-        return on_checkbox_selected
-
-    def on_text_focus_wrapper(self, category_name):
-        cb_list = self._checkboxes[category_name]
-        tc_list = self._textctrles[category_name]
-
-        def on_text_focus(event):
-            selected_tc = event.GetEventObject()
-
-            # Disable all checkboxes
-            for cb in cb_list:
-                if cb.IsEditable():
-                    cb.SetValue(False)
-                    cb.Enable(False)
-
-            # Disable all TextCtrls except the selected one.
-            for tc in tc_list:
-                if tc.IsEditable():
-                    if tc == selected_tc:
-                        tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
-                        tc.Enable(True)
-                    else:
-                        tc.Enable(False)
-                        tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
-
-                    tc.SetValue("")
-
-            event.Skip()
-
-        return on_text_focus
-
-    def reset_inputs_wrapper(self, category_name):
-        cb_list = self._checkboxes[category_name]
-        tc_list = self._textctrles[category_name]
-
-        def reset_inputs(event):
-            for cb in cb_list:
-                if cb.IsEditable():
-                    cb.Enable(True)
-                    cb.SetValue(False)
-
-            for tc in tc_list:
-                if tc.IsEditable():
-                    tc.Enable(True)
-                    tc.SetValue("")
-                    tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
-
-        return reset_inputs
-
-    def is_valid_label(self, s, chars, regex):
-        if re.match(rf'^[{chars}]?[{regex}]+$', s):
-            return all(c not in s[1:] for c in chars)
-
-        return False
 
     @property
     def background_color(self):
