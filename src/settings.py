@@ -24,7 +24,8 @@ class FiscalSettings(wx.Panel):
     def create_display(self):
         self.title = "Fiscal Year Settings"
         self._bg_color = (210, 190, 255)
-        w_fg_color = (50, 50, 204)
+        w_fg_color = wx.Colour(50, 50, 204)    # Dark Blue
+        w_bg_color = wx.Colour(255, 253, 208)  # Cream
         col_1_wrap = 310
         self.SetBackgroundColour(wx.Colour(*self._bg_color))
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -34,7 +35,7 @@ class FiscalSettings(wx.Panel):
                              wx.FONTWEIGHT_BOLD)
         widget_00 = wx.StaticText(self, wx.ID_ANY, self.title)
         widget_00.SetFont(title_font)
-        widget_00.SetForegroundColour(wx.Colour(*w_fg_color))
+        widget_00.SetForegroundColour(w_fg_color)
         sizer.Add(widget_00, 0, wx.CENTER | wx.ALL, 6)
 
         grid_sizer = wx.FlexGridSizer(1, 2, 0, 2)  # rows, cols, vgap, hgap
@@ -45,15 +46,14 @@ class FiscalSettings(wx.Panel):
                     'for the current year.')
         widget_01 = wx.StaticText(self, wx.ID_ANY, w1_label)
         widget_01.Wrap(col_1_wrap)
-        widget_01.SetForegroundColour(wx.Colour(*w_fg_color))
-        widget_01.SetMinSize([-1, -1])
+        widget_01.SetForegroundColour(w_fg_color)
+        widget_01.SetMinSize((-1, -1))
         grid_sizer.Add(widget_01, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
 
-        widget_02 = ColorCheckBox(self, wx.ID_ANY, label='',
-                                  name='current_state')
-        widget_02.SetSize((24, 24))
-        widget_02.SetBackgroundColour(wx.Colour(*self._bg_color))
-        widget_02.SetForegroundColour(wx.Colour(*w_fg_color))
+        widget_02 = ColorCheckBox(self, wx.ID_ANY, bb_color=w_fg_color,
+                                  cb_color=w_bg_color, name='current_state')
+        widget_02.SetSize((16, 16))
+        widget_02.SetForegroundColour(w_fg_color)
         widget_02.Bind(EVT_COLOR_CHECKBOX, self.enable_current)
         grid_sizer.Add(widget_02, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
         #grid_sizer.Add((0, 0), 1, wx.EXPAND, 6)

@@ -9,12 +9,12 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData, TomlCreatePanel
-from .utilities import MutuallyExclusiveEntries, make_name
+from .utilities import MutuallyExclusiveWidgets, make_name
 from .bases import BasePanel
 from .custom_widgits import BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED
 
 
-class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveEntries):
+class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
     """
     Implements data entry into the ledger.
     """
@@ -29,12 +29,12 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveEntries):
 
     def create_display(self):
         self.title = "Ledger Data Entry"
-        self.bg_color = (200, 255, 170)     # Green
-        self.w_bg_color = (255, 253, 208)   # Cream
-        self.w_fg_color = (50, 50, 204)     # Dark Blue
-        self.w1_bg_color = (222, 237, 230)  # Gray
+        self.bg_color = wx.Colour(200, 255, 170)     # Green
+        self.w_bg_color = wx.Colour(255, 253, 208)   # Cream
+        self.w_fg_color = wx.Colour(50, 50, 204)     # Dark Blue
+        self.w1_bg_color = wx.Colour(222, 237, 230)  # Gray
         self.tc_width = 120
-        self.SetBackgroundColour(wx.Colour(*self.bg_color))
+        self.SetBackgroundColour(self.bg_color)
         self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_NORMAL, 0, ''))
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -44,39 +44,39 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveEntries):
                              wx.FONTWEIGHT_BOLD)
         widget_00 = wx.StaticText(self, wx.ID_ANY, self.title)
         widget_00.SetFont(title_font)
-        widget_00.SetForegroundColour(wx.Colour(*self.w_fg_color))
+        widget_00.SetForegroundColour(self.w_fg_color)
         sizer.Add(widget_00, 0, wx.CENTER, 0)
 
         self.gbs = wx.GridBagSizer(2, 2)
         sizer.Add(self.gbs, 1, wx.CENTER, 10)
 
         widget_01 = wx.StaticText(self, wx.ID_ANY, "Date:")
-        widget_01.SetForegroundColour(wx.Colour(*self.w_fg_color))
+        widget_01.SetForegroundColour(self.w_fg_color)
         widget_01.SetMinSize((-1, -1))
-        self.gbs.Add(widget_01, (0, 0), (1, 1),
-                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        self.gbs.Add(widget_01, (0, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT, 6)
         widget_02 = BadiDatePickerCtrl(self, wx.ID_ANY)
-        widget_02.SetBackgroundColour(wx.Colour(*self.bg_color))
-        widget_02.SetForegroundColour(wx.Colour(*self.w_fg_color))
-        widget_02.SetMinSize((130, 30))
-        #widget_02.SetFocus()
+        widget_02.SetBackgroundColour(self.w_bg_color)
+        widget_02.SetForegroundColour(self.w_fg_color)
+        widget_02.SetMinSize((130, 28))
+        widget_02.SetFocus()
         #widget_02.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
-        self.gbs.Add(widget_02, (0, 1), (1, 1),
-                     wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
+        self.gbs.Add(widget_02, (0, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.ALL, 6)
 
         widget_03 = wx.StaticText(self, wx.ID_ANY, "Description")
-        widget_03.SetForegroundColour(wx.Colour(*self.w_fg_color))
+        widget_03.SetForegroundColour(self.w_fg_color)
         widget_03.SetMinSize((-1, -1))
-        self.gbs.Add(widget_03, (1, 0), (1, 1),
-                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        self.gbs.Add(widget_03, (1, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT, 6)
         widget_04 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_04.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_04.SetBackgroundColour(self.w_fg_color)
         widget_04.SetMinSize((48, 24))
         self.gbs.Add(widget_04, (1, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.LEFT, 6)
 
         widget_05 = wx.StaticLine(self, wx.ID_ANY)
-        widget_05.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_05.SetBackgroundColour(self.w_fg_color)
         self.gbs.Add(widget_05, (2, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
 
@@ -91,18 +91,18 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveEntries):
         widget_04.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
 
         widget_05 = wx.StaticText(self, wx.ID_ANY, "Entry Type")
-        widget_05.SetForegroundColour(wx.Colour(*self.w_fg_color))
+        widget_05.SetForegroundColour(self.w_fg_color)
         widget_05.SetMinSize((-1, -1))
-        self.gbs.Add(widget_05, (8, 0), (1, 1),
-                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        self.gbs.Add(widget_05, (8, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT, 6)
         widget_06 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_06.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_06.SetBackgroundColour(self.w_fg_color)
         widget_06.SetMinSize((48, 24))
         self.gbs.Add(widget_06, (8, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.LEFT, 6)
 
         widget_07 = wx.StaticLine(self, wx.ID_ANY)
-        widget_07.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_07.SetBackgroundColour(self.w_fg_color)
         self.gbs.Add(widget_07, (9, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
 
@@ -115,18 +115,18 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveEntries):
         widget_06.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
 
         widget_08 = wx.StaticText(self, wx.ID_ANY, "Cash in Bank")
-        widget_08.SetForegroundColour(wx.Colour(*self.w_fg_color))
+        widget_08.SetForegroundColour(self.w_fg_color)
         widget_08.SetMinSize((-1, -1))
         self.gbs.Add(widget_08, (15, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
         widget_09 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_09.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_09.SetBackgroundColour(self.w_fg_color)
         widget_09.SetMinSize((48, 24))
         self.gbs.Add(widget_09, (15, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.LEFT, 6)
 
         widget_10 = wx.StaticLine(self, wx.ID_ANY)
-        widget_10.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_10.SetBackgroundColour(self.w_fg_color)
         self.gbs.Add(widget_10, (16, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
 
@@ -139,18 +139,18 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveEntries):
         widget_09.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
 
         widget_11 = wx.StaticText(self, wx.ID_ANY, "Income")
-        widget_11.SetForegroundColour(wx.Colour(*self.w_fg_color))
+        widget_11.SetForegroundColour(self.w_fg_color)
         widget_11.SetMinSize((-1, -1))
         self.gbs.Add(widget_11, (21, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
         widget_12 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_12.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_12.SetBackgroundColour(self.w_fg_color)
         widget_12.SetMinSize((48, 24))
         self.gbs.Add(widget_12, (21, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.LEFT, 6)
 
         widget_13 = wx.StaticLine(self, wx.ID_ANY)
-        widget_13.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_13.SetBackgroundColour(self.w_fg_color)
         self.gbs.Add(widget_13, (22, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
 
@@ -162,12 +162,12 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveEntries):
         widget_12.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
 
         widget_14 = wx.StaticText(self, wx.ID_ANY, "Expenses")
-        widget_14.SetForegroundColour(wx.Colour(*self.w_fg_color))
+        widget_14.SetForegroundColour(self.w_fg_color)
         widget_14.SetMinSize((-1, -1))
         self.gbs.Add(widget_14, (27, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
         widget_15 = wx.StaticLine(self, wx.ID_ANY)
-        widget_15.SetBackgroundColour(wx.Colour(*self.w_fg_color))
+        widget_15.SetBackgroundColour(self.w_fg_color)
         self.gbs.Add(widget_15, (28, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
         items = self._tmd.panel_config.get('budget', {}).get('widgets', {})

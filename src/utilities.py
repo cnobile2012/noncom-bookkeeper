@@ -244,7 +244,17 @@ class StoreObjects(Borg):
         return self._object_store.get(key)
 
 
-class MutuallyExclusiveEntries:
+class MutuallyExclusiveWidgets:
+    """
+    Implements mutually exclusive widgets, but can also be non-mutually
+    exclusive.
+
+    Requires colors to have been globally accessable from a parent class.
+
+       1. self.w_bg_color = Widget backgreound enabled color
+       2. self.w_fg_color = Widget foreground enabled color
+       3. self.w1_bg_color = Widget background disables color
+    """
 
     def create_widgets(self, num_cb: int=0, num_txt: int=0, cb_pos: str='top',
                        labels: tuple=(), pos_idx: int=0) -> None:
@@ -332,13 +342,13 @@ class MutuallyExclusiveEntries:
                 read_only = False
 
             st = wx.StaticText(self, wx.ID_ANY, label)
-            st.SetForegroundColour(wx.Colour(*self.w_fg_color))
+            st.SetForegroundColour(self.w_fg_color)
             self.gbs.Add(st, (pos_idx, 0), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
-            cb = ColorCheckBox(self, wx.ID_ANY, name=make_name(label))
-            cb.SetBackgroundColour(wx.Colour(*self.bg_color))
-            cb.SetForegroundColour(wx.Colour(*self.w_fg_color))
-            cb.SetMinSize((20, 20))
+            cb = ColorCheckBox(self, wx.ID_ANY, bb_color=self.w_fg_color,
+                               cb_color=self.w_bg_color, name=make_name(label))
+            cb.SetForegroundColour(self.w_fg_color)  # Dark Blue
+            cb.SetMinSize((16, 16))
             if read_only: cb.SetReadOnly()
             self.gbs.Add(cb, (pos_idx, 1), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
@@ -365,7 +375,7 @@ class MutuallyExclusiveEntries:
                 style = 0
 
             st = wx.StaticText(self, wx.ID_ANY, label)
-            st.SetForegroundColour(wx.Colour(*self.w_fg_color))
+            st.SetForegroundColour(self.w_fg_color)
             self.gbs.Add(st, (pos_idx, 0), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
             tc = wx.TextCtrl(self, wx.ID_ANY, "", style=style,
@@ -373,11 +383,11 @@ class MutuallyExclusiveEntries:
 
             if style in (wx.TE_READONLY, wx.TE_READONLY | wx.TE_RIGHT):
                 tc.Enable(False)
-                tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
+                tc.SetBackgroundColour(self.w1_bg_color)  # Gray
             else:
-                tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
+                tc.SetBackgroundColour(self.w_bg_color)  # Cream
 
-            tc.SetForegroundColour(wx.Colour(*self.w_fg_color))
+            tc.SetForegroundColour(self.w_fg_color)
             tc.SetMinSize([self.tc_width, 26])
             tc.financial = False if style == 0 else True
             self.gbs.Add(tc, (pos_idx, 1), (1, 1),
@@ -403,7 +413,7 @@ class MutuallyExclusiveEntries:
                 if tc.IsEditable():
                     tc.Enable(False)
                     tc.SetValue("")
-                    tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
+                    tc.SetBackgroundColour(self.w1_bg_color)
 
         return on_checkbox_selected
 
@@ -424,11 +434,11 @@ class MutuallyExclusiveEntries:
             for tc in tc_list:
                 if tc.IsEditable():
                     if tc == selected_tc:
-                        tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
+                        tc.SetBackgroundColour(self.w_bg_color)
                         tc.Enable(True)
                     else:
                         tc.Enable(False)
-                        tc.SetBackgroundColour(wx.Colour(*self.w1_bg_color))
+                        tc.SetBackgroundColour(self.w1_bg_color)
 
                     tc.SetValue("")
 
@@ -450,7 +460,7 @@ class MutuallyExclusiveEntries:
                 if tc.IsEditable():
                     tc.Enable(True)
                     tc.SetValue("")
-                    tc.SetBackgroundColour(wx.Colour(*self.w_bg_color))
+                    tc.SetBackgroundColour(self.w_bg_color)
 
         return reset_inputs
 

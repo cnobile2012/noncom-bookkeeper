@@ -25,6 +25,102 @@ def ordered_month():
                  for idx, month in enumerate(badidatetime.MONTHNAMES)])
 
 
+class CustomTextCtrl(wx.Control):
+    def __init__(self, parent, value="", style=0, **kwargs):
+        super().__init__(parent, style=wx.BORDER_NONE, **kwargs)
+        self.text = value
+        self.style = style
+        self.has_focus = False
+        self.cursor_pos = len(self.text)
+
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.SetMinSize((100, 28))
+
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
+        self.Bind(wx.EVT_CHAR, self.on_char)
+        self.Bind(wx.EVT_SET_FOCUS, self.on_focus)
+        self.Bind(wx.EVT_KILL_FOCUS, self.on_kill_focus)
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        rect = self.GetClientRect()
+        dc.SetBackground(wx.Brush(wx.Colour(255, 255, 255, 128),
+                                  wx.BRUSHSTYLE_TRANSPARENT))
+        dc.Clear()
+
+        # Border
+        if (self.style & wx.BORDER_NONE) != wx.BORDER_NONE:
+            border_color = (wx.Colour(30, 144, 255) if self.has_focus
+                            else wx.Colour(200, 200, 200))
+            dc.SetPen(wx.Pen(border_color, 2))
+            dc.DrawRectangle(rect)
+
+        # Text
+        dc.SetTextForeground(wx.BLACK)
+        text_width, text_height = dc.GetTextExtent(self.text)
+        # Calculate the vertical position to center the text
+        y = (rect.height - text_height) // 2
+        # Calculate the horizontal position to center the text (optional)
+        x = (rect.width - text_width) // 2
+        # Draw the text
+        dc.DrawText(self.text, x, y)
+
+        # Cursor
+        if self.has_focus:
+            tw, th = dc.GetTextExtent(self.text[:self.cursor_pos])
+            dc.SetPen(wx.Pen(wx.BLACK, 1))
+            dc.DrawLine(6 + tw, 4, 6 + tw, 4 + th)
+
+    def on_click(self, event):
+        self.SetFocus()
+        event.Skip()
+
+    def on_focus(self, event):
+        self.has_focus = True
+        self.Refresh()
+        event.Skip()
+
+    def on_kill_focus(self, event):
+        self.has_focus = False
+        self.Refresh()
+        event.Skip()
+
+    def on_char(self, event):
+        key = event.GetKeyCode()
+
+        if key == wx.WXK_TAB:
+            if event.ShiftDown():
+                self.Navigate(wx.NavigationKeyEvent.IsBackward)
+            else:
+                self.Navigate(wx.NavigationKeyEvent.IsForward)
+        elif key == wx.WXK_BACK:
+            if self.cursor_pos > 0:
+                self.text = self.text[:self.cursor_pos - 1] + self.text[
+                    self.cursor_pos:]
+                self.cursor_pos -= 1
+        elif 32 <= key < 127:
+            self.text = self.text[:self.cursor_pos] + chr(key) + self.text[
+                self.cursor_pos:]
+            self.cursor_pos += 1
+        elif key == wx.WXK_LEFT:
+            self.cursor_pos = max(0, self.cursor_pos - 1)
+        elif key == wx.WXK_RIGHT:
+            self.cursor_pos = min(len(self.text), self.cursor_pos + 1)
+        else:
+            event.Skip()  # Important for other keys (e.g., Shift+Tab)
+
+        self.Refresh()
+
+    def GetValue(self):
+        return self.text
+
+    def SetValue(self, val):
+        self.text = val
+        self.cursor_pos = len(val)
+        self.Refresh()
+
+
 # Custom Badi date event
 wxEVT_BADI_DATE_CHANGED_TYPE = wx.NewEventType()
 EVT_BADI_DATE_CHANGED = wx.PyEventBinder(wxEVT_BADI_DATE_CHANGED_TYPE, 1)
@@ -199,18 +295,19 @@ class BadiDatePickerCtrl(wx.Panel):
 
     def __init__(self, parent: wx.Window, id: int=wx.ID_ANY,
                  dt: badidatetime.date=None, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize,
                  style=wx.adv.DP_DEFAULT | wx.adv.DP_SHOWCENTURY,
                  validator=wx.DefaultValidator, name: str="") -> None:
         super().__init__(parent)
         self.SetName(name)
+        w_bg_color = wx.Colour(222, 237, 230)  # Gray
         # Default date
         self.bdate = dt or badidatetime.date.today(short=True)
 
-        self.text_ctrl = wx.TextCtrl(self, style=wx.BORDER_NONE)
+        self.text_ctrl = CustomTextCtrl(self, style=wx.BORDER_NONE)
+        #self.text_ctrl = wx.TextCtrl(self, style=wx.BORDER_NONE)
         self.text_ctrl.SetValue(self.bdate.isoformat())
-        self.text_ctrl.SetBackgroundColour(wx.Colour(222, 237, 230))
-        self.text_ctrl.SetForegroundColour(wx.Colour(0, 0, 0))
+        self.text_ctrl.SetBackgroundColour(w_bg_color)
+        self.text_ctrl.SetForegroundColour(wx.BLACK)
         self.text_ctrl.Bind(wx.EVT_TEXT, self.on_change)
 
         bmp = wx.ArtProvider.GetBitmap(wx.ART_GO_DOWN, wx.ART_BUTTON, (16, 16))
@@ -219,11 +316,11 @@ class BadiDatePickerCtrl(wx.Panel):
         self.calendar_btn.Bind(wx.EVT_BUTTON, self.show_popup_calendar)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.text_ctrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
+        sizer.Add(self.text_ctrl, 1, wx.EXPAND | wx.ALL, 2)
         self.text_ctrl.SetMinSize((90, -1))  # Set the minimum size
-        self.SetMinSize((130, -1))
+        self.SetMinSize((1, 28))
         sizer.AddStretchSpacer()
-        sizer.Add(self.calendar_btn, 0, wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.calendar_btn, 1, wx.EXPAND | wx.ALL, 2)
 
         self.SetSizer(sizer)
 
@@ -260,12 +357,6 @@ class BadiDatePickerCtrl(wx.Panel):
         self.bdate = bdate
         self.text_ctrl.SetValue(bdate.isoformat())
 
-    def AcceptsFocusFromKeyboard(self):
-        return True
-
-    def AcceptsFocus(self):
-        return True
-
 
 # Custom event
 wxEVT_COLOR_CHECKBOX = wx.NewEventType()
@@ -282,10 +373,23 @@ class ColorCheckBoxEvent(wx.PyCommandEvent):
 
 
 class ColorCheckBox(wx.Panel):
+    """
+    A custom checkbox.
+
+    .. note::
+
+       1. If the panel is bigger that the chekbox itself then
+          SetBackgroundColour() and SetForegroundColour() will affect
+          their color.
+       2. The forground color of the checkbox itself is affected by
+          SetForegroundColour(), but the background color defaults to white
+          unless a different color is passed to the constructor argument
+          cb_color.
+       3. The border of the chekbox itself defaults to Black
+    """
     def __init__(self, parent: wx.Window, id: int=wx.ID_ANY, label: str="",
                  name: str="", label_position="right", checked: bool=False,
-                 fg=wx.Colour(0, 0, 0),  # Black
-                 bg=wx.Colour(255, 255, 255),  # White
+                 bb_color=wx.BLACK, cb_color=wx.WHITE,
                  check_color=wx.Colour(0, 120, 215),  # Dark Blue
                  disabled_color=wx.Colour(160, 160, 160)):  # Gray
         super().__init__(parent)
@@ -295,12 +399,11 @@ class ColorCheckBox(wx.Panel):
         self.label = label
         self.label_position = label_position  # 'right' (default) or 'left'
         self.SetName(name)
-        self.fg = fg
-        self.bg = bg
+        self.bb_color = bb_color  # Box border color
+        self.cb_color = cb_color
         self.check_color = check_color
         self.disabled_color = disabled_color
 
-        self.SetBackgroundColour(bg)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
         self.SetSize()
@@ -319,7 +422,7 @@ class ColorCheckBox(wx.Panel):
         dc.Clear()
 
         size = self.GetSize()
-        box_size = min(size.height, 16)
+        box_size = min(size.height, 16)  # 16 is max box size.
         margin = 6
 
         # Get label size
@@ -339,7 +442,8 @@ class ColorCheckBox(wx.Panel):
         bg_color = self.GetBackgroundColour()
         fg_color = (self.GetForegroundColour() if self.enabled
                     else wx.Colour(120, 120, 120))
-        box_border_color = self.fg if self.enabled else self.disabled_color
+        box_border_color = (self.bb_color if self.enabled
+                            else self.disabled_color)
 
         dc.SetBrush(wx.Brush(bg_color))
         dc.SetPen(wx.Pen(bg_color))
@@ -347,7 +451,7 @@ class ColorCheckBox(wx.Panel):
 
         # Checkbox box
         dc.SetBrush(wx.Brush(
-            wx.WHITE if self.enabled else wx.Colour(230, 230, 230)))
+            self.cb_color if self.enabled else wx.Colour(230, 230, 230)))
         dc.SetPen(wx.Pen(box_border_color))
         dc.DrawRectangle(box_x, box_y, box_size, box_size)
 
