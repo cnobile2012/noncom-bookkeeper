@@ -62,6 +62,10 @@ class TestSettingsBorg(unittest.TestCase):
     def setUp(self):
         check_flag(self.__class__.__name__)
         patchers(self)
+        self.set = Settings()
+
+    def tearDown(self):
+        self.set.debug = False
 
     #@unittest.skip("Temporarily skipped")
     def test_SettingsBorg(self):
@@ -69,9 +73,8 @@ class TestSettingsBorg(unittest.TestCase):
         Test that multiple instantiations of the Settings class have the
         same state.
         """
-        s = Settings()
-        Settings.debug = True
-        result = s.debug
+        self.set.debug = True
+        result = self.set.debug
         msg = f"Expected {True}, found {result}"
         self.assertTrue(result, msg)
 
@@ -82,7 +85,7 @@ class TestSettingsBorg(unittest.TestCase):
         class' have the same state.
         """
         tmd = TomlMetaData()
-        Settings.debug = True
+        tmd.debug = True
         result = tmd.debug
         msg = f"Expected {True}, found {result}"
         self.assertTrue(result, msg)
@@ -94,7 +97,7 @@ class TestSettingsBorg(unittest.TestCase):
         class' have the same state.
         """
         tac = TomlAppConfig()
-        Settings.debug = True
+        tac.debug = True
         result = tac.debug
         msg = f"Expected {True}, found {result}"
         self.assertTrue(result, msg)
@@ -106,7 +109,7 @@ class TestSettingsBorg(unittest.TestCase):
         class' have the same state.
         """
         tcp = TomlCreatePanel()
-        Settings.debug = True
+        tcp.debug = True
         result = tcp.debug
         msg = f"Expected {True}, found {result}"
         self.assertTrue(result, msg)
@@ -287,9 +290,21 @@ class TestBaseSystemData(unittest.TestCase):
     def tearDown(self):
         try:
             os.remove(self._TMP_USER_CONFIG_FILE)
+        except FileNotFoundError:
+            pass
+
+        try:
             os.remove(self._TMP_USER_APP_CONFIG_FILE)
         except FileNotFoundError:
             pass
+
+    def _handle_errors(self, doc, filepath):
+        if isinstance(doc, int):
+            result = self.bsd.ERR_MESSAGES[doc].format(filepath)
+        else:
+            result = ""
+
+        return result
 
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.BaseSystemData.user_app_config_fullpath',
@@ -305,91 +320,69 @@ class TestBaseSystemData(unittest.TestCase):
         tac._create_app_config()
         shutil.copy2(self.bsd.local_config_fullpath,
                      self._TMP_USER_CONFIG_FILE)
-        # Run test
-        file_types = ('user_config_fullpath', 'user_app_config_fullpath')
-        errors = self.bsd.parse_toml(file_types)
-        self.assertFalse(errors)
-        results = {'user_config_fullpath': self.bsd.panel_config,
-                   'user_app_config_fullpath': self.bsd.app_config}
+        TOMLDocument = tk.toml_document.TOMLDocument
+        data = ('user_config_fullpath', 'user_app_config_fullpath')
+        msg = "Expected {} with {}, found {}."
 
-        for key, result in results.items():
-            valid = isinstance(result, tk.toml_document.TOMLDocument)
-            msg = f"Have parsed data for {key} '{valid}'"
-            self.assertTrue(valid, msg)
+        for prop in data:
+            filepath = getattr(self.bsd, prop)
+            doc = self.bsd.parse_toml(filepath)
+            error = self._handle_errors(doc, filepath)
+            self.assertEqual("", error, msg.format("", filepath, error))
+            self.assertIsInstance(doc, TOMLDocument, msg.format(
+                TOMLDocument, filepath, type(doc)))
 
     #@unittest.skip("Temporarily skipped")
     def test_parse_toml_local_config(self):
         """
         Test that toml files get pared correctly.
         """
-        self.bsd.panel_config = None
-        file_types = ('local_config_fullpath',)
-        errors = self.bsd.parse_toml(file_types)
-        self.assertFalse(errors)
-        results = {'local_config_fullpath': self.bsd.panel_config}
+        TOMLDocument = tk.toml_document.TOMLDocument
+        data = ('local_config_fullpath',)
+        msg = "Expected {} with {}, found {}."
 
-        for key, result in results.items():
-            valid = isinstance(result, tk.toml_document.TOMLDocument)
-            msg = f"Have parsed data for {key} '{valid}'"
-            self.assertTrue(valid, msg)
-
-    #@unittest.skip("Temporarily skipped")
-    def test_parse_toml_invalid_file_type(self):
-        """
-        Test that an exception is raised when a wrong file type is found.
-        """
-        errors = self.bsd.parse_toml(('non_existant_file',))
-
-        for error in errors:
-            msg = f"Should have error '{error[1]}'"
-            self.assertIn('Invalid property, ', error[1], msg)
+        for prop in data:
+            filepath = getattr(self.bsd, prop)
+            doc = self.bsd.parse_toml(filepath)
+            error = self._handle_errors(doc, filepath)
+            self.assertEqual("", error, msg.format("", filepath, error))
+            self.assertIsInstance(doc, TOMLDocument, msg.format(
+                TOMLDocument, filepath, type(doc)))
 
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.BaseSystemData.user_config_fullpath',
            _TMP_USER_CONFIG_FILE)
-    def test_parse_toml_file_not_found_error(self):
+    def test_parse_toml_errors(self):
         """
-        Test that an exception is raised when a file is not found.
+        Test that the correct variables are set with error conditions.
         """
-        errors = self.bsd.parse_toml(('user_config_fullpath',))
+        efnf = self.bsd.ERR_MESSAGES[self.bsd.ERR_FILE_NOT_FOUND]
+        ete = self.bsd.ERR_MESSAGES[self.bsd.ERR_TOML_ERROR]
+        ezlf = self.bsd.ERR_MESSAGES[self.bsd.ERR_ZERO_LENGTH_FILE]
+        data = (
+            (self.bsd.ERR_FILE_NOT_FOUND, efnf),  # ERR_FILE_NOT_FOUND
+            (self.bsd.ERR_TOML_ERROR, ete),  # ERR_TOML_ERROR
+            (self.bsd.ERR_ZERO_LENGTH_FILE, ezlf),  # ERR_ZERO_LENGTH_FILE
+            )
+        msg = "Expected {} with {}, found {}."
 
-        for error in errors:
-            msg = f"Should have error '{error[1]}'"
-            self.assertIn('Cannot find file ', error[1], msg)
+        for err_code, expected_results in data:
+            if err_code == self.bsd.ERR_FILE_NOT_FOUND:
+                pass  # The file was never created.
+            elif err_code == self.bsd.ERR_TOML_ERROR:
+                # Create an unparsable file.
+                with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
+                    f.write("[meta]\nsomevar = {junk='some_value'")
+            elif err_code == self.bsd.ERR_ZERO_LENGTH_FILE:
+                # Create a zero length file.
+                with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
+                    f.write("")
+            else:
+                self.assertTrue(false, f"Invalid error code {err_code}.")
 
-    #@unittest.skip("Temporarily skipped")
-    @patch('src.config.BaseSystemData.user_config_fullpath',
-           _TMP_USER_CONFIG_FILE)
-    def test_parse_toml_parse_error(self):
-        """
-        Test that an exception is raised when a parse error is found.
-        """
-        # Create an unparsable file.
-        with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
-            f.write("[meta]\nsomevar = {junk='some_value'")
-
-        errors = self.bsd.parse_toml(('user_config_fullpath',))
-
-        for error in errors:
-            msg = f"Should have error '{error[1]}'"
-            self.assertIn('TOML error: ', error[1], msg)
-
-    #@unittest.skip("Temporarily skipped")
-    @patch('src.config.BaseSystemData.user_config_fullpath',
-           _TMP_USER_CONFIG_FILE)
-    def test_parse_toml_empty_file_error(self):
-        """
-        Test that an exception is raised when a zero length file is found.
-        """
-        # Create an unparsable file.
-        with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
-            f.write("")
-
-        errors = self.bsd.parse_toml(('user_config_fullpath',))
-
-        for error in errors:
-            msg = f"Should have error '{error[1]}'"
-            self.assertIn('Cannot parse zero length file ', error[1], msg)
+        error = self.bsd.parse_toml(self.bsd.user_config_fullpath)
+        self.assertEqual(expected_results, self.bsd.ERR_MESSAGES[error],
+                         msg.format(expected_results, err_code, error))
 
 
 class BaseTest(unittest.TestCase):
@@ -410,7 +403,12 @@ class TestTomlMetaData(BaseTest):
     def setUp(self):
         check_flag(self.__class__.__name__)
         super().setUp()
+
+        tpc = TomlPanelConfig()
+        tpc._read_file(tpc.local_config_fullpath)
         self.tmd = TomlMetaData()
+        self.assertIsInstance(tpc.panel_config, tk.toml_document.TOMLDocument)
+
         self.NUM_MONTHS = {'bahai': 20, 'generic': 12}.get(
             self.tmd.config_type)
 
@@ -567,22 +565,6 @@ class TestTomlPanelConfig(BaseTest):
         except FileNotFoundError:
             pass
 
-        try:
-            os.remove(f"{self._TMP_USER_CONFIG_FILE}.bad")
-        except FileNotFoundError:
-            pass
-
-    #@unittest.skip("Temporarily skipped")
-    @patch('src.config.TomlPanelConfig._FILE_LIST', ('user_invalid_property',
-                                                     'local_invalid_property'))
-    def test_is_valid_property_invalid(self):
-        """
-        Test that an invalid property causes an error.
-        """
-        ret = self.tpc.is_valid
-        msg = f"Expected False, found {ret}."
-        self.assertFalse(ret, msg)
-
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.TomlPanelConfig.user_config_fullpath',
            _TMP_USER_CONFIG_FILE)
@@ -681,24 +663,9 @@ class TestTomlAppConfig(BaseTest):
         except FileNotFoundError:
             pass
 
-        try:
-            os.remove(f"{self._TMP_USER_APP_FILE}.bad")
-        except FileNotFoundError:
-            pass
-
     def create_config(self):
         self.tac._create_app_config()
         return self.tac.is_valid
-
-    #@unittest.skip("Temporarily skipped")
-    @patch('src.config.TomlAppConfig._FILE_LIST', ('user_invalid_property',))
-    def test_is_valid_property_invalid(self):
-        """
-        Test that an invalid property causes an error.
-        """
-        ret = self.tac.is_valid
-        msg = f"Expected False, found {ret}."
-        self.assertFalse(ret, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_is_valid_property(self):
@@ -730,7 +697,7 @@ class TestTomlAppConfig(BaseTest):
         Test that the is_valid property returns a boolean for a bad
         path in the `user_app_config_fullpath` property.
         """
-        # Create an unparsable file.
+        # Create a zero length file.
         with open(self._TMP_USER_APP_FILE, 'w') as f:
             f.write('')
 
@@ -926,11 +893,60 @@ class TestTomlCreatePanel(BaseTest):
         msg = f"Expected {expect}, found {value}."
         self.assertEqual(expect, value, msg)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
+    def test_all_field_names(self):
+        """
+        Test that the all_field_names property returns all the names of
+        all panels.
+        """
+        number_of_widgets = 13
+        err_msg = "There is no panel that is currently being worked on."
+
+        try:
+            self.tcp.all_field_names
+        except AssertionError as e:
+            self.assertEqual(err_msg, str(e))
+
+        items = self.create_toml_doc().get('organization',
+                                           {}).get('widgets', {})
+        self.tcp.current_panel = items
+        names = self.tcp.all_field_names
+        msg = f"Expected {number_of_widgets}, found {len(names)}."
+        self.assertEqual(number_of_widgets, len(names), msg)
+
+    #@unittest.skip("Temporarily skipped")
     def test_field_names(self):
         """
-        Test that the field_names property returns just field names.
+        Test that the field_names property returns the field names of a
+        specified panel.
         """
-        self.tcp.current_panel = self.create_toml_doc()
+        number_of_widgets = 5
+        items = self.create_toml_doc().get('organization',
+                                           {}).get('widgets', {})
+        self.tcp.current_panel = items
         names = self.tcp.field_names
-        print(names)
+        msg = f"Expected {number_of_widgets}, found {len(names)}."
+        self.assertEqual(number_of_widgets, len(names), msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_field_names_by_category(self):
+        """
+        Test that the field_names_by_category property returns the field
+        names by category.
+        """
+        cat0 = 'Locality Prefix'
+        cat1 = ('The following Location field is needed to determine '
+                'the timezone.')
+        data = (
+            (cat0, 4),
+            (cat1, 1),
+            )
+        msg = "Expected {}, found {}."
+        items = self.create_toml_doc().get('organization',
+                                           {}).get('widgets', {})
+        self.tcp.current_panel = items
+
+        for cat, expected_result in data:
+            names = self.tcp.field_names_by_category.get(cat)
+            self.assertEqual(expected_result, len(names), msg.format(
+                expected_result, len(names)))

@@ -13,8 +13,7 @@ def find_dict(value: list) -> dict:
     """
     Fine the dict in the Toml data that is in the widget value list.
 
-    :param value: A list that defines a widget from a TOML file.
-    :type value: list
+    :param list value: A list that defines a widget from a TOML file.
     :return: A dict with attributes that define a widget.
     :rtype: dict
     """

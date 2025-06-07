@@ -60,7 +60,7 @@ class TestBorg(unittest.TestCase):
         for a0, method, a1, var, expected in data:
             if method:
                 getattr(a0, method)()
-        
+
             result0 = getattr(a0, var)
             result1 = getattr(a1, var)
             self.assertEqual(expected, result0, msg.format(expected, result0))

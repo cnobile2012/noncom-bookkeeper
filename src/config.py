@@ -189,19 +189,31 @@ class BaseSystemData(Settings):
     """
     SYS_FILES = {'data': None, 'panel_config': None, 'app_config': None}
     # Error conditions
-    ERR_CANNOT_FIND_FILE = 1  # Cannot find file
-    ERR_TOML_ERROR = 1        # TOML error, maybe corrupted
+    ERR_FILE_NOT_FOUND = 1    # Cannot find file
+    ERR_TOML_ERROR = 2        # TOML error, maybe corrupted
     ERR_ZERO_LENGTH_FILE = 3  # Zero length file
-    ERR_MESSAGES = {ERR_CANNOT_FIND_FILE: "Cannot find file '{}'.",
+    ERR_MESSAGES = {ERR_FILE_NOT_FOUND: "File '{}' not found.",
                     ERR_TOML_ERROR: "Cannot parse file '{}' may be corrupted.",
-                    ERR_ZERO_LENGTH_FILE: "File '{}' was zero length."}
+                    ERR_ZERO_LENGTH_FILE: "Cannot parse zero length file '{}'."
+                    }
 
     @property
     def panel_config(self):
+        """
+        Get the entire TOML doc for the panels.
+
+        :returns: The TOML document.
+        :rtype: tk.toml_document.TOMLDocument
+        """
         return self.SYS_FILES.get('panel_config')
 
     @panel_config.setter
     def panel_config(self, value):
+        """
+        Set the entire TOML doc for the panels.
+
+        :param tk.toml_document.TOMLDocument value: The TOML doc.
+        """
         self.SYS_FILES['panel_config'] = value
 
     @property
@@ -226,44 +238,65 @@ class BaseSystemData(Settings):
             with open(filepath, 'r') as f:
                 raw_doc = f.read()
         except FileNotFoundError as e:
-            self._log.error("Cannot find file '%'s, %s", filepath, e)
-            error = self.ERR_CANNOT_FIND_FILE
+            msg = self.ERR_MESSAGES[self.ERR_FILE_NOT_FOUND].format(filepath)
+            self._log.error(msg[:-1] + ", %s", e)
+            error = self.ERR_FILE_NOT_FOUND
         else:
             if raw_doc != "":
                 try:
                     doc = tk.parse(raw_doc)
                 except tk.exceptions.TOMLKitError as e:
-                    self._log.error(
-                        "TOML error, possibly corrupted file '%s': %s",
-                        filepath, e)
+                    msg = self.ERR_MESSAGES[
+                        self.ERR_TOML_ERROR].format(filepath)
+                    self._log.error(msg[:-1] + ", %s", e)
                     error = self.ERR_TOML_ERROR
             else:
-                self._log.error("Cannot parse zero length file '%s'.",
-                                filepath)
+                msg = self.ERR_MESSAGES[
+                    self.ERR_ZERO_LENGTH_FILE].format(filepath)
+                self._log.error(msg)
                 error = self.ERR_ZERO_LENGTH_FILE
 
         return error if error else doc
 
-    # def panel_field_names(self, panel, raw=False):
-    #     """
-    #     Get the field names for a specific panel.
-    #     """
-    #     widget_names = []
 
-    #     for widget in self.panel_config[panel]['widgets'].values():
-    #         w_type = widget[0]
+class TomlMetaData(BaseSystemData):
+    """
+    Get the META data from the TOML panel config file.
+    """
 
-    #         if w_type in ('RadioBox', 'StaticText'):
-    #             args = find_dict(widget).get('args', [])
-    #             name = args[2] if args else ''
-    #             if not name: continue
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    #             if not raw:
-    #                 name = name.replace(' ', '_').replace(':', '').lower()
+    @property
+    def panels(self):
+        return self.panel_config.get('meta', {}).get('panels')
 
-    #             widget_names.append(name)
+    @property
+    def months(self):
+        return self.panel_config.get('meta', {}).get('months')
 
-    #     return widget_names
+    @property
+    def locale_prefix(self):
+        return self.panel_config.get('meta', {}).get('locale_prefix')
+
+    @property
+    def font_12_normal(self):
+        return self.panel_config.get('meta', {}).get('font_12_normal')
+
+    @property
+    def font_12_bold(self):
+        return self.panel_config.get('meta', {}).get('font_12_bold')
+
+    @property
+    def font_10_normal(self):
+        return self.panel_config.get('meta', {}).get('font_10_normal')
+
+    @property
+    def font_10_bold(self):
+        return self.panel_config.get('meta', {}).get('font_10_bold')
+
+    def get_font(self, font_type):
+        return getattr(self, font_type)
 
 
 class TomlPanelConfig(BaseSystemData):
@@ -323,7 +356,7 @@ class TomlPanelConfig(BaseSystemData):
                     self.local_config_fullpath)
 
                 if count < 2:
-                    self._log.warn(
+                    self._log.warning(
                         "Error: %s is corrupted, using the backup file.",
                         self.user_config_fullpath)
                     self._copy_file(backup_file, self.user_config_fullpath)
@@ -428,9 +461,11 @@ class TomlAppConfig(BaseSystemData):
                     self.user_app_config_fullpath)
 
                 if count < 2:
-                    self._log.warn(
+                    self._log.warning(
                         "Error: %s is corrupted, recreating file.",
                         self.user_app_config_fullpath)
+                    self._create_app_config()
+                    count = 0
                 else:
                     self._log.critical("The %s is corrupted beyond repair "
                                        "contact the developer.",
@@ -519,46 +554,6 @@ class TomlAppConfig(BaseSystemData):
             raise e
 
 
-class TomlMetaData(BaseSystemData):
-    """
-    Get the META data from the TOML panel config file.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    @property
-    def panels(self):
-        return self.panel_config.get('meta', {}).get('panels')
-
-    @property
-    def months(self):
-        return self.panel_config.get('meta', {}).get('months')
-
-    @property
-    def locale_prefix(self):
-        return self.panel_config.get('meta', {}).get('locale_prefix')
-
-    @property
-    def font_12_normal(self):
-        return self.panel_config.get('meta', {}).get('font_12_normal')
-
-    @property
-    def font_12_bold(self):
-        return self.panel_config.get('meta', {}).get('font_12_bold')
-
-    @property
-    def font_10_normal(self):
-        return self.panel_config.get('meta', {}).get('font_10_normal')
-
-    @property
-    def font_10_bold(self):
-        return self.panel_config.get('meta', {}).get('font_10_bold')
-
-    def get_font(self, font_type):
-        return getattr(self, font_type)
-
-
 class TomlCreatePanel(BaseSystemData):
     """
     Create an updated panel Toml file.
@@ -588,6 +583,23 @@ class TomlCreatePanel(BaseSystemData):
         self.__panel = current.copy()
 
     @property
+    def all_field_names(self):
+        """
+        Get all field names.
+        """
+        assert self.__panel, (
+            "There is no panel that is currently being worked on.")
+        names = []
+
+        for item in self.__panel.values():
+            list_ = find_dict(item).get('args', [])
+
+            if len(list_) >= 3:
+                names.append(list_[2])
+
+        return names
+
+    @property
     def field_names(self) -> list:
         """
         A list of field names not including title names.
@@ -609,23 +621,6 @@ class TomlCreatePanel(BaseSystemData):
                 names.append(name)
 
         return items
-
-    @property
-    def all_field_names(self):
-        """
-        Get all field names.
-        """
-        assert self.__panel, (
-            "There is no panel that is currently being worked on.")
-        names = []
-
-        for item in self.__panel.values():
-            list_ = find_dict(item).get('args', [])
-
-            if len(list_) >= 3:
-                names.append(list_[2])
-
-        return names
 
     def add_name(self, name, key_num=None):
         """
