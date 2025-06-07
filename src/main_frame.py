@@ -40,7 +40,7 @@ class MainFrame(wx.Frame, MenuBar):
 
     def __init__(self, parent=None, id=wx.ID_ANY,
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
-                 options=None, size=(500, 800), *args, **kwargs):
+                 size=(500, 800), options=None, *args, **kwargs):
         super().__init__(parent, id=id, style=style)
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)

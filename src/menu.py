@@ -287,7 +287,7 @@ class MenuBar:
 
     def _update_short_cuts(self, color):
         self.__short_cut.set_text(self.frame)
-        self.__short_cut.SetBackgroundColour(wx.Colour(*color))
+        self.__short_cut.SetBackgroundColour(color)
 
     def tool_inspection(self, event):
         if not self.__inspection:

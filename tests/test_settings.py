@@ -7,7 +7,7 @@ __docformat__ = "restructuredtext en"
 import unittest
 import wx
 
-
+from src.config import Settings
 from src.settings import FiscalSettings, Paths
 from src.custom_widgits import EVT_COLOR_CHECKBOX
 
@@ -91,6 +91,10 @@ class TestPaths(unittest.TestCase):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        Settings()
+
+    def tearDown(self):
+        Settings().clear_state()
 
     #@unittest.skip("Temporarily skipped")
     def test_constructor(self):

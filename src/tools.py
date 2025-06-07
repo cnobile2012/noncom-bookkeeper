@@ -22,12 +22,12 @@ class ShortCuts(wx.Frame):
 
     def __init__(self, parent, title="Short Cuts"):
         super().__init__(parent, title=title)
-        w_fg_color_0 = (50, 50, 204)
+        w_fg_color_0 = wx.Colour(50, 50, 204)
         old_style = self.GetWindowStyle()
         self.SetWindowStyle(old_style | wx.STAY_ON_TOP)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.short_cut_text = wx.StaticText(self, wx.TE_MULTILINE, "")
-        self.short_cut_text.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        self.short_cut_text.SetForegroundColour(w_fg_color_0)
         self.short_cut_text.SetFont(wx.Font(
             10, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_NORMAL, 0, "Courier Prime"))
@@ -89,11 +89,11 @@ class FieldEdit(BasePanel, wx.Panel):
         self.frame = parent.GetParent()
         self.parent = parent
         self.title = "Add/Remove Fields"
-        self._bg_color = (232, 213, 149)
-        w_bg_color = (255, 253, 208)   # Cream
-        w_fg_color_0 = (50, 50, 204)   # Dark Blue
-        w_fg_color_1 = (197, 75, 108)
-        self.SetBackgroundColour(wx.Colour(*self._bg_color))
+        self._bg_color = wx.Colour(232, 213, 149)
+        w_bg_color = wx.Colour(255, 253, 208)   # Cream
+        w_fg_color_0 = wx.Colour(50, 50, 204)   # Dark Blue
+        w_fg_color_1 = wx.Colour(197, 75, 108)
+        self.SetBackgroundColour(self._bg_color)
         # Setup sizers.
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
@@ -148,7 +148,7 @@ class FieldEdit(BasePanel, wx.Panel):
         grid_sizer = wx.GridBagSizer(vgap=2, hgap=2)
         sizer.Add(grid_sizer, 0, wx.CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 6)
         desc = wx.StaticText(panel, wx.ID_ANY, self._description, style=0)
-        desc.SetForegroundColour(wx.Colour(*w_fg_color_1))
+        desc.SetForegroundColour(w_fg_color_1)
         desc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD, 0, ''))
         grid_sizer.Add(desc, (0, 0), (1, 3), wx.ALIGN_CENTER | wx.ALL, 6)
@@ -157,23 +157,23 @@ class FieldEdit(BasePanel, wx.Panel):
         edit_names.insert(0, 'Choose the Page to Edit')
         combo_box = wx.ComboBox(panel, wx.ID_ANY, value=edit_names[0],
                                 choices=edit_names, style=wx.TE_READONLY)
-        combo_box.SetBackgroundColour(wx.Colour(*w_bg_color))
-        combo_box.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        combo_box.SetBackgroundColour(w_bg_color)
+        combo_box.SetForegroundColour(w_fg_color_0)
         combo_box.SetMinSize((200, 32))
         self.Bind(wx.EVT_COMBOBOX, self.selection_closure(arg_dict), combo_box)
         grid_sizer.Add(combo_box, (1, 0), (1, 1), static_text_flags, 6)
 
         field_desc = wx.StaticText(
             panel, wx.ID_ANY, "Enter a new field name:", style=0)
-        field_desc.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        field_desc.SetForegroundColour(w_fg_color_0)
         field_desc.SetFont(
             wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                     wx.FONTWEIGHT_BOLD, 0, ''))
         grid_sizer.Add(field_desc, (2, 0), (1, 1), static_text_flags, 4)
 
         field_name = wx.TextCtrl(panel,  wx.ID_ANY, "", style=wx.TE_LEFT)
-        field_name.SetBackgroundColour(wx.Colour(*w_bg_color))
-        field_name.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        field_name.SetBackgroundColour(w_bg_color)
+        field_name.SetForegroundColour(w_fg_color_0)
         field_name.SetMinSize((266, 32))
         grid_sizer.Add(field_name, (2, 1), (1, 1), ctrl_but_flags, 4)
 
@@ -183,36 +183,36 @@ class FieldEdit(BasePanel, wx.Panel):
 
         add_button = wx.Button(panel,  wx.ID_ANY, "Add")
         add_button.SetMinSize((62, 32))
-        add_button.SetBackgroundColour(wx.Colour(*w_bg_color))
-        add_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        add_button.SetBackgroundColour(w_bg_color)
+        add_button.SetForegroundColour(w_fg_color_0)
         embed_sizer.Add(add_button, 0, but_flags, 6)
         update_button = wx.Button(panel,  wx.ID_ANY, "Update")
         update_button.SetMinSize((62, 32))
-        update_button.SetBackgroundColour(wx.Colour(*w_bg_color))
-        update_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        update_button.SetBackgroundColour(w_bg_color)
+        update_button.SetForegroundColour(w_fg_color_0)
         embed_sizer.Add(update_button, 0, but_flags, 6)
         remove_button = wx.Button(panel,  wx.ID_ANY, "Remove")
         remove_button.SetMinSize((62, 32))
-        remove_button.SetBackgroundColour(wx.Colour(*w_bg_color))
-        remove_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        remove_button.SetBackgroundColour(w_bg_color)
+        remove_button.SetForegroundColour(w_fg_color_0)
         embed_sizer.Add(remove_button, 0, but_flags, 6)
         undo_button = wx.Button(panel,  wx.ID_ANY, "Undo")
         undo_button.SetMinSize((62, 32))
-        undo_button.SetBackgroundColour(wx.Colour(*w_bg_color))
-        undo_button.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        undo_button.SetBackgroundColour(w_bg_color)
+        undo_button.SetForegroundColour(w_fg_color_0)
         embed_sizer.Add(undo_button, 0, but_flags, 6)
 
         spin_desc = wx.StaticText(
             panel, wx.ID_ANY, "Click field then move it:", style=0)
-        spin_desc.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        spin_desc.SetForegroundColour(w_fg_color_0)
         spin_desc.SetFont(wx.Font(
             10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
             wx.FONTWEIGHT_BOLD, 0, ''))
         grid_sizer.Add(spin_desc, (4, 0), (1, 1), static_text_flags, 4)
         spin_ctrl = wx.SpinCtrl(panel, wx.ID_ANY, name="")
         spin_ctrl.SetMinSize((-1, 32))
-        spin_ctrl.SetBackgroundColour(wx.Colour(*w_bg_color))
-        spin_ctrl.SetForegroundColour(wx.Colour(*w_fg_color_0))
+        spin_ctrl.SetBackgroundColour(w_bg_color)
+        spin_ctrl.SetForegroundColour(w_fg_color_0)
         grid_sizer.Add(spin_ctrl, (4, 1), (1, 1), ctrl_but_flags, 4)
 
         arg_dict['top_grid_sizer'] = grid_sizer
@@ -233,7 +233,7 @@ class FieldEdit(BasePanel, wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         panel.SetSizer(sizer)
         grid_sizer = GridBagSizer(vgap=2, hgap=2)
-        panel.SetBackgroundColour(wx.Colour(*w_bg_color))
+        panel.SetBackgroundColour(w_bg_color)
         sizer.Add(grid_sizer, 0, wx.EXPAND | wx.ALL, 6)
         widget_labels = arg_dict['widget_labels']
 
@@ -255,7 +255,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
             widget.SetFont(wx.Font(
                 ps, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, weight, 0, ''))
-            widget.SetForegroundColour(wx.Colour(*w_fg_color_0))
+            widget.SetForegroundColour(w_fg_color_0)
             widget.SetMinSize((width, height))
             grid_sizer.Add(
                 widget, (idx, 0), (1, span),
@@ -263,7 +263,7 @@ class FieldEdit(BasePanel, wx.Panel):
             spin_ctrl.SetValue("")
             self.Bind(
                 widget.EVT_CLICK_POSITION, self.event_click_closure(
-                    arg_dict, orig_color=wx.Colour(*w_bg_color)),
+                    arg_dict, orig_color=w_bg_color),
                 id=widget.GetId())
 
         arg_dict['panel'] = panel
@@ -294,7 +294,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
         #evt_s = self.Unbind(wx.EVT_SPINCTRL)
         self.Bind(wx.EVT_SPINCTRL, self.swap_rows_closure(
-            arg_dict, wx.Colour(*w_bg_color)))
+            arg_dict, w_bg_color))
 
     def selection_closure(self, arg_dict):
         def get_selection(event):
@@ -402,7 +402,7 @@ class FieldEdit(BasePanel, wx.Panel):
                     widget.SetFont(wx.Font(
                         12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                         wx.FONTWEIGHT_NORMAL, 0, ''))
-                    widget.SetForegroundColour(wx.Colour(*w_fg_color_0))
+                    widget.SetForegroundColour(w_fg_color_0)
                     widget.SetMinSize((-1, -1))
                     grid_sizer.Add(widget, (row_count, 0), (1, 1),
                                    (wx.ALIGN_CENTER_VERTICAL | wx.LEFT
@@ -410,7 +410,7 @@ class FieldEdit(BasePanel, wx.Panel):
                     grid_sizer.Layout()
                     self.Bind(
                         widget.EVT_CLICK_POSITION, self.event_click_closure(
-                            arg_dict, orig_color=wx.Colour(*w_bg_color)),
+                            arg_dict, orig_color=w_bg_color),
                         id=widget.GetId())
                     self.bind_events(arg_dict)
                     self._tcp.add_name(value)

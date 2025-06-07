@@ -9,7 +9,6 @@ import re
 import wx
 import wx.adv
 import badidatetime
-from .config import Settings
 
 
 def ordered_month():
@@ -160,6 +159,8 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
 
         # Create nav buttons
         def make_button(image):
+            from .config import Settings
+
             path = os.path.join(Settings.base_dir(), 'images', image)
             bitmap = wx.Bitmap(path, wx.BITMAP_TYPE_BMP)
             button = wx.BitmapButton(self.panel, bitmap=bitmap, size=size,

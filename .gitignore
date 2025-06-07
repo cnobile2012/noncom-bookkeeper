@@ -19,6 +19,7 @@ docs/api
 docs/htmlcov
 !docs/*.pdf
 logs/
+data/
 package
 
 # C extensions

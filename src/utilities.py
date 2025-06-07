@@ -16,25 +16,59 @@ def make_name(name: str):
 
 
 class Borg:
-    _state = {}
-
+    """
+    We store the instances instead of the __dict__. This alows the updating
+    of future instances with the data from the previous instances. Without
+    this, new instances would not have all the data.
+    """
     def __new__(cls, *args, **kwargs):
-        if cls not in cls._state:
-            cls._state[cls] = super().__new__(cls)
+        if not hasattr(cls, '_instances'):
+            cls._instances = []
 
-        return cls._state[cls]
+        instance = super().__new__(cls)
+        cls._instances.append(instance)
 
-    def __init__(self, *args, **kwargs):
-        pass
+        if cls._instances:
+            for key, value in cls._instances[0].__dict__.items():
+                instance.__dict__[key] = value
 
-    def __getattr__(self, item):
-        return self._state.setdefault(self, item)
+        return instance
 
-    def __setattr__(self, item, value):
-        self._state.setdefault(self, {})[item] = value
+    def __setattr__(self, name, value):
+        # Prevent polluting shared state with internal __dict__
+        if name == '__dict__':
+            return
+
+        # Let Python run descriptor logic
+        object.__setattr__(self, name, value)
+        # Propagate the value to all other instances **only if**
+        # the name is not a data descriptor (i.e., not a property)
+        cls = type(self)
+        attr = getattr(cls, name, None)
+
+        if not hasattr(attr, '__set__'):
+            for inst in cls._instances:
+                if inst is not self:
+                    inst.__dict__[name] = value
 
     def clear_state(self):
-        self._state.clear()
+        for inst in self._instances:
+            inst.__dict__.clear()
+
+        self._instances.clear()
+
+
+class StoreObjects(Borg):
+    _object_store = {}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def set_object(self, key, value):
+        self._object_store[key] = value
+
+    def get_object(self, key):
+        return self._object_store.get(key)
 
 
 class GridBagSizer(wx.GridBagSizer):
@@ -229,19 +263,6 @@ class EventStaticText(wx.StaticText):
         evt.set_window(obj)
         self.GetEventHandler().ProcessEvent(evt)
         event.Skip()
-
-
-class StoreObjects(Borg):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._object_store = {}
-
-    def set_object(self, key, value):
-        self._object_store[key] = value
-
-    def get_object(self, key):
-        return self._object_store.get(key)
 
 
 class MutuallyExclusiveWidgets:

@@ -21,7 +21,7 @@ PATH = os.path.join(BASE_DIR, 'logs')
 
 def import_in_globals():
     import src
-    from src import config, ncb
+    from src import config
     globals()['src'] = src.__init__
     globals()['Settings'] = config.Settings
     globals()['BaseSystemData'] = config.BaseSystemData
@@ -29,8 +29,6 @@ def import_in_globals():
     globals()['TomlPanelConfig'] = config.TomlPanelConfig
     globals()['TomlAppConfig'] = config.TomlAppConfig
     globals()['TomlCreatePanel'] = config.TomlCreatePanel
-    globals()['CheckPanelConfig'] = ncb.CheckPanelConfig
-    globals()['CheckAppConfig'] = ncb.CheckAppConfig
 
 
 def patchers(self):
@@ -54,6 +52,64 @@ def patchers(self):
     self.addCleanup(logfile_name_patcher.stop)
     mock_logfile_name.return_value = LOGFILE_NAME
     import_in_globals()
+
+
+class TestSettingsBorg(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        patchers(self)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_SettingsBorg(self):
+        """
+        Test that multiple instantiations of the Settings class have the
+        same state.
+        """
+        s = Settings()
+        Settings.debug = True
+        result = s.debug
+        msg = f"Expected {True}, found {result}"
+        self.assertTrue(result, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_SettingsBorg_with_TomlMetaData(self):
+        """
+        Test that multiple instantiations of the Settings and TomlMetaData
+        class' have the same state.
+        """
+        tmd = TomlMetaData()
+        Settings.debug = True
+        result = tmd.debug
+        msg = f"Expected {True}, found {result}"
+        self.assertTrue(result, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_SettingsBorg_with_TomlAppConfig(self):
+        """
+        Test that multiple instantiations of the Settings and TomlAppConfig
+        class' have the same state.
+        """
+        tac = TomlAppConfig()
+        Settings.debug = True
+        result = tac.debug
+        msg = f"Expected {True}, found {result}"
+        self.assertTrue(result, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_SettingsBorg_with_TomlCreatePanel(self):
+        """
+        Test that multiple instantiations of the Settings and TomlCreatePanel
+        class' have the same state.
+        """
+        tcp = TomlCreatePanel()
+        Settings.debug = True
+        result = tcp.debug
+        msg = f"Expected {True}, found {result}"
+        self.assertTrue(result, msg)
 
 
 class TestSettings(unittest.TestCase):
@@ -246,7 +302,7 @@ class TestBaseSystemData(unittest.TestCase):
         """
         # Create or copy files to temporary locations.
         tac = TomlAppConfig()
-        tac.create_app_config()
+        tac._create_app_config()
         shutil.copy2(self.bsd.local_config_fullpath,
                      self._TMP_USER_CONFIG_FILE)
         # Run test
@@ -343,9 +399,6 @@ class BaseTest(unittest.TestCase):
 
     def setUp(self):
         patchers(self)
-        self._cpd = CheckPanelConfig()
-        self._cad = CheckAppConfig()
-        self._cpd.has_valid_data
 
 
 class TestTomlMetaData(BaseTest):
@@ -634,7 +687,7 @@ class TestTomlAppConfig(BaseTest):
             pass
 
     def create_config(self):
-        self.tac.create_app_config()
+        self.tac._create_app_config()
         return self.tac.is_valid
 
     #@unittest.skip("Temporarily skipped")

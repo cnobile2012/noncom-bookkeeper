@@ -7,14 +7,31 @@ import os
 import sys
 import argparse
 
+from src import Logger
+from src.config import Settings, TomlPanelConfig, TomlAppConfig
 from src.main_frame import MainFrame
-from src.ncb import CheckPanelConfig, CheckAppConfig
-from src.config import Settings
 
 import wx
 
 
-def _parse_arguments():
+class CheckAppConfig(TomlAppConfig):
+    """
+    Check that the app config file has valid data. Create a new one
+    if necessary.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @property
+    def has_valid_data(self):
+        """
+        Does the static app config exist and is the data valid?
+        """
+        return self.is_valid
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=("Non-commercial organization bookkeeping application."))
     parser.add_argument(
@@ -27,43 +44,46 @@ def _parse_arguments():
         '-F', '--file-dump', action='store_true', default=False,
         dest='file_dump', help=("Dump the generated panel factory files "
                                 "(must be used with -D or --debug)."))
-    return parser
-
-
-if __name__ == "__main__":
-    cpc = CheckPanelConfig()
-    cac = CheckAppConfig()
+    options = parser.parse_args()
+    settings = Settings()
     status = 0
 
-    if not cpc.has_valid_data:
-        status = 1
-        print(f"Invalid data, see log file, exit status {status}")
+    if not options.debug and options.file_dump:  # -F (Must be used with -D)
+        options.file_dump = False
+        print("If using -F or --file-dump, -D or --debug must also be used.",
+              file=sys.stderr)
 
-    if status == 0 and cac.has_valid_data:
-        # Try to run display.
-        parser = _parse_arguments()
-        options = parser.parse_args()
+    if options.debug:
+        print(f"DEBUG--options: {options}", file=sys.stderr)
+        settings.debug = True
 
-        if options.file_dump:  # -F (Must be used with -D)
-            if not options.debug:
-                options.file_dump = False
-                print("Option -F must be used with -D.", file=sys.stderr)
+    if options.run:
+        settings.create_dirs()
+        Logger().config(logger_name=settings.logger_name,
+                        file_path=settings.user_log_fullpath)
+        tpc = TomlPanelConfig()
+        tac = TomlAppConfig()
 
-        if options.debug:
-            print(f"DEBUG--options: {options}", file=sys.stderr)
-
-        if options.run:
+        if not tpc.is_valid:
+            print(tpc.get_err_msg, file=sys.stderr)
+            print(f"See {tpc.user_log_fullpath}, for more information.",
+                  file=sys.stderr)
+            status = 1
+        elif not tac.is_valid:
+            print(tac.get_err_msg, file=sys.stderr)
+            print(f"See {tac.user_log_fullpath}, for more information.",
+                  file=sys.stderr)
+            status = 2
+        else:
+            # Try to run application.
             app = wx.App()
             mf = MainFrame(options=options)
-            icon_path = os.path.join(Settings.base_dir(), 'images',
-                                     'bookkeeper-48x48.ico')
+            icon_path = os.path.join(settings.base_dir(), 'images',
+                                    'bookkeeper-48x48.ico')
             mf.SetIcon(wx.Icon(icon_path))
             mf.Show(True)
             app.MainLoop()
-        else:
-            parser.print_help()
     else:
-        status = 2
-        print(f"Programming error, see log file, exit status {status}")
+        parser.print_help()
 
     sys.exit(status)

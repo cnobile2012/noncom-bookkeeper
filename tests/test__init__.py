@@ -14,44 +14,8 @@ from appdirs import AppDirs
 from testfixtures import LogCapture
 
 from . import check_flag
-from src import Bootstrap, Logger
+from src import Logger
 from src.config import Settings
-
-
-class TestBootstrap(unittest.TestCase):
-
-    def __init__(self, name):
-        super().__init__(name)
-
-    def setUp(self):
-        check_flag(self.__class__.__name__)
-        appname = Settings._APP_NAME
-        appauthor = Settings._DEVELOPERS[0]
-        self.ad = AppDirs(appname=appname, appauthor=appauthor)
-
-    #@unittest.skip("Temporarily skipped")
-    def test_constructor(self):
-        """
-        Test that all directory paths are created.
-        """
-        if os.path.exists(self.ad.user_data_dir):
-            shutil.rmtree(self.ad.user_data_dir)  # ignore_errors=True)
-
-        if os.path.exists(self.ad.user_config_dir):
-            shutil.rmtree(self.ad.user_config_dir)
-
-        if os.path.exists(self.ad.user_cache_dir):
-            shutil.rmtree(self.ad.user_cache_dir)
-
-        if os.path.exists(self.ad.user_log_dir):
-            shutil.rmtree(self.ad.user_log_dir)
-
-        bs = Bootstrap()
-        paths = (self.ad.user_data_dir, self.ad.user_config_dir,
-                 self.ad.user_cache_dir, self.ad.user_log_dir)
-        msg = "Should be True if {} path is found."
-        [self.assertTrue(os.path.exists(path), msg.format(path))
-         for path in paths]
 
 
 class TestLogger(unittest.TestCase):

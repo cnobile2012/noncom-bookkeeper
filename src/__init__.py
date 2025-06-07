@@ -7,22 +7,8 @@ __docformat__ = "restructuredtext en"
 import sys
 import logging
 
-from .config import Settings
-
 
 __all__ = ('Logger',)
-
-
-class Bootstrap(Settings):
-    """
-    Bootstrap the app. We create the directories that we need.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.create_dirs()
-        Logger().config(logger_name=self.logger_name,
-                        file_path=self.user_log_fullpath)
 
 
 class Logger:
@@ -86,7 +72,3 @@ class Logger:
     def level(self, level):
         assert self.logger, "The 'config()' method must be called first."
         self.logger.setLevel(level)
-
-
-# The line below runs the Bootstrap class for the first time.
-Bootstrap()

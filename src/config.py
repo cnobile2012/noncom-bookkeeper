@@ -14,13 +14,15 @@ from appdirs import AppDirs
 import tomlkit as tk
 
 from .bases import find_dict
+from .utilities import Borg
 
 
-class Settings(AppDirs):
+class Settings(AppDirs, Borg):
     """
     This class has all the default app, file, and log names used bye the
     system.
     """
+    _DEBUG = False
     _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     _APP_NAME = "nc-bookkeeper"
     _DEVELOPERS = ('Carl J. Nobile',)
@@ -35,32 +37,67 @@ class Settings(AppDirs):
                               'generic': 'generic.toml'}}
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, appname=self.app_name,
-                         appauthor=self.primary_developer, **kwargs)
-        # The two lines below read an environment variable which is used
+        super().__init__(appname=self.app_name,
+                         appauthor=self.primary_developer, *args, **kwargs)
+        # The next three lines are needed for debug mode only.
+        self._debug_data_dir = os.path.join(self._BASE_DIR, 'data')
+        self._debug_log_dir = os.path.join(self._debug_data_dir, 'log')
+        self._debug_factory_dir = os.path.join(self._debug_data_dir,
+                                         self._PANEL_FACTORY_DIR)
+
+        # The three lines below read an environment variable which is used
         # during the app build process. The default is to use the Baha'i
         # configuration.
         self.__config_type = os.environ.get('NCB_TYPE', 'bahai')
         self.__user_toml = self._CONFIG_FILES['user'][self.__config_type]
         self.__local_toml = self._CONFIG_FILES['local'][self.__config_type]
+
+        # Setup the logger for this monule.
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
 
-    def create_dirs(self):  # pragma: no cover
-        if not os.path.exists(self.user_data_dir):
-            os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)
+    def create_dirs(self):
+        if not self._DEBUG:
+            if not os.path.exists(self.user_data_dir):
+                os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)
 
-        if not os.path.exists(self.user_config_dir):
-            os.makedirs(self.user_config_dir, mode=0o775, exist_ok=True)
+            if not os.path.exists(self.user_config_dir):
+                os.makedirs(self.user_config_dir, mode=0o775, exist_ok=True)
 
-        if not os.path.exists(self.user_cache_dir):
-            os.makedirs(self.user_cache_dir, mode=0o775, exist_ok=True)
+            if not os.path.exists(self.user_cache_dir):
+                os.makedirs(self.user_cache_dir, mode=0o775, exist_ok=True)
 
-        if not os.path.exists(self.user_log_dir):
-            os.makedirs(self.user_log_dir, mode=0o775, exist_ok=True)
+            if not os.path.exists(self.user_log_dir):
+                os.makedirs(self.user_log_dir, mode=0o775, exist_ok=True)
 
-        if not os.path.exists(self.cached_factory_dir):
-            os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
+            if not os.path.exists(self.cached_factory_dir):
+                os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
+
+            paths = (self.user_data_dir, self.user_config_dir,
+                     self.user_cache_dir, self.user_log_dir,
+                     self.cached_factory_dir)
+        else:
+            if not os.path.exists(self._debug_data_dir):
+                os.makedirs(self._debug_data_dir, mode=0o775, exist_ok=True)
+
+            if not os.path.exists(self._debug_log_dir):
+                os.makedirs(self._debug_log_dir, mode=0o775, exist_ok=True)
+
+            if not os.path.exists(self._debug_factory_dir):
+                os.makedirs(self._debug_factory_dir, mode=0o775, exist_ok=True)
+
+            paths = (self._debug_data_dir, self._debug_log_dir,
+                     self._debug_factory_dir)
+
+        self._log.info("Created, if necessary, the following paths: %s", paths)
+
+    @property
+    def debug(self):
+        return self._DEBUG
+
+    @debug.setter
+    def debug(self, value: bool):
+        self._DEBUG = value
 
     @staticmethod
     def base_dir():
@@ -102,23 +139,39 @@ class Settings(AppDirs):
 
     @property
     def user_data_fullpath(self):
-        return os.path.join(self.user_data_dir, self.data_file_name)
+        if self.debug:
+            return os.path.join(self._debug_data_dir, self.data_file_name)
+        else:
+            return os.path.join(self.user_data_dir, self.data_file_name)
 
     @property
     def user_config_fullpath(self):
-        return os.path.join(self.user_config_dir, self.__user_toml)
+        if self.debug:
+            return os.path.join(self._debug_data_dir, self.__user_toml)
+        else:
+            return os.path.join(self.user_config_dir, self.__user_toml)
 
     @property
     def user_app_config_fullpath(self):
-        return os.path.join(self.user_config_dir, self.__app_toml)
+        if self.debug:
+            return os.path.join(self._debug_data_dir, self.__app_toml)
+        else:
+            return os.path.join(self.user_config_dir, self.__app_toml)
 
     @property
     def user_log_fullpath(self):
-        return os.path.join(self.user_log_dir, self.logfile_name)
+        if self.debug:
+            return os.path.join(self._debug_log_dir, self.logfile_name)
+        else:
+            return os.path.join(self.user_log_dir, self.logfile_name)
 
     @property
     def cached_factory_dir(self):
-        return os.path.join(self.user_cache_dir, self.panel_factory_name)
+        if self.debug:
+            return os.path.join(self._debug_factory_dir,
+                                self.panel_factory_name)
+        else:
+            return os.path.join(self.user_cache_dir, self.panel_factory_name)
 
     @property
     def local_config_fullpath(self):
@@ -135,14 +188,13 @@ class BaseSystemData(Settings):
     in all the types of config sub-classes.
     """
     SYS_FILES = {'data': None, 'panel_config': None, 'app_config': None}
-
-    INVALID_PROP = 1      # Invalid property
-    CANNOT_FIND_FILE = 2  # Cannot find file
-    TOML_ERROR = 3        # TOML error
-    ZERO_LENGTH_FILE = 4  # Zero length file
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    # Error conditions
+    ERR_CANNOT_FIND_FILE = 1  # Cannot find file
+    ERR_TOML_ERROR = 1        # TOML error, maybe corrupted
+    ERR_ZERO_LENGTH_FILE = 3  # Zero length file
+    ERR_MESSAGES = {ERR_CANNOT_FIND_FILE: "Cannot find file '{}'.",
+                    ERR_TOML_ERROR: "Cannot parse file '{}' may be corrupted.",
+                    ERR_ZERO_LENGTH_FILE: "File '{}' was zero length."}
 
     @property
     def panel_config(self):
@@ -151,6 +203,46 @@ class BaseSystemData(Settings):
     @panel_config.setter
     def panel_config(self, value):
         self.SYS_FILES['panel_config'] = value
+
+    @property
+    def app_config(self):
+        return self.SYS_FILES.get('app_config')
+
+    @app_config.setter
+    def app_config(self, value):
+        self.SYS_FILES['app_config'] = value
+
+    def parse_toml(self, filepath: str):
+        """
+        Open and read the specified TOML file.
+
+        :param str filepath: The file to open and read.
+        :return: TOML doc if no error or a tuple (errmsg, errcode) if an error.
+        :rtype: TOLM doc or int
+        """
+        error = doc = None
+
+        try:
+            with open(filepath, 'r') as f:
+                raw_doc = f.read()
+        except FileNotFoundError as e:
+            self._log.error("Cannot find file '%'s, %s", filepath, e)
+            error = self.ERR_CANNOT_FIND_FILE
+        else:
+            if raw_doc != "":
+                try:
+                    doc = tk.parse(raw_doc)
+                except tk.exceptions.TOMLKitError as e:
+                    self._log.error(
+                        "TOML error, possibly corrupted file '%s': %s",
+                        filepath, e)
+                    error = self.ERR_TOML_ERROR
+            else:
+                self._log.error("Cannot parse zero length file '%s'.",
+                                filepath)
+                error = self.ERR_ZERO_LENGTH_FILE
+
+        return error if error else doc
 
     # def panel_field_names(self, panel, raw=False):
     #     """
@@ -173,65 +265,258 @@ class BaseSystemData(Settings):
 
     #     return widget_names
 
+
+class TomlPanelConfig(BaseSystemData):
+    """
+    Read and write the TOML panel config file.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__error = None
+        self.__err_msg = None
+
     @property
-    def app_config(self):
-        return self.SYS_FILES.get('app_config')
-
-    @app_config.setter
-    def app_config(self, value):
-        self.SYS_FILES['app_config'] = value
-
-    def parse_toml(self, file_list):
+    def _has_local_config(self):
         """
-        Parse the toml file.
+        Check if the local panel config exists. This is a fatal and
+        critical error if it does not exist.
 
-        :param file_list: A tuple of files to parse.
-        :type file_list: str
-        :return: A list of errors if any exist. [fullpath, errmsg, errcode]
-        :rtype: list
+        :returns: True if file exists and False if it does not exist.
+        :rtype: bool
         """
-        raw_doc = None
-        errors = []
+        if not (has := os.path.exists(self.local_config_fullpath)):
+            msg = (f"The path '{self.local_config_fullpath}' does not exist, "
+                   "exiting application.")
+            self._log.critical(msg)
+            self.__err_msg = msg
 
-        for file_type in file_list:
-            try:
-                fname = getattr(self, file_type)
-            except AttributeError as e:
-                msg = f"Invalid property, {str(e)}"
-                self._log.error(msg)
-                errors.append((file_type, msg, self.INVALID_PROP))
-            else:
-                try:
-                    with open(fname, 'r') as f:
-                        raw_doc = f.read()
-                except FileNotFoundError as e:
-                    msg = f"Cannot find file {fname}, {str(e)}"
-                    self._log.error(msg)
-                    errors.append((file_type, msg, self.CANNOT_FIND_FILE))
+        return has
+
+    @property
+    def _has_user_config(self):
+        """
+        Check if the user panel config exists.
+
+        :returns: True if file exists and False if it does not exist.
+        :rtype: bool
+         """
+        if not (has := os.path.exists(self.user_config_fullpath)):
+            msg = (f"The path '{self.user_config_fullpath}' does not exist, "
+                   "file will be coped.")
+            self._log.info(msg)
+            self.__err_msg = msg
+
+        return has
+
+    @property
+    def is_valid(self):
+        ret = True
+        backup_file = f"{self.user_config_fullpath}.bak"
+        count = 0
+
+        while self._has_user_config and count < 2:
+            count += 1
+            self._read_file(self.user_config_fullpath)
+
+            if self.__error:
+                self.__err_msg = self.ERR_MESSAGES[self.__error].format(
+                    self.local_config_fullpath)
+
+                if count < 2:
+                    self._log.warn(
+                        "Error: %s is corrupted, using the backup file.",
+                        self.user_config_fullpath)
+                    self._copy_file(backup_file, self.user_config_fullpath)
                 else:
-                    if raw_doc != "":
-                        try:
-                            doc = tk.parse(raw_doc)
-                        except tk.exceptions.TOMLKitError as e:
-                            msg = f"TOML error: {str(e)}"
-                            self._log.error(msg)
-                            errors.append((file_type, msg, self.TOML_ERROR))
-                        else:
-                            if 'user_config' in file_type:
-                                self.panel_config = doc
-                            elif (self.panel_config is None
-                                  and 'local_config' in file_type):
-                                # Executed only on first run.
-                                self.panel_config = doc
-                            elif (self.app_config is None
-                                  and 'user_app_config' in file_type):
-                                self.app_config = doc
-                    else:
-                        msg = f"Cannot parse zero length file '{fname}'."
-                        self._log.error(msg)
-                        errors.append((file_type, msg, self.ZERO_LENGTH_FILE))
+                    ret = False
+                    break
+        else:
+            if self._has_local_config:
+                self._copy_file(self.local_config_fullpath,
+                                self.user_config_fullpath)
+                self._copy_file(self.local_config_fullpath, backup_file)
+                self._read_file(self.user_config_fullpath)
 
-        return errors
+                if self.__error:  # All these errors are critical.
+                    self.__err_msg = self.ERR_MESSAGES[self.__error].format(
+                        self.user_config_fullpath)
+                    ret = False
+            else:
+                ret = False
+
+        return ret
+
+    @property
+    def get_err_msg(self):
+        return self.__err_msg
+
+    def _read_file(self, filepath):
+        """
+        Open and read the local panel file.
+        """
+        doc = self.parse_toml(filepath)
+        assert doc, "Invalid document--possible coding error."
+
+        if isinstance(doc, int):  # Has an error
+            self.__error = doc
+        else:
+            self.panel_config = doc
+            self.__error = None
+
+    def _copy_file(self, fname0, fname1):
+        try:
+            shutil.copy2(fname0, fname1)
+        except Exception as e:
+            self._log.error("Could not copy file %s to %s, %s",
+                            fname0, fname1, e)
+            raise e
+
+
+class TomlAppConfig(BaseSystemData):
+    """
+    Read and write the TOML app config file.
+    """
+    _FILE_LIST = ('user_app_config_fullpath',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__error = None
+        self.__err_msg = None
+
+    @property
+    def _has_user_config(self):
+        """
+        Check if the user app config exists.
+
+        :returns: True if file exists and False if it does not exist.
+        :rtype: bool
+         """
+        if not (has := os.path.exists(self.user_app_config_fullpath)):
+            msg = (f"The path '{self.user_config_fullpath}' does not exist, "
+                   "file will be coped.")
+            self._log.info(msg)
+            self.__err_msg = msg
+
+        return has
+
+    @property
+    def is_valid(self):
+        """
+        Test the app config file that it can be parsed and that it exists.
+        This property always returns True.
+        """
+        ret = True
+
+        if self._has_user_config:
+            ret = self.__loop_has_user_config()
+        else:
+            self._create_app_config()
+            ret = self.__loop_has_user_config()
+
+        return ret
+
+    def __loop_has_user_config(self):
+        count = 0
+        ret = True
+
+        while self._has_user_config and count < 2:
+            count += 1
+            self._read_file(self.user_app_config_fullpath)
+
+            if self.__error:
+                self.__err_msg = self.ERR_MESSAGES[self.__error].format(
+                    self.user_app_config_fullpath)
+
+                if count < 2:
+                    self._log.warn(
+                        "Error: %s is corrupted, recreating file.",
+                        self.user_app_config_fullpath)
+                else:
+                    self._log.critical("The %s is corrupted beyond repair "
+                                       "contact the developer.",
+                                       self.user_app_config_fullpath)
+                    ret = False
+
+        return ret
+
+    @property
+    def get_err_msg(self):
+        return self.__err_msg
+
+    def _read_file(self, filepath):
+        """
+        Open and read the local panel file.
+        """
+        doc = self.parse_toml(filepath)
+        assert doc, "Invalid document--possible coding error."
+
+        if isinstance(doc, int):  # Has an error
+            self.__error = doc
+        else:
+            self.app_config = doc
+            self.__error = None
+
+    def _create_app_config(self):
+        doc = tk.document()
+        # Create header
+        doc.add(tk.comment(""))
+        doc.add(tk.comment("Noncommercial Accounting System config file."))
+        doc.add(tk.comment(""))
+        doc.add(tk.comment(f"Date Created: {datetime.now()}"))
+        doc.add(tk.comment(""))
+        doc.add(tk.nl())
+        # Create app size
+        app_size = tk.table()
+        app_size.add('default', [536, 830])
+        app_size.add('size', [536, 830])
+        doc.add('app_size', app_size)
+        self._write_file(tk.dumps(doc))
+
+    def get_value(self, table, key):
+        doc = self.app_config
+        assert doc, f"The {doc=} must be a valid toml document."
+        item_table = doc.get(table)
+        have_keys = False
+
+        if item_table:
+            item_key = item_table.get(key)
+
+            if item_key:
+                have_keys = True
+                return doc[table][key]
+
+        msg = (f"Could not find the table '{table}' or key: '{key}' in "
+               f"{self.user_app_config_fullpath}.")
+        self._log.error(msg)
+        assert have_keys, msg
+
+    def update_app_config(self, table, key, value):
+        doc = self.app_config
+        item_table = doc.get(table)
+
+        if item_table:
+            item_key = item_table.get(key)
+
+            if item_key:
+                doc[table][key] = value
+            else:
+                item_table.add(key, value)
+        else:
+            item_table = tk.table()
+            item_table.add(key, value)
+            doc.add(table, item_table)
+
+        self._write_file(tk.dumps(doc))
+
+    def _write_file(self, data):
+        try:
+            with open(self.user_app_config_fullpath, 'w') as f:
+                f.write(data)
+        except (OSError, PermissionError) as e:
+            msg = (f"Could not create the {self.user_app_config_fullpath} "
+                   f"file, {str(e)}")
+            self._log.critical(msg)
+            raise e
 
 
 class TomlMetaData(BaseSystemData):
@@ -272,191 +557,6 @@ class TomlMetaData(BaseSystemData):
 
     def get_font(self, font_type):
         return getattr(self, font_type)
-
-
-class TomlPanelConfig(BaseSystemData):
-    """
-    Read and write the TOML panel config file.
-    """
-    _shared_state = {}
-    _FILE_LIST = ('user_config_fullpath', 'local_config_fullpath')
-
-    def __init__(self, *args, **kwargs):
-        self.__dict__ = self._shared_state
-        super().__init__(*args, **kwargs)
-
-    @property
-    def is_valid(self):
-        """
-        Test the panel config file that it can be parsed and that it exists.
-        This property can return True or False.
-        """
-        ret = True
-        # The order of the tuple below is important.
-        errors = self.parse_toml(self._FILE_LIST)
-
-        for error in errors:
-            if error[2] == self.INVALID_PROP:
-                msg = f"Error: {error[1]}"
-                self._log.critical(msg)
-                ret = False
-            elif error[0] == 'user_config_fullpath':
-                # Backup bad file then over write the original with
-                # the default.
-                ufname = self.user_config_fullpath
-                lfname = self.local_config_fullpath
-
-                if not os.path.exists(ufname):
-                    msg = f"Warning, '{ufname}' does not exist, creating it."
-                    self._log.warning(msg)
-
-                if not os.path.exists(lfname):
-                    msg = f"Critical error, '{lfname}' does not exist."
-                    self._log.critical(msg)
-                    ret = False
-
-                if ret:
-                    if error[2] == self.CANNOT_FIND_FILE:
-                        shutil.copy2(lfname, ufname)
-                        self.parse_toml((ufname,))
-                        msg = f"Warning {error[1]}"
-                        self._log.warning(msg)
-                    elif error[2] in (self.TOML_ERROR, self.ZERO_LENGTH_FILE):
-                        bad_file = f'{ufname}.bad'
-                        shutil.copy2(ufname, bad_file)
-                        shutil.copy2(lfname, ufname)
-                        msg = ("Found an invalid panel config file and "
-                               "reverted to the default version. The original "
-                               f"bad file has been backed up to {bad_file}, "
-                               f"{error[1]}")
-                        self._log.warning(msg)
-            elif error[0] == 'local_config_fullpath':
-                msg = f"Error: {error[2]}"
-                self._log.critical(msg)
-                ret = False
-
-        return ret
-
-
-class TomlAppConfig(BaseSystemData):
-    """
-    Read and write the TOML app config file.
-    """
-    _shared_state = {}
-    _FILE_LIST = ('user_app_config_fullpath',)
-
-    def __init__(self, *args, **kwargs):
-        self.__dict__ = self._shared_state
-        super().__init__(*args, **kwargs)
-
-    @property
-    def is_valid(self):
-        """
-        Test the app config file that it can be parsed and that it exists.
-        This property always returns True.
-        """
-        ret = True
-        run_num = 2
-
-        while run_num:
-            errors = self.parse_toml(self._FILE_LIST)
-            run_num = run_num - 1 if errors else 0
-
-            for error in errors:
-                if error[2] == self.INVALID_PROP:
-                    msg = f"Error: {error[1]}"
-                    self._log.critical(msg)
-                    ret = False
-                elif error[0] == 'user_app_config_fullpath':
-                    fname = self.user_app_config_fullpath
-
-                    if error[2] in (self.TOML_ERROR, self.ZERO_LENGTH_FILE):
-                        # Backup bad file then recreate the file.
-                        bad_file = f'{fname}.bad'
-                        shutil.move(fname, bad_file)
-                        msg = ("Found an invalid app config file, a new one "
-                               "will be created. The original bad file has "
-                               f"been backed up to {bad_file}.")
-                        self._log.warning(msg)
-                        #self.parent.statusbar_warning = msg
-                        # *** TODO *** This needs to be shown on the screen
-                        #              if detected.
-                    else:  # CANNOT_FIND_FILE
-                        msg = (f"The file {getattr(self, error[0])} could "
-                               "not be found. It will be created.")
-                        self._log.warning(msg)
-                        #self.parent.statusbar_warning = msg
-                        # *** TODO *** This needs to be shown on the screen
-                        #              if detected.
-
-                    self.create_app_config()
-
-        return ret
-
-    def create_app_config(self):
-        doc = tk.document()
-        # Create header
-        doc.add(tk.comment(""))
-        doc.add(tk.comment("Noncommercial Accounting System config file."))
-        doc.add(tk.comment(""))
-        doc.add(tk.comment(f"Date Created: {datetime.now()}"))
-        doc.add(tk.comment(""))
-        doc.add(tk.nl())
-        # Create app size
-        app_size = tk.table()
-        app_size.add('default', [536, 830])
-        app_size.add('size', [536, 830])
-        doc.add('app_size', app_size)
-        self._write_file(tk.dumps(doc))
-
-    def get_value(self, table, key):
-        doc = self.app_config
-        item_table = doc.get(table)
-        have_keys = False
-
-        if item_table:
-            item_key = item_table.get(key)
-
-            if item_key:
-                have_keys = True
-                return doc[table][key]
-
-        msg = (f"Could not find the table '{table}' or key: '{key}' in "
-               f"{self.user_app_config_fullpath}.")
-        self._log.error(msg)
-        #self.parent.statusbar_warning = msg
-        # *** TODO *** This needs to be shown on the screen if detected.
-        assert have_keys, msg
-
-    def update_app_config(self, table, key, value):
-        doc = self.app_config
-        item_table = doc.get(table)
-
-        if item_table:
-            item_key = item_table.get(key)
-
-            if item_key:
-                doc[table][key] = value
-            else:
-                item_table.add(key, value)
-        else:
-            item_table = tk.table()
-            item_table.add(key, value)
-            doc.add(table, item_table)
-
-        self._write_file(tk.dumps(doc))
-
-    def _write_file(self, data):
-        try:
-            with open(self.user_app_config_fullpath, 'w') as f:
-                f.write(data)
-        except (OSError, PermissionError) as e:
-            msg = (f"Could not create the {self.user_app_config_fullpath} "
-                   f"file, {str(e)}")
-            self._log.critical(msg)
-            #self.parent.statusbar_warning = msg
-            # *** TODO *** This needs to be shown on the screen if detected.
-            raise e
 
 
 class TomlCreatePanel(BaseSystemData):

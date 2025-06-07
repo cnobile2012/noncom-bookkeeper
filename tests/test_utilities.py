@@ -8,8 +8,121 @@ import unittest
 import wx
 
 from . import check_flag
-from src.utilities import (Borg, GridBagSizer, ConfirmationDialog,
-                           _ClickPosition, EventStaticText, StoreObjects)
+from src.utilities import (Borg, StoreObjects, GridBagSizer,
+                           ConfirmationDialog, _ClickPosition, EventStaticText)
+
+
+class TestBorg(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        class A(Borg):
+            foo = False
+
+            def __init__(self, value='', *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.value = value
+
+            def do_domething(self):
+                self.foo = True
+                self.bar = True
+
+            def get_state(self):
+                return self.__dict__
+
+        class B(A):
+            pass
+
+        self.A = A
+        self.B = B
+
+    #@unittest.skip("Temporarily skipped")
+    def test_normal_borg_pattern(self):
+        """
+        Test that the normal Borg patter works. This is Two instances of
+        the same class have the same data in them.
+        """
+        a0 = self.A()
+        a1 = self.A()
+        b = self.B()
+        data = (
+            (a0, None, a1, 'foo', False),
+            (a0, None, b, 'foo', False),
+            (a0, 'do_domething', a1, 'foo', True),
+            (a0, None, a1, 'bar', True),
+            (a0, None, b, 'foo', True),
+            (a0, None, b, 'bar', True),
+            )
+        msg = "Expected {}, found {}."
+
+        for a0, method, a1, var, expected in data:
+            if method:
+                getattr(a0, method)()
+        
+            result0 = getattr(a0, var)
+            result1 = getattr(a1, var)
+            self.assertEqual(expected, result0, msg.format(expected, result0))
+            self.assertEqual(expected, result1, msg.format(expected, result1))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_normal_borg_pattern_with_arg(self):
+        """
+        """
+        a = self.A()
+        b = self.B()
+        c = self.A('Something')
+        data = (
+            (a, b, c, 'value', 'Something'),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        for a, b, c, var, expected in data:
+            result0 = getattr(a, var)
+            result1 = getattr(b, var)
+            result2 = getattr(c, var)
+            self.assertEqual(expected, result0, msg.format(expected, result0))
+            self.assertEqual(expected, result1, msg.format(expected, result1))
+            self.assertEqual(expected, result2, msg.format(expected, result2))
+
+
+class TestStoreObjects(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        StoreObjects().clear_state()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_shared_state(self):
+        a = StoreObjects()
+        b = StoreObjects()
+        expected = 'bar'
+        a.set_object('foo', expected)
+        value = b.get_object('foo')
+        msg = f"Expected {expected}, found {value}"
+        self.assertEqual(expected, value, msg)  # Shared state
+
+    #@unittest.skip("Temporarily skipped")
+    def test_get_nonexistent_key(self):
+        value = StoreObjects().get_object('missing')
+        msg = f"Expected 'None', found {value}"
+        self.assertIsNone(value)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_set_and_get_object(self):
+        """
+        Test that the set_object and get_object methods correctly sets
+        and gets an object.
+        """
+        key = 'NS'
+        expect = 'Nothing special'
+        StoreObjects().set_object(key, expect)
+        found = StoreObjects().get_object(key)
+        msg = f"Expected {expect}, found {found}."
+        self.assertEqual(expect, found, msg)
 
 
 class BaseTests(unittest.TestCase):
@@ -36,36 +149,6 @@ class BaseTests(unittest.TestCase):
             widget = EventStaticText(self.frame, -1, label, style=0)
             pos, span = (num, dec), (1, 1)
             self.gbs.Add(widget, pos, span, wx.ALIGN_CENTER | wx.ALL, 6)
-
-
-class TestBorg(unittest.TestCase):
-
-    def __init__(self, name):
-        super().__init__(name)
-
-    def test_setter_and_getter(self):
-        """
-        """
-        data = (
-            (Borg(), 'Something', Borg(), '', {'value0': 'Something'}),
-            (Borg(), '', Borg(), 'Something', {'value1': 'Something'}),
-            )
-
-        msg = "Expected {} with value0 {} and value1 {}, found {}."
-
-        for borg0, value0, borg1, value1, expected_result in data:
-            borg0.clear_state()
-            borg1.clear_state()
-
-            if value0:
-                borg0.value0 = value0
-                result = borg1.value0
-            elif value1:
-                borg1.value1 = value1
-                result = borg0.value1
-
-            self.assertEqual(expected_result, result, msg.format(
-                expected_result, value0, value1, result))
 
 
 class TestGridBagSizer(BaseTests):
@@ -378,7 +461,7 @@ class TestEventStaticText(BaseTests):
         self.create_objects()
 
     def tearDown(self):
-        self.frame.Close()
+        self.app.ExitMainLoop()
 
     def get_widget(self, index=0):
         return self.frame.GetChildren()[index]
@@ -421,7 +504,6 @@ class TestEventStaticText(BaseTests):
         """
         Test that the WidgetEvent data returns properly.
         """
-        self.frame.Show()
         widget = self.get_widget(1)
         expected_label = widget.GetLabel()
 
@@ -439,45 +521,9 @@ class TestEventStaticText(BaseTests):
             # Exit GUI
             self.app.ExitMainLoop()
 
-        #widget.new_event_type
         self.frame.Bind(widget.EVT_CLICK_POSITION, event_click,
                         id=widget.GetId())
+        self.frame.Show()
         self.simulate_left_click(widget)
+        wx.CallLater(250, self.app.ExitMainLoop)
         self.app.MainLoop()
-
-
-class TestStoreObjects(unittest.TestCase):
-
-    def __init__(self, name):
-        super().__init__(name)
-
-    def setUp(self):
-        StoreObjects().clear_state()
-
-    #@unittest.skip("Temporarily skipped")
-    def test_shared_state(self):
-        a = StoreObjects()
-        b = StoreObjects()
-        expected = 'bar'
-        a.set_object('foo', expected)
-        value = b.get_object('foo')
-        msg = f"Expected {expected}, found {value}"
-        self.assertEqual(expected, value, msg)  # Shared state
-
-    #@unittest.skip("Temporarily skipped")
-    def test_get_nonexistent_key(self):
-        value = StoreObjects().get_object('missing')
-        msg = f"Expected 'None', found {value}"
-        self.assertIsNone(value)
-
-    #@unittest.skip("Temporarily skipped")
-    def test_set_and_get_object(self):
-        """
-        Test that the set_object method correctly sets an object.
-        """
-        key = 'NS'
-        expect = 'Nothing special'
-        StoreObjects().set_object(key, expect)
-        found = StoreObjects().get_object(key)
-        msg = f"Expected {expect}, found {found}."
-        self.assertEqual(expect, found, msg)

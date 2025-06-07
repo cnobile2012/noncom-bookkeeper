@@ -103,6 +103,10 @@ install-dev:
 
 .PHONY	: uninstall-dev
 uninstall-dev:
+	@rm -rf ${PREFIX}/data
+
+.PHONY	: uninstall-prod
+uninstall-prod:
 	@rm -rf ${HOME}/.local/share/${APP_NAME}
 	@rm -rf ${HOME}/.config/${APP_NAME}
 	@rm -rf ${HOME}/.cache/${APP_NAME}
