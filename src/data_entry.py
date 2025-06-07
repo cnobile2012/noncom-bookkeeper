@@ -83,8 +83,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         self._checkboxes = {}
         self._textctrles = {}
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("description", "Contribution", "Distribution", "Expense",
-                  "Other")
+        labels = ("description", "Contribution:", "Distribution:", "Expense:",
+                  "Other:")
         self.create_widgets(3, 1, 'top', labels, 3)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
@@ -107,8 +107,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("entry_type", "Check Number", "Receipt Number", "Debit",
-                  "OCS")
+        labels = ("entry_type", "Check Number:", "Receipt Number:", "Debit:",
+                  "OCS:")
         self.create_widgets(2, 2, 'bottom', labels, 10)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
@@ -131,8 +131,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("bank", "@Deposit Amount", "@Check/Dedit/OCS Amount",
-                  "%Balance")
+        labels = ("bank", "@Deposit Amount:", "@Check/Dedit/OCS Amount:",
+                  "%Balance:")
         self.create_widgets(0, 3, 'top', labels, 17)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
@@ -155,7 +155,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("income", "@Local Fund", "@Contributed Expense", "@Misc")
+        labels = ("income", "@Local Fund:", "@Contributed Expense:", "@Misc:")
         self.create_widgets(0, 3, 'bottom', labels, 23)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
@@ -172,7 +172,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
                      | wx.BOTTOM, 4)
         items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
         self._tcp.current_panel = items
-        labels = [f"@{n[:-1]}"
+        labels = [f"@{n}"
                   for n in self._tcp.field_names_by_category['Expenses']]
         labels.insert(0, '&expenses')
         self.create_widgets(0, len(labels)-1, 'top', labels, 29)

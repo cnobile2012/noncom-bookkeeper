@@ -42,16 +42,10 @@ if __name__ == "__main__":
         help="Debugging mode.")
     parser.add_argument(
         '-F', '--file-dump', action='store_true', default=False,
-        dest='file_dump', help=("Dump the generated panel factory files "
-                                "(must be used with -D or --debug)."))
+        dest='file_dump', help=("Dump the generated panel factory files."))
     options = parser.parse_args()
     settings = Settings()
     status = 0
-
-    if not options.debug and options.file_dump:  # -F (Must be used with -D)
-        options.file_dump = False
-        print("If using -F or --file-dump, -D or --debug must also be used.",
-              file=sys.stderr)
 
     if options.debug:
         print(f"DEBUG--options: {options}", file=sys.stderr)

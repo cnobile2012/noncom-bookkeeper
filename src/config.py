@@ -39,11 +39,9 @@ class Settings(AppDirs, Borg):
     def __init__(self, *args, **kwargs):
         super().__init__(appname=self.app_name,
                          appauthor=self.primary_developer, *args, **kwargs)
-        # The next three lines are needed for debug mode only.
+        # The next two lines are needed for debug mode only.
         self._debug_data_dir = os.path.join(self._BASE_DIR, 'data')
         self._debug_log_dir = os.path.join(self._debug_data_dir, 'log')
-        self._debug_factory_dir = os.path.join(self._debug_data_dir,
-                                         self._PANEL_FACTORY_DIR)
 
         # The three lines below read an environment variable which is used
         # during the app build process. The default is to use the Baha'i
@@ -83,11 +81,10 @@ class Settings(AppDirs, Borg):
             if not os.path.exists(self._debug_log_dir):
                 os.makedirs(self._debug_log_dir, mode=0o775, exist_ok=True)
 
-            if not os.path.exists(self._debug_factory_dir):
-                os.makedirs(self._debug_factory_dir, mode=0o775, exist_ok=True)
+            if not os.path.exists(self.cached_factory_dir):
+                os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
 
-            paths = (self._debug_data_dir, self._debug_log_dir,
-                     self._debug_factory_dir)
+            paths = (self._debug_data_dir, self._debug_log_dir)
 
         self._log.info("Created, if necessary, the following paths: %s", paths)
 
@@ -168,8 +165,7 @@ class Settings(AppDirs, Borg):
     @property
     def cached_factory_dir(self):
         if self.debug:
-            return os.path.join(self._debug_factory_dir,
-                                self.panel_factory_name)
+            return os.path.join(self._debug_data_dir, self.panel_factory_name)
         else:
             return os.path.join(self.user_cache_dir, self.panel_factory_name)
 
