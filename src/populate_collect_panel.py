@@ -143,9 +143,10 @@ class PopulateCollect:
                             elif not value and field_name == 'treasurer_month':
                                 value = self._org_data['treasurer']
 
-                        c_set[1].SetValue(value)
+                        self.set_value(c_set[1], value)
                     elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
-                        c_set[1].SetValue(self._convert_date_to_yymmdd(value))
+                        self.set_value(c_set[1],
+                                       self._convert_date_to_yymmdd(value))
         elif panel_name == 'fiscal':  # When run during first time.
             self._add_fiscal_year_choices(panel_name, panel)
 
@@ -236,6 +237,10 @@ class PopulateCollect:
         value = int(value)
         return f"{value/100:.2f}"
 
+    def set_value(self, obj, value):
+        if obj.GetValue != value:
+            obj.SetValue(value)
+
     #
     # Methods called from panels
     #
@@ -259,12 +264,12 @@ class PopulateCollect:
 
             if (field_name == 'current_fiscal_year'
                 and name1 == 'ColorCheckBox'):
-                c_set[1].SetValue(current)
+                self.set_value(c_set[1], current)
             elif (field_name == 'work_on_this_fiscal_year'
                   and name1 == 'ColorCheckBox'):
-                c_set[1].SetValue(work_on)
+                self.set_value(c_set[1], work_on)
             elif field_name == 'audit_complete' and name1 == 'ColorCheckBox':
-                c_set[1].SetValue(audit)
+                self.set_value(c_set[1], audit)
 
     def _get_fiscal_year_value(self, year: int, *, pk: bool=False,
                                date: bool=False, current: bool=False,

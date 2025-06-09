@@ -7,15 +7,12 @@ __docformat__ = "restructuredtext en"
 import io
 import logging
 import os
-import shutil
 import unittest
 from contextlib import redirect_stdout
-from appdirs import AppDirs
 from testfixtures import LogCapture
 
 from . import check_flag
 from src import Logger
-from src.config import Settings
 
 
 class TestLogger(unittest.TestCase):

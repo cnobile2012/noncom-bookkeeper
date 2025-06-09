@@ -18,7 +18,6 @@ class Database(BaseDatabase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        #BaseDatabase.__init__(self)
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,

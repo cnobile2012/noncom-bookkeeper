@@ -63,7 +63,6 @@ class MainFrame(wx.Frame, MenuBar):
         self._statusbar = self.CreateStatusBar(len(status_widths),
                                                wx.STB_DEFAULT_STYLE)
         self._statusbar.SetStatusWidths(status_widths)
-        #self.Center()
         self.Layout()
 
         # Setup resizer

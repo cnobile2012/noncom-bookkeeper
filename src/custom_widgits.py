@@ -8,6 +8,9 @@ import os
 import re
 import wx
 import wx.adv
+
+from wx.lib.newevent import NewEvent
+
 import badidatetime
 
 
@@ -34,7 +37,9 @@ class CustomTextCtrl(wx.Control):
 
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.SetMinSize((100, 28))
+        self.SetWindowStyle(self.GetWindowStyle() | wx.TE_PROCESS_ENTER)
 
+        self.Bind(wx.EVT_TEXT_ENTER, self.on_enter)
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
         self.Bind(wx.EVT_CHAR, self.on_char)
@@ -75,6 +80,9 @@ class CustomTextCtrl(wx.Control):
         self.SetFocus()
         event.Skip()
 
+    def on_enter(self, event):
+        wx.PostEvent(self.GetEventHandler(), event)
+
     def on_focus(self, event):
         self.has_focus = True
         self.Refresh()
@@ -93,6 +101,11 @@ class CustomTextCtrl(wx.Control):
                 self.Navigate(wx.NavigationKeyEvent.IsBackward)
             else:
                 self.Navigate(wx.NavigationKeyEvent.IsForward)
+        # elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+        #     evt = wx.CommandEvent(wx.EVT_TEXT_ENTER.typeId, self.GetId())
+        #     evt.SetEventObject(self)
+        #     wx.PostEvent(self, evt)
+        #     return
         elif key == wx.WXK_BACK:
             if self.cursor_pos > 0:
                 self.text = self.text[:self.cursor_pos - 1] + self.text[
@@ -301,15 +314,17 @@ class BadiDatePickerCtrl(wx.Panel):
         super().__init__(parent)
         self.SetName(name)
         w_bg_color = wx.Colour(222, 237, 230)  # Gray
+        self._updating = False
         # Default date
         self.bdate = dt or badidatetime.date.today(short=True)
 
         self.text_ctrl = CustomTextCtrl(self, style=wx.BORDER_NONE)
-        #self.text_ctrl = wx.TextCtrl(self, style=wx.BORDER_NONE)
         self.text_ctrl.SetValue(self.bdate.isoformat())
         self.text_ctrl.SetBackgroundColour(w_bg_color)
         self.text_ctrl.SetForegroundColour(wx.BLACK)
         self.text_ctrl.Bind(wx.EVT_TEXT, self.on_change)
+        self.text_ctrl.Bind(wx.EVT_KILL_FOCUS, self.on_change)
+        self.text_ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_change)
 
         bmp = wx.ArtProvider.GetBitmap(wx.ART_GO_DOWN, wx.ART_BUTTON, (16, 16))
         self.calendar_btn = wx.BitmapButton(self, bitmap=bmp,
@@ -336,8 +351,13 @@ class BadiDatePickerCtrl(wx.Panel):
 
         if len(parts) == 3 and all(res):
             date = [int(p) for p in parts]
-            self.bdate = badidatetime.date(*date)
-            wx.PostEvent(self, BadiDateChangedEvent(self, self.bdate))
+            new_date = badidatetime.date(*date)
+
+            if self.bdate != new_date:
+                self.bdate = new_date
+                wx.PostEvent(self, BadiDateChangedEvent(self, self.bdate))
+
+        event.Skip()
 
     def show_popup_calendar(self, event):
         popup = BadiCalendarPopup(self, bdate=self.bdate)
@@ -496,3 +516,63 @@ class ColorCheckBox(wx.Panel):
 
     def SetSize(self, size=(120, 24)):
         self.SetMinSize(size)
+
+
+FlatArrowEvent, EVT_FLAT_ARROW = NewEvent()
+
+
+class FlatArrowClickEvent(FlatArrowEvent):
+    def __init__(self, direction):
+        super().__init__()
+        self.direction = direction  # "left", "right", etc.
+
+    def GetDirection(self):
+        return self.direction
+
+
+class FlatArrowButton(wx.Control):
+    def __init__(self, parent, label="→", direction="right", tooltip=""):
+        super().__init__(parent, style=wx.BORDER_NONE)
+        self.label = label
+        self.direction = direction
+        self.hover = False
+
+        self.SetToolTip(tooltip)
+        self.SetMinSize((32, 32))
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_ENTER_WINDOW, self.on_enter)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave)
+        self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
+
+    def on_enter(self, event):
+        self.hover = True
+        self.Refresh()
+
+    def on_leave(self, event):
+        self.hover = False
+        self.Refresh()
+
+    def on_click(self, event):
+        event = FlatArrowClickEvent(direction=self.direction)
+        wx.PostEvent(self, event)
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        rect = self.GetClientRect()
+
+        # Hover background
+        bg = (wx.Colour(220, 220, 220) if self.hover
+              else wx.Colour(222, 237, 230))
+        dc.SetBrush(wx.Brush(bg))
+        dc.SetPen(wx.Pen(wx.Colour(160, 160, 160)))
+        dc.DrawRectangle(rect)
+
+        # Draw arrow/text
+        dc.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                           wx.FONTWEIGHT_BOLD))
+        dc.SetTextForeground(wx.BLACK)
+        tw, th = dc.GetTextExtent(self.label)
+        dc.DrawText(self.label, (rect.width - tw) // 2,
+                    (rect.height - th) // 2)

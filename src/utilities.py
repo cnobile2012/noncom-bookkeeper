@@ -314,12 +314,12 @@ class MutuallyExclusiveWidgets:
         """
         assert (len(labels) - 1) == (num_cb + num_txt), (
             "The number of labels are not equal to the number of "
-            "checkboxes and test controls.")
+            "ColorCheckBoxes and TextCtrls.")
         first_char = labels[0][0]
         assert self.is_valid_label(labels[0], '!$&', 'a-z_'), (
             f"Invalid category label {labels[0]}.")
         label = labels[0][1:] if first_char in ('!', '$', '&') else labels[0]
-        assert all(self.is_valid_label(lb, '*@%', "áí/'a-xA-Z: ")
+        assert all(self.is_valid_label(lb, '*@%', "áí'a-xA-Z: ")
                    for lb in labels[1:]), f"Invalid label(s) in {labels[1:]}."
         cb_list = self._checkboxes.setdefault(label, [])
         tc_list = self._textctrles.setdefault(label, [])

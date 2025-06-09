@@ -11,7 +11,8 @@ from wx.lib.scrolledpanel import ScrolledPanel
 from .config import TomlMetaData, TomlCreatePanel
 from .utilities import MutuallyExclusiveWidgets, make_name
 from .bases import BasePanel
-from .custom_widgits import BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED
+from .custom_widgits import (
+    BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED, FlatArrowButton, EVT_FLAT_ARROW)
 
 
 class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
@@ -46,6 +47,28 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_00.SetFont(title_font)
         widget_00.SetForegroundColour(self.w_fg_color)
         sizer.Add(widget_00, 0, wx.CENTER, 0)
+
+        # Search for specific date of item.
+        srch_widget = BadiDatePickerCtrl(self, wx.ID_ANY)
+        srch_widget.SetBackgroundColour(self.w_bg_color)
+        srch_widget.SetForegroundColour(self.w_fg_color)
+        srch_widget.SetMinSize((130, 28))
+        srch_widget.Bind(EVT_BADI_DATE_CHANGED, self.search_event)
+        sizer.Add(srch_widget, 0, wx.CENTER | wx.ALL, 6)
+
+        # View previous and next item.
+        left = FlatArrowButton(self, label="←", direction='left',
+                               tooltip="Previous Item")
+        right = FlatArrowButton(self, label="→", direction='right',
+                                tooltip="Next Item")
+        left.Bind(EVT_FLAT_ARROW, self.on_arrow)
+        right.Bind(EVT_FLAT_ARROW, self.on_arrow)
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.AddStretchSpacer()
+        btn_sizer.Add(left, 0, wx.ALL, 10)
+        btn_sizer.Add(right, 0, wx.ALL, 10)
+        btn_sizer.AddStretchSpacer()
+        sizer.Add(btn_sizer, 0, wx.CENTER, 0)
 
         self.gbs = wx.GridBagSizer(2, 2)
         sizer.Add(self.gbs, 1, wx.CENTER, 10)
@@ -131,9 +154,9 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
-        labels = ("bank", "@Deposit Amount:", "@Check/Dedit/OCS Amount:",
-                  "%Balance:")
-        self.create_widgets(0, 3, 'top', labels, 17)
+        labels = ("bank", "@Deposit Amount:", "@Check Amount:",
+                  "@Dedit Amount:", "@OCS Amount:", "%Balance:")
+        self.create_widgets(0, 5, 'top', labels, 17)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
         widget_09.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
@@ -141,22 +164,22 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_11 = wx.StaticText(self, wx.ID_ANY, "Income")
         widget_11.SetForegroundColour(self.w_fg_color)
         widget_11.SetMinSize((-1, -1))
-        self.gbs.Add(widget_11, (21, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(widget_11, (23, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
         widget_12 = wx.Button(self, wx.ID_CLEAR, label='')
         widget_12.SetBackgroundColour(self.w_fg_color)
         widget_12.SetMinSize((48, 24))
-        self.gbs.Add(widget_12, (21, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(widget_12, (23, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.LEFT, 6)
 
         widget_13 = wx.StaticLine(self, wx.ID_ANY)
         widget_13.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(widget_13, (22, 0), (1, 2), wx.EXPAND | wx.TOP
+        self.gbs.Add(widget_13, (24, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
 
         # 1st is the category name the rest are the StaticText labels.
         labels = ("income", "@Local Fund:", "@Contributed Expense:", "@Misc:")
-        self.create_widgets(0, 3, 'bottom', labels, 23)
+        self.create_widgets(0, 3, 'bottom', labels, 25)
         # We need to bind after the method call above, because the two
         # dicts above are not updated until method is called.
         widget_12.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
@@ -164,21 +187,29 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_14 = wx.StaticText(self, wx.ID_ANY, "Expenses")
         widget_14.SetForegroundColour(self.w_fg_color)
         widget_14.SetMinSize((-1, -1))
-        self.gbs.Add(widget_14, (27, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(widget_14, (29, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
         widget_15 = wx.StaticLine(self, wx.ID_ANY)
         widget_15.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(widget_15, (28, 0), (1, 2), wx.EXPAND | wx.TOP
+        self.gbs.Add(widget_15, (30, 0), (1, 2), wx.EXPAND | wx.TOP
                      | wx.BOTTOM, 4)
         items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
         self._tcp.current_panel = items
         labels = [f"@{n}"
                   for n in self._tcp.field_names_by_category['Expenses']]
         labels.insert(0, '&expenses')
-        self.create_widgets(0, len(labels)-1, 'top', labels, 29)
+        self.create_widgets(0, len(labels)-1, 'top', labels, 31)
 
         self.SetupScrolling(rate_x=20, rate_y=40)
         self.Hide()
+
+    def search_event(self, event):
+        print("Initiated a search event.")
+
+    def on_arrow(self, event):
+        direction = event.GetDirection()
+        print(f"{direction.capitalize()} arrow clicked")
+        event.Skip()
 
     @property
     def background_color(self):

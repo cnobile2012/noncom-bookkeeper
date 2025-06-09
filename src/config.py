@@ -765,7 +765,6 @@ class TomlCreatePanel(BaseSystemData):
             f"Either the name '{name}' or the key_num '{key_num}' must "
             "be set.")
         pos = ()
-        #print(key_num)
 
         if name:
             for value in self.__panel.value():
@@ -776,7 +775,6 @@ class TomlCreatePanel(BaseSystemData):
                     break
                 elif key_num is not None:
                     value = self.__panel.get(self._make_key(key_num), [])
-                    #print(key_num, value)
                     assert value, "An invalid key_num was provided."
                     dict_ = find_dict(value)
                     pos = dict_['pos']

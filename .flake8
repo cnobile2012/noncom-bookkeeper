@@ -6,7 +6,8 @@ exclude =
     old,
     build,
     dist,
-    tmp
+    tmp,
+    data
 
 per-file-ignores =
     src/*: E125, E128, E129, E252, E701, F401, F841
