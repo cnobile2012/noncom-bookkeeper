@@ -10,8 +10,8 @@ import wx
 from badidatetime import date, MONTHNAMES
 
 from src.custom_widgits import (
-    ordered_month, EVT_BADI_DATE_CHANGED, BadiDateChangedEvent,
-    EVT_COLOR_CHECKBOX, ColorCheckBoxEvent)
+    ordered_month, EVT_BADI_DATE_CHANGED, BadiDateChangedEvent, CustomTextCtrl,
+    EVT_COLOR_CHECKBOX, ColorCheckBoxClickEvent)
 
 from . import FakeFrame, FakePanel, check_flag
 
@@ -43,7 +43,7 @@ class TestFunctions(unittest.TestCase):
             self.assertEqual(expect_mon, month, msg.format(expect_mon, month))
 
 
-class TestBadiDateChangedEvent(unittest.TestCase):
+class TestCustomTextCtrl(unittest.TestCase):
 
     def __init__(self, name):
         super().__init__(name)
@@ -52,9 +52,76 @@ class TestBadiDateChangedEvent(unittest.TestCase):
         check_flag(self.__class__.__name__)
         self.app = wx.App(False)
         self.frame = FakeFrame()
-        fake_panel = FakePanel(self.frame)
+        self.panel = FakePanel(self.frame)
+        self.widget = CustomTextCtrl(self.panel)
+        self.panel.sizer.Add(self.widget, 0, wx.CENTER | wx.ALL, 10)
+        self.other = wx.TextCtrl(self.panel)  # Used for focus-shifting
+        self.panel.sizer.Add(self.other, 0, wx.CENTER | wx.ALL, 10)
+        self.frame.Show()
+
+    def tearDown(self):
+        self.frame.Destroy()
+        self.app.ExitMainLoop()
+
+    def simulate_left_click(self, widget):
+        """
+        Thanks to OpenAI for this method.
+        This method will not work without the toplevel window shown.
+        """
+        simulator = wx.UIActionSimulator()
+        rect = widget.GetScreenRect()
+        center = rect.GetPosition() + rect.GetSize() / 2
+        simulator.MouseMove(center)
+        simulator.MouseClick()
+
+    def simulate_keypress(self, key):
+        sim = wx.UIActionSimulator()
+        sim.KeyChar(ord(key))
+
+    @unittest.skip("Temporarily skipped")
+    def test_on_click(self):
+        """
+        """
+        #self.simulate_left_click(self.widget)
+        self.widget.SetFocus()
+        self.assertTrue(self.widget.HasFocus())
+
+
+    @unittest.skip("Temporarily skipped")
+    def test_on_focus(self):
+        """
+        Test that the on_focus event firers correctly.
+        """
+
+    @unittest.skip("Temporarily skipped")
+    def test_on_kill_focus(self):
+        """
+        Test that the on_kill_focus event firers correctly.
+        """
+
+    #@unittest.skip("Temporarily skipped")
+    def test_Set_GetValue(self):
+        """
+        Test that the GetValue event firers correctly.
+        """
+        data = ('', 'Test String'),
+        msg = "Expected {}, found {}."
+
+        for value in data:
+            self.widget.SetValue(value)
+            result = self.widget.GetValue()
+            self.assertEqual(value, result, msg.format(value, result))
+
+
+class TestBadiDateChangedEvent(unittest.TestCase):
+
+    def __init__(self, name):
+        super().__init__(name)
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
         self.bdate = date(182, 4, 6)
-        self.bdce = BadiDateChangedEvent(fake_panel, self.bdate)
+        self.bdce = BadiDateChangedEvent(self.bdate)
 
     #@unittest.skip("Temporarily skipped")
     def test_constructor(self):

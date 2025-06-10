@@ -53,15 +53,15 @@ class FakePanel(BaseGenerated):
 
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
         widget_00 = ColorCheckBox(self, wx.ID_ANY, label='', name='current')
         widget_00.SetBackgroundColour(wx.Colour(*[210, 190, 255]))
         widget_00.SetForegroundColour(wx.Colour(*[50, 50, 204]))
         widget_00.SetMinSize([80, 20])
         widget_00.Bind(EVT_COLOR_CHECKBOX, self.set_dirty_flag)
         widget_00.Enable(False)
-        sizer.Add(widget_00, 0, wx.CENTER, 6)
+        self.sizer.Add(widget_00, 0, wx.CENTER | wx.ALL, 10)
 
     def _on_popup_date_selected(self, new_bdate):
         self.SetValue(new_bdate)
-        wx.PostEvent(self, BadiDateChangedEvent(self, new_bdate))
+        wx.PostEvent(self, BadiDateChangedEvent(new_bdate))

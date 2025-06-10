@@ -39,7 +39,6 @@ class CustomTextCtrl(wx.Control):
         self.SetMinSize((100, 28))
         self.SetWindowStyle(self.GetWindowStyle() | wx.TE_PROCESS_ENTER)
 
-        self.Bind(wx.EVT_TEXT_ENTER, self.on_enter)
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
         self.Bind(wx.EVT_CHAR, self.on_char)
@@ -80,9 +79,6 @@ class CustomTextCtrl(wx.Control):
         self.SetFocus()
         event.Skip()
 
-    def on_enter(self, event):
-        wx.PostEvent(self.GetEventHandler(), event)
-
     def on_focus(self, event):
         self.has_focus = True
         self.Refresh()
@@ -101,11 +97,6 @@ class CustomTextCtrl(wx.Control):
                 self.Navigate(wx.NavigationKeyEvent.IsBackward)
             else:
                 self.Navigate(wx.NavigationKeyEvent.IsForward)
-        # elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
-        #     evt = wx.CommandEvent(wx.EVT_TEXT_ENTER.typeId, self.GetId())
-        #     evt.SetEventObject(self)
-        #     wx.PostEvent(self, evt)
-        #     return
         elif key == wx.WXK_BACK:
             if self.cursor_pos > 0:
                 self.text = self.text[:self.cursor_pos - 1] + self.text[
@@ -120,7 +111,7 @@ class CustomTextCtrl(wx.Control):
         elif key == wx.WXK_RIGHT:
             self.cursor_pos = min(len(self.text), self.cursor_pos + 1)
         else:
-            event.Skip()  # Important for other keys (e.g., Shift+Tab)
+            event.Skip()
 
         self.Refresh()
 
@@ -134,13 +125,12 @@ class CustomTextCtrl(wx.Control):
 
 
 # Custom Badi date event
-wxEVT_BADI_DATE_CHANGED_TYPE = wx.NewEventType()
-EVT_BADI_DATE_CHANGED = wx.PyEventBinder(wxEVT_BADI_DATE_CHANGED_TYPE, 1)
+BadiDateEvent, EVT_BADI_DATE_CHANGED = NewEvent()
 
 
-class BadiDateChangedEvent(wx.PyCommandEvent):
-    def __init__(self, source, bdate):
-        super().__init__(wxEVT_BADI_DATE_CHANGED_TYPE, source.GetId())
+class BadiDateChangedEvent(BadiDateEvent):
+    def __init__(self, bdate):
+        super().__init__()
         self._bdate = bdate
 
     def GetBadiDate(self):
@@ -355,7 +345,7 @@ class BadiDatePickerCtrl(wx.Panel):
 
             if self.bdate != new_date:
                 self.bdate = new_date
-                wx.PostEvent(self, BadiDateChangedEvent(self, self.bdate))
+                wx.PostEvent(self, BadiDateChangedEvent(self.bdate))
 
         event.Skip()
 
@@ -369,7 +359,7 @@ class BadiDatePickerCtrl(wx.Panel):
 
     def _on_popup_date_selected(self, new_bdate):
         self.SetValue(new_bdate)
-        wx.PostEvent(self, BadiDateChangedEvent(self, new_bdate))
+        wx.PostEvent(self, BadiDateChangedEvent(new_bdate))
 
     def GetValue(self):
         return self.bdate
@@ -380,13 +370,12 @@ class BadiDatePickerCtrl(wx.Panel):
 
 
 # Custom event
-wxEVT_COLOR_CHECKBOX = wx.NewEventType()
-EVT_COLOR_CHECKBOX = wx.PyEventBinder(wxEVT_COLOR_CHECKBOX, 1)
+ColorCheckBoxEvent, EVT_COLOR_CHECKBOX = NewEvent()
 
 
-class ColorCheckBoxEvent(wx.PyCommandEvent):
-    def __init__(self, source, state):
-        super().__init__(wxEVT_COLOR_CHECKBOX, source.GetId())
+class ColorCheckBoxClickEvent(ColorCheckBoxEvent):
+    def __init__(self, state):
+        super().__init__()
         self._state = state
 
     def GetColorCheckBoxState(self):
@@ -518,6 +507,7 @@ class ColorCheckBox(wx.Panel):
         self.SetMinSize(size)
 
 
+# Custom event
 FlatArrowEvent, EVT_FLAT_ARROW = NewEvent()
 
 
