@@ -108,7 +108,7 @@ widget_11 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EX
 widget_12 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í International Fund:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[9, 0], span=[1, 1]}]
 widget_13 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[9, 1], span=[1, 1], financial=true}]
 
-widget_14 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Shrine of Bahá:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[10, 0], span=[1, 1]}]
+widget_14 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Shrine of Abdu'l-Bahá:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[10, 0], span=[1, 1]}]
 widget_15 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[10, 1], span=[1, 1], financial=true}]
 
 widget_16 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Continental Bahá'í Fund:"], style='ALIGN_CENTER_HORIZONTAL', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[11, 0], span=[1, 1]}]

@@ -86,7 +86,6 @@ class TestCustomTextCtrl(unittest.TestCase):
         self.widget.SetFocus()
         self.assertTrue(self.widget.HasFocus())
 
-
     @unittest.skip("Temporarily skipped")
     def test_on_focus(self):
         """
@@ -104,7 +103,7 @@ class TestCustomTextCtrl(unittest.TestCase):
         """
         Test that the GetValue event firers correctly.
         """
-        data = ('', 'Test String'),
+        data = ('', 'Test String')
         msg = "Expected {}, found {}."
 
         for value in data:
