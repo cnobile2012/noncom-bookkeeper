@@ -11,8 +11,9 @@ from .custom_widgits import ColorCheckBox, EVT_COLOR_CHECKBOX
 
 
 def make_name(name: str):
-    name = re.sub(r"[*\(\):\"'/\\]+", '', name)
-    return re.sub(r"[- \s]+", '_', name).strip('_').lower()
+    name = re.sub(r"[&*\(\):\"'/\\]+", '', name)
+    name = re.sub(r"[- \s]+", '_', name).strip('_')
+    return re.sub(r"_+", "_", name).lower()
 
 
 class Borg:

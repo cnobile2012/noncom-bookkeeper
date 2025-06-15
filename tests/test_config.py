@@ -668,6 +668,8 @@ class TestTomlAppConfig(BaseTest):
         return self.tac.is_valid
 
     #@unittest.skip("Temporarily skipped")
+    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
+           _TMP_USER_APP_FILE)
     def test_is_valid_property(self):
         """
         Test that the is_valid property returns a boolean for normal

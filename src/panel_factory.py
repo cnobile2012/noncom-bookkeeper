@@ -413,6 +413,7 @@ class PanelFactory(TomlMetaData):
                 btn_sizer = name
             elif value[0] == 'Button':
                 prop, flags, label = dict_.get('args')
+                min_size = dict_.get('min')
                 callback = dict_.get('callback')
 
                 if 'ID_CANCEL' == flags:
@@ -438,11 +439,13 @@ class PanelFactory(TomlMetaData):
         klass.write(f"        {btn_sizer} = wx.StdDialogButtonSizer()\n")
         klass.write(f"        {f_widget} = wx.Button({f_parent}, {f_flags}, "
                     f"label='{f_label}')\n")
+        klass.write(f"        {f_widget}.SetMinSize({min_size})\n")
         self._set_colors(klass, f_widget, f_value)
         klass.write(f"        {f_widget}.Bind(wx.EVT_BUTTON, "
                     f"self.{button_save})\n")
         klass.write(f"        {c_widget} = wx.Button({c_parent}, {c_flags}, "
                     f"label='{c_label}')\n")
+        klass.write(f"        {c_widget}.SetMinSize({min_size})\n")
         self._set_colors(klass, c_widget, c_value)
         klass.write(f"        {btn_sizer}.AddButton({f_widget})\n")
         klass.write(f"        {c_widget}.Bind(wx.EVT_BUTTON, "

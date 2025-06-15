@@ -276,6 +276,14 @@ class TomlMetaData(BaseSystemData):
         return self.panel_config.get('meta', {}).get('locale_prefix')
 
     @property
+    def font_16_bold(self):
+        return self.panel_config.get('meta', {}).get('font_16_bold')
+
+    @property
+    def font_14_bold(self):
+        return self.panel_config.get('meta', {}).get('font_14_bold')
+
+    @property
     def font_12_normal(self):
         return self.panel_config.get('meta', {}).get('font_12_normal')
 
@@ -292,7 +300,10 @@ class TomlMetaData(BaseSystemData):
         return self.panel_config.get('meta', {}).get('font_10_bold')
 
     def get_font(self, font_type):
-        return getattr(self, font_type)
+        try:
+            return getattr(self, font_type)
+        except AttributeError as e:
+            self._log.error("Invalid font_type, found '%s', %s", font_type, e)
 
 
 class TomlPanelConfig(BaseSystemData):

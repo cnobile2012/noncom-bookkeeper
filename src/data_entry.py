@@ -43,18 +43,25 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
         title_font = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD)
-        widget_00 = wx.StaticText(self, wx.ID_ANY, self.title)
-        widget_00.SetFont(title_font)
-        widget_00.SetForegroundColour(self.w_fg_color)
-        sizer.Add(widget_00, 0, wx.CENTER, 0)
+        title_widget = wx.StaticText(self, wx.ID_ANY, self.title)
+        title_widget.SetFont(title_font)
+        title_widget.SetForegroundColour(self.w_fg_color)
+        sizer.Add(title_widget, 0, wx.CENTER, 0)
 
         # Search for specific date of item.
+        srch_text = wx.StaticText(self, wx.ID_ANY, "Search:")
+        srch_text.SetForegroundColour(self.w_fg_color)
         srch_widget = BadiDatePickerCtrl(self, wx.ID_ANY)
         srch_widget.SetBackgroundColour(self.w_bg_color)
         srch_widget.SetForegroundColour(self.w_fg_color)
         srch_widget.SetMinSize((130, 28))
         srch_widget.Bind(EVT_BADI_DATE_CHANGED, self.search_event)
-        sizer.Add(srch_widget, 0, wx.CENTER | wx.ALL, 6)
+        srch_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        srch_sizer.AddStretchSpacer()
+        srch_sizer.Add(srch_text, 0, wx.ALL, 6)
+        srch_sizer.Add(srch_widget, 0, wx.ALL, 6)
+        srch_sizer.AddStretchSpacer()
+        sizer.Add(srch_sizer, 0, wx.CENTER, 0)
 
         # View previous and next item.
         left = FlatArrowButton(self, label="←", direction='left',

@@ -31,7 +31,7 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_MONTH = 'month'
     _T_FIELD_TYPE = 'field_type'
     _T_REPORT_TYPE = 'report_type'
-    _T_DATA = 'data'
+    _T_DATA = 'config_data'
     _T_REPORT_PIVOT = 'report_pivot'
     _SCHEMA = (
         (_T_FISCAL_YEAR,
