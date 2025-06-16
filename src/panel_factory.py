@@ -41,7 +41,6 @@ class PanelFactory(TomlMetaData):
                 self._log.critical("Critical error, cannot start application "
                                    "please contact the developer for help, %s",
                                    str(e), exc_info=True)
-                # *** TODO *** This needs to be shown on the panel if detected.
 
     def setup_panel(self, panel):
         class_name = f"{panel.capitalize()}Panel"
@@ -59,8 +58,6 @@ class PanelFactory(TomlMetaData):
         if panel in ('organization', 'fiscal'):
             klass.write("        self._so = StoreObjects()\n")
 
-        title = panel_kwargs.get('title')
-        klass.write(f"        self.title = '{title}'\n")
         self._bg_color = panel_kwargs.get('bg_color')
         klass.write(f"        self._bg_color = {self._bg_color}\n")
         klass.write("        self.SetBackgroundColour(wx.Colour("

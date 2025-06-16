@@ -36,7 +36,7 @@ class MainFrame(wx.Frame, MenuBar):
     The main frame of the application.
     """
     __panel_classes = {}
-    title = 'Main Screen'
+    #title = 'Main Screen'
 
     def __init__(self, parent=None, id=wx.ID_ANY,
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
@@ -44,7 +44,7 @@ class MainFrame(wx.Frame, MenuBar):
         super().__init__(parent, id=id, style=style)
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
-        self.SetTitle(self.title)
+        self.SetTitle(self._tmd.title)
         self.frame_bg_color = (128, 128, 128)  # Gray
         self.SetBackgroundColour(wx.Colour(*self.frame_bg_color))
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)

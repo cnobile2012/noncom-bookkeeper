@@ -264,6 +264,10 @@ class TomlMetaData(BaseSystemData):
         super().__init__(*args, **kwargs)
 
     @property
+    def title(self):
+        return self.panel_config.get('meta', {}).get('title')
+
+    @property
     def panels(self):
         return self.panel_config.get('meta', {}).get('panels')
 

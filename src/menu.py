@@ -269,7 +269,6 @@ class MenuBar:
 
     def _hide_all_panels(self):
         [obj.Hide() for obj in self.panels.values() if obj.IsShown()]
-        self.SetTitle(self.title)
 
     def report_budget(self, event):
         pass
@@ -327,8 +326,6 @@ class MenuBar:
 
         if menu_items:
             self.change_menu_items(menu_items)
-
-        self.frame.SetTitle(self.panel.title)
 
         if self.panel in [c.GetWindow() for c in self.sizer.GetChildren()]:
             self.sizer.Detach(self.panel)
