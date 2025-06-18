@@ -57,7 +57,7 @@ class BaseDatabase(PopulateCollect, Settings):
          'm_time TEXT NOT NULL'),
         (_T_DATA,
          'pk INTEGER NOT NULL PRIMARY KEY',  # dfk in report_pivot
-         'value NOT NULL',
+         'value TEXT NOT NULL',
          'fy1fk INTEGER NOT NULL',
          'fy2fk INTEGER NOT NULL',
          'mfk INTEGER NOT NULL',

@@ -223,7 +223,22 @@ class PopulateCollect:
         """
         assert isinstance(value, str), ("The argument 'value' can only be a "
                                         f"string found {type(value)}")
-        return int(float(value)*100)
+
+        if value[0] == '-':
+            neg = True
+            value = value[1:]
+        elif value[0] == '+':
+            value = value[1:]
+        else:
+            neg = False
+
+        if not value.isdecimal():
+            ret = 0
+        else:
+            ret = int(float(value)*100)
+            ret *= -1 if neg else 1
+
+        return str(ret)
 
     def _db_to_value(self, value: str) -> str:
         """
@@ -234,8 +249,7 @@ class PopulateCollect:
         :returns: A string representation of a currency value.
         :rtype: str
         """
-        value = int(value)
-        return f"{value/100:.2f}"
+        return f"{int(value)/100:.2f}"
 
     def set_value(self, obj, value):
         if obj.GetValue != value:
