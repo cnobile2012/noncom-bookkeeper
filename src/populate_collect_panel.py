@@ -125,7 +125,14 @@ class PopulateCollect:
                 value = data[field_name]
 
                 if name0 == 'RadioBox':
-                    c_set[0].SetSelection(value)
+                    if value.isdigit():
+                        value = int(value)
+                    else:
+                        self._log.error("The %s field needs to have an int "
+                                        "type, found: %s.",
+                                        field_name, type(value))
+
+                    c_set[0].SetSelection(int(value))
                 elif name0 == 'ComboBox':
                     if panel_name == 'fiscal':
                         self._add_fiscal_year_choices(c_set=c_set)

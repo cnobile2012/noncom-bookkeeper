@@ -782,7 +782,7 @@ class TestTomlAppConfig(BaseTest):
         self.create_config()
         # Test that the 'default' value is the default.
         value = self.tac.get_value('app_size', 'default')
-        expected = [536, 830]
+        expected = TomlAppConfig._DEFAULT_SCREEN_SIZE
         msg = f"Expected '{expected}' found '{value}'."
         self.assertEqual(expected, value, msg)
 

@@ -314,6 +314,7 @@ class TomlPanelConfig(BaseSystemData):
     """
     Read and write the TOML panel config file.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__error = None
@@ -421,6 +422,7 @@ class TomlAppConfig(BaseSystemData):
     Read and write the TOML app config file.
     """
     _FILE_LIST = ('user_app_config_fullpath',)
+    _DEFAULT_SCREEN_SIZE = [570, 830]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -513,8 +515,8 @@ class TomlAppConfig(BaseSystemData):
         doc.add(tk.nl())
         # Create app size
         app_size = tk.table()
-        app_size.add('default', [536, 830])
-        app_size.add('size', [536, 830])
+        app_size.add('default', self._DEFAULT_SCREEN_SIZE)
+        app_size.add('size', self._DEFAULT_SCREEN_SIZE)
         doc.add('app_size', app_size)
         self._write_file(tk.dumps(doc))
 
