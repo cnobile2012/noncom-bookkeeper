@@ -506,6 +506,9 @@ class ColorCheckBox(wx.Panel):
     def SetSize(self, size=(120, 24)):
         self.SetMinSize(size)
 
+    def GetLabelText(self):
+        return self.label
+
 
 # Custom event
 FlatArrowEvent, EVT_FLAT_ARROW = NewEvent()
@@ -566,3 +569,6 @@ class FlatArrowButton(wx.Control):
         tw, th = dc.GetTextExtent(self.label)
         dc.DrawText(self.label, (rect.width - tw) // 2,
                     (rect.height - th) // 2)
+
+    def GetLabelText(self):
+        return self.label
