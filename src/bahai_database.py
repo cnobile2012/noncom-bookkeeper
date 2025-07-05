@@ -176,7 +176,8 @@ class Database(BaseDatabase):
     # Data SELECT, INSERT and, UPDATE methods.
     #
 
-    async def select_from_data_table(self, data: dict, year: int=None) -> list:
+    async def select_from_config_data_table(self, data: dict,
+                                            year: int=None) -> list:
         """
         Reads a row or rows from the `data` table.
 
@@ -236,8 +237,8 @@ class Database(BaseDatabase):
 
         return await self._do_select_query(query, params)
 
-    async def insert_into_data_table(self, year: int, month: int, data: dict
-                                     ) -> None:
+    async def insert_into_config_data_table(self, year: int, month: int,
+                                            data: dict) -> None:
         """
         Insert values into the Data table.
 
@@ -281,8 +282,8 @@ class Database(BaseDatabase):
         else:
             self._log.error("No current fiscal_year data in the database.")
 
-    async def update_data_table(self, year: int, month: int, data: list
-                                ) -> None:
+    async def update_config_data_table(self, year: int, month: int, data: list
+                                       ) -> None:
         """
         Update the `data` table.
 
@@ -300,8 +301,9 @@ class Database(BaseDatabase):
         m_time = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_DATA} SET value = :value, "
                  "m_time = :m_time WHERE pk = :pk;")
-        values = [(value, m_time, pk) for pk, value in data]
-        await self._do_update_query(query, values)
+        items = [{'pk': pk, 'value': value, 'm_time': m_time}
+                 for pk, value in data]
+        await self._do_update_query(query, items)
 
     #
     # Miscellaneous methods

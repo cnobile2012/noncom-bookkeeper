@@ -297,8 +297,8 @@ class BadiDatePickerCtrl(wx.Panel):
     """
     _DATE_RANGES = {0: (1, 4), 1: (2, 2), 2: (2, 2)}
 
-    def __init__(self, parent: wx.Window, id: int=wx.ID_ANY,
-                 dt: badidatetime.date=None, pos=wx.DefaultPosition,
+    def __init__(self, parent: wx.Window, w_id: int=wx.ID_ANY,
+                 bdate: badidatetime.date=None, pos=wx.DefaultPosition,
                  style=wx.adv.DP_DEFAULT | wx.adv.DP_SHOWCENTURY,
                  validator=wx.DefaultValidator, name: str="") -> None:
         super().__init__(parent)
@@ -306,8 +306,7 @@ class BadiDatePickerCtrl(wx.Panel):
         w_bg_color = wx.Colour(222, 237, 230)  # Gray
         self._updating = False
         # Default date
-        self.bdate = dt or badidatetime.date.today(short=True)
-
+        self.bdate = bdate or badidatetime.date.today(short=True)
         self.text_ctrl = CustomTextCtrl(self, style=wx.BORDER_NONE)
         self.text_ctrl.SetValue(self.bdate.isoformat())
         self.text_ctrl.SetBackgroundColour(w_bg_color)

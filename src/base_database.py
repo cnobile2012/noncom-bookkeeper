@@ -133,11 +133,15 @@ class BaseDatabase(PopulateCollect, Settings):
     # Initialization methods
     #
 
-    async def populate_panels(self):
+    async def populate_panels(self, year: int=None, month: int=None) -> None:
         """
         Populate all panels that have data in the database.
+
+        :param int year: Current fiscal year.
+        :param int month: Current fiscal month.
         """
-        year, month = await self._get_current_fiscal_year()
+        if None in (year, month):
+            year, month = await self._get_current_fiscal_year()
 
         if None not in (year, month):
             self._log.info("Populating all panels.")
@@ -145,18 +149,22 @@ class BaseDatabase(PopulateCollect, Settings):
 
             for name, panel in self._mf.panels.items():
                 data = self._collect_panel_values(panel)
-                values = await self.select_from_data_table(data, year)
+                values = await self.select_from_config_data_table(data, year)
 
                 # Needed when the app has been run at least one time before.
                 if name == 'organization' and values:
+                    # This stores and converts a list to a dict.
                     self.organization_data = values
+                    items = self.organization_data
+                else:
+                    items = {value[1]: value[2] for value in values}
 
                 if name not in self._EXCLUDE_PANELS:
                     # Add any new fields to the database.
                     await self._add_fields_to_field_type_table(data)
 
                 panel.initializing = True
-                self.populate_panel_values(name, panel, values)
+                self.populate_panel_values(name, panel, items)
                 panel.initializing = False
 
     async def save_to_database(self, name: str, panel: wx.Panel) -> None:
@@ -170,15 +178,16 @@ class BaseDatabase(PopulateCollect, Settings):
 
         .. note::
 
-           1. Empty (default) organization data:
+           Empty (default) organization data:
               {'locality_prefix': 0, 'locale_name': '',
                'total_membership': '', 'treasurer': '',
                'start_of_fiscal_year': '<today>',
                'location_city_name': ''}
         """
         error = None
-        data = self._collect_panel_values(panel)
         year, month = await self._get_current_fiscal_year()
+        await self.populate_panels(year=year, month=month)
+        data = self._collect_panel_values(panel)
 
         if name == 'organization':
             if data:
@@ -202,19 +211,18 @@ class BaseDatabase(PopulateCollect, Settings):
                         data['start_of_fiscal_year'] = sofy.isoformat()
                         earliest_year = self.earliest_year
 
-                        if not year or not month:         # First ever entry
+                        if not year or not month:
                             self.organization_data = data
                             await self.first_run_initialization(entered_date)
                             year, month, day = entered_date
-                        elif year == entered_date[0]:     # Update current year
+                        elif year == entered_date[0]:
                             self.organization_data = data
                             year, month, day = entered_date
-                        # Next current year
                         elif (year + 1) == entered_date[0]:
                             self.organization_data = data
                             await self.entered_next_year(entered_date)
                             year, month, day = entered_date
-                        elif (earliest_year and           # Previous year.
+                        elif (earliest_year and
                               (earliest_year - 1) == entered_date[0]):
                             await self.entered_previous_year(entered_date)
                             year, month, day = entered_date
@@ -237,10 +245,13 @@ class BaseDatabase(PopulateCollect, Settings):
             year = month = None
         elif name == 'fiscal_settings':
             year = month = None
+        elif name == 'budget':
+            pass
+            #print(data)
+
         if year and month:
-            error = await self._insert_update_data_table(
+            error = await self._insert_update_config_data_table(
                 year, month=month, data=data)
-            await self.populate_panels()
 
         return error
 
@@ -352,8 +363,8 @@ class BaseDatabase(PopulateCollect, Settings):
                 if item not in con_months:
                     await self.insert_into_month_table(item)
 
-    async def _insert_update_data_table(self, year: int, *, month: int=None,
-                                        data: dict={}) -> None:
+    async def _insert_update_config_data_table(
+        self, year: int, *, month: int=None, data: dict={}) -> None:
         """
         Insert or update `data` table.
 
@@ -366,10 +377,10 @@ class BaseDatabase(PopulateCollect, Settings):
         :rtype: None or str
         """
         error = None
-        values = await self.select_from_data_table(data, year)
+        values = await self.select_from_config_data_table(data, year)
 
         if not values:  # Do insert
-            await self.insert_into_data_table(year, month, data)
+            await self.insert_into_config_data_table(year, month, data)
         else:
             insert_data = {}
             update_data = []
@@ -390,10 +401,11 @@ class BaseDatabase(PopulateCollect, Settings):
                     update_data.append((pk, value))
 
             if insert_data:  # Do insert
-                await self.insert_into_data_table(year, month, insert_data)
+                await self.insert_into_config_data_table(
+                    year, month, insert_data)
 
             if update_data:  # Do update
-                await self.update_data_table(year, month, update_data)
+                await self.update_config_data_table(year, month, update_data)
 
         return error
 
@@ -539,17 +551,15 @@ class BaseDatabase(PopulateCollect, Settings):
         return self._org_data
 
     @organization_data.setter
-    def organization_data(self, values: list) -> None:
+    def organization_data(self, values) -> None:
         """
         This property sets the organization constants that are used throughout
         the application without having to do a select on the DB everytime.
 
         .. note::
 
-           1. It is used in the `bahai_database.populate_panels`, and
-              `generic_database.populate_panels` methods.
-           2. Only the second and three fields are stored when the incoming
-              values are a list otherwise the dict is used as is.
+           Only the second and three fields are stored when the incoming
+           values are a list otherwise the dict is used as is.
 
         :param list or dict values: A list of tuples where each tuple is the
                                     raw data for one field in the form of
@@ -558,8 +568,14 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         if isinstance(values, list):
             self._org_data = {value[1]: value[2] for value in values}
-        else:
+        elif isinstance(values, dict):
             self._org_data = values
+        else:
+            msg = ("The argument 'value' must be a 'list' or 'dict', "
+                   f"found {type(values)}.")
+            self._log.error(msg)
+            self._mf.statusbar_error = msg
+            self._org_data = None
 
     @property
     def tzinfo(self):
