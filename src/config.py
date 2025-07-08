@@ -309,6 +309,14 @@ class TomlMetaData(BaseSystemData):
         except AttributeError as e:
             self._log.error("Invalid font_type, found '%s', %s", font_type, e)
 
+    @property
+    def data_entry_title_data(self):
+        return self.panel_config.get('meta', {}).get('data_entry_titles')
+
+    @property
+    def data_entry_labels(self):
+        return self.panel_config.get('meta', {}).get('data_entry_labels')
+
 
 class TomlPanelConfig(BaseSystemData):
     """

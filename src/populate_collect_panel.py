@@ -47,7 +47,14 @@ class PopulateCollect:
         :returns: True if data has been saved in the DB and False if not saved.
         :rtype: bool
         """
-        return self._check_panels_for_entries('month')
+        return self._check_panels_for_entries('monthly')
+
+    @property
+    def open_ledger_entry(self) -> bool:
+        pass
+
+
+
 
     def _check_panels_for_entries(self, name: str) -> bool:
         """
@@ -330,9 +337,8 @@ class PopulateCollect:
             obj.SetValue(value)
 
     def is_badi_date_object(self, obj):
-        return (obj.__class__.__name__ in ('date', 'datetime', 'time',
-                                           'timezone')
-                and obj.__class__.__module__.endswith("badidatetime.datetime"))
+        return (obj.__class__.__name__ == 'date' and
+                obj.__class__.__module__.endswith("badidatetime.datetime"))
 
     #
     # Methods called from panels

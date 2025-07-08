@@ -79,11 +79,12 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
         self.gbs = wx.GridBagSizer(2, 2)
         sizer.Add(self.gbs, 1, wx.CENTER, 10)
+        pos = 0
 
         widget_01 = wx.StaticText(self, wx.ID_ANY, "Date:")
         widget_01.SetForegroundColour(self.w_fg_color)
         widget_01.SetMinSize((-1, -1))
-        self.gbs.Add(widget_01, (0, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(widget_01, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
         widget_02 = BadiDatePickerCtrl(self, wx.ID_ANY)
         widget_02.SetBackgroundColour(self.w_bg_color)
@@ -94,121 +95,101 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         self.gbs.Add(widget_02, (0, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.ALL, 6)
 
-        widget_03 = wx.StaticText(self, wx.ID_ANY, "Description")
-        widget_03.SetForegroundColour(self.w_fg_color)
-        widget_03.SetMinSize((-1, -1))
-        self.gbs.Add(widget_03, (1, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
-        widget_04 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_04.SetBackgroundColour(self.w_fg_color)
-        widget_04.SetMinSize((48, 24))
-        self.gbs.Add(widget_04, (1, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.LEFT, 6)
-
-        widget_05 = wx.StaticLine(self, wx.ID_ANY)
-        widget_05.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(widget_05, (2, 0), (1, 2), wx.EXPAND | wx.TOP
-                     | wx.BOTTOM, 4)
-
         self._checkboxes = {}
         self._textctrles = {}
-        # 1st is the category name the rest are the StaticText labels.
-        labels = ("description", "Contribution:", "Distribution:", "Expense:",
-                  "Other:")
-        self.create_widgets(3, 1, 'top', labels, 3)
-        # We need to bind after the method call above, because the two
-        # dicts above are not updated until method is called.
-        widget_04.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
+        title_gen = self._title_generator()
+        # The first label is the category name the rest are the StaticText
+        # labels.
+        label_gen = self._label_generator()
+        title_data, labels = self._next_title_and_labels(title_gen, label_gen)
+        pos += 2
 
-        widget_05 = wx.StaticText(self, wx.ID_ANY, "Entry Type")
-        widget_05.SetForegroundColour(self.w_fg_color)
-        widget_05.SetMinSize((-1, -1))
-        self.gbs.Add(widget_05, (8, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
-        widget_06 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_06.SetBackgroundColour(self.w_fg_color)
-        widget_06.SetMinSize((48, 24))
-        self.gbs.Add(widget_06, (8, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.LEFT, 6)
+        while title_data is not None and labels is not None:
+            title = title_data[0]
+            num_cb = title_data[1]
+            num_txt = title_data[2]
+            cb_pos = title_data[3]
+            span = title_data[4]
+            btn = title_data[5]
+            button, pos = self._make_heading(title, pos, span=span, btn=btn)
+            pos = self.create_widgets(num_cb, num_txt, cb_pos, labels, pos)
 
-        widget_07 = wx.StaticLine(self, wx.ID_ANY)
-        widget_07.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(widget_07, (9, 0), (1, 2), wx.EXPAND | wx.TOP
-                     | wx.BOTTOM, 4)
+            if button:
+                # We need to bind after the method call above, because the
+                # two dicts above are not updated until the method is called.
+                button.Bind(wx.EVT_BUTTON,
+                            self.reset_inputs_wrapper(labels[0]))
 
-        # 1st is the category name the rest are the StaticText labels.
-        labels = ("entry_type", "Check Number:", "Receipt Number:", "Debit:",
-                  "OCS:")
-        self.create_widgets(2, 2, 'bottom', labels, 10)
-        # We need to bind after the method call above, because the two
-        # dicts above are not updated until method is called.
-        widget_06.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
-
-        widget_08 = wx.StaticText(self, wx.ID_ANY, "Cash in Bank")
-        widget_08.SetForegroundColour(self.w_fg_color)
-        widget_08.SetMinSize((-1, -1))
-        self.gbs.Add(widget_08, (15, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
-        widget_09 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_09.SetBackgroundColour(self.w_fg_color)
-        widget_09.SetMinSize((48, 24))
-        self.gbs.Add(widget_09, (15, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.LEFT, 6)
-
-        widget_10 = wx.StaticLine(self, wx.ID_ANY)
-        widget_10.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(widget_10, (16, 0), (1, 2), wx.EXPAND | wx.TOP
-                     | wx.BOTTOM, 4)
-
-        # 1st is the category name the rest are the StaticText labels.
-        labels = ("bank", "@Deposit Amount:", "@Check Amount:",
-                  "@Dedit Amount:", "@OCS Amount:", "%Balance:")
-        self.create_widgets(0, 5, 'top', labels, 17)
-        # We need to bind after the method call above, because the two
-        # dicts above are not updated until method is called.
-        widget_09.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
-
-        widget_11 = wx.StaticText(self, wx.ID_ANY, "Income")
-        widget_11.SetForegroundColour(self.w_fg_color)
-        widget_11.SetMinSize((-1, -1))
-        self.gbs.Add(widget_11, (23, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
-        widget_12 = wx.Button(self, wx.ID_CLEAR, label='')
-        widget_12.SetBackgroundColour(self.w_fg_color)
-        widget_12.SetMinSize((48, 24))
-        self.gbs.Add(widget_12, (23, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.LEFT, 6)
-
-        widget_13 = wx.StaticLine(self, wx.ID_ANY)
-        widget_13.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(widget_13, (24, 0), (1, 2), wx.EXPAND | wx.TOP
-                     | wx.BOTTOM, 4)
-
-        # 1st is the category name the rest are the StaticText labels.
-        labels = ("income", "@Local Fund:", "@Contributed Expense:", "@Misc:")
-        self.create_widgets(0, 3, 'bottom', labels, 25)
-        # We need to bind after the method call above, because the two
-        # dicts above are not updated until method is called.
-        widget_12.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(labels[0]))
-
-        widget_14 = wx.StaticText(self, wx.ID_ANY, "Expenses")
-        widget_14.SetForegroundColour(self.w_fg_color)
-        widget_14.SetMinSize((-1, -1))
-        self.gbs.Add(widget_14, (29, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
-        widget_15 = wx.StaticLine(self, wx.ID_ANY)
-        widget_15.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(widget_15, (30, 0), (1, 2), wx.EXPAND | wx.TOP
-                     | wx.BOTTOM, 4)
-        items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
-        self._tcp.current_panel = items
-        labels = [f"@{n}"
-                  for n in self._tcp.field_names_by_category['Expenses']]
-        labels.insert(0, '&expenses')
-        self.create_widgets(0, len(labels)-1, 'top', labels, 31)
+            # Next
+            pos += 1
+            title_data, labels = self._next_title_and_labels(title_gen,
+                                                             label_gen)
 
         self.SetupScrolling(rate_x=20, rate_y=40)
         self.Hide()
+
+    def _title_generator(self):
+        return (title_data for title_data in self._tmd.data_entry_title_data)
+
+    def _label_generator(self):
+        entry_labels = self._tmd.data_entry_labels
+        items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
+        self._tcp.current_panel = items
+        exp = 'Expenses'
+        expense_title = ''
+
+        for title, labels in self._tcp.field_names_by_category.items():
+            if title == exp:
+                expense_title = title
+                labels = []
+
+            if expense_title != exp:
+                continue
+
+            labels = [f'@{n}' for n in labels]
+            labels.insert(0, f"&{make_name(title)}")
+            entry_labels.append(labels)
+
+        return (item for item in entry_labels)
+
+    def _make_heading(self, title: str, pos: int, *, span: int=2,
+                      btn: bool=True) -> int:
+        text = wx.StaticText(self, wx.ID_ANY, title)
+        text.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT,
+                             wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, 0, ''))
+        text.SetForegroundColour(self.w_fg_color)
+        text.SetMinSize((-1, -1))
+        self.gbs.Add(text, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT, 6)
+
+        if btn:
+            button = wx.Button(self, wx.ID_CLEAR, label='')
+            button.SetBackgroundColour(self.w_fg_color)
+            button.SetMinSize((48, 24))
+            self.gbs.Add(button, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                        | wx.LEFT, 6)
+        else:
+            button = None
+
+        line = wx.StaticLine(self, wx.ID_ANY)
+        line.SetBackgroundColour(self.w_fg_color)
+        self.gbs.Add(line, (pos+1, 0), (1, span), wx.EXPAND | wx.TOP
+                     | wx.BOTTOM, 4)
+        return button, pos + 2
+
+    def _next_title_and_labels(self, title_gen, label_gen):
+        try:
+            title = next(title_gen)
+        except StopIteration:
+            title = None
+            labels = None
+        else:
+            try:
+                labels = next(label_gen)
+            except StopIteration:
+                pass
+
+        return title, labels
 
     def search_event(self, event):
         print("Initiated a search event.")

@@ -277,9 +277,13 @@ class MutuallyExclusiveWidgets:
        2. self.w_fg_color = Widget foreground enabled color
        3. self.w1_bg_color = Widget background disables color
     """
+    _CAT_LABEL_1ST = '!$&'
+    _CAT_LABEL_ALOW = "áí'a-z_"
+    _WGT_LABEL_1ST = '*@%'
+    _WGT_LABEL_ALOW = "áí'a-zA-Z-:() "
 
     def create_widgets(self, num_cb: int=0, num_txt: int=0, cb_pos: str='top',
-                       labels: tuple=(), pos_idx: int=0) -> None:
+                       labels: tuple=(), pos_idx: int=0) -> int:
         """
         Create ColorCheckBox and TextCtrl widgets that can be mutually
         exclusive or not.
@@ -288,7 +292,7 @@ class MutuallyExclusiveWidgets:
 
            1. The fist label is the category indicator and must be lowercase.
               The first character can be (!, $, &) not mutually exclusive
-              group indicators, see 3 below.
+              group indicators, see 2 below.
            2. If the first character of the category (the first label in
               the labels list) is an exclamation point (!) then all the
               ColorCheckBoxes are not in the mutually exclusive group. If
@@ -300,8 +304,8 @@ class MutuallyExclusiveWidgets:
               first character can be (*, @, %), see 4 for descriptions.
            4. If the fist character of a label is an asterisk (*) this
               indicates that the ColorCheckBoxes or TextCtrls is not part of
-              the mutually exclusive group and is read only. if the first
-              character is an at sign (@) then the TextCtrl is right aligned.
+              the mutually exclusive group and is read only. If the first
+              character is an at-sign (@) then the TextCtrl is right aligned.
               If the fist character is a percent sign (%) then the TextCtrl is
               not part of the mutually exclusive group and is right aligned.
 
@@ -312,16 +316,22 @@ class MutuallyExclusiveWidgets:
                            inverse will happen.
         :param tuple labels: A list of labels used in the StaticText widgets.
         :param int pos_idx: The position y index for the GridBagSizer.
+        :returns: Position of the next available position.
+        :rtype: int
         """
         assert (len(labels) - 1) == (num_cb + num_txt), (
-            "The number of labels are not equal to the number of "
-            "ColorCheckBoxes and TextCtrls.")
-        first_char = labels[0][0]
-        assert self.is_valid_label(labels[0], '!$&', 'a-z_'), (
-            f"Invalid category label {labels[0]}.")
-        label = labels[0][1:] if first_char in ('!', '$', '&') else labels[0]
-        assert all(self.is_valid_label(lb, '*@%', "áí'a-xA-Z-: ")
+            f"The number of labels '{len(labels) - 1}' are not equal to the "
+            f"number of ColorCheckBoxes and TextCtrls '{num_cb + num_txt}'.")
+        assert self.is_valid_label(
+            labels[0], self._CAT_LABEL_1ST, self._CAT_LABEL_ALOW), (
+                f"Invalid category label {labels[0]}.")
+        assert all(self.is_valid_label(
+            lb, self._WGT_LABEL_1ST, self._WGT_LABEL_ALOW)
                    for lb in labels[1:]), f"Invalid label(s) in {labels[1:]}."
+
+        start_pos = pos_idx
+        first_char = labels[0][0]
+        label = labels[0]
         cb_list = self._checkboxes.setdefault(label, [])
         tc_list = self._textctrles.setdefault(label, [])
 
@@ -351,6 +361,8 @@ class MutuallyExclusiveWidgets:
                 for tc in tc_list:
                     tc.Bind(wx.EVT_SET_FOCUS,
                             self.on_text_focus_wrapper(labels[0]))
+
+        return start_pos + num_cb + num_txt
 
     def _create_ccbs(self, cb_list, num_cb, labels, pos_idx):
         for num in range(num_cb):

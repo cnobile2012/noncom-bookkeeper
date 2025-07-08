@@ -27,6 +27,26 @@ font_12_normal = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORM
 font_12_bold = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
 font_10_normal = [10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, '']
 font_10_bold = [10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
+data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
+    ['Description', 3, 1, 'top', 2, true],
+    ['Entry Type', 2, 2, 'bottom', 2, true],
+    ['Cash in Bank', 0, 5, 'top', 2, true],
+    ['Income', 0, 3, 'bottom', 2, true],
+    ['Expenses', 0, 0, '', 2, false],
+    ["Local Bahá'í Expenses", 0, 6, 'bottom', 1, false],
+    ["National Bahá'í Funds", 0, 11, 'bottom', 1, false],
+    ['Continental and International Funds', 0, 11, 'bottom', 1, false],
+    ['Regional Funds', 0, 3, 'bottom', 1, false],
+    ['Area Funds', 0, 1, 'bottom', 1, false],
+    ['Additional Information', 0, 2, 'bottom', 1, false]
+    ]
+data_entry_labels = [
+    ['description', 'Contribution:', 'Distribution:', 'Expense:', 'Other:'],
+    ['entry_type', 'Check Number:', 'Receipt Number:', 'Debit:', 'OCS:'],
+    ['bank', '@Deposit Amount:', '@Check Amount:', '@Dedit Amount:',
+     '@OCS Amount:', '%Balance:'],
+    ['income', '@Local Fund:', '@Contributed Expense:', '@Misc:']
+    ]
 
 [organization]
 
@@ -232,7 +252,7 @@ widget_86 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 
 # Skip position
 
-widget_87 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Additional Information'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[55, 0], span=[1, 1]}]
+widget_87 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Additional Information"], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[55, 0], span=[1, 1]}]
 
 widget_88 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[56, 0], span=[1, 2]}]
 
