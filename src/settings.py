@@ -91,7 +91,6 @@ class Paths(wx.Panel):
         self.SetBackgroundColour(self._bg_color)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
-
         title_font = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD)
         widget_00 = wx.StaticText(self, wx.ID_ANY, self.title)

@@ -11,9 +11,12 @@ import datetime
 import badidatetime
 
 from .utilities import StoreObjects, make_name
-
+from .config import TomlMetaData, TomlCreatePanel
 
 class PopulateCollect:
+    _EMPTY_FIELDS = ('', '0')
+    _tmd = TomlMetaData()
+    _tcp = TomlCreatePanel()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -53,9 +56,6 @@ class PopulateCollect:
     def open_ledger_entry(self) -> bool:
         pass
 
-
-
-
     def _check_panels_for_entries(self, name: str) -> bool:
         """
         Check that the given panel name has entries.
@@ -65,7 +65,16 @@ class PopulateCollect:
         """
         panel = self._mf.panels[name]
         data = self._collect_panel_values(panel)
-        return all([item not in self._EMPTY_FIELDS for item in data.values()])
+        items = []
+
+        for w0, w1 in self._find_child_sets(panel):
+            if (w1 is None or not hasattr(w1[2], 'mandatory')
+                or not w1[2].mandatory):
+                continue
+
+            items.append(data[w0[1]])
+
+        return all([item not in self._EMPTY_FIELDS for item in items])
 
     def _collect_panel_values(self, panel: wx.Panel, convert_tz: bool=False
                               ) -> dict:
@@ -82,22 +91,23 @@ class PopulateCollect:
         """
         data = {}
 
-        for c_set in self._find_child_sets(panel):
-            name0 = c_set[0].__class__.__name__
-            field_name = make_name(c_set[0].GetLabelText())
+        for w0, w1 in self._find_child_sets(panel):
+            name0 = w0[0]
+            field_name = w0[1]
+            widget0 = w0[2]
 
             if name0 in ('RadioBox', 'ComboBox'):
-                data[field_name] = c_set[0].GetSelection()
+                data[field_name] = widget0.GetSelection()
             elif name0 == 'StaticText':
-                name1 = c_set[1].__class__.__name__
-                value = c_set[1].GetValue()
+                name1 = w1[0]
+                widget1 = w1[2]
+                value = widget1.GetValue()
 
                 if name1 == 'TextCtrl':
                     data[field_name] = self._value_to_db(
-                        value, financial=c_set[1].financial)
-                elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
-                    data[field_name] = self._value_to_db(value)
-                elif name1 in ('ColorCheckBox', 'CheckBox'):
+                        value, financial=widget1.financial)
+                elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl',
+                               'ColorCheckBox', 'CheckBox'):
                     data[field_name] = value
                 else:
                     msg = f"Invalid widget type '{name1}'."
@@ -133,56 +143,78 @@ class PopulateCollect:
                           the panel.
         """
         if data:  # When run after first time.
-            for c_set in self._find_child_sets(panel):
-                name0 = c_set[0].__class__.__name__
-                name1 = c_set[1].__class__.__name__ if c_set[1] else None
-                field_name = make_name(c_set[0].GetLabelText())
+            for w0, w1 in self._find_child_sets(panel):
+                name0 = w0[0]
+                field_name = w0[1]
+                widget0 = w0[2]
                 value = data[field_name]
 
                 if name0 == 'RadioBox':
-                    value = self._str_to_int(value)
-                    c_set[0].SetSelection(value)
+                    print('POOP0', panel_name, value)
+
+                    value = self._process_value(widget0, field_name, value)
                 elif name0 == 'ComboBox':
                     if panel_name == 'fiscal':
-                        self._add_fiscal_year_choices(c_set=c_set)
+                        self._add_fiscal_year_choices(w0=w0)
 
-                    c_set[0].SetSelection(self._str_to_int(value))
+                    value = self._process_value(widget0, field_name, value)
                 elif name0 == 'StaticText':
-                    if name1 == 'TextCtrl':
-                        if panel_name == 'monthly':
-                            if not value:  # Populate yearly values.
-                                if field_name == 'total_membership_this_month':
-                                    value = self._org_data['total_membership']
-                                elif field_name == 'treasurer_this_month':
-                                    value = self._org_data['treasurer']
-                        elif c_set[1].financial:
-                            panel_value = c_set[1].GetValue()
+                    name1 = w1[0]
+                    widget1 = w1[2]
 
-                            if (panel_value
-                                and self._str_to_int(panel_value) != 0):
-                                value = self._panel_to_financial_panel(
+                    if name1 == 'TextCtrl':
+                        if widget1.financial:
+                            panel_value = widget1.GetValue()
+
+                            if panel_value != '':
+                                panel_value = self._panel_to_financial_panel(
                                     panel_value)
+                                value = (panel_value if panel_value != value
+                                         else value)
                             else:
                                 value = self._db_fiancial_to_panel(value)
-                        elif not c_set[1].financial:
-                            panel_value = c_set[1].GetValue()
-                            value = panel_value if panel_value else value
+                        elif not widget1.financial:
+                            panel_value = widget1.GetValue()
+                            value = panel_value if panel_value != '' else value
                         else:
                             msg = (f"Invalid widget type, found {name0} "
                                    f"with value {value}.")
                             self._log.error(msg)
                             self._mf.statusbar_error = msg
                             continue
-                    elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl'):
-                        value = self._convert_date_to_yymmdd(value)
+                    elif value and name1 in ('BadiDatePickerCtrl',
+                                             'DatePickerCtrl'):
+                        iso_today = self._today().isoformat()
+                        panel_value = widget1.GetValue()
 
-                    self._set_value(c_set[1], value)
+                        if iso_today == panel_value.isoformat():
+                            value = self._convert_date_to_yymmdd(value)
+                        else:
+                            value = panel_value
+
+                    self._set_value(widget1, value)
                 else:
                     msg = f"Invalid widget type, found {name0}"
                     self._log.error(msg)
                     self._mf.statusbar_error = msg
         elif panel_name == 'fiscal':  # First time run only.
             self._add_fiscal_year_choices(panel_name, panel)
+
+    def _process_value(self, widget, field_name, value):
+        """
+        Scrup values for RadioBox and ComboBox widgets.
+        """
+        if value != '':
+            value, error = self._str_to_int(value)
+
+            if value:
+                widget.SetSelection(value)
+            else:
+                error = error.format(field_name)
+                self._log.warning(error)
+                self._mf.statusbar_warning = error
+
+        return value
 
     def _find_child_sets(self, panel: wx.Panel) -> list:
         """
@@ -195,43 +227,59 @@ class PopulateCollect:
         .. note::
 
            1. Panels are always rejected.
-           2. Returns these lists:
-              [RadioBox, TextCtrl], [StaticText, TextCtrl], [ComboBox, None],
-              [StaticText, ColorCheckBox], [StaticText, BadiDatePickerCtrl]
+           2. Example result lists:
+              [
+               [('RadioBox', 'locality_prefix', <wx._core.RadioBox>),
+                ('TextCtrl', '', <wx._core.TextCtrl>)],
+               [('StaticText', 'locale_name', <wx._core.StaticText>),
+                ('TextCtrl', '', <wx._core.TextCtrl>)],
+               [('StaticText', 'total_membership', <wx._core.StaticText>),
+                ('TextCtrl', '', <wx._core.TextCtrl>)],
+               [('StaticText', 'treasurer', <wx._core.StaticText>),
+                ('TextCtrl', '', <wx._core.TextCtrl>)],
+               [('StaticText', 'start_of_fiscal_year', <wx._core.StaticText>),
+                ('BadiDatePickerCtrl', '',
+                 <src.custom_widgits.BadiDatePickerCtrl>)],
+               [('StaticText', 'location_city_name', <wx._core.StaticText>),
+                ('TextCtrl', '', <wx._core.TextCtrl>)]
+              ]
         """
         children = []
 
         for child in panel.GetChildren():
             add = False
             name = child.__class__.__name__
+            label = child.GetLabel()
 
             if (name in ('StaticLine', 'StaticText', 'Panel')
-                and not child.GetLabel().endswith(':')):
+                and not label.endswith(':')):
                 continue
             elif name == 'ComboBox':
                 add = True
 
-            children.append(child)
+            children.append((name, make_name(label), child))
             if add: children.append(None)
 
         return [children[i:i+2] for i in range(0, len(children), 2)]
 
     def _add_fiscal_year_choices(self, panel_name: str=None,
-                                 panel: wx.Panel=None, *, c_set=None):
+                                 panel: wx.Panel=None, *, w0=None):
         assert (panel_name and panel) or c_set, (
-            "Can only pass 'panel_name' and 'panel' or just 'c_set' alone.")
+            "Can only pass 'panel_name' and 'panel' or just 'w_set' alone.")
 
-        if not c_set:  # First time run.
-            all_c_sets = self._find_child_sets(panel)
-            c_set = [item[0] for item in all_c_sets
-                     if item[0].__class__.__name__ == 'ComboBox']
+        if not w0:  # First time run.
+            widgets = [w0[2] for w0, w1 in self._find_child_sets(panel)
+                  if w0[0] == 'ComboBox']
+            widget0 = widgets[0]
+        else:
+            widget0 = w0[2]
 
         years = sorted([item[1] for item in self._fiscal_data])
         data = [(year, year+1) for year in years[:-1]]
-        # Just get the title item, overwrite the rest.
-        choices = [c_set[0].GetItems()[0]]
-        c_set[0].SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
-        c_set[0].SetSelection(0)
+        # Just get the title, overwrite the rest.
+        choices = [widget0.GetItems()[0]]
+        widget0.SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
+        widget0.SetSelection(0)
 
     def _value_to_db(self, value, financial: bool=False) -> str:
         """
@@ -282,7 +330,7 @@ class PopulateCollect:
             try:
                 value = f"{float(value):.2f}"
             except ValueError:
-                value = "0.00"
+                value = ''
 
         return value
 
@@ -301,7 +349,7 @@ class PopulateCollect:
             try:
                 value = f"{float(value):.2f}"
             except ValueError:
-                value = "0.00"
+                value = ''
 
         return value
 
@@ -313,32 +361,38 @@ class PopulateCollect:
         :returns: Converted value or zero if value was not numeric.
         :rtype: int
         """
+        error = f"Expected a numeric value in field '{{}}' found {value}."
+
         if not isinstance(value, int):
             if value.isdigit():
                 value = int(value)
+                #error = None
             elif value.count('.'):
                 try:
                     value = int(re.sub(r'\.', '', value))
+                    error = None
                 except ValueError as e:
-                    msg = f"Expected a numeric value found '{value}'."
-                    self._mf.statusbar_warning = msg
-                    self._log.warning(msg[:-1] + ", %s", e)
-                    value = 0
+                    error = error[:-1] + str(e)
+                    value = None
             else:
-                msg = f"Expected a numeric value found '{value}'."
-                self._mf.statusbar_warning = msg
-                self._log.warning(msg)
-                value = 0
+                value = None
+        else:
+            error = None
 
-        return value
+        return value, error
 
     def _set_value(self, obj, value):
-        if obj.GetValue != value:
+        if obj.GetValue() != value:
             obj.SetValue(value)
 
     def is_badi_date_object(self, obj):
         return (obj.__class__.__name__ == 'date' and
                 obj.__class__.__module__.endswith("badidatetime.datetime"))
+
+    def _get_field_name(self, panel_name):
+        items = self._tmd.panel_config.get(panel_name, {}).get('widgets', {})
+        self._tcp.current_panel = items
+        return [make_name(field) for field in self._tcp.field_names]
 
     #
     # Methods called from panels

@@ -39,7 +39,7 @@ if __name__ == "__main__":
         help="Normal running mode.")
     parser.add_argument(
         '-D', '--debug', action='store_true', default=False, dest='debug',
-        help="Debugging mode.")
+        help="Debugging mode also moves the location of all start up files.")
     parser.add_argument(
         '-F', '--file-dump', action='store_true', default=False,
         dest='file_dump', help=("Dump the generated panel factory files."))

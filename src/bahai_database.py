@@ -316,12 +316,13 @@ class Database(BaseDatabase):
         """
         return ordered_month()
 
-    def _convert_date_to_yymmdd(self, value):
+    def _convert_date_to_yymmdd(self, value: str) -> badidatetime.date:
         """
-        Converts the ISO date string to a tuple containing the
-        (year, month, day).
+        Converts the ISO date string to an instance of 'badidatetime.date'.
 
         :param str value: A ISO formatting date string.
+        :returns: An instance of 'badidatetime.date'.
+        :rtype: badidatetime.date
         """
         return badidatetime.date.fromisoformat(value, short=True)
 
@@ -334,3 +335,12 @@ class Database(BaseDatabase):
         :rtype: tuple
         """
         return badidatetime.date.fromisoformat(iso, short=True).b_date
+
+    def _today(self) -> badidatetime.date:
+        """
+        Return an instance of 'date' for today.
+
+        :returns: Today as in instance.
+        :rtype: badidatetime.date
+        """
+        return badidatetime.date.today()

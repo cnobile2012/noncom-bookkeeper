@@ -39,23 +39,33 @@ class Settings(AppDirs, Borg):
     def __init__(self, *args, **kwargs):
         super().__init__(appname=self.app_name,
                          appauthor=self.primary_developer, *args, **kwargs)
-        # The next two lines are needed for debug mode only.
-        self._debug_data_dir = os.path.join(self._BASE_DIR, 'data')
-        self._debug_log_dir = os.path.join(self._debug_data_dir, 'log')
-
         # The three lines below read an environment variable which is used
         # during the app build process. The default is to use the Baha'i
         # configuration.
         self.__config_type = os.environ.get('NCB_TYPE', 'bahai')
         self.__user_toml = self._CONFIG_FILES['user'][self.__config_type]
         self.__local_toml = self._CONFIG_FILES['local'][self.__config_type]
-
+        # Even if not in debug mode these two variables need to be defined
+        # or the Borg won't like it.
+        self._debug_data_dir = ''
+        self._debug_log_dir = ''
         # Setup the logger for this monule.
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
 
     def create_dirs(self):
-        if not self._DEBUG:
+        if self.debug:
+            self._debug_data_dir = os.path.join(self._BASE_DIR, 'data')
+            self._debug_log_dir = os.path.join(self._debug_data_dir, 'log')
+
+            if not os.path.exists(self._debug_data_dir):
+                os.makedirs(self._debug_data_dir, mode=0o775, exist_ok=True)
+
+            if not os.path.exists(self._debug_log_dir):
+                os.makedirs(self._debug_log_dir, mode=0o775, exist_ok=True)
+
+            paths = (self._debug_data_dir, self._debug_log_dir)
+        else:
             if not os.path.exists(self.user_data_dir):
                 os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)
 
@@ -74,17 +84,6 @@ class Settings(AppDirs, Borg):
             paths = (self.user_data_dir, self.user_config_dir,
                      self.user_cache_dir, self.user_log_dir,
                      self.cached_factory_dir)
-        else:
-            if not os.path.exists(self._debug_data_dir):
-                os.makedirs(self._debug_data_dir, mode=0o775, exist_ok=True)
-
-            if not os.path.exists(self._debug_log_dir):
-                os.makedirs(self._debug_log_dir, mode=0o775, exist_ok=True)
-
-            if not os.path.exists(self.cached_factory_dir):
-                os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
-
-            paths = (self._debug_data_dir, self._debug_log_dir)
 
         self._log.info("Created, if necessary, the following paths: %s", paths)
 

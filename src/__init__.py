@@ -13,8 +13,7 @@ __all__ = ('Logger',)
 
 class Logger:
     """
-    Setup some basic logging. This uses the borg patten, it's kind of like a
-    singlton but has a side affect of assimulation.
+    Setup some basic logging.
     """
     _DEFAULT_FORMAT = ("%(asctime)s %(levelname)s %(name)s %(module)s "
                        "%(funcName)s [line:%(lineno)d] %(message)s")
@@ -36,7 +35,7 @@ class Logger:
         :param level: The lowest level to generate logs for. See the
                       Python logger docs.
         :type level: int
-        :param initial_msg: Print the inital log message. The default is True.
+        :param initial_msg: Print the initial log message. The default is True.
         :type initial_msg: bool
         """
         if logger_name and file_path:

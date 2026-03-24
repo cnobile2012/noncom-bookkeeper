@@ -6,6 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import re
 import wx
+import threading
 
 from .custom_widgits import ColorCheckBox, EVT_COLOR_CHECKBOX
 
@@ -18,45 +19,69 @@ def make_name(name: str):
 
 class Borg:
     """
-    We store the instances instead of the __dict__. This alows the updating
-    of future instances with the data from the previous instances. Without
-    this, new instances would not have all the data.
+    We have Central state + synchronized instance views + class fallback. This
+    allows the updating of future instances with the data from the previous
+    instances. Without this, new instances would not have all the data.
+    _state        → source of truth
+    __dict__      → cached mirror for each instance
+    class attrs   → defaults
     """
+    _state = {}
+    _instances = []
+    _lock = threading.RLock()
+
     def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, '_instances'):
-            cls._instances = []
-
         instance = super().__new__(cls)
-        cls._instances.append(instance)
 
-        if cls._instances:
-            for key, value in cls._instances[0].__dict__.items():
-                instance.__dict__[key] = value
+        with cls._lock:
+            cls._instances.append(instance)
+
+            # Sync new instance with current state
+            for k, v in cls._state.items():
+                instance.__dict__[k] = v
 
         return instance
 
+    def __getattribute__(self, name):
+        if name.startswith('_'):
+            return object.__getattribute__(self, name)
+
+        cls = type(self)
+
+        with cls._lock:
+            if name in cls._state:
+                return cls._state[name]
+
+        return object.__getattribute__(self, name)
+
     def __setattr__(self, name, value):
-        # Prevent polluting shared state with internal __dict__
-        if name == '__dict__':
+        if name.startswith('_'):
+            object.__setattr__(self, name, value)
             return
 
-        # Let Python run descriptor logic
-        object.__setattr__(self, name, value)
-        # Propagate the value to all other instances **only if**
-        # the name is not a data descriptor (i.e., not a property)
         cls = type(self)
-        attr = getattr(cls, name, None)
 
-        if not hasattr(attr, '__set__'):
+        with cls._lock:
+            # Update central state
+            cls._state[name] = value
+
+            # Sync to all instances
             for inst in cls._instances:
-                if inst is not self:
-                    inst.__dict__[name] = value
+                inst.__dict__[name] = value
 
     def clear_state(self):
-        for inst in self._instances:
-            inst.__dict__.clear()
+        cls = type(self)
 
-        self._instances.clear()
+        with cls._lock:
+            cls._state.clear()
+
+            # Clear instance dicts (only public attrs)
+            for inst in cls._instances:
+                keys = [k for k in inst.__dict__ if not k.startswith('_')]
+                for k in keys:
+                    del inst.__dict__[k]
+
+            cls._instances.clear()
 
 
 class StoreObjects(Borg):

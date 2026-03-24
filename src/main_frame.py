@@ -111,22 +111,18 @@ class MainFrame(wx.Frame, MenuBar):
         self._log.info("Create the database if it does not exist.")
         await db.create_db()
         await db.populate_panels()
+        # *** TODO *** Display a panel that offers the user the ability
+        #              to add or change fields.
 
         if not db.has_org_info_data:
             self._log.info("The Organization Information has not been "
                            "entered yet.")
-            # *** TODO *** Display a panel that offers the user the ability
-            #              to add or change fields.
             self.edit_config(None)
         elif not db.has_budget_data:
             self._log.info("The budget data has not been entered yet.")
-            # *** TODO *** Display a panel that offers the user the ability
-            #              to add or change fields.
             self.edit_budget(None)
         elif not db.has_month_data:
             self._log.info("The month data has not been entered yet.")
-            # *** TODO *** Display a panel that offers the user the ability
-            #              to add or change fields.
             self.edit_month(None)
 
         self._timer = wx.Timer(self)

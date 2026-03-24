@@ -22,9 +22,9 @@ APP_NAME	= nc-bookkeeper
 DOCS_DIR	= $(PREFIX)/docs
 LOGS_DIR	= $(PREFIX)/logs
 BUILD_PKG_DIR	= $(PREFIX)/package
-RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)'
+RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)|(^.*__pycache__$$)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
-                  -exec rm {} \;
+                  -exec rm -rf {} +
 COVERAGE_FILE	= $(PREFIX)/.coveragerc
 PIP_ARGS	= # Pass variables for pip install.
 TEST_PATH	= # The path to run tests on.
