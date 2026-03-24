@@ -14,23 +14,6 @@ from src.main_frame import MainFrame
 import wx
 
 
-class CheckAppConfig(TomlAppConfig):
-    """
-    Check that the app config file has valid data. Create a new one
-    if necessary.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    @property
-    def has_valid_data(self):
-        """
-        Does the static app config exist and is the data valid?
-        """
-        return self.is_valid
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=("Non-commercial organization bookkeeping application."))
@@ -69,7 +52,7 @@ if __name__ == "__main__":
                   file=sys.stderr)
             status = 2
         else:
-            # Try to run application.
+            # Try to run the application.
             app = wx.App()
             mf = MainFrame(options=options)
             icon_path = os.path.join(settings.base_dir(), 'images',

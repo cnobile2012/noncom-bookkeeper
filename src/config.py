@@ -136,37 +136,57 @@ class Settings(AppDirs, Borg):
     @property
     def user_data_fullpath(self):
         if self.debug:
-            return os.path.join(self._debug_data_dir, self.data_file_name)
+            path = os.path.join(self._debug_data_dir, self.data_file_name)
         else:
-            return os.path.join(self.user_data_dir, self.data_file_name)
+            path = os.path.join(self.user_data_dir, self.data_file_name)
+
+        assert 'data' in path or '.local' in path, (
+            f"user_data_fullpath: {path}")
+        return path
 
     @property
     def user_config_fullpath(self):
         if self.debug:
-            return os.path.join(self._debug_data_dir, self.__user_toml)
+            path = os.path.join(self._debug_data_dir, self.__user_toml)
         else:
-            return os.path.join(self.user_config_dir, self.__user_toml)
+            path =  os.path.join(self.user_config_dir, self.__user_toml)
+
+        assert 'data' in path or '.config' in path, (
+            f"user_config_fullpath: {path}")
+        return path
 
     @property
     def user_app_config_fullpath(self):
         if self.debug:
-            return os.path.join(self._debug_data_dir, self.__app_toml)
+            path = os.path.join(self._debug_data_dir, self.__app_toml)
         else:
-            return os.path.join(self.user_config_dir, self.__app_toml)
+            path = os.path.join(self.user_config_dir, self.__app_toml)
+
+        assert 'data' in path or '.config' in path, (
+            f"user_app_config_fullpath: {path}")
+        return path
 
     @property
     def user_log_fullpath(self):
         if self.debug:
-            return os.path.join(self._debug_log_dir, self.logfile_name)
+            path = os.path.join(self._debug_log_dir, self.logfile_name)
         else:
-            return os.path.join(self.user_log_dir, self.logfile_name)
+            path = os.path.join(self.user_log_dir, self.logfile_name)
+
+        assert 'data' in path or '.cache' in path, (
+            f"user_log_fullpath: {path}")
+        return path
 
     @property
     def cached_factory_dir(self):
         if self.debug:
-            return os.path.join(self._debug_data_dir, self.panel_factory_name)
+            path = os.path.join(self._debug_data_dir, self.panel_factory_name)
         else:
-            return os.path.join(self.user_cache_dir, self.panel_factory_name)
+            path = os.path.join(self.user_cache_dir, self.panel_factory_name)
+
+        assert 'data' in path or '.cache' in path, (
+            f"cached_factory_dir: {path}")
+        return path
 
     @property
     def local_config_fullpath(self):
@@ -354,7 +374,7 @@ class TomlPanelConfig(BaseSystemData):
          """
         if not (has := os.path.exists(self.user_config_fullpath)):
             msg = (f"The path '{self.user_config_fullpath}' does not exist, "
-                   "file will be coped.")
+                   "file will be copied.")
             self._log.info(msg)
             self.__err_msg = msg
 
@@ -446,7 +466,7 @@ class TomlAppConfig(BaseSystemData):
          """
         if not (has := os.path.exists(self.user_app_config_fullpath)):
             msg = (f"The path '{self.user_config_fullpath}' does not exist, "
-                   "file will be coped.")
+                   "file will be copied.")
             self._log.info(msg)
             self.__err_msg = msg
 
