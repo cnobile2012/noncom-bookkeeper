@@ -30,14 +30,24 @@ class Borg:
     _instances = []
     _lock = threading.RLock()
 
+    @classmethod
+    def _root(cls):
+        # Find the class that actually defines _state
+        for base in cls.__mro__:
+            if '_state' in base.__dict__:
+                return base
+
+        return cls
+
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
+        root = cls._root()
 
-        with cls._lock:
-            cls._instances.append(instance)
+        with root._lock:
+            root._instances.append(instance)
 
-            # Sync new instance with current state
-            for k, v in cls._state.items():
+            # ALWAYS hydrate from state
+            for k, v in root._state.items():
                 instance.__dict__[k] = v
 
         return instance
@@ -47,41 +57,49 @@ class Borg:
             return object.__getattribute__(self, name)
 
         cls = type(self)
+        root = cls._root()
 
-        with cls._lock:
-            if name in cls._state:
-                return cls._state[name]
+        with root._lock:
+            if name in root._state:
+                return root._state[name]
 
         return object.__getattribute__(self, name)
 
     def __setattr__(self, name, value):
-        if name.startswith('_'):
+        cls = type(self)
+        root = cls._root()
+
+        # Protect real internals only
+        if name in {'_state', '_instances', '_lock'} or name.startswith('__'):
             object.__setattr__(self, name, value)
             return
 
-        cls = type(self)
+        # Let descriptors (properties) handle themselves FIRST
+        attr = getattr(cls, name, None)
 
-        with cls._lock:
-            # Update central state
-            cls._state[name] = value
+        if hasattr(attr, '__set__'):
+            attr.__set__(self, value)
+            return
 
-            # Sync to all instances
-            for inst in cls._instances:
+        with root._lock:
+            root._state[name] = value
+
+            for inst in root._instances:
                 inst.__dict__[name] = value
 
     def clear_state(self):
         cls = type(self)
+        root = cls._root()
 
-        with cls._lock:
-            cls._state.clear()
+        with root._lock:
+            root._state.clear()
 
-            # Clear instance dicts (only public attrs)
-            for inst in cls._instances:
+            for inst in root._instances:
                 keys = [k for k in inst.__dict__ if not k.startswith('_')]
                 for k in keys:
                     del inst.__dict__[k]
 
-            cls._instances.clear()
+            root._instances.clear()
 
 
 class StoreObjects(Borg):

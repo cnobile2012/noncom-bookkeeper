@@ -36,6 +36,11 @@ class Settings(AppDirs, Borg):
                      'user': {'bahai': 'bahai.toml',
                               'generic': 'generic.toml'}}
 
+    # Even if not in debug mode these two variables need to be defined
+    # or the Borg won't like it.
+    _debug_data_dir = ''
+    _debug_log_dir = ''
+
     def __init__(self, *args, **kwargs):
         super().__init__(appname=self.app_name,
                          appauthor=self.primary_developer, *args, **kwargs)
@@ -45,10 +50,6 @@ class Settings(AppDirs, Borg):
         self.__config_type = os.environ.get('NCB_TYPE', 'bahai')
         self.__user_toml = self._CONFIG_FILES['user'][self.__config_type]
         self.__local_toml = self._CONFIG_FILES['local'][self.__config_type]
-        # Even if not in debug mode these two variables need to be defined
-        # or the Borg won't like it.
-        self._debug_data_dir = ''
-        self._debug_log_dir = ''
         # Setup the logger for this monule.
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
