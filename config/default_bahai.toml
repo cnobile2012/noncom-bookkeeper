@@ -126,7 +126,7 @@ widget_07 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Income'], f
 widget_08 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[7, 0], span=[1, 2]}]
 
 widget_09 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monetary Contributions:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[8, 0], span=[1, 1]}]
-widget_10 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[8, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_10 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[8, 1], span=[1, 1], financial=true, mandatory=true}]
 
 # Skip position
 
@@ -241,7 +241,7 @@ widget_79 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Deputizatio
 widget_80 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[49, 1], span=[1, 1], financial=true, mandatory=false}]
 
 widget_81 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Facilities Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[50, 0], span=[1, 1]}]
-widget_82 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[50, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_82 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[50, 1], span=[1, 1], financial=true, mandatory=false}]
 
 widget_83 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[51, 0], span=[1, 1]}]
 

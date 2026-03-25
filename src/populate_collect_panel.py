@@ -90,6 +90,7 @@ class PopulateCollect:
         :rtype: dict
         """
         data = {}
+        #print('POOP', self._find_child_sets(panel))
 
         for w0, w1 in self._find_child_sets(panel):
             name0 = w0[0]
@@ -150,8 +151,6 @@ class PopulateCollect:
                 value = data[field_name]
 
                 if name0 == 'RadioBox':
-                    print('POOP0', panel_name, value)
-
                     value = self._process_value(widget0, field_name, value)
                 elif name0 == 'ComboBox':
                     if panel_name == 'fiscal':
@@ -207,7 +206,7 @@ class PopulateCollect:
         if value != '':
             value, error = self._str_to_int(value)
 
-            if value:
+            if value is not None:
                 widget.SetSelection(value)
             else:
                 error = error.format(field_name)
@@ -366,7 +365,7 @@ class PopulateCollect:
         if not isinstance(value, int):
             if value.isdigit():
                 value = int(value)
-                #error = None
+                error = None
             elif value.count('.'):
                 try:
                     value = int(re.sub(r'\.', '', value))
@@ -412,16 +411,18 @@ class PopulateCollect:
 
     def set_fiscal_panel(self, current, work_on, audit):
         for c_set in self._find_child_sets(self._mf.panels['fiscal']):
-            name1 = c_set[1].__class__.__name__ if c_set[1] else c_set[1]
-            field_name = make_name(c_set[0].GetLabelText())
+            if c_set[1] is None:  # Only on a ComboBox
+                continue
 
-            if (field_name == 'current_fiscal_year'
-                and name1 == 'ColorCheckBox'):
+            w_label = c_set[0][1]
+            name1 = c_set[1].__class__.__name__
+
+            if w_label == 'current_fiscal_year' and name1 == 'ColorCheckBox':
                 self._set_value(c_set[1], current)
-            elif (field_name == 'work_on_this_fiscal_year'
+            elif (w_label == 'work_on_this_fiscal_year'
                   and name1 == 'ColorCheckBox'):
                 self._set_value(c_set[1], work_on)
-            elif field_name == 'audit_complete' and name1 == 'ColorCheckBox':
+            elif w_label == 'audit_complete' and name1 == 'ColorCheckBox':
                 self._set_value(c_set[1], audit)
 
     def _get_fiscal_year_value(self, year: int, *, pk: bool=False,

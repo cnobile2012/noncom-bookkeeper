@@ -399,6 +399,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
         if not values:  # Do insert
             await self.insert_into_config_data_table(year, month, data)
+            self._log.info("Inserted %s table data: %s.", self._T_DATA, data)
         else:
             insert_data = {}
             update_data = []

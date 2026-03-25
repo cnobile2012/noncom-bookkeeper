@@ -127,7 +127,7 @@ class MainFrame(wx.Frame, MenuBar):
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)
-        seconds = 1000*2  # 1000*2 = 2 seconds
+        seconds = 1000*10  # = 10 seconds
         self._log.info("Checking panel dirty flag every %s seconds.",
                        seconds/1000)
         self._timer.Start(seconds)

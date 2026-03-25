@@ -43,7 +43,7 @@ class FiscalSettings(wx.Panel):
 
         w1_label = ('Enables the "Current Fiscal Year" checkbox on the '
                     '"Fiscal Year" page and should only be enabled for '
-                    'for the current year.')
+                    'the current year.')
         widget_01 = wx.StaticText(self, wx.ID_ANY, w1_label)
         widget_01.Wrap(col_1_wrap)
         widget_01.SetForegroundColour(w_fg_color)
