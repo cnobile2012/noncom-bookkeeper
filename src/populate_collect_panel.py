@@ -90,15 +90,18 @@ class PopulateCollect:
         :rtype: dict
         """
         data = {}
-        #print('POOP', self._find_child_sets(panel))
 
-        for w0, w1 in self._find_child_sets(panel):
+        for widgets in self._find_child_sets(panel):
+            w0 = widgets[0]
+            w1 = widgets[1] if len(widgets) >= 2 else None
             name0 = w0[0]
             field_name = w0[1]
             widget0 = w0[2]
 
             if name0 in ('RadioBox', 'ComboBox'):
                 data[field_name] = widget0.GetSelection()
+            elif name0 in ('ColorCheckBox',):
+                data[field_name] = widget0.GetValue()
             elif name0 == 'StaticText':
                 name1 = w1[0]
                 widget1 = w1[2]
@@ -240,7 +243,8 @@ class PopulateCollect:
                 ('BadiDatePickerCtrl', '',
                  <src.custom_widgits.BadiDatePickerCtrl>)],
                [('StaticText', 'location_city_name', <wx._core.StaticText>),
-                ('TextCtrl', '', <wx._core.TextCtrl>)]
+                ('TextCtrl', '', <wx._core.TextCtrl>)],
+               [('ComboBox', 'fiscal_year_choice', <wx._core.ComboBox>), None]
               ]
         """
         children = []
@@ -253,8 +257,10 @@ class PopulateCollect:
             if (name in ('StaticLine', 'StaticText', 'Panel')
                 and not label.endswith(':')):
                 continue
-            elif name == 'ComboBox':
+            elif name in ('ComboBox',):
                 add = True
+            elif name in ('ColorCheckBox',):
+                label = child.GetLabelText()
 
             children.append((name, make_name(label), child))
             if add: children.append(None)

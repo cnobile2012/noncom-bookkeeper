@@ -169,6 +169,8 @@ class BaseDatabase(PopulateCollect, Settings):
                         value = ''
 
                     items[field_name] = value
+            #elif panel_name == 'fiscal':
+            #    print('POOP', data, values)
             else:
                 items = {value[1]: value[2] for value in values}
 
@@ -473,7 +475,7 @@ class BaseDatabase(PopulateCollect, Settings):
                 await db.commit()
 
     #
-    # Utilitu methods
+    # Utility methods
     #
 
     def _find_fields(self, new: list, old: list) -> set:

@@ -18,7 +18,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=("Non-commercial organization bookkeeping application."))
     parser.add_argument(
-        '-r', '--run', action='store_true', default=True, dest='run',
+        '-r', '--run', action='store_false', dest='run',
         help="Normal running mode.")
     parser.add_argument(
         '-D', '--debug', action='store_true', default=False, dest='debug',
@@ -52,7 +52,7 @@ if __name__ == "__main__":
                   file=sys.stderr)
             status = 2
         else:
-            # Try to run the application.
+            # Run the application.
             app = wx.App()
             mf = MainFrame(options=options)
             icon_path = os.path.join(settings.base_dir(), 'images',

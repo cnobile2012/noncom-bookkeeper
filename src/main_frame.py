@@ -80,8 +80,8 @@ class MainFrame(wx.Frame, MenuBar):
                 # Only used for debugging.
                 if options.file_dump:  # Write the code files to the cache.
                     filename = f"{panel}.py"
-                    pathname = os.path.join(self._tac.cached_factory_dir,
-                                            filename)
+                    dir = self._tac.cached_factory_dir
+                    pathname = os.path.join(dir, filename)
 
                     with open(pathname, 'w') as f:
                         f.write(code)
