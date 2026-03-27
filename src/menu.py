@@ -241,22 +241,22 @@ class MenuBar:
         # *** TODO *** We need to check for unsaved panels.
         self.frame.Destroy()
 
-    def edit_config(self, event) -> None:  # No fill screen issues
+    def edit_config(self, event) -> None:  # TODO No fill screen issues
         self._do_panel_switch('organization')
 
-    def edit_budget(self, event):  # No fill screen issues
+    def edit_budget(self, event):  # TODO No fill screen issues
         self._do_panel_switch('budget')
 
-    def edit_month(self, event):  # No fill screen issues
+    def edit_month(self, event):  # TODO No fill screen issues
         self._do_panel_switch('monthly')
 
-    def edit_ledger_data(self, event):  # Has screen fill issues
+    def edit_ledger_data(self, event):  # TODO Has screen fill issues
         if 'ledger' not in self.panels:
             self.panels = ('ledger', LedgerDataEntry(self.parent))
 
         self._do_panel_switch('ledger')
 
-    def edit_fiscal_year(self, event):  # Has screen fill issues
+    def edit_fiscal_year(self, event):  # TODO Has screen fill issues
         self._do_panel_switch('fiscal')
 
     def edit_hide_all(self, event):

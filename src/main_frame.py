@@ -42,6 +42,7 @@ class MainFrame(wx.Frame, MenuBar):
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
                  size=(500, 800), options=None, *args, **kwargs):
         super().__init__(parent, id=id, style=style)
+        self.options = options
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         self.SetTitle(self._tmd.title)
@@ -69,7 +70,10 @@ class MainFrame(wx.Frame, MenuBar):
         self.set_size(size)
         self.setup_resize_event()
 
+        # Store current object
         StoreObjects().set_object(self.__class__.__name__, self)
+
+        # Read panel config file and create panels.
         sf = PanelFactory()
         sf.parse()
 
@@ -93,7 +97,6 @@ class MainFrame(wx.Frame, MenuBar):
                     )[class_name](self.parent, *args, **kwargs)
 
         self.create_menu()
-        self.options = options
         asyncio.run(self.start(), debug=options.debug)
 
     async def start(self):
@@ -124,6 +127,8 @@ class MainFrame(wx.Frame, MenuBar):
         elif not db.has_month_data:
             self._log.info("The month data has not been entered yet.")
             self.edit_month(None)
+        else:
+            self.edit_ledger_data(None)
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)

@@ -135,7 +135,7 @@ class PopulateCollect:
         """
         Poplulate the named panel with the database values.
 
-        .. note:::
+        .. note::
 
            1. Used when cancel is pressed--data is from db.organization_data.
            2. Used in BaseDatabase.populate_panels() which is used in

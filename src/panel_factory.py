@@ -157,6 +157,7 @@ class PanelFactory(TomlMetaData):
 
     def radio_box(self, klass, panel, widget, value):
         dict_ = find_dict(value)
+        mandatory = dict_.get('mandatory', False)
         parent, id, label = dict_.get('args')
         label = label[:-1] if label[-1] == ':' else label
         style = dict_.get('style', 0)
@@ -193,11 +194,11 @@ class PanelFactory(TomlMetaData):
             klass.write(f"        {widget}.Bind(wx.EVT_RADIOBOX, "
                         "self.set_dirty_flag)\n")
 
-        mandatory = dict_.get('mandatory', False)
         klass.write(f"        {widget}.mandatory = {mandatory}\n")
 
     def static_text(self, klass, panel, widget, value):
         dict_ = find_dict(value)
+        # mandatory = dict_.get('mandatory', False)
         parent, id, label = dict_.get('args')
         label = f"'''{label}'''"
         style = dict_.get('style', 0)
@@ -226,6 +227,8 @@ class PanelFactory(TomlMetaData):
 
     def text_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
+        mandatory = dict_.get('mandatory', False)
+        man = '*' if mandatory else ''
         parent, id, label = dict_.get('args')
         label = f"'''{label}'''"
         style = dict_.get('style', 0)
@@ -254,11 +257,11 @@ class PanelFactory(TomlMetaData):
 
         value = dict_.get('financial', False)
         klass.write(f"        {widget}.financial = {value}\n")
-        mandatory = dict_.get('mandatory', False)
         klass.write(f"        {widget}.mandatory = {mandatory}\n")
 
     def date_picker_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
+        mandatory = dict_.get('mandatory', False)
         parent, id, _ = dict_.get('args')
         id = self._fix_flags(id)
         klass.write(f"        {widget} = wx.adv.DatePickerCtrl({parent}, "
@@ -271,12 +274,12 @@ class PanelFactory(TomlMetaData):
 
         klass.write(f"        {widget}.Bind(wx.adv.EVT_DATE_CHANGED, "
                     "self.set_dirty_flag)\n")
-        mandatory = dict_.get('mandatory', False)
         klass.write(f"        {widget}.mandatory = {mandatory}\n")
         self._set_add_to_sizer(klass, widget, value)
 
     def badi_date_picker_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
+        mandatory = dict_.get('mandatory', False)
         parent, id, _ = dict_.get('args')
         id = self._fix_flags(id)
         klass.write(f"        {widget} = BadiDatePickerCtrl({parent}, "
@@ -289,12 +292,12 @@ class PanelFactory(TomlMetaData):
 
         klass.write(f"        {widget}.Bind(EVT_BADI_DATE_CHANGED, "
                     "self.set_dirty_flag)\n")
-        mandatory = dict_.get('mandatory', False)
         klass.write(f"        {widget}.mandatory = {mandatory}\n")
         self._set_add_to_sizer(klass, widget, value)
 
     def choice_combo_box(self, klass, panel, widget, value):
         dict_ = find_dict(value)
+        mandatory = dict_.get('mandatory', False)
         parent, id, name = dict_.get('args')
         widget_type = value[0]
 
@@ -333,12 +336,12 @@ class PanelFactory(TomlMetaData):
             klass.write(f"        {widget}.Bind(wx.EVT_COMBOBOX, "
                         "self.get_selection)\n")
 
-        mandatory = dict_.get('mandatory', False)
         klass.write(f"        {widget}.mandatory = {mandatory}\n")
         self._set_add_to_sizer(klass, widget, value)
 
     def check_box(self, klass, panel, widget, value):
         dict_ = find_dict(value)
+        mandatory = dict_.get('mandatory', False)
         parent, id, name = dict_.get('args')
         id = self._fix_flags(id)
         klass.write(f"        {widget} = wx.CheckBox({parent}, {id})\n")
@@ -350,12 +353,12 @@ class PanelFactory(TomlMetaData):
 
         klass.write(f"        {widget}.Bind(wx.EVT_CHECKBOX, "
                     "self.set_dirty_flag)\n")
-        mandatory = dict_.get('mandatory', False)
         klass.write(f"        {widget}.mandatory = {mandatory}\n")
         self._set_add_to_sizer(klass, widget, value)
 
     def color_check_box(self, klass, panel, widget, value):
         dict_ = find_dict(value)
+        mandatory = dict_.get('mandatory', False)
         parent, id, label, name = dict_.get('args')
         id = self._fix_flags(id)
         klass.write(f"        {widget} = ColorCheckBox({parent}, {id}, "
@@ -373,7 +376,6 @@ class PanelFactory(TomlMetaData):
                         "self.set_dirty_flag)\n")
 
         klass.write(f"        {widget}.Enable({enabled})\n")
-        mandatory = dict_.get('mandatory', False)
         klass.write(f"        {widget}.mandatory = {mandatory}\n")
         self._set_add_to_sizer(klass, widget, value)
 
