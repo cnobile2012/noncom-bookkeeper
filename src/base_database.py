@@ -15,6 +15,7 @@ from geopy import exc
 from timezonefinder import TimezoneFinder
 
 from .config import Settings
+from .utilities import StoreObjects
 from .populate_collect_panel import PopulateCollect
 
 
@@ -83,6 +84,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._mf = StoreObjects().get_object('MainFrame')
         self._org_data = {}
         self._fiscal_data = []
 
@@ -96,6 +98,7 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         if (not os.path.exists(self.user_data_fullpath) or
             not await self.has_schema):
+            self._log.info("Create the database.")
             async with aiosqlite.connect(self.user_data_fullpath) as db:
                 for params in self._SCHEMA:
                     table = params[0]
@@ -169,8 +172,6 @@ class BaseDatabase(PopulateCollect, Settings):
                         value = ''
 
                     items[field_name] = value
-            #elif panel_name == 'fiscal':
-            #    print('POOP', data, values)
             else:
                 items = {value[1]: value[2] for value in values}
 

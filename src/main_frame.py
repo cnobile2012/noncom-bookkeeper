@@ -36,7 +36,6 @@ class MainFrame(wx.Frame, MenuBar):
     The main frame of the application.
     """
     __panel_classes = {}
-    #title = 'Main Screen'
 
     def __init__(self, parent=None, id=wx.ID_ANY,
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
@@ -111,7 +110,6 @@ class MainFrame(wx.Frame, MenuBar):
 
         db = Database()
         StoreObjects().set_object(db.__class__.__name__, db)
-        self._log.info("Create the database if it does not exist.")
         await db.create_db()
         await db.populate_panels()
         # *** TODO *** Display a panel that offers the user the ability

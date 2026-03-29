@@ -10,7 +10,7 @@ import wx
 import datetime
 import badidatetime
 
-from .utilities import StoreObjects, make_name
+from .utilities import make_name
 from .config import TomlMetaData, TomlCreatePanel
 
 class PopulateCollect:
@@ -20,7 +20,6 @@ class PopulateCollect:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._mf = StoreObjects().get_object('MainFrame')
 
     @property
     def has_org_info_data(self) -> bool:
