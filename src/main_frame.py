@@ -116,14 +116,13 @@ class MainFrame(wx.Frame, MenuBar):
         #              to add or change fields.
 
         if not db.has_org_info_data:
-            self._log.info("The Organization Information has not been "
-                           "entered yet.")
+            self._log.info("The Organization data needs to be entered.")
             self.edit_config(None)
         elif not db.has_budget_data:
-            self._log.info("The budget data has not been entered yet.")
+            self._log.info("The budget data needs to be entered.")
             self.edit_budget(None)
         elif not db.has_month_data:
-            self._log.info("The month data has not been entered yet.")
+            self._log.info("The month data needs to be entered.")
             self.edit_month(None)
         else:
             self.edit_ledger_data(None)
@@ -137,6 +136,7 @@ class MainFrame(wx.Frame, MenuBar):
 
     def on_timer_closure(self, db):
         def do_save(db, name, panel):
+            self._log.debug("Checking '%s' for changes.", name)
             error = asyncio.run(db.save_to_database(name, panel),
                                 debug=self.options.debug)
             panel.dirty = False
@@ -144,7 +144,6 @@ class MainFrame(wx.Frame, MenuBar):
             if error is None:
                 c_name = name.capitalize()
                 self.statusbar_message = f"Finished saving {c_name} data."
-                self._log.debug("Checking '%s' for changes.", name)
             else:
                 self.statusbar_warning = error
                 # *** TODO *** Reset to default all values in panel.

@@ -118,7 +118,8 @@ class PopulateCollect:
                     self._mf.statusbar_error = msg
             else:
                 msg = f"Invalid widget type '{name0}'."
-                self._log.error(msg)
+                log_msg = msg.rstrip('.') + ", widgets: %s"
+                self._log.error(log_msg, widgets)
                 self._mf.statusbar_error = msg
 
         # Add fields that are not in the GUI.
