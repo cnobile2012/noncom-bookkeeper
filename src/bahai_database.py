@@ -4,11 +4,34 @@
 #
 __docformat__ = "restructuredtext en"
 
+import sqlite3
+
 from .base_database import BaseDatabase
 from .custom_widgits import ordered_month
 
 import badidatetime
 badidatetime.enable_geocoder()
+
+
+def adapt_datetime(dt):
+    """
+    Adapter: datetime → ISO string
+    """
+    return dt.isoformat()
+
+
+def custom_converter(value):
+    """
+    Converter: ISO string → datetime
+    """
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+
+    return badidatetime.datetime.fromisoformat(value)
+
+
+sqlite3.register_adapter(badidatetime.datetime, adapt_datetime)
+sqlite3.register_converter('DATETIME', custom_converter)
 
 
 class Database(BaseDatabase):
@@ -72,11 +95,11 @@ class Database(BaseDatabase):
 
         :param list data: The data to be inserted.
         """
-        now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
+        now = badidatetime.datetime.now(self.tzinfo, short=True)
         items = [t + (now, now) for t in data]  # Add the times to the end.
         query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
                  "current, work_on, audit, c_time, m_time) "
-                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
         await self._do_insert_query(query, items)
 
     async def update_fiscal_year_table(self, data: list) -> None:
@@ -95,10 +118,10 @@ class Database(BaseDatabase):
            [(current_fiscal_year, work_on_this_fiscal_year,
              audit_complete), ...]
         """
-        now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
+        now = badidatetime.datetime.now(self.tzinfo, short=True)
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
                  "SET current = :current, work_on = :work_on, audit = :audit, "
-                 "m_time = :m_time WHERE year = :year")
+                 "m_time = :m_time WHERE year = :year;")
         items = [{'year': item[0], 'current': item[3], 'work_on': item[4],
                   'audit': item[5], 'm_time': now} for item in data]
         await self._do_update_query(query, items)
@@ -123,7 +146,7 @@ class Database(BaseDatabase):
         else:
             where = ""
 
-        query = (f"SELECT * FROM {self._T_MONTH} {where}")
+        query = (f"SELECT * FROM {self._T_MONTH} {where};")
         return await self._do_select_query(query)
 
     async def insert_into_month_table(self, months: dict) -> None:
@@ -133,10 +156,10 @@ class Database(BaseDatabase):
         :param list months: A dict where the key is the order of the month
                             and the value is the month name.
         """
-        now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
+        now = badidatetime.datetime.now(self.tzinfo, short=True)
         data = [(name, order, now, now) for order, name in months.items()]
         query = (f"INSERT INTO {self._T_MONTH} (month, ord, c_time, m_time) "
-                 "VALUES (?, ?, ?, ?)")
+                 "VALUES (?, ?, ?, ?);")
         await self._do_insert_query(query, data)
 
     #
@@ -166,10 +189,10 @@ class Database(BaseDatabase):
         :param set fields: The fields from any panel in the form of:
                            {<field name>,...}.
         """
-        now = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
+        now = badidatetime.datetime.now(self.tzinfo, short=True)
         data = [(field, now, now) for field in fields]
         query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, c_time, m_time) "
-                 "VALUES (?, ?, ?)")
+                 "VALUES (?, ?, ?);")
         await self._do_insert_query(query, data)
 
     #
@@ -256,8 +279,7 @@ class Database(BaseDatabase):
         fy1 = await self.select_from_fiscal_year_table(current=1)
 
         if fy1:
-            now = badidatetime.datetime.now(self.tzinfo,
-                                            short=True).isoformat()
+            now = badidatetime.datetime.now(self.tzinfo, short=True)
             f_items = await self.select_from_field_type_table(data)
             f_month = await self.select_from_month_table(order=month)
             fy2 = await self.select_from_fiscal_year_table(year=fy1[0][1]+1)

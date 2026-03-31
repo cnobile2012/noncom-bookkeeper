@@ -6,6 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import os
 import wx
+import sqlite3
 import aiosqlite
 
 from zoneinfo import ZoneInfo
@@ -43,19 +44,19 @@ class BaseDatabase(PopulateCollect, Settings):
          'current INTEGER NOT NULL',
          'work_on INTEGER NOT NULL',
          'audit INTEGER NOT NULL',
-         'c_time TEXT NOT NULL',
-         'm_time TEXT NOT NULL'),
+         'c_time DATETIME NOT NULL',
+         'm_time DATETIME NOT NULL'),
         (_T_MONTH,
          'pk INTEGER NOT NULL PRIMARY KEY',  # mfk in data
          'month TEXT UNIQUE NOT NULL',
          'ord INTEGER UNIQUE NOT NULL',
-         'c_time TEXT NOT NULL',
-         'm_time TEXT NOT NULL'),
+         'c_time DATETIME NOT NULL',
+         'm_time DATETIME NOT NULL'),
         (_T_FIELD_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',  # ffk in data
          'field TEXT UNIQUE NOT NULL',
-         'c_time TEXT NOT NULL',
-         'm_time TEXT NOT NULL'),
+         'c_time DATETIME NOT NULL',
+         'm_time DATETIME NOT NULL'),
         (_T_DATA,
          'pk INTEGER NOT NULL PRIMARY KEY',  # dfk in report_pivot
          'value TEXT NOT NULL',
@@ -63,13 +64,13 @@ class BaseDatabase(PopulateCollect, Settings):
          'fy2fk INTEGER NOT NULL',
          'mfk INTEGER NOT NULL',
          'ffk INTEGER NOT NULL',
-         'c_time TEXT NOT NULL',
-         'm_time TEXT NOT NULL'),
+         'c_time DATETIME NOT NULL',
+         'm_time DATETIME NOT NULL'),
         (_T_REPORT_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
          'report TEXT UNIQUE NOT NULL',
-         'c_time TEXT NOT NULL',
-         'm_time TEXT NOT NULL'),
+         'c_time DATETIME NOT NULL',
+         'm_time DATETIME NOT NULL'),
         (_T_REPORT_PIVOT,
          'rfk INTERGER NOT NULL',
          'dfk INTEGER NOT NULL',
@@ -81,6 +82,7 @@ class BaseDatabase(PopulateCollect, Settings):
     _EXCLUDE_PANELS = ('fiscal',)
     _FIELDS_NOT_ADDED = ()  # Fields not in the field_table.
     _MAX_FIELD_LEN = 40  # Max length of fields allowed in the field_table.
+    _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -195,9 +197,8 @@ class BaseDatabase(PopulateCollect, Settings):
         .. note::
 
            Empty (default) organization data:
-              {'locality_prefix': 0, 'locale_name': '',
-               'total_membership': '', 'treasurer': '',
-               'start_of_fiscal_year': '<today>',
+              {'locality_prefix': 0, 'locale_name': '', 'total_membership': '',
+               'treasurer': '', 'start_of_fiscal_year': '<today>',
                'location_city_name': ''}
         """
         error = None
@@ -436,10 +437,12 @@ class BaseDatabase(PopulateCollect, Settings):
         Do the actual query and return the results.
 
         :param str query: The SQL query to do.
+        :params tuple params: Parameters to query.
         :returns: A list of the data.
         :rtype: list
         """
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
+        async with aiosqlite.connect(self.user_data_fullpath,
+                                     detect_types=self._DETECT_TYPES) as db:
             async with db.execute(query, params) as cursor:
                 values = await cursor.fetchall()
 
@@ -449,31 +452,81 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         Do the insert query.
 
-        :param str query: The SQL query to do.
-        :param list data: Data to insert into the Data table.
+        :param str query: The SQL query to execute.
+        :param list or tuple data: Data to insert into the Data table.
+        :returns: Number of rows affected by the query or 'None' of an
+                  exception was raised.
+        :rtype: int or None
         """
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
-            try:
-                await db.executemany(query, data)
-            except Exception as e:
-                self._log.error(str(e), exc_info=True)
-            else:
-                await db.commit()
+        return await self._do_query(query, data)
 
     async def _do_update_query(self, query: str, data: list) -> None:
         """
         Do the update query.
 
         :param str query: The SQL query to do.
-        :param list data: Data to update into the Data table.
+        :param list or tuple data: Data to update into the Data table.
+        :returns: Number of rows affected by the query or 'None' of an
+                  exception was raised.
+        :rtype: int or None
         """
-        async with aiosqlite.connect(self.user_data_fullpath) as db:
+        return await self._do_query(query, data)
+
+    async def _do_delete_query(self, query: str, data: list) -> int:
+        """
+        Do the delete query.
+
+        :param str query: The SQL query to do.
+        :param list or tuple data: Data used to delete items from a table.
+        :returns: Number of rows affected by the query or 'None' of an
+                  exception was raised.
+        :rtype: int or None
+        """
+        return await self._do_query(query, data)
+
+    async def _do_query(self, query: str, data: list) -> int:
+        """
+        Do the INSERT, UPDATE, or DELETE queries.
+
+        :param str query: The SQL query to do.
+        :param list or tuple data: Data used to insert, update, or delete
+                                   items from a table.
+        :returns: Number of rows affected by the query or '0' if an
+                  exception was raised.
+        :rtype: int or None
+        """
+        assert ';' in query, f"The query {query} does not end with a ';'."
+
+        # Normalize: single row -> list of one row
+        if data and (isinstance(data, dict) or not
+                     isinstance(data, (list, tuple)) or
+                     (isinstance(data, (list, tuple)) and data and not
+                      isinstance(data[0], (list, tuple, dict)))):
+            data = [data]
+
+        async with aiosqlite.connect(self.user_data_fullpath,
+                                     detect_types=self._DETECT_TYPES) as db:
+            rowcount = 0
+            queries = [q.strip() for q in query.split(";") if q.strip()]
+
             try:
-                await db.executemany(query, data)
-            except Exception as e:
-                self._log.error(str(e), exc_info=True)
-            else:
+                if len(queries) > 1:
+                    await db.execute("BEGIN;")
+
+                for stmt in queries:
+                    if not stmt:  # pragma: no cover
+                        continue
+
+                    cursor = await db.executemany(stmt, data)
+                    rowcount += cursor.rowcount
+
                 await db.commit()
+            except Exception as e:
+                await db.rollback()
+                self._log.error("Error with data %s, %s", data, e,
+                                exc_info=True)
+
+        return rowcount
 
     #
     # Utility methods
