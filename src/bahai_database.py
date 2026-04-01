@@ -98,7 +98,7 @@ class Database(BaseDatabase):
         now = badidatetime.datetime.now(self.tzinfo, short=True)
         items = [t + (now, now) for t in data]  # Add the times to the end.
         query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
-                 "current, work_on, audit, c_time, m_time) "
+                 "current, work_on, audit, ctime, mtime) "
                  "VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
         await self._do_insert_query(query, items)
 
@@ -121,9 +121,9 @@ class Database(BaseDatabase):
         now = badidatetime.datetime.now(self.tzinfo, short=True)
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
                  "SET current = :current, work_on = :work_on, audit = :audit, "
-                 "m_time = :m_time WHERE year = :year;")
+                 "mtime = :mtime WHERE year = :year;")
         items = [{'year': item[0], 'current': item[3], 'work_on': item[4],
-                  'audit': item[5], 'm_time': now} for item in data]
+                  'audit': item[5], 'mtime': now} for item in data]
         await self._do_update_query(query, items)
 
     #
@@ -158,7 +158,7 @@ class Database(BaseDatabase):
         """
         now = badidatetime.datetime.now(self.tzinfo, short=True)
         data = [(name, order, now, now) for order, name in months.items()]
-        query = (f"INSERT INTO {self._T_MONTH} (month, ord, c_time, m_time) "
+        query = (f"INSERT INTO {self._T_MONTH} (month, ord, ctime, mtime) "
                  "VALUES (?, ?, ?, ?);")
         await self._do_insert_query(query, data)
 
@@ -173,7 +173,7 @@ class Database(BaseDatabase):
         :param dict data: The data from the Organization Information panel in
                           the form of: {<field name>: <value>,...}.
         :returns: The values read from the FieldType table in the form of
-                  [(<pk>, <field>, <rids>, <c_time>, <m_time>), ...].
+                  [(<pk>, <field>, <rids>, <ctime>, <mtime>), ...].
         :rtype: list of tuples
         """
         assert data, f"There must be valid data, found '{data}'."
@@ -191,7 +191,7 @@ class Database(BaseDatabase):
         """
         now = badidatetime.datetime.now(self.tzinfo, short=True)
         data = [(field, now, now) for field in fields]
-        query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, c_time, m_time) "
+        query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, ctime, mtime) "
                  "VALUES (?, ?, ?);")
         await self._do_insert_query(query, data)
 
@@ -240,7 +240,7 @@ class Database(BaseDatabase):
             params = (year, year+1)
             query = (
                 "SELECT d.pk, f.field, d.value, y1.year, y2.year, "
-                "       d.c_time, d.m_time "
+                "       d.ctime, d.mtime "
                 f"FROM {self._T_DATA} AS d "
                 f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
                 f"     AND f.field IN (\"{fields}\") "
@@ -252,7 +252,7 @@ class Database(BaseDatabase):
         else:
             params = ()
             query = (
-                "SELECT d.pk, f.field, d.value, d.c_time, d.m_time "
+                "SELECT d.pk, f.field, d.value, d.ctime, d.mtime "
                 f"FROM {self._T_DATA} AS d "
                 f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
                 f"     AND f.field IN (\"{fields}\");"
@@ -286,19 +286,19 @@ class Database(BaseDatabase):
 
             query = (
                 f"INSERT INTO {self._T_DATA} (value, fy1fk, fy2fk, mfk, ffk, "
-                "c_time, m_time) VALUES (:value, :fy1fk, :fy2fk, :mfk, :ffk, "
-                ":c_time, :m_time);"
+                "ctime, mtime) VALUES (:value, :fy1fk, :fy2fk, :mfk, :ffk, "
+                ":ctime, :mtime);"
                 )
             values = []
 
             for item in f_items:
-                pk, field, c_time, m_time = item
+                pk, field, ctime, mtime = item
                 mfk = f_month[0][0]
                 fy1fk = fy1[0][0]  # We want the FK not the year.
                 fy2fk = fy2[0][0]  # We want the FK not the year.
                 values.append({'value': data[field], 'fy1fk': fy1fk,
                                'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
-                               'c_time': now, 'm_time': now})
+                               'ctime': now, 'mtime': now})
 
             await self._do_insert_query(query, values)
         else:
@@ -320,10 +320,10 @@ class Database(BaseDatabase):
         :param list data: The data from the any panel  in the form of:
                           [(pk, <value>), ...}.
         """
-        m_time = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
+        mtime = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
         query = (f"UPDATE {self._T_DATA} SET value = :value, "
-                 "m_time = :m_time WHERE pk = :pk;")
-        items = [{'pk': pk, 'value': value, 'm_time': m_time}
+                 "mtime = :mtime WHERE pk = :pk;")
+        items = [{'pk': pk, 'value': value, 'mtime': mtime}
                  for pk, value in data]
         await self._do_update_query(query, items)
 

@@ -35,6 +35,13 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_REPORT_TYPE = 'report_type'
     _T_DATA = 'config_data'
     _T_REPORT_PIVOT = 'report_pivot'
+    _LEDGER_DATA = 'ledget_data'
+    _LEDGER_VALUE_PIVOT = 'ledger_value_pivot'
+    _LEDGER_VALUE = 'ledger_value'
+    _LEDGER_DESC_PIVOT = 'ledger_desc_pivot'
+    _LEDGER_DESC = 'ledger_desc'
+    _LEDGER_DATE_PIVOT = 'ledger_date_pivot'
+    _LEDGER_DATE = 'ledger_date'
     _SCHEMA = (
         (_T_FISCAL_YEAR,
          'pk INTEGER NOT NULL PRIMARY KEY',  # fy1fk or fy2fk in data
@@ -44,38 +51,64 @@ class BaseDatabase(PopulateCollect, Settings):
          'current INTEGER NOT NULL',
          'work_on INTEGER NOT NULL',
          'audit INTEGER NOT NULL',
-         'c_time DATETIME NOT NULL',
-         'm_time DATETIME NOT NULL'),
+         'ctime DATETIME NOT NULL',
+         'mtime DATETIME NOT NULL'),
         (_T_MONTH,
          'pk INTEGER NOT NULL PRIMARY KEY',  # mfk in data
          'month TEXT UNIQUE NOT NULL',
          'ord INTEGER UNIQUE NOT NULL',
-         'c_time DATETIME NOT NULL',
-         'm_time DATETIME NOT NULL'),
+         'ctime DATETIME NOT NULL',
+         'mtime DATETIME NOT NULL'),
         (_T_FIELD_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',  # ffk in data
          'field TEXT UNIQUE NOT NULL',
-         'c_time DATETIME NOT NULL',
-         'm_time DATETIME NOT NULL'),
+         'ctime DATETIME NOT NULL',
+         'mtime DATETIME NOT NULL'),
         (_T_DATA,
-         'pk INTEGER NOT NULL PRIMARY KEY',  # dfk in report_pivot
+         'pk INTEGER NOT NULL PRIMARY KEY',  # cfk in report_pivot
          'value TEXT NOT NULL',
          'fy1fk INTEGER NOT NULL',
          'fy2fk INTEGER NOT NULL',
          'mfk INTEGER NOT NULL',
          'ffk INTEGER NOT NULL',
-         'c_time DATETIME NOT NULL',
-         'm_time DATETIME NOT NULL'),
+         'ctime DATETIME NOT NULL',
+         'mtime DATETIME NOT NULL'),
         (_T_REPORT_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
          'report TEXT UNIQUE NOT NULL',
-         'c_time DATETIME NOT NULL',
-         'm_time DATETIME NOT NULL'),
+         'ctime DATETIME NOT NULL',
+         'mtime DATETIME NOT NULL'),
         (_T_REPORT_PIVOT,
-         'rfk INTERGER NOT NULL',
-         'dfk INTEGER NOT NULL',
+         'rfk INTEGER NOT NULL',
+         'cfk INTEGER NOT NULL',
          f'FOREIGN KEY (rfk) REFERENCES {_T_REPORT_TYPE} (pk)',
-         f'FOREIGN KEY (dfk) REFERENCES {_T_DATA} (pk)'),
+         f'FOREIGN KEY (cfk) REFERENCES {_T_DATA} (pk)'),
+        (_LEDGER_DATA,
+         'pk INTEGER NOT NULL PRIMARY KEY',
+         'deleted INTEGER default 0',
+         'lddpk INTEGER NOT NULL',
+         'ctime DATETIME NOT NULL'),
+        (_LEDGER_DESC_PIVOT,
+         'lfk INTEGER NOT NULL',
+         'dfk INTEGER NOT NULL'),
+        (_LEDGER_DESC,
+         'pk INTEGER NOT NULL PRIMARY KEY',
+         'desc TEXT UNIQUE NOT NULL',
+         'ctime DATETIME NOT NULL'),
+        (_LEDGER_VALUE_PIVOT,
+         'lfk INTEGER NOT NULL',
+         'vfk INTEGER NOT NULL'),
+        (_LEDGER_VALUE,
+         'pk INTEGER NOT NULL PRIMARY KEY',
+         'value INTEGER',
+         'ctime DATETIME NOT NULL'),
+        (_LEDGER_DATE_PIVOT,
+         'lddfk INTEGER NOT NULL',
+         'ldfk INTEGER NOT NULL'),
+        (_LEDGER_DATE,
+         'pk INTEGER NOT NULL PRIMARY KEY',
+         'date TEXT UNIQUE NOT NULL',
+         'ctime DATETIME NOT NULL'),
         )
     _TABLES = [table[0] for table in _SCHEMA]
     _TABLES.sort()
@@ -636,7 +669,7 @@ class BaseDatabase(PopulateCollect, Settings):
         :param list or dict values: A list of tuples where each tuple is the
                                     raw data for one field in the form of
                                     (PK, <field name>, <value>, <fiscal year>,
-                                    <next year>, <c_time>, <m_time>).
+                                    <next year>, <ctime>, <mtime>).
         """
         if isinstance(values, list):
             self._org_data = {value[1]: value[2] for value in values}
