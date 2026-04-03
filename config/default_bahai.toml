@@ -21,17 +21,23 @@ months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimá
           'Kamál', "Asmá'", "'Izzat", 'Mashíyyat', "'Ilm", 'Qudrat', 'Qawl',
           'Masá’il', 'Sharaf', 'Sulṭán', 'Mulk', 'Ayyám-i-Há', "'Alá'"]
 locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
-font_16_bold = [16, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
-font_14_bold = [14, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
-font_12_normal = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, '']
-font_12_bold = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
-font_10_normal = [10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_NORMAL', 0, '']
-font_10_bold = [10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL', 'FONTWEIGHT_BOLD', 0, '']
+font_16_bold = [16, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
+                'FONTWEIGHT_BOLD', 0, '']
+font_14_bold = [14, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
+                'FONTWEIGHT_BOLD', 0, '']
+font_12_normal = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
+                  'FONTWEIGHT_NORMAL', 0, '']
+font_12_bold = [12, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
+                'FONTWEIGHT_BOLD', 0, '']
+font_10_normal = [10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
+                  'FONTWEIGHT_NORMAL', 0, '']
+font_10_bold = [10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
+                'FONTWEIGHT_BOLD', 0, '']
 data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
     ['Description', 3, 1, 'top', 2, true],
     ['Entry Type', 2, 2, 'bottom', 2, true],
-    ['Cash in Bank', 0, 5, 'top', 2, true],
-    ['Income', 0, 3, 'bottom', 2, true],
+    ['Cash in Bank', 4, 2, 'top', 2, true],
+    ['Income', 3, 1, 'top', 2, true],
     ['Expenses', 0, 0, '', 2, false],
     ["Local Bahá'í Expenses", 0, 6, 'bottom', 1, false],
     ["National Bahá'í Funds", 0, 11, 'bottom', 1, false],
@@ -43,9 +49,9 @@ data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
 data_entry_labels = [
     ['description', 'Contribution:', 'Distribution:', 'Expense:', 'Other:'],
     ['entry_type', 'Check Number:', 'Receipt Number:', 'Debit:', 'OCS:'],
-    ['bank', '@Deposit Amount:', '@Check Amount:', '@Dedit Amount:',
-     '@OCS Amount:', '%Balance:'],
-    ['income', '@Local Fund:', '@Contributed Expense:', '@Misc:']
+    ['$bank', 'Deposit Amount:', 'Check Amount:', 'Dedit Amount:',
+     'OCS Amount:', 'Value:', '%Balance:'],
+    ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', 'Value:']
     ]
 
 [organization]

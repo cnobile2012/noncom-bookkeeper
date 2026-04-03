@@ -314,43 +314,50 @@ class MutuallyExclusiveWidgets:
     Implements mutually exclusive widgets, but can also be non-mutually
     exclusive.
 
-    Requires colors to have been globally accessable from a parent class.
+    Requires colors to have been globally accessible from a parent class.
 
-       1. self.w_bg_color = Widget backgreound enabled color
+       1. self.w_bg_color = Widget background enabled color
        2. self.w_fg_color = Widget foreground enabled color
-       3. self.w1_bg_color = Widget background disables color
+       3. self.w1_bg_color = Widget background disable color
     """
     _CAT_LABEL_1ST = '!$&'
     _CAT_LABEL_ALOW = "áí'a-z_"
     _WGT_LABEL_1ST = '*@%'
     _WGT_LABEL_ALOW = "áí'a-zA-Z-:() "
+    _CHECKBOXES = {}
+    _TEXTCTRLES = {}
 
     def create_widgets(self, num_cb: int=0, num_txt: int=0, cb_pos: str='top',
                        labels: tuple=(), pos_idx: int=0) -> int:
         """
         Create ColorCheckBox and TextCtrl widgets that can be mutually
-        exclusive or not.
+        exclusive or part of the mutually exclusive group.
 
         .. note::
 
            1. The fist label is the category indicator and must be lowercase.
-              The first character can be (!, $, &) not mutually exclusive
-              group indicators, see 2 below.
-           2. If the first character of the category (the first label in
-              the labels list) is an exclamation point (!) then all the
-              ColorCheckBoxes are not in the mutually exclusive group. If
-              the first character is a dollar sign ($) then all the TextCtrls
-              are not in the mutually exclusive group. If the first character
-              is an ampersand (&) then all the ColorCheckBoxes and TextCtrls
-              are not in the mutually exclusive group.
-           3. Labels 2 - n are the labels of the StaticText widgets. The
+              The first character can be (!, $, &) not MEG (mutually exclusive
+              group) indicators, see 2 below.
+
+              a. If the first character of the category (the first label in
+                 the labels list) is an exclamation point (!) then all the
+                 ColorCheckBoxes are not in the MEG.
+              b. If the first character is a dollar sign ($) then all the
+                 TextCtrls are not in the MEG.
+              c. If the first character is an ampersand (&) then all the
+                 ColorCheckBoxes and TextCtrls are not in the MEG.
+
+           2. Labels 2 - n are the labels of the StaticText widgets. The
               first character can be (*, @, %), see 4 for descriptions.
-           4. If the fist character of a label is an asterisk (*) this
-              indicates that the ColorCheckBoxes or TextCtrls is not part of
-              the mutually exclusive group and is read only. If the first
-              character is an at-sign (@) then the TextCtrl is right aligned.
-              If the fist character is a percent sign (%) then the TextCtrl is
-              not part of the mutually exclusive group and is right aligned.
+
+              a. If the fist character of a label is an asterisk (*) this
+                 indicates that the ColorCheckBoxes or TextCtrls are not part
+                 of the MEG and is read only.
+              b. If the first character is an at-sign (@) then the TextCtrl
+                 is right aligned.
+              c. If the fist character is a percent sign (%) then the
+                 TextCtrl is not part of the MEG, is right aligned and not
+                 editable.
 
         :param int, num_cb: The number of ColorCheckBoxes.
         :param int num_txt: The number of TextCtrls.
@@ -373,37 +380,26 @@ class MutuallyExclusiveWidgets:
                    for lb in labels[1:]), f"Invalid label(s) in {labels[1:]}."
 
         start_pos = pos_idx
-        first_char = labels[0][0]
         label = labels[0]
-        cb_list = self._checkboxes.setdefault(label, [])
-        tc_list = self._textctrles.setdefault(label, [])
+        cb_list = self._CHECKBOXES.setdefault(label, [])
+        tc_list = self._TEXTCTRLES.setdefault(label, [])
 
-        if cb_pos == 'top':
+        if cb_pos == 'top':  # CheckBoxs are on the top
             pos_idx = self._create_ccbs(cb_list, num_cb, labels[1:], pos_idx)
             self._create_ctrls(tc_list, num_txt, labels[1+num_cb:], pos_idx)
-
-            if first_char not in ('!', '&'):
-                for cb in cb_list:
-                    cb.Bind(EVT_COLOR_CHECKBOX,
-                            self.on_checkbox_selected_wrapper(labels[0]))
-
-            if first_char not in ('$', '&'):
-                for tc in tc_list:
-                    tc.Bind(wx.EVT_SET_FOCUS,
-                            self.on_text_focus_wrapper(labels[0]))
-        else:
+        else:  # CheckBoxs are on the bottom
             pos_idx = self._create_ctrls(tc_list, num_txt, labels[1:], pos_idx)
             self._create_ccbs(cb_list, num_cb, labels[1+num_txt:], pos_idx)
 
-            if first_char not in ('!', '&'):
-                for cb in cb_list:
-                    cb.Bind(EVT_COLOR_CHECKBOX,
-                            self.on_checkbox_selected_wrapper(labels[0]))
+        if label[0] not in ('!', '&'):
+            for cb in cb_list:
+                cb.Bind(EVT_COLOR_CHECKBOX,
+                        self.on_checkbox_selected_wrapper(labels[0]))
 
-            if first_char not in ('$', '&'):
-                for tc in tc_list:
-                    tc.Bind(wx.EVT_SET_FOCUS,
-                            self.on_text_focus_wrapper(labels[0]))
+        if label[0] not in ('$', '&'):
+            for tc in tc_list:
+                tc.Bind(wx.EVT_SET_FOCUS,
+                        self.on_text_focus_wrapper(labels[0]))
 
         return start_pos + num_cb + num_txt
 
@@ -438,14 +434,13 @@ class MutuallyExclusiveWidgets:
         for num in range(num_txt):
             label = labels[num]
 
-            # An asterisk as the 1st char indicates non-editable.
-            if label[0] == '*':
+            if label[0] == '*':  # An asterisk indicates non-editable
                 label = label[1:]
                 style = wx.TE_READONLY
-            elif label[0] == '@':
+            elif label[0] == '@':  # In the MEG and Right aligned
                 label = label[1:]
                 style = wx.TE_RIGHT
-            elif label[0] == '%':
+            elif label[0] == '%':  # Not in MEG and right aligned
                 label = label[1:]
                 style = wx.TE_READONLY | wx.TE_RIGHT
             else:
@@ -475,8 +470,8 @@ class MutuallyExclusiveWidgets:
         return pos_idx
 
     def on_checkbox_selected_wrapper(self, category_name):
-        cb_list = self._checkboxes[category_name]
-        tc_list = self._textctrles[category_name]
+        cb_list = self._CHECKBOXES[category_name]
+        tc_list = self._TEXTCTRLES[category_name]
 
         def on_checkbox_selected(event):
             selected_cb = event.GetEventObject()
@@ -487,7 +482,7 @@ class MutuallyExclusiveWidgets:
                     cb.SetValue(cb == selected_cb)
 
             for tc in tc_list:
-                if tc.IsEditable():
+                if category_name[0] != '$' and tc.IsEditable():
                     tc.Enable(False)
                     tc.SetValue("")
                     tc.SetBackgroundColour(self.w1_bg_color)
@@ -495,15 +490,15 @@ class MutuallyExclusiveWidgets:
         return on_checkbox_selected
 
     def on_text_focus_wrapper(self, category_name):
-        cb_list = self._checkboxes[category_name]
-        tc_list = self._textctrles[category_name]
+        cb_list = self._CHECKBOXES[category_name]
+        tc_list = self._TEXTCTRLES[category_name]
 
         def on_text_focus(event):
             selected_tc = event.GetEventObject()
 
             # Disable all checkboxes
             for cb in cb_list:
-                if cb.IsEditable():
+                if  category_name[0] != '!' and cb.IsEditable():
                     cb.SetValue(False)
                     cb.Enable(False)
 
@@ -524,8 +519,8 @@ class MutuallyExclusiveWidgets:
         return on_text_focus
 
     def reset_inputs_wrapper(self, category_name):
-        cb_list = self._checkboxes[category_name]
-        tc_list = self._textctrles[category_name]
+        cb_list = self._CHECKBOXES[category_name]
+        tc_list = self._TEXTCTRLES[category_name]
 
         def reset_inputs(event):
             for cb in cb_list:

@@ -95,11 +95,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         self.gbs.Add(widget_02, (0, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.ALL, 6)
 
-        self._checkboxes = {}
-        self._textctrles = {}
         title_gen = self._title_generator()
-        # The first label is the category name the rest are the StaticText
-        # labels.
+        # The first label is the category name the rest are StaticText labels.
         label_gen = self._label_generator()
         title_data, labels = self._next_title_and_labels(title_gen, label_gen)
         pos += 2
