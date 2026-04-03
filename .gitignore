@@ -21,6 +21,7 @@ docs/htmlcov
 logs/
 data/
 package
+docs/source/install.rst
 
 # C extensions
 *.so
