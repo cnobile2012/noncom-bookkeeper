@@ -36,12 +36,12 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_DATA = 'config_data'
     _T_REPORT_PIVOT = 'report_pivot'
     _LEDGER_DATA = 'ledget_data'
-    _LEDGER_VALUE_PIVOT = 'ledger_value_pivot'
-    _LEDGER_VALUE = 'ledger_value'
-    _LEDGER_DESC_PIVOT = 'ledger_desc_pivot'
+    _LEDGER_ENTRY_TYPE = 'ledger_entry_type'
     _LEDGER_DESC = 'ledger_desc'
-    _LEDGER_DATE_PIVOT = 'ledger_date_pivot'
-    _LEDGER_DATE = 'ledger_date'
+    _LEDGER_BANK = 'ledger_bank'
+    _LEDGER_INCOME = 'ledger_income'
+    _LEDGER_EXPENSE_PIVOT = 'ledger_expense_pivot'
+    _LEDGER_EXPENSE = 'ledger_expense'
     _SCHEMA = (
         (_T_FISCAL_YEAR,
          'pk INTEGER NOT NULL PRIMARY KEY',  # fy1fk or fy2fk in data
@@ -85,30 +85,26 @@ class BaseDatabase(PopulateCollect, Settings):
          f'FOREIGN KEY (cfk) REFERENCES {_T_DATA} (pk)'),
         (_LEDGER_DATA,
          'pk INTEGER NOT NULL PRIMARY KEY',
-         'deleted INTEGER default 0',
-         'lddpk INTEGER NOT NULL',
+         'date DATETIME NOT NULL',
+         'purged INTEGER default 0',
          'ctime DATETIME NOT NULL'),
-        (_LEDGER_DESC_PIVOT,
-         'lfk INTEGER NOT NULL',
-         'dfk INTEGER NOT NULL'),
         (_LEDGER_DESC,
          'pk INTEGER NOT NULL PRIMARY KEY',
-         'desc TEXT UNIQUE NOT NULL',
-         'ctime DATETIME NOT NULL'),
-        (_LEDGER_VALUE_PIVOT,
-         'lfk INTEGER NOT NULL',
-         'vfk INTEGER NOT NULL'),
-        (_LEDGER_VALUE,
+         'type INTEGER NOT NULL',
+         'other TEXT NULL'),
+        (_LEDGER_ENTRY_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',
-         'value INTEGER',
-         'ctime DATETIME NOT NULL'),
-        (_LEDGER_DATE_PIVOT,
-         'lddfk INTEGER NOT NULL',
-         'ldfk INTEGER NOT NULL'),
-        (_LEDGER_DATE,
+         'ck_num INTEGER NULL',
+         'rcpt_num INTEGER NULL',
+         'value INTEGER'),
+        (_LEDGER_BANK,
          'pk INTEGER NOT NULL PRIMARY KEY',
-         'date TEXT UNIQUE NOT NULL',
-         'ctime DATETIME NOT NULL'),
+         'type INTEGER NOT NULL',
+         'value INTEGER'),
+        (_LEDGER_INCOME,
+         'pk INTEGER NOT NULL PRIMARY KEY',
+         'type INTEGER NOT NULL',
+         'value INTEGER'),
         )
     _TABLES = [table[0] for table in _SCHEMA]
     _TABLES.sort()

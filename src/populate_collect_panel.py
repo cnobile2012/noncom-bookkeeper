@@ -89,6 +89,7 @@ class PopulateCollect:
         :rtype: dict
         """
         data = {}
+        panel_name = panel.__class__.__name__
 
         for widgets in self._find_child_sets(panel):
             w0 = widgets[0]
@@ -118,12 +119,12 @@ class PopulateCollect:
                     self._mf.statusbar_error = msg
             else:
                 msg = f"Invalid widget type '{name0}'."
-                log_msg = msg.rstrip('.') + ", widgets: %s"
-                self._log.error(log_msg, widgets)
+                log_msg = msg.rstrip('.') + ", panel %s, widgets: %s"
+                self._log.error(log_msg, panel_name, widgets)
                 self._mf.statusbar_error = msg
 
         # Add fields that are not in the GUI.
-        if panel.__class__.__name__ == 'OrganizationPanel':
+        if panel_name == 'OrganizationPanel':
             data['iana_name'] = data.get('iana_name', None)
             data['latitude'] = data.get('latitude', None)
             data['longitude'] = data.get('longitude', None)
