@@ -64,7 +64,7 @@ class CustomTextCtrl(wx.Control):
         text_width, text_height = dc.GetTextExtent(self.text)
         # Calculate the vertical position to center the text
         y = (rect.height - text_height) // 2
-        # Calculate the horizontal position to center the text (optional)
+        # Calculate the horizontal position to center the text
         x = (rect.width - text_width) // 2
         # Draw the text
         dc.DrawText(self.text, x, y)

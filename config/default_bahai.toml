@@ -49,8 +49,8 @@ data_entry_labels = [
     ['description', 'Contribution:', 'Distribution:', 'Expense:', 'Other:'],
     ['entry_type', 'Check Number:', 'Receipt Number:', 'Debit:', 'OCS:'],
     ['$bank', 'Deposit Amount:', 'Check Amount:', 'Dedit Amount:',
-     'OCS Amount:', 'Value:', '%Balance:'],
-    ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', 'Value:']
+     'OCS Amount:', '@Value:', '%Balance:'],
+    ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', '@Value:']
     ]
 
 [organization]

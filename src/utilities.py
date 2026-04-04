@@ -336,8 +336,8 @@ class MutuallyExclusiveWidgets:
         .. note::
 
            1. The fist label is the category indicator and must be lowercase.
-              The first character can be (!, $, &) not MEG (mutually exclusive
-              group) indicators, see 2 below.
+              The first character can be (!, $, &) not MEG (Mutually Exclusive
+              Group) indicators, see 2 below.
 
               a. If the first character of the category (the first label in
                  the labels list) is an exclamation point (!) then all the
@@ -353,11 +353,11 @@ class MutuallyExclusiveWidgets:
               a. If the fist character of a label is an asterisk (*) this
                  indicates that the ColorCheckBoxes or TextCtrls are not part
                  of the MEG and is read only.
-              b. If the first character is an at-sign (@) then the TextCtrl
-                 is right aligned.
+              b. If the first character is an at-sign (@) then the text in
+                 TextCtrl is right aligned.
               c. If the fist character is a percent sign (%) then the
-                 TextCtrl is not part of the MEG, is right aligned and not
-                 editable.
+                 TextCtrl is not part of the MEG, and the text is right
+                 aligned and not editable.
 
         :param int, num_cb: The number of ColorCheckBoxes.
         :param int num_txt: The number of TextCtrls.

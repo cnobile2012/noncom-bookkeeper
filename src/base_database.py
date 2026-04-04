@@ -9,8 +9,6 @@ import wx
 import sqlite3
 import aiosqlite
 
-from zoneinfo import ZoneInfo
-
 from geopy.geocoders import Nominatim
 from geopy import exc
 from timezonefinder import TimezoneFinder
@@ -35,13 +33,13 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_REPORT_TYPE = 'report_type'
     _T_DATA = 'config_data'
     _T_REPORT_PIVOT = 'report_pivot'
-    _LEDGER_DATA = 'ledget_data'
-    _LEDGER_ENTRY_TYPE = 'ledger_entry_type'
-    _LEDGER_DESC = 'ledger_desc'
-    _LEDGER_BANK = 'ledger_bank'
-    _LEDGER_INCOME = 'ledger_income'
-    _LEDGER_EXPENSE_PIVOT = 'ledger_expense_pivot'
-    _LEDGER_EXPENSE = 'ledger_expense'
+    _T_LEDGER_DATA = 'ledget_data'
+    _T_LEDGER_ENTRY_TYPE = 'ledger_entry_type'
+    _T_LEDGER_DESC = 'ledger_desc'
+    _T_LEDGER_BANK = 'ledger_bank'
+    _T_LEDGER_INCOME = 'ledger_income'
+    _T_LEDGER_EXPENSE_PIVOT = 'ledger_expense_pivot'
+    _T_LEDGER_EXPENSE = 'ledger_expense'
     _SCHEMA = (
         (_T_FISCAL_YEAR,
          'pk INTEGER NOT NULL PRIMARY KEY',  # fy1fk or fy2fk in data
@@ -83,28 +81,39 @@ class BaseDatabase(PopulateCollect, Settings):
          'cfk INTEGER NOT NULL',
          f'FOREIGN KEY (rfk) REFERENCES {_T_REPORT_TYPE} (pk)',
          f'FOREIGN KEY (cfk) REFERENCES {_T_DATA} (pk)'),
-        (_LEDGER_DATA,
+        (_T_LEDGER_DATA,
          'pk INTEGER NOT NULL PRIMARY KEY',
          'date DATETIME NOT NULL',
          'purged INTEGER default 0',
          'ctime DATETIME NOT NULL'),
-        (_LEDGER_DESC,
+        (_T_LEDGER_DESC,
          'pk INTEGER NOT NULL PRIMARY KEY',
          'type INTEGER NOT NULL',
          'other TEXT NULL'),
-        (_LEDGER_ENTRY_TYPE,
+        (_T_LEDGER_ENTRY_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',
          'ck_num INTEGER NULL',
          'rcpt_num INTEGER NULL',
          'value INTEGER'),
-        (_LEDGER_BANK,
+        (_T_LEDGER_BANK,
          'pk INTEGER NOT NULL PRIMARY KEY',
          'type INTEGER NOT NULL',
          'value INTEGER'),
-        (_LEDGER_INCOME,
+        (_T_LEDGER_INCOME,
          'pk INTEGER NOT NULL PRIMARY KEY',
          'type INTEGER NOT NULL',
          'value INTEGER'),
+        (_T_LEDGER_EXPENSE_PIVOT,
+         'lfk INTEGER NOT NULL',
+         'efk INTEGER NOT NULL',
+         f'FOREIGN KEY (lfk) REFERENCES {_T_LEDGER_DATA} (pk)',
+         f'FOREIGN KEY (efk) REFERENCES {_T_LEDGER_EXPENSE} (pk)'),
+        (_T_LEDGER_EXPENSE,
+         'pk INTEGER NOT NULL PRIMARY KEY',
+         'ffk INTEGER NOT NULL',
+         'type INTEGER NOT NULL',
+         'expense INTEGER NOT NULL',
+         f'FOREIGN KEY (ffk) REFERENCES {_T_FIELD_TYPE} (pk)'),
         )
     _TABLES = [table[0] for table in _SCHEMA]
     _TABLES.sort()
@@ -681,11 +690,6 @@ class BaseDatabase(PopulateCollect, Settings):
             self._org_data = None
 
         assert isinstance(self._org_data, dict)
-
-    @property
-    def tzinfo(self):
-        iana_name = self.organization_data.get('iana_name')
-        return ZoneInfo(iana_name if iana_name else 'UTC')
 
     @property
     def earliest_fiscal_year(self):

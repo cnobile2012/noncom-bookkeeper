@@ -5,6 +5,8 @@
 __docformat__ = "restructuredtext en"
 
 import sqlite3
+import datetime
+from zoneinfo import ZoneInfo
 
 from .base_database import BaseDatabase
 from .custom_widgits import ordered_month
@@ -95,7 +97,7 @@ class Database(BaseDatabase):
 
         :param list data: The data to be inserted.
         """
-        now = badidatetime.datetime.now(self.tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
         items = [t + (now, now) for t in data]  # Add the times to the end.
         query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
                  "current, work_on, audit, ctime, mtime) "
@@ -118,7 +120,7 @@ class Database(BaseDatabase):
            [(current_fiscal_year, work_on_this_fiscal_year,
              audit_complete), ...]
         """
-        now = badidatetime.datetime.now(self.tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
                  "SET current = :current, work_on = :work_on, audit = :audit, "
                  "mtime = :mtime WHERE year = :year;")
@@ -156,7 +158,7 @@ class Database(BaseDatabase):
         :param list months: A dict where the key is the order of the month
                             and the value is the month name.
         """
-        now = badidatetime.datetime.now(self.tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
         data = [(name, order, now, now) for order, name in months.items()]
         query = (f"INSERT INTO {self._T_MONTH} (month, ord, ctime, mtime) "
                  "VALUES (?, ?, ?, ?);")
@@ -189,7 +191,7 @@ class Database(BaseDatabase):
         :param set fields: The fields from any panel in the form of:
                            {<field name>,...}.
         """
-        now = badidatetime.datetime.now(self.tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
         data = [(field, now, now) for field in fields]
         query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, ctime, mtime) "
                  "VALUES (?, ?, ?);")
@@ -279,7 +281,7 @@ class Database(BaseDatabase):
         fy1 = await self.select_from_fiscal_year_table(current=1)
 
         if fy1:
-            now = badidatetime.datetime.now(self.tzinfo, short=True)
+            now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
             f_items = await self.select_from_field_type_table(data)
             f_month = await self.select_from_month_table(order=month)
             fy2 = await self.select_from_fiscal_year_table(year=fy1[0][1]+1)
@@ -323,7 +325,7 @@ class Database(BaseDatabase):
         :param list data: The data from the any panel  in the form of:
                           [(pk, <value>), ...}.
         """
-        mtime = badidatetime.datetime.now(self.tzinfo, short=True)
+        mtime = badidatetime.datetime.now(self.utc_tzinfo, short=True)
         query = (f"UPDATE {self._T_DATA} SET value = :value, "
                  "mtime = :mtime WHERE pk = :pk;")
         items = [{'pk': pk, 'value': value, 'mtime': mtime}
@@ -331,7 +333,7 @@ class Database(BaseDatabase):
         return await self._do_update_query(query, items)
 
     #
-    # Miscellaneous methods
+    # Miscellaneous methods and properties
     #
 
     def _ordered_month(self):
@@ -369,3 +371,31 @@ class Database(BaseDatabase):
         :rtype: badidatetime.date
         """
         return badidatetime.date.today()
+
+    @property
+    def utc_tzinfo(self):
+        return badidatetime.UTC
+
+    @property
+    def tzinfo(self) -> badidatetime.TZWithCoords:
+        lat = self.organization_data.get('latitude')
+        lon = self.organization_data.get('longitude')
+        iana_name = self.organization_data.get('iana_name')
+        offset = self._get_standard_offset(iana_name)
+        return badidatetime.TZWithCoords(lat, lon, offset/3600)
+
+    def _get_standard_offset(self, iana_key: str) -> datetime.timedelta:
+        assert iana_key, "The IANA key has not been set."
+        tz = ZoneInfo(iana_key)
+        now = datetime.datetime.now(tz)
+
+        # Try every month and find the offset where DST is 0 (standard time)
+        for month in range(1, 13):
+            dt = datetime.datetime(now.year, month, 15, tzinfo=tz)
+
+            # No DST active = standard time
+            if dt.dst() == datetime.timedelta(0):
+                return dt.utcoffset()
+
+        # Zone has no DST at all — any offset is the standard offset
+        return datetime.datetime(now.year, 1, 15, tzinfo=tz).utcoffset()
