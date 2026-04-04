@@ -257,10 +257,12 @@ class BaseDatabase(PopulateCollect, Settings):
                         data['start_of_fiscal_year'] = sofy.isoformat()
                         earliest_fiscal_year = self.earliest_fiscal_year
 
-                        if not f_year or not f_month:
+                        if None in (f_year, f_month):
                             self.organization_data = data
                             await self.first_run_initialization(
                                 p_year, p_month, p_day)
+                            f_year = p_year
+                            f_month = p_month
                         elif f_year == p_year:  # Update current year
                             self.organization_data = data
                         elif (f_year + 1) == p_year:

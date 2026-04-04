@@ -100,7 +100,7 @@ class Database(BaseDatabase):
         query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
                  "current, work_on, audit, ctime, mtime) "
                  "VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
-        await self._do_insert_query(query, items)
+        return await self._do_insert_query(query, items)
 
     async def update_fiscal_year_table(self, data: list) -> None:
         """
@@ -124,7 +124,7 @@ class Database(BaseDatabase):
                  "mtime = :mtime WHERE year = :year;")
         items = [{'year': item[0], 'current': item[3], 'work_on': item[4],
                   'audit': item[5], 'mtime': now} for item in data]
-        await self._do_update_query(query, items)
+        return await self._do_update_query(query, items)
 
     #
     # Month SELECT and INSERT methods.
@@ -160,7 +160,7 @@ class Database(BaseDatabase):
         data = [(name, order, now, now) for order, name in months.items()]
         query = (f"INSERT INTO {self._T_MONTH} (month, ord, ctime, mtime) "
                  "VALUES (?, ?, ?, ?);")
-        await self._do_insert_query(query, data)
+        return await self._do_insert_query(query, data)
 
     #
     # Field Names SELECT, INSERT and, UPDATE methods.
@@ -193,7 +193,7 @@ class Database(BaseDatabase):
         data = [(field, now, now) for field in fields]
         query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, ctime, mtime) "
                  "VALUES (?, ?, ?);")
-        await self._do_insert_query(query, data)
+        return await self._do_insert_query(query, data)
 
     #
     # Data SELECT, INSERT and, UPDATE methods.
@@ -300,9 +300,12 @@ class Database(BaseDatabase):
                                'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
                                'ctime': now, 'mtime': now})
 
-            await self._do_insert_query(query, values)
+            rowcount = await self._do_insert_query(query, values)
         else:
             self._log.error("No current fiscal_year data in the database.")
+            rowcount = 0
+
+        return rowcount
 
     async def update_config_data_table(self, year: int, month: int, data: list
                                        ) -> None:
@@ -320,12 +323,12 @@ class Database(BaseDatabase):
         :param list data: The data from the any panel  in the form of:
                           [(pk, <value>), ...}.
         """
-        mtime = badidatetime.datetime.now(self.tzinfo, short=True).isoformat()
+        mtime = badidatetime.datetime.now(self.tzinfo, short=True)
         query = (f"UPDATE {self._T_DATA} SET value = :value, "
                  "mtime = :mtime WHERE pk = :pk;")
         items = [{'pk': pk, 'value': value, 'mtime': mtime}
                  for pk, value in data]
-        await self._do_update_query(query, items)
+        return await self._do_update_query(query, items)
 
     #
     # Miscellaneous methods

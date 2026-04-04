@@ -73,7 +73,7 @@ class CustomTextCtrl(wx.Control):
         if self.has_focus:
             tw, th = dc.GetTextExtent(self.text[:self.cursor_pos])
             dc.SetPen(wx.Pen(wx.BLACK, 1))
-            dc.DrawLine(6 + tw, 4, 6 + tw, 4 + th)
+            dc.DrawLine(x + tw, y, x + tw, y + th)
 
     def on_click(self, event):
         self.SetFocus()
@@ -326,7 +326,6 @@ class BadiDatePickerCtrl(wx.Panel):
         self.SetMinSize((1, 28))
         sizer.AddStretchSpacer()
         sizer.Add(self.calendar_btn, 1, wx.EXPAND | wx.ALL, 2)
-
         self.SetSizer(sizer)
 
     def _max_days_in_month(self, year, month):
