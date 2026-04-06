@@ -430,7 +430,7 @@ class PanelFactory(TomlMetaData):
         klass.write("        btn_sizer.Add(left, 0, wx.ALL, 10)\n")
         klass.write("        btn_sizer.Add(right, 0, wx.ALL, 10)\n")
         klass.write("        btn_sizer.AddStretchSpacer()\n")
-        klass.write(f"        {sizer}.Add(btn_sizer, 0, wx.CENTER, 0)\n")
+        self._set_add_to_sizer(klass, 'btn_sizer', value)
 
     def assemble_buttons(self, klass, panel, values):
         """
