@@ -150,7 +150,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         return (item for item in entry_labels)
 
     def _make_heading(self, title: str, pos: int, *, span: int=2,
-                      btn: bool=True) -> int:
+                      btn: bool=True) -> tuple:
         text = wx.StaticText(self, wx.ID_ANY, title)
         text.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT,
                              wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, 0, ''))
@@ -174,7 +174,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
                      | wx.BOTTOM, 4)
         return button, pos + 2
 
-    def _next_title_and_labels(self, title_gen, label_gen):
+    def _next_title_and_labels(self, title_gen, label_gen) -> tuple:
         try:
             title = next(title_gen)
         except StopIteration:
@@ -188,16 +188,16 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
         return title, labels
 
-    def search_event(self, event):
+    def search_event(self, event) -> None:
         print("Initiated a search event.")
 
-    def on_arrow(self, event):
+    def on_arrow(self, event) -> None:
         direction = event.GetDirection()
         print(f"{direction.capitalize()} arrow clicked")
         event.Skip()
 
     @property
-    def background_color(self):
+    def background_color(self) -> wx.Colour:
         """
         This is for the ShortCuts panel.
         """

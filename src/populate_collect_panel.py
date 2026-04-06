@@ -15,6 +15,7 @@ from .config import TomlMetaData, TomlCreatePanel
 
 class PopulateCollect:
     _EMPTY_FIELDS = ('', '0')
+    _EXCLUDE_WIDGETS = ('FlatArrowButton',)
     _tmd = TomlMetaData()
     _tcp = TomlCreatePanel()
 
@@ -42,9 +43,9 @@ class PopulateCollect:
         return self._check_panels_for_entries('budget')
 
     @property
-    def has_month_data(self) -> bool:
+    def has_monthly_data(self) -> bool:
         """
-        Check that the db has the Month Information.
+        Check that the db has the Monthly Information.
 
         :returns: True if data has been saved in the DB and False if not saved.
         :rtype: bool
@@ -53,7 +54,13 @@ class PopulateCollect:
 
     @property
     def open_ledger_entry(self) -> bool:
-        pass
+        """
+        Check that the db has the Monthly Information.
+
+        :returns: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
+        """
+        return self._check_panels_for_entries('ledger')
 
     def _check_panels_for_entries(self, name: str) -> bool:
         """
@@ -98,7 +105,9 @@ class PopulateCollect:
             field_name = w0[1]
             widget0 = w0[2]
 
-            if name0 in ('RadioBox', 'ComboBox'):
+            if name0 in self._EXCLUDE_WIDGETS:
+                continue
+            elif name0 in ('RadioBox', 'ComboBox'):
                 data[field_name] = widget0.GetSelection()
             elif name0 in ('ColorCheckBox',):
                 data[field_name] = widget0.GetValue()

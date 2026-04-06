@@ -561,12 +561,13 @@ class FlatArrowButton(wx.Control):
         dc.DrawRectangle(rect)
 
         # Draw arrow/text
-        dc.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+        dc.SetFont(wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                            wx.FONTWEIGHT_BOLD))
         dc.SetTextForeground(wx.BLACK)
         tw, th = dc.GetTextExtent(self.label)
-        dc.DrawText(self.label, (rect.width - tw) // 2,
-                    (rect.height - th) // 2)
+        x = (rect.width - tw) // 2
+        y = (rect.height - th) // 2 - 2
+        dc.DrawText(self.label, x, y)
 
     def GetLabelText(self):
         return self.label

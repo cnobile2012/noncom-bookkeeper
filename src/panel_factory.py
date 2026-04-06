@@ -48,8 +48,17 @@ class PanelFactory(TomlMetaData):
         panel_kwargs = self.panel_config.get(panel, {}).get('meta')
         klass = StringIO()
 
-        if panel in ('organization', 'fiscal'):
+        if panel in ('organization',):
             klass.write("from .utilities import StoreObjects\n\n\n")
+
+        if panel in ('fiscal',):
+            klass.write("from .utilities import StoreObjects\n")
+            klass.write("from .custom_widgits import ColorCheckBox, "
+                        "EVT_COLOR_CHECKBOX\n\n\n")
+
+        if panel in ('monthly',):
+            klass.write("from .custom_widgits import FlatArrowButton, "
+                        "EVT_FLAT_ARROW\n\n\n")
 
         klass.write(f"class {class_name}(BaseGenerated):\n")
         klass.write("    def __init__(self, parent, *args, **kwargs):\n")
@@ -108,6 +117,8 @@ class PanelFactory(TomlMetaData):
                 self.static_line(klass, widget, value)
             elif value[0] == 'invisable_spacer':
                 self.invisable_spacer(klass, value)
+            elif value[0] == 'left-right-buttons':
+                self.left_right_buttons(klass, value)
             elif value == 'sizer_span':
                 self.sizer_span(klass)
 
@@ -129,9 +140,11 @@ class PanelFactory(TomlMetaData):
 
         # Add methods to specific panels.
         if panel in ('organization', ):
-            self._create_save_cancel_events(klass, panel)
+            self._create_save_cancel_events(klass)
         elif panel == 'fiscal':
-            self._create_combobox_select_event(klass, panel)
+            self._create_combobox_select_event(klass)
+        elif panel in ('monthly',):
+            self._add_on_arrows(klass)
 
         self.__panels[panel] = klass.getvalue()
         klass.close()
@@ -401,6 +414,24 @@ class PanelFactory(TomlMetaData):
         if self.span:
             klass.write(f"        {self.second_sizer}.Add(*{self.span})\n")
 
+    def left_right_buttons(self, klass, value):
+        dict_ = find_dict(value)
+        parent, left_tooltip, right_tooltip = dict_.get('args')
+        sizer = dict_.get('sizer')
+        klass.write(f"        left = FlatArrowButton({parent}, label='←', "
+                    f"direction='left', tooltip='{left_tooltip}')\n")
+        klass.write(f"        right = FlatArrowButton({parent}, "
+                    f"label='→', direction='right', "
+                    f"tooltip='{right_tooltip}')\n")
+        klass.write(f"        left.Bind(EVT_FLAT_ARROW, {parent}.on_arrow)\n")
+        klass.write(f"        right.Bind(EVT_FLAT_ARROW, {parent}.on_arrow)\n")
+        klass.write("        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)\n")
+        klass.write("        btn_sizer.AddStretchSpacer()\n")
+        klass.write("        btn_sizer.Add(left, 0, wx.ALL, 10)\n")
+        klass.write("        btn_sizer.Add(right, 0, wx.ALL, 10)\n")
+        klass.write("        btn_sizer.AddStretchSpacer()\n")
+        klass.write(f"        {sizer}.Add(btn_sizer, 0, wx.CENTER, 0)\n")
+
     def assemble_buttons(self, klass, panel, values):
         """
         Assemble the buttons for this panel.
@@ -472,7 +503,7 @@ class PanelFactory(TomlMetaData):
                     f"{panel_pos}, {panel_span}, {panel_flags}, "
                     f"{panel_border})\n")
 
-    def _create_save_cancel_events(self, klass, panel):
+    def _create_save_cancel_events(self, klass):
         klass.write("\n    def button_save(self, event):\n")
         klass.write("        self.save = True\n")
         klass.write("        event.Skip()\n\n")
@@ -498,7 +529,7 @@ class PanelFactory(TomlMetaData):
                     "statusbar_message = 'Restoring data.'\n")
         klass.write("        self._cancel = value\n")
 
-    def _create_combobox_select_event(self, klass, panel):
+    def _create_combobox_select_event(self, klass):
         klass.write("\n    def get_selection(self, event):\n")
         klass.write("        value = event.GetString()\n")
         klass.write("        year, _, nyear = value.partition('-')\n")
@@ -509,6 +540,13 @@ class PanelFactory(TomlMetaData):
         klass.write("        else:\n")
         klass.write("            db.set_fiscal_panel(False, False, False)\n")
         klass.write("            self.selected = False\n")
+
+    def _add_on_arrows(self, klass):
+        klass.write("\n    def on_arrow(self, event) -> None:\n")
+        klass.write("        direction = event.GetDirection()\n")
+        klass.write('        print(f"{direction.capitalize()} arrow '
+                    'clicked")\n')
+        klass.write("        event.Skip()\n")
 
     def _set_colors(self, klass, widget, value):
         """

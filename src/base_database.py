@@ -117,7 +117,7 @@ class BaseDatabase(PopulateCollect, Settings):
         )
     _TABLES = [table[0] for table in _SCHEMA]
     _TABLES.sort()
-    _EXCLUDE_PANELS = ('fiscal',)
+    _EXCLUDE_PANELS = ('fiscal', 'monthly')
     _FIELDS_NOT_ADDED = ()  # Fields not in the field_table.
     _MAX_FIELD_LEN = 40  # Max length of fields allowed in the field_table.
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
@@ -132,7 +132,7 @@ class BaseDatabase(PopulateCollect, Settings):
     # Schema methods
     #
 
-    async def create_db(self):
+    async def create_db(self) -> None:
         """
         Create the database based on the fields currently defined.
         """
@@ -192,26 +192,11 @@ class BaseDatabase(PopulateCollect, Settings):
             data = self._collect_panel_values(panel)
             values = await self.select_from_config_data_table(data, year)
 
-            if panel_name  == 'monthly':
-                org_data = self.organization_data
-
             # Needed when the app has been run at least one time before.
             if panel_name == 'organization' and values:
                 # This stores and converts a list to a dict.
                 self.organization_data = values
                 items = self.organization_data
-            elif panel_name == 'monthly' and org_data and not values:
-                items = {}
-
-                for field_name in self._get_field_name(panel_name):
-                    if field_name == 'total_membership_this_month':
-                        value = org_data['total_membership']
-                    elif field_name == 'treasurer_this_month':
-                        value = org_data['treasurer']
-                    else:
-                        value = ''
-
-                    items[field_name] = value
             else:
                 items = {value[1]: value[2] for value in values}
 

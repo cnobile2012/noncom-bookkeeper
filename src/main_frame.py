@@ -121,9 +121,11 @@ class MainFrame(wx.Frame, MenuBar):
         elif not db.has_budget_data:
             self._log.info("The budget data needs to be entered.")
             self.edit_budget(None)
-        elif not db.has_month_data:
-            self._log.info("The month data needs to be entered.")
+        elif not db.has_monthly_data:
+            self._log.info("The first month's data needs to be entered.")
             self.edit_month(None)
+            # 1. Get data from panel
+            # 2. Insert or Update the DB
         else:
             self.edit_ledger_data(None)
 
