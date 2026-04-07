@@ -115,7 +115,7 @@ class PanelFactory(TomlMetaData):
                 self.color_check_box(klass, panel, widget, value)
             elif value[0] == 'StaticLine':
                 self.static_line(klass, widget, value)
-            elif value[0] == 'invisable_spacer':
+            elif value[0] == 'invisable-spacer':
                 self.invisable_spacer(klass, value)
             elif value[0] == 'left-right-buttons':
                 self.left_right_buttons(klass, value)
@@ -407,7 +407,7 @@ class PanelFactory(TomlMetaData):
         if size:
             self._set_add_to_sizer(klass, size, value)
         else:
-            self._log.critical("Invalid size in 'invisable_spacer', check "
+            self._log.critical("Invalid size in 'invisable-spacer', check "
                                "toml config file.")
 
     def sizer_span(self, klass):

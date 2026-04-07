@@ -30,9 +30,11 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_FISCAL_YEAR = 'fiscal_year'
     _T_MONTH = 'month'
     _T_FIELD_TYPE = 'field_type'
-    _T_REPORT_TYPE = 'report_type'
     _T_DATA = 'config_data'
+    _T_MONTHLY_PIVOT = 'monthly_pivot'
+    _T_MONTHLY = 'monthly'
     _T_REPORT_PIVOT = 'report_pivot'
+    _T_REPORT_TYPE = 'report_type'
     _T_LEDGER_DATA = 'ledget_data'
     _T_LEDGER_ENTRY_TYPE = 'ledger_entry_type'
     _T_LEDGER_DESC = 'ledger_desc'
@@ -55,8 +57,7 @@ class BaseDatabase(PopulateCollect, Settings):
          'pk INTEGER NOT NULL PRIMARY KEY',  # mfk in data
          'month TEXT UNIQUE NOT NULL',
          'ord INTEGER UNIQUE NOT NULL',
-         'ctime DATETIME NOT NULL',
-         'mtime DATETIME NOT NULL'),
+         'ctime DATETIME NOT NULL'),
         (_T_FIELD_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',  # ffk in data
          'field TEXT UNIQUE NOT NULL',
@@ -71,6 +72,23 @@ class BaseDatabase(PopulateCollect, Settings):
          'ffk INTEGER NOT NULL',
          'ctime DATETIME NOT NULL',
          'mtime DATETIME NOT NULL'),
+        (_T_MONTHLY,
+         'pk INTEGER NOT NULL PRIMARY KEY',  # mlfk in monthly_pivot
+         'participation INTEGER',
+         'outstanding INTEGER',
+         'coh INTEGER',
+         'membership INTEGER',
+         'treasurer TEXT NOT NULL',
+         'locality INTEGER NOT NULL',
+         'ctime DATETIME NOT NULL',
+         'mtime DATETIME NOT NULL'),
+        (_T_MONTHLY_PIVOT,
+         'mfk INTEGER NOT NULL',
+         'fyfk INTEGER NOT NULL',
+         'mlfk INTEGER NOT NULL',
+         f'FOREIGN KEY (mfk) REFERENCES {_T_MONTH} (pk)',
+         f'FOREIGN KEY (fyfk) REFERENCES {_T_FISCAL_YEAR} (pk)',
+         f'FOREIGN KEY (mlfk) REFERENCES {_T_MONTHLY} (pk)'),
         (_T_REPORT_TYPE,
          'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
          'report TEXT UNIQUE NOT NULL',
@@ -85,7 +103,8 @@ class BaseDatabase(PopulateCollect, Settings):
          'pk INTEGER NOT NULL PRIMARY KEY',
          'date DATETIME NOT NULL',
          'purged INTEGER default 0',
-         'ctime DATETIME NOT NULL'),
+         'ctime DATETIME NOT NULL',
+         'mtime DATETIME NOT NULL'),
         (_T_LEDGER_DESC,
          'pk INTEGER NOT NULL PRIMARY KEY',
          'type INTEGER NOT NULL',
@@ -280,7 +299,6 @@ class BaseDatabase(PopulateCollect, Settings):
                          "before any other data can be entered.")
                 self._log.warning(error)
         elif name == 'fiscal':
-            # The day needs to be there but is never used.
             items = [(f_year, f_month, 1, data['current_fiscal_year'],
                       data['work_on_this_fiscal_year'],
                       data['audit_complete'])]
@@ -289,12 +307,35 @@ class BaseDatabase(PopulateCollect, Settings):
         elif name == 'fiscal_settings':
             f_year = f_month = None
         elif name == 'budget':
-            pass
+            pass  # No pre-processing needs to be done.
             #print(data)
+        elif name == 'monthly':
+            if data:
+                empty_fields = []
+                values = {}
+
+                for field, value in data.items():
+                    name, manditory = self._MONTHLY_FIELD_MAP.get(
+                        field, ('unknown', True))
+                    assert name != 'unknown', ("An unknown field was found "
+                                               "in the monthly panel.")
+                    values[name] = value if value else 0
+
+                    if manditory and value in self._EMPTY_FIELDS:
+                        empty_fields.append(field)
+
+                if len(empty_fields) != 0:
+                    ef = ', '.join([f for f in empty_fields])
+                    error = f"The '{ef}' field(s) must not be empty."
+                    self._log.warning(error)
 
         if f_year and f_month and not error:
-            error = await self._insert_update_config_data_table(
-                f_year, month=f_month, data=data)
+            if name in ('organization', 'budget'):
+                error = await self._insert_update_config_data_table(
+                    f_year, month=f_month, data=data)
+            elif name == 'monthly':
+                rowcount = await self.insert_into_monthly_table(f_year, values)
+                print('POOP', rowcount)
 
         return error
 
@@ -513,7 +554,7 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         Do the INSERT, UPDATE, or DELETE queries.
 
-        :param str query: The SQL query to do.
+        :param str query: The SQL query to execute.
         :param list or tuple data: Data used to insert, update, or delete
                                    items from a table.
         :returns: Number of rows affected by the query or '0' if an
@@ -531,8 +572,8 @@ class BaseDatabase(PopulateCollect, Settings):
 
         async with aiosqlite.connect(self.user_data_fullpath,
                                      detect_types=self._DETECT_TYPES) as db:
-            rowcount = 0
             queries = [q.strip() for q in query.split(";") if q.strip()]
+            rowcount = 0
 
             try:
                 if len(queries) > 1:
@@ -542,7 +583,8 @@ class BaseDatabase(PopulateCollect, Settings):
                     if not stmt:  # pragma: no cover
                         continue
 
-                    cursor = await db.executemany(stmt, data)
+                    # Put the ; back on the quert.
+                    cursor = await db.executemany(stmt + ';', data)
                     rowcount += cursor.rowcount
 
                 await db.commit()

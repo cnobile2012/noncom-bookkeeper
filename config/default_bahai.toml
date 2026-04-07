@@ -261,7 +261,7 @@ widget_88 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EX
 widget_89 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Teaching Committee:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[55, 0], span=[1, 1]}]
 widget_90 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[55, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_91 = ['invisable_spacer', {add=['', 0, 0], size=[0, 1], pos=[56, 0], span=[1, 2]}]
+widget_91 = ['invisable-spacer', {add=['', 0, 0], size=[0, 1], pos=[56, 0], span=[1, 2]}]
 
 [monthly]
 
