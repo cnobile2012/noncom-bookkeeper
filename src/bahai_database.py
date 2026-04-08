@@ -96,7 +96,8 @@ class Database(BaseDatabase):
             where = ""
 
         query = (f"SELECT * FROM {self._T_FISCAL_YEAR} {where};")
-        return await self._do_select_query(query)
+        data = await self._do_select_query(query)
+        return data[0] if len(data) == 1 else data
 
     async def insert_into_fiscal_year_table(self, data: list) -> int:
         """
@@ -160,7 +161,8 @@ class Database(BaseDatabase):
             where = ""
 
         query = (f"SELECT * FROM {self._T_MONTH} {where};")
-        return await self._do_select_query(query)
+        data = await self._do_select_query(query)
+        return data[0] if len(data) == 1 else data
 
     async def insert_into_month_table(self, months: dict) -> int:
         """
@@ -301,7 +303,7 @@ class Database(BaseDatabase):
             now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
             f_items = await self.select_from_field_type_table(data)
             f_month = await self.select_from_month_table(order=month)
-            fy2 = await self.select_from_fiscal_year_table(year=fy1[0][1]+1)
+            fy2 = await self.select_from_fiscal_year_table(year=fy1[1]+1)
 
             query = (
                 f"INSERT INTO {self._T_DATA} (value, fy1fk, fy2fk, mfk, ffk, "
@@ -312,9 +314,9 @@ class Database(BaseDatabase):
 
             for item in f_items:
                 pk, field, ctime, mtime = item
-                mfk = f_month[0][0]
-                fy1fk = fy1[0][0]  # We want the FK not the year.
-                fy2fk = fy2[0][0]  # We want the FK not the year.
+                mfk = f_month[0]
+                fy1fk = fy1[0]  # We want the FK not the year.
+                fy2fk = fy2[0]  # We want the FK not the year.
                 values.append({'value': data[field], 'fy1fk': fy1fk,
                                'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
                                'ctime': now, 'mtime': now})
@@ -361,11 +363,13 @@ class Database(BaseDatabase):
         :returns: The date for the given month.
         :rtype: list
         """
-        query = ("SELECT mly.*, fy.day, fy.current, fy.work_on, fy.audit, "
-                 f"mth.month, mth.ord FROM {self._T_MONTHLY_PIVOT} AS mp "
-                 f"JOIN {self._T_MONTH} AS mth ON mth.pk = mp.mfk "
-                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
-                 f"JOIN {self._T_MONTHLY} AS mly ON mly.pk = mp.mlfk;")
+        query = (f"SELECT m.* FROM {self._T_MONTHLY} m "
+                 f"JOIN {self._T_MONTHLY_PIVOT} mp ON mp.mlfk = m.pk "
+                 f"JOIN {self._T_MONTH} mo ON mo.pk = mp.mfk "
+                 f"JOIN {self._T_FISCAL_YEAR} fy ON fy.pk = mp.fyfk "
+                 "WHERE mo.month = :month AND fy.year = :year;")
+        data = {'year': year, 'month': month}
+        return await self._do_select_query(query, data)
 
     async def insert_into_monthly_table(self, year: int, data: dict) -> int:
         """
@@ -382,7 +386,7 @@ class Database(BaseDatabase):
         data['ctime'] = data['mtime'] = now
         # Data for the monthly_pivot table.
         month = data.pop('month')
-        data['mfk'] = self.select_from_month_table(order=month)[0]
+        data['mfk'] = (await self.select_from_month_table(order=month))[0]
         fiscal = await self.select_from_fiscal_year_table(year=year)
         data['fyfk'] = fiscal[0]
         query = (f"WITH new_monthly AS (INSERT INTO {self._T_MONTHLY} ("
@@ -392,6 +396,7 @@ class Database(BaseDatabase):
                  " :treasurer, :locality, :ctime, :mtime) RETURNING id) "
                  f"INSERT INTO {self._T_MONTHLY_PIVOT} (mfk, fyfk, mlfk) "
                  "SELECT :mfk, :fyfk, id FROM new_monthly;")
+        print('POOP', query, data)
         return await self._do_insert_query(query, data)
 
     async def update_monthly_table(self, year: int, month: int, data: list

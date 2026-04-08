@@ -487,8 +487,8 @@ class FieldEdit(BasePanel, wx.Panel):
         def undo_button(event):
             value = arg_dict['new_field_name'].GetValue()
 
-            #if value.endswith(':'):
-            #    self._tcp.undo_name(name)
+            # if value.endswith(':'):
+            #     self._tcp.undo_name(name)
 
         return undo_button
 

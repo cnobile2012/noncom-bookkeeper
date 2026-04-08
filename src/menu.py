@@ -248,7 +248,6 @@ class MenuBar:
         self._do_panel_switch('budget')
 
     def edit_month(self, event):  # TODO No fill screen issues
-        #print('POOP', self.panels)
         self._do_panel_switch('monthly')
 
     def edit_ledger_data(self, event):  # TODO Has screen fill issues

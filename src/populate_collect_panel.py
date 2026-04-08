@@ -13,6 +13,7 @@ import badidatetime
 from .utilities import make_name
 from .config import TomlMetaData, TomlCreatePanel
 
+
 class PopulateCollect:
     _EMPTY_FIELDS = ('', '0')
     _EXCLUDE_WIDGETS = ('FlatArrowButton',)
@@ -159,6 +160,7 @@ class PopulateCollect:
         if data:  # When run after first time.
             for w0, w1 in self._find_child_sets(panel):
                 name0 = w0[0]
+                if name0 in self._EXCLUDE_WIDGETS: continue
                 field_name = w0[1]
                 widget0 = w0[2]
                 value = data[field_name]
@@ -279,12 +281,12 @@ class PopulateCollect:
 
     def _add_fiscal_year_choices(self, panel_name: str=None,
                                  panel: wx.Panel=None, *, w0=None):
-        assert (panel_name and panel) or c_set, (
+        assert (panel_name and panel) or w0, (
             "Can only pass 'panel_name' and 'panel' or just 'w_set' alone.")
 
         if not w0:  # First time run.
             widgets = [w0[2] for w0, w1 in self._find_child_sets(panel)
-                  if w0[0] == 'ComboBox']
+                       if w0[0] == 'ComboBox']
             widget0 = widgets[0]
         else:
             widget0 = w0[2]

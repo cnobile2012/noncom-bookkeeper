@@ -42,100 +42,109 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_LEDGER_INCOME = 'ledger_income'
     _T_LEDGER_EXPENSE_PIVOT = 'ledger_expense_pivot'
     _T_LEDGER_EXPENSE = 'ledger_expense'
-    _SCHEMA = (
-        (_T_FISCAL_YEAR,
-         'pk INTEGER NOT NULL PRIMARY KEY',  # fy1fk or fy2fk in data
-         'year INTEGER UNIQUE NOT NULL',
-         'month INTEGER NOT NULL',
-         'day INTEGER NOT NULL',
-         'current INTEGER NOT NULL',
-         'work_on INTEGER NOT NULL',
-         'audit INTEGER NOT NULL',
-         'ctime DATETIME NOT NULL',
-         'mtime DATETIME NOT NULL'),
-        (_T_MONTH,
-         'pk INTEGER NOT NULL PRIMARY KEY',  # mfk in data
-         'month TEXT UNIQUE NOT NULL',
-         'ord INTEGER UNIQUE NOT NULL',
-         'ctime DATETIME NOT NULL'),
-        (_T_FIELD_TYPE,
-         'pk INTEGER NOT NULL PRIMARY KEY',  # ffk in data
-         'field TEXT UNIQUE NOT NULL',
-         'ctime DATETIME NOT NULL',
-         'mtime DATETIME NOT NULL'),
-        (_T_DATA,
-         'pk INTEGER NOT NULL PRIMARY KEY',  # cfk in report_pivot
-         'value TEXT NOT NULL',
-         'fy1fk INTEGER NOT NULL',
-         'fy2fk INTEGER NOT NULL',
-         'mfk INTEGER NOT NULL',
-         'ffk INTEGER NOT NULL',
-         'ctime DATETIME NOT NULL',
-         'mtime DATETIME NOT NULL'),
-        (_T_MONTHLY,
-         'pk INTEGER NOT NULL PRIMARY KEY',  # mlfk in monthly_pivot
-         'participation INTEGER',
-         'outstanding INTEGER',
-         'coh INTEGER',
-         'membership INTEGER',
-         'treasurer TEXT NOT NULL',
-         'locality INTEGER NOT NULL',
-         'ctime DATETIME NOT NULL',
-         'mtime DATETIME NOT NULL'),
-        (_T_MONTHLY_PIVOT,
-         'mfk INTEGER NOT NULL',
-         'fyfk INTEGER NOT NULL',
-         'mlfk INTEGER NOT NULL',
-         f'FOREIGN KEY (mfk) REFERENCES {_T_MONTH} (pk)',
-         f'FOREIGN KEY (fyfk) REFERENCES {_T_FISCAL_YEAR} (pk)',
-         f'FOREIGN KEY (mlfk) REFERENCES {_T_MONTHLY} (pk)'),
-        (_T_REPORT_TYPE,
-         'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
-         'report TEXT UNIQUE NOT NULL',
-         'ctime DATETIME NOT NULL',
-         'mtime DATETIME NOT NULL'),
-        (_T_REPORT_PIVOT,
-         'rfk INTEGER NOT NULL',
-         'cfk INTEGER NOT NULL',
-         f'FOREIGN KEY (rfk) REFERENCES {_T_REPORT_TYPE} (pk)',
-         f'FOREIGN KEY (cfk) REFERENCES {_T_DATA} (pk)'),
-        (_T_LEDGER_DATA,
-         'pk INTEGER NOT NULL PRIMARY KEY',
-         'date DATETIME NOT NULL',
-         'purged INTEGER default 0',
-         'ctime DATETIME NOT NULL',
-         'mtime DATETIME NOT NULL'),
-        (_T_LEDGER_DESC,
-         'pk INTEGER NOT NULL PRIMARY KEY',
-         'type INTEGER NOT NULL',
-         'other TEXT NULL'),
-        (_T_LEDGER_ENTRY_TYPE,
-         'pk INTEGER NOT NULL PRIMARY KEY',
-         'ck_num INTEGER NULL',
-         'rcpt_num INTEGER NULL',
-         'value INTEGER'),
-        (_T_LEDGER_BANK,
-         'pk INTEGER NOT NULL PRIMARY KEY',
-         'type INTEGER NOT NULL',
-         'value INTEGER'),
-        (_T_LEDGER_INCOME,
-         'pk INTEGER NOT NULL PRIMARY KEY',
-         'type INTEGER NOT NULL',
-         'value INTEGER'),
-        (_T_LEDGER_EXPENSE_PIVOT,
-         'lfk INTEGER NOT NULL',
-         'efk INTEGER NOT NULL',
-         f'FOREIGN KEY (lfk) REFERENCES {_T_LEDGER_DATA} (pk)',
-         f'FOREIGN KEY (efk) REFERENCES {_T_LEDGER_EXPENSE} (pk)'),
-        (_T_LEDGER_EXPENSE,
-         'pk INTEGER NOT NULL PRIMARY KEY',
-         'ffk INTEGER NOT NULL',
-         'type INTEGER NOT NULL',
-         'expense INTEGER NOT NULL',
-         f'FOREIGN KEY (ffk) REFERENCES {_T_FIELD_TYPE} (pk)'),
+    _SCHEMA_TABLES = {
+        _T_FISCAL_YEAR: (
+            'pk INTEGER NOT NULL PRIMARY KEY',  # fy1fk or fy2fk in data
+            'year INTEGER UNIQUE NOT NULL',
+            'month INTEGER NOT NULL',
+            'day INTEGER NOT NULL',
+            'current INTEGER NOT NULL',
+            'work_on INTEGER NOT NULL',
+            'audit INTEGER NOT NULL',
+            'ctime DATETIME NOT NULL',
+            'mtime DATETIME NOT NULL'),
+        _T_MONTH: (
+            'pk INTEGER NOT NULL PRIMARY KEY',  # mfk in data
+            'month TEXT UNIQUE NOT NULL',
+            'ord INTEGER UNIQUE NOT NULL',
+            'ctime DATETIME NOT NULL'),
+        _T_FIELD_TYPE: (
+            'pk INTEGER NOT NULL PRIMARY KEY',  # ffk in data
+            'field TEXT UNIQUE NOT NULL',
+            'ctime DATETIME NOT NULL',
+            'mtime DATETIME NOT NULL'),
+        _T_DATA: (
+            'pk INTEGER NOT NULL PRIMARY KEY',  # cfk in report_pivot
+            'value TEXT NOT NULL',
+            'fy1fk INTEGER NOT NULL',
+            'fy2fk INTEGER NOT NULL',
+            'mfk INTEGER NOT NULL',
+            'ffk INTEGER NOT NULL',
+            'ctime DATETIME NOT NULL',
+            'mtime DATETIME NOT NULL'),
+        _T_MONTHLY: (
+            'pk INTEGER NOT NULL PRIMARY KEY',  # mlfk in monthly_pivot
+            'participation INTEGER',
+            'outstanding INTEGER',
+            'coh INTEGER',
+            'membership INTEGER',
+            'treasurer TEXT NOT NULL',
+            'locality INTEGER NOT NULL',
+            'ctime DATETIME NOT NULL',
+            'mtime DATETIME NOT NULL'),
+        _T_MONTHLY_PIVOT: (
+            'mfk INTEGER NOT NULL',
+            'fyfk INTEGER NOT NULL',
+            'mlfk INTEGER NOT NULL',
+            f'FOREIGN KEY (mfk) REFERENCES {_T_MONTH} (pk)',
+            f'FOREIGN KEY (fyfk) REFERENCES {_T_FISCAL_YEAR} (pk)',
+            f'FOREIGN KEY (mlfk) REFERENCES {_T_MONTHLY} (pk)'),
+        _T_REPORT_TYPE: (
+            'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
+            'report TEXT UNIQUE NOT NULL',
+            'ctime DATETIME NOT NULL',
+            'mtime DATETIME NOT NULL'),
+        _T_REPORT_PIVOT: (
+            'rfk INTEGER NOT NULL',
+            'cfk INTEGER NOT NULL',
+            f'FOREIGN KEY (rfk) REFERENCES {_T_REPORT_TYPE} (pk)',
+            f'FOREIGN KEY (cfk) REFERENCES {_T_DATA} (pk)'),
+        _T_LEDGER_DATA: (
+            'pk INTEGER NOT NULL PRIMARY KEY',
+            'date DATETIME NOT NULL',
+            'purged INTEGER default 0',
+            'ctime DATETIME NOT NULL',
+            'mtime DATETIME NOT NULL'),
+        _T_LEDGER_DESC: (
+            'pk INTEGER NOT NULL PRIMARY KEY',
+            'type INTEGER NOT NULL',
+            'other TEXT NULL'),
+        _T_LEDGER_ENTRY_TYPE: (
+            'pk INTEGER NOT NULL PRIMARY KEY',
+            'ck_num INTEGER NULL',
+            'rcpt_num INTEGER NULL',
+            'value INTEGER'),
+        _T_LEDGER_BANK: (
+            'pk INTEGER NOT NULL PRIMARY KEY',
+            'type INTEGER NOT NULL',
+            'value INTEGER'),
+        _T_LEDGER_INCOME: (
+            'pk INTEGER NOT NULL PRIMARY KEY',
+            'type INTEGER NOT NULL',
+            'value INTEGER'),
+        _T_LEDGER_EXPENSE_PIVOT: (
+            'lfk INTEGER NOT NULL',
+            'efk INTEGER NOT NULL',
+            f'FOREIGN KEY (lfk) REFERENCES {_T_LEDGER_DATA} (pk)',
+            f'FOREIGN KEY (efk) REFERENCES {_T_LEDGER_EXPENSE} (pk)'),
+        _T_LEDGER_EXPENSE: (
+            'pk INTEGER NOT NULL PRIMARY KEY',
+            'ffk INTEGER NOT NULL',
+            'type INTEGER NOT NULL',
+            'expense INTEGER NOT NULL',
+            f'FOREIGN KEY (ffk) REFERENCES {_T_FIELD_TYPE} (pk)'),
+        }
+    _SCHEMA_EXTRA = {
+        }
+    _SCHEMA_INDICES = (
+        ('idx_monthly_pivot_month ON monthly_pivot(mfk);'),
+        ('idx_monthly_pivot_fy ON monthly_pivot(fyfk);'),
+        ('idx_monthly_pivot_month_fy ON monthly_pivot(mfk, fyfk);')
         )
-    _TABLES = [table[0] for table in _SCHEMA]
+    _TABLES = list(_SCHEMA_TABLES.keys())
     _TABLES.sort()
+    _INDICES = [name.split()[0] for name in _SCHEMA_INDICES]
+    _INDICES.sort()
     _EXCLUDE_PANELS = ('fiscal', 'monthly')
     _FIELDS_NOT_ADDED = ()  # Fields not in the field_table.
     _MAX_FIELD_LEN = 40  # Max length of fields allowed in the field_table.
@@ -157,14 +166,31 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         if (not os.path.exists(self.user_data_fullpath) or
             not await self.has_schema):
-            self._log.info("Create the database.")
             async with aiosqlite.connect(self.user_data_fullpath) as db:
-                for params in self._SCHEMA:
-                    table = params[0]
-                    fields = ', '.join([field for field in params[1:]])
+                for table, params in self._SCHEMA_TABLES.items():
+                    fields = ', '.join([field for field in params])
                     query = f"CREATE TABLE IF NOT EXISTS {table} ({fields});"
+                    # extra = self._SCHEMA_EXTRA.get(table)
+                    # Remove ; from query above if extra is used.
+                    # query += f' {extra};' if extra else ';'
+                    self._log.info("Created table: %s", query)
                     await db.execute(query)
                     await db.commit()
+
+                for index in self._SCHEMA_INDICES:
+                    query = 'CREATE INDEX IF NOT EXISTS ' + index
+                    self._log.info("Created index: %s", query)
+                    await db.execute(query)
+                    await db.commit()
+
+                # for view, params in self._SCHEMA_VIEWS.items():
+                #     fields = ', '.join([field for field in params])
+                #     query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
+                #     extra = self._SCHEMA_EXTRA.get(view)
+                #     query += f' {extra};' if extra else ';'
+                #     self._log.info("Created view: %s", query)
+                #     await db.execute(query)
+                #     await db.commit()
 
     @property
     async def has_schema(self) -> bool:
@@ -175,20 +201,29 @@ class BaseDatabase(PopulateCollect, Settings):
                   been created.
         :rtype: bool
         """
-        query = "SELECT name FROM sqlite_master;"
-        table_names = [table[0]
-                       for table in await self._do_select_query(query)
-                       if not table[0].startswith('sqlite_')]
+        query = "SELECT type, name FROM sqlite_master;"
+        data = await self._do_select_query(query)
+        table_names = [name for type, name in data if type == 'table']
         table_names.sort()
-        check = table_names == self._TABLES
+        t_check = table_names == self._TABLES
+        index_names = [name for type, name in data
+                       if type == 'index' and not name.startswith('sqlite_')]
+        index_names.sort()
+        i_check = index_names == self._INDICES
 
-        if not check:
+        if not t_check:
             msg = ("Database table count is wrong it should be "
                    f"'{self._TABLES}' found '{table_names}'")
             self._log.error(msg)
             self._mf.statusbar_error = msg
 
-        return check
+        if not i_check:
+            msg = ("Database index count is wrong it should be "
+                   f"'{self._INDICES}' found '{index_names}'")
+            self._log.error(msg)
+            self._mf.statusbar_error = msg
+
+        return t_check + i_check == 2
 
     #
     # Initialization methods
@@ -204,10 +239,16 @@ class BaseDatabase(PopulateCollect, Settings):
         if None in (year, month):
             year, month = await self._get_current_fiscal_year()
 
-        self._log.info("Populating all panels in %s-%s.", year, month)
+        self._log.info("Populating all panels in %04d-%02d.", year, month)
         self._fiscal_data = await self.select_from_fiscal_year_table()
+        pcdp = {name: panel for name, panel in self._mf.panels.items()
+                if name not in self._EXCLUDE_PANELS}
+        await self._populate_config_data_panels(year, pcdp)
+        await self._populate_monthly_panel(year, month,
+                                           self._mf.panels.get('monthly'))
 
-        for panel_name, panel in self._mf.panels.items():
+    async def _populate_config_data_panels(self, year, panels) -> None:
+        for panel_name, panel in panels.items():
             data = self._collect_panel_values(panel)
             values = await self.select_from_config_data_table(data, year)
 
@@ -219,13 +260,25 @@ class BaseDatabase(PopulateCollect, Settings):
             else:
                 items = {value[1]: value[2] for value in values}
 
-            if panel_name not in self._EXCLUDE_PANELS:
-                # Add any new fields to the database.
-                await self._add_fields_to_field_type_table(data)
-
+            # Add any new fields to the database.
+            await self._add_fields_to_field_type_table(data)
             panel.initializing = True
             self.populate_panel_values(panel_name, panel, items)
             panel.initializing = False
+
+    async def _populate_monthly_panel(self, year, month, panel) -> None:
+        values = await self.select_from_monthly_table(year, month)
+        data = self._collect_panel_values(panel)
+
+        if data['treasurer_this_month'] == "":
+            data['treasurer_this_month'] = self.organization_data['treasurer']
+
+        if values:
+            data['locality_prefix_month'] = values[6]
+
+        panel.initializing = True
+        self.populate_panel_values('monthly', panel, data)
+        panel.initializing = False
 
     async def save_to_database(self, name: str, panel: wx.Panel) -> None:
         """
@@ -308,18 +361,17 @@ class BaseDatabase(PopulateCollect, Settings):
             f_year = f_month = None
         elif name == 'budget':
             pass  # No pre-processing needs to be done.
-            #print(data)
         elif name == 'monthly':
             if data:
                 empty_fields = []
                 values = {}
 
                 for field, value in data.items():
-                    name, manditory = self._MONTHLY_FIELD_MAP.get(
+                    f_name, manditory = self._MONTHLY_FIELD_MAP.get(
                         field, ('unknown', True))
-                    assert name != 'unknown', ("An unknown field was found "
+                    assert f_name != 'unknown', ("An unknown field was found "
                                                "in the monthly panel.")
-                    values[name] = value if value else 0
+                    values[f_name] = value if value else 0
 
                     if manditory and value in self._EMPTY_FIELDS:
                         empty_fields.append(field)
@@ -335,7 +387,6 @@ class BaseDatabase(PopulateCollect, Settings):
                     f_year, month=f_month, data=data)
             elif name == 'monthly':
                 rowcount = await self.insert_into_monthly_table(f_year, values)
-                print('POOP', rowcount)
 
         return error
 
@@ -397,7 +448,7 @@ class BaseDatabase(PopulateCollect, Settings):
         :param int month: This is the UI entered month.
         :param int day: This is the UI entered day.
         """
-        await self.insert_into_fiscal_year_table([(*date, 0, 0, 0)])
+        await self.insert_into_fiscal_year_table([(year, month, day, 0, 0, 0)])
 
     async def _get_current_fiscal_year(self):
         """
@@ -406,8 +457,8 @@ class BaseDatabase(PopulateCollect, Settings):
         fy = await self.select_from_fiscal_year_table(current=1)
 
         if len(fy):
-            year = fy[0][1]
-            month = fy[0][2]
+            year = fy[1]
+            month = fy[2]
         else:  # Only for first time use.
             year = month = None
 

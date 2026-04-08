@@ -160,7 +160,7 @@ class Settings(AppDirs, Borg):
         if self.debug:
             path = os.path.join(self._debug_data_dir, self.__user_toml)
         else:
-            path =  os.path.join(self.user_config_dir, self.__user_toml)
+            path = os.path.join(self.user_config_dir, self.__user_toml)
 
         assert 'data' in path or '.config' in path, (
             f"user_config_fullpath: {path}")

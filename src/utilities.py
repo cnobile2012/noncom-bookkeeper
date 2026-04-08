@@ -498,7 +498,7 @@ class MutuallyExclusiveWidgets:
 
             # Disable all checkboxes
             for cb in cb_list:
-                if  category_name[0] != '!' and cb.IsEditable():
+                if category_name[0] != '!' and cb.IsEditable():
                     cb.SetValue(False)
                     cb.Enable(False)
 
