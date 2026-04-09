@@ -17,9 +17,6 @@ panels = [['Organization Info', 'organization'],
           ['Budget', 'budget'],
           ['Monthly', 'monthly'],
           ['Choose Fiscal Year', 'fiscal']]
-months = ['Bahá', 'Jalál', 'Jamál', "'Aẓamat", 'Núr', 'Raḥmat', 'Kalimát',
-          'Kamál', "Asmá'", "'Izzat", 'Mashíyyat', "'Ilm", 'Qudrat', 'Qawl',
-          'Masá’il', 'Sharaf', 'Sulṭán', 'Mulk', 'Ayyám-i-Há', "'Alá'"]
 locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
 font_16_bold = [16, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
                 'FONTWEIGHT_BOLD', 0, '']
@@ -280,11 +277,11 @@ widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monthly Spe
 
 widget_01 = ['left-right-buttons', {args=['self', 'Previous Month', 'Next Month'], add=[0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6], sizer='sizer_1', pos=[1, 0], span=[1, 2]}]
 
-widget_02 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated monthly.'], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[2, 0], span=[1, 2]}]
+widget_02 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated at the end of each month.'], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 6], pos=[2, 0], span=[1, 2]}]
 
 widget_03 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[3, 0], span=[1, 2]}]
 
-widget_04 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Month of Year:'], style='TE_READONLY', min=[228, 26], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1], mandatory=true}]
+widget_04 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Month of Year:'], style='CB_READONLY', min=[228, 26], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1], mandatory=true}]
 
 widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Participation:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1]}]
 widget_06 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[60, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1], financial=false, mandatory=true}]

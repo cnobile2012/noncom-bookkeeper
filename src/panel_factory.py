@@ -8,6 +8,7 @@ from io import StringIO
 
 from .config import TomlMetaData
 from .bases import find_dict
+from .custom_widgits import ordered_month
 
 # https://pwwang.github.io/python-varname/
 # from varname import varname, nameof
@@ -316,8 +317,8 @@ class PanelFactory(TomlMetaData):
 
         if widget_type == 'ComboBox':
             if panel == 'monthly':
-                choices = [f"{idx:>2} {month}"
-                           for idx, month in enumerate(self.months, start=1)]
+                choices = [f"{ord:>2} {month}"
+                           for ord, month in ordered_month().items()]
                 first = 'Choose Current Month'
                 choices.insert(0, first)
                 label = f"value='''{first}''',"

@@ -144,19 +144,20 @@ class Database(BaseDatabase):
     # Month SELECT and INSERT methods.
     #
 
-    async def select_from_month_table(self, *, name: str=None, order: int=None
-                                      ) -> list:
+    async def select_from_month_table(self, *, name: str=None, order: int=None,
+                                      pk: int=None) -> list:
         """
         Select from the `month` table.
         """
-        assert ((name and not order) or (not name and order)
-                or (not name and not order)), (
-                "Cannot query for both the 'name' and 'order'.")
+        assert len([arg for arg in (name, order, pk) if arg is None]) >= 2, (
+                "Cannot query for more than one or none of the arguments.")
 
         if name:
-            where = f"WHERE month={name}"
+            where = f"WHERE month = {name}"
         elif order:
-            where = f"WHERE ord={order}"
+            where = f"WHERE ord = {order}"
+        elif pk:
+            where = f"WHERE pk = {pk}"
         else:
             where = ""
 
@@ -358,12 +359,12 @@ class Database(BaseDatabase):
         """
         Select values from the monthly table.
 
-        :param int year: The year of the month needed.
-        :param int month: The numeric value of the month.
-        :returns: The date for the given month.
+        :param int year: The fiscal year of the month needed.
+        :param int month: The ordinal value of the month needed.
+        :returns: The data for the given month.
         :rtype: list
         """
-        query = (f"SELECT m.* FROM {self._T_MONTHLY} m "
+        query = (f"SELECT m.*, mo.month, mo.ord FROM {self._T_MONTHLY} m "
                  f"JOIN {self._T_MONTHLY_PIVOT} mp ON mp.mlfk = m.pk "
                  f"JOIN {self._T_MONTH} mo ON mo.pk = mp.mfk "
                  f"JOIN {self._T_FISCAL_YEAR} fy ON fy.pk = mp.fyfk "
@@ -389,14 +390,12 @@ class Database(BaseDatabase):
         data['mfk'] = (await self.select_from_month_table(order=month))[0]
         fiscal = await self.select_from_fiscal_year_table(year=year)
         data['fyfk'] = fiscal[0]
-        query = (f"WITH new_monthly AS (INSERT INTO {self._T_MONTHLY} ("
-                 "participation, outstanding, coh, membership, treasurer, "
-                 "locality, ctime, mtime)"
-                 "VALUES (:participation, :outstanding, :coh, :membership,"
-                 " :treasurer, :locality, :ctime, :mtime) RETURNING id) "
-                 f"INSERT INTO {self._T_MONTHLY_PIVOT} (mfk, fyfk, mlfk) "
-                 "SELECT :mfk, :fyfk, id FROM new_monthly;")
-        print('POOP', query, data)
+        query = (f"INSERT INTO {self._T_MONTHLY} (participation, outstanding, "
+                 "coh, membership, treasurer, locality, ctime, mtime) VALUES ("
+                 ":participation, :outstanding, :coh, :membership, "
+                 ":treasurer, :locality, :ctime, :mtime);")
+        query += (f"INSERT INTO {self._T_MONTHLY_PIVOT} (mfk, fyfk, mlfk) "
+                  "VALUES (:mfk, :fyfk, last_insert_rowid());")
         return await self._do_insert_query(query, data)
 
     async def update_monthly_table(self, year: int, month: int, data: list

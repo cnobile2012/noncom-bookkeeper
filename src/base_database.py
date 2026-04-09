@@ -86,6 +86,7 @@ class BaseDatabase(PopulateCollect, Settings):
             'mfk INTEGER NOT NULL',
             'fyfk INTEGER NOT NULL',
             'mlfk INTEGER NOT NULL',
+            'UNIQUE(mfk, fyfk)',
             f'FOREIGN KEY (mfk) REFERENCES {_T_MONTH} (pk)',
             f'FOREIGN KEY (fyfk) REFERENCES {_T_FISCAL_YEAR} (pk)',
             f'FOREIGN KEY (mlfk) REFERENCES {_T_MONTHLY} (pk)'),
@@ -239,13 +240,14 @@ class BaseDatabase(PopulateCollect, Settings):
         if None in (year, month):
             year, month = await self._get_current_fiscal_year()
 
-        self._log.info("Populating all panels in %04d-%02d.", year, month)
-        self._fiscal_data = await self.select_from_fiscal_year_table()
-        pcdp = {name: panel for name, panel in self._mf.panels.items()
-                if name not in self._EXCLUDE_PANELS}
-        await self._populate_config_data_panels(year, pcdp)
-        await self._populate_monthly_panel(year, month,
-                                           self._mf.panels.get('monthly'))
+        if None not in (year, month):
+            self._log.info("Populating all panels in %04d-%02d.", year, month)
+            self._fiscal_data = await self.select_from_fiscal_year_table()
+            pcdp = {name: panel for name, panel in self._mf.panels.items()
+                    if name not in self._EXCLUDE_PANELS}
+            await self._populate_config_data_panels(year, pcdp)
+            await self._populate_monthly_panel(year, month,
+                                               self._mf.panels.get('monthly'))
 
     async def _populate_config_data_panels(self, year, panels) -> None:
         for panel_name, panel in panels.items():
@@ -266,14 +268,47 @@ class BaseDatabase(PopulateCollect, Settings):
             self.populate_panel_values(panel_name, panel, items)
             panel.initializing = False
 
-    async def _populate_monthly_panel(self, year, month, panel) -> None:
-        values = await self.select_from_monthly_table(year, month)
-        data = self._collect_panel_values(panel)
+    async def _populate_monthly_panel(self, year, fy_month, panel) -> None:
+        """
+        Populate the monthly panel.
 
-        if data['treasurer_this_month'] == "":
+        :param int year: The fiscal year.
+        :param int fy_month: The ordinal for the month in the current fiscal
+                             year.
+        :param panel: The panel object.
+        """
+        data = self._collect_panel_values(panel)
+        widget_ord = data['month_of_year']
+
+        if widget_ord == 19:  # Ayyám-i-Há
+            month = 0
+        elif widget_ord == 20:  # 'Alá'
+            month = 19
+        elif widget_ord != 0:  # Should be 1 - 18
+            month = widget_ord
+
+        if widget_ord == 0:
+            month = fy_month
+
+            if fy_month == 0:  # Ayyám-i-Há
+                data['month_of_year'] = 19
+            elif fy_month == 19:  # 'Alá'
+                data['month_of_year'] = 20
+            elif fy_month is None:
+                pass
+            else:  # Should be 1 - 18
+                data['month_of_year'] = fy_month
+
+        values = await self.select_from_monthly_table(year, month)
+
+        if data['treasurer_this_month'] == "" and self.organization_data:
             data['treasurer_this_month'] = self.organization_data['treasurer']
+            data['total_membership_this_month'] = self.organization_data[
+                'total_membership']
 
         if values:
+            data['month_of_year'] = values[0]
+            data['total_membership_this_month'] = values[4]
             data['locality_prefix_month'] = values[6]
 
         panel.initializing = True

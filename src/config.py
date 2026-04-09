@@ -302,10 +302,6 @@ class TomlMetaData(BaseSystemData):
         return self.panel_config.get('meta', {}).get('panels')
 
     @property
-    def months(self):
-        return self.panel_config.get('meta', {}).get('months')
-
-    @property
     def locale_prefix(self):
         return self.panel_config.get('meta', {}).get('locale_prefix')
 
