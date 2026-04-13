@@ -34,9 +34,10 @@ data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
     ['Description', 3, 1, 'top', 2, true],
     ['Entry Type', 2, 2, 'bottom', 2, true],
     ['Cash in Bank', 4, 2, 'top', 2, true],
+    ['Cash on Hand', 3, 2, 'top', 2, true],
     ['Income', 3, 1, 'top', 2, true],
     ['Expenses', 0, 0, '', 2, false],
-    ["Local Bahá'í Expenses", 0, 6, 'bottom', 1, false],
+    ["Local Bahá'í Expenses", 0, 5, 'bottom', 1, false],
     ["National Bahá'í Funds", 0, 11, 'bottom', 1, false],
     ['Continental and International Funds', 0, 11, 'bottom', 1, false],
     ['Regional Funds', 0, 3, 'bottom', 1, false],
@@ -47,6 +48,8 @@ data_entry_labels = [
     ['entry_type', 'Check Number:', 'Receipt Number:', 'Debit:', 'OCS:'],
     ['$bank', 'Deposit Amount:', 'Check Amount:', 'Dedit Amount:',
      'OCS Amount:', '@Value:', '%Balance:'],
+    ['$coh', 'Cash Amount:', 'Check Amount:', 'Debit Amount:', '@Value:',
+     '%Balence:'],
     ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', '@Value:']
     ]
 
@@ -152,113 +155,110 @@ widget_20 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_21 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Education:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[17, 0], span=[1, 1]}]
 widget_22 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[17, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_23 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Education:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[18, 0], span=[1, 1]}]
+widget_23 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Proclamation:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[18, 0], span=[1, 1]}]
 widget_24 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[18, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_25 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Proclamation:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[19, 0], span=[1, 1]}]
+widget_25 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Scolarships:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[19, 0], span=[1, 1]}]
 widget_26 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[19, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_27 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Scolarships:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[20, 0], span=[1, 1]}]
+widget_27 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Teaching:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[20, 0], span=[1, 1]}]
 widget_28 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[20, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_29 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Teaching:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[21, 0], span=[1, 1]}]
-widget_30 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[21, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_29 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National Bahá'í Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[21, 0], span=[1, 1]}]
 
-widget_31 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National Bahá'í Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[22, 0], span=[1, 1]}]
+widget_30 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[22, 0], span=[1, 1]}]
 
-widget_32 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[23, 0], span=[1, 1]}]
+widget_31 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National Bahá'í Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[23, 0], span=[1, 1]}]
+widget_32 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[23, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_33 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National Bahá'í Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[24, 0], span=[1, 1]}]
+widget_33 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í Chair for World Peace - Reserved Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[24, 0], span=[1, 1]}]
 widget_34 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[24, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_35 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í Chair for World Peace - Reserved Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[25, 0], span=[1, 1]}]
+widget_35 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Persian Bahá'í Media Service Fund (Payam-e-Doost):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[25, 0], span=[1, 1]}]
 widget_36 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[25, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_37 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Persian Bahá'í Media Service Fund (Payam-e-Doost):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[26, 0], span=[1, 1]}]
+widget_37 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "House of Worship Campus Reserves Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[26, 0], span=[1, 1]}]
 widget_38 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[26, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_39 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "House of Worship Campus Reserves Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[27, 0], span=[1, 1]}]
-widget_40 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[27, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_39 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Wilmette Institute - Unrestricted Contribution:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[27, 0], span=[1, 1]}]
+widget_40 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 27], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[27, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_41 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Wilmette Institute - Unrestricted Contribution:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[28, 0], span=[1, 1]}]
-widget_42 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 27], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[28, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_41 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Humanitarian Relief Fund - In USA:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[28, 0], span=[1, 1]}]
+widget_42 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[28, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_43 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Humanitarian Relief Fund - In USA:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[29, 0], span=[1, 1]}]
+widget_43 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "US Bahá'í Archives Renovation Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[29, 0], span=[1, 1]}]
 widget_44 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[29, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_45 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "US Bahá'í Archives Renovation Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[30, 0], span=[1, 1]}]
+widget_45 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í Election Convention Contributions:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[30, 0], span=[1, 1]}]
 widget_46 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[30, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_47 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í Election Convention Contributions:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[31, 0], span=[1, 1]}]
+widget_47 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bosch Facilities Recovery Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[31, 0], span=[1, 1]}]
 widget_48 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[31, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_49 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bosch Facilities Recovery Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[32, 0], span=[1, 1]}]
+widget_49 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Institute Properties Resurve Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[32, 0], span=[1, 1]}]
 widget_50 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[32, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_51 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Institute Properties Resurve Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[33, 0], span=[1, 1]}]
+widget_51 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Legal Defense for the Refugees in Turkey:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[33, 0], span=[1, 1]}]
 widget_52 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[33, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_53 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Legal Defense for the Refugees in Turkey:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[34, 0], span=[1, 1]}]
-widget_54 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[34, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_53 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Continental and International Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[34, 0], span=[1, 1]}]
 
-widget_55 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Continental and International Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[35, 0], span=[1, 1]}]
+widget_54 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[35, 0], span=[1, 1]}]
 
-widget_56 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[36, 0], span=[1, 1]}]
+widget_55 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "International Bahá'í Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[36, 0], span=[1, 1]}]
+widget_56 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[36, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_57 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "International Bahá'í Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[37, 0], span=[1, 1]}]
-widget_58 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[37, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_57 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í Development Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[37, 0], span=[1, 1]}]
+widget_58 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 27], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[37, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_59 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Bahá'í Development Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[38, 0], span=[1, 1]}]
-widget_60 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 27], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[38, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_59 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "International Endowment Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[38, 0], span=[1, 1]}]
+widget_60 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[38, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_61 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "International Endowment Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[39, 0], span=[1, 1]}]
+widget_61 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Continental Bahá'í Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[39, 0], span=[1, 1]}]
 widget_62 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[39, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_63 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Continental Bahá'í Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[40, 0], span=[1, 1]}]
+widget_63 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National House of Worship - Canada:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[40, 0], span=[1, 1]}]
 widget_64 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[40, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_65 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National House of Worship - Canada:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[41, 0], span=[1, 1]}]
+widget_65 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Shrine of 'Abdu'l-Bahá:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[41, 0], span=[1, 1]}]
 widget_66 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[41, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_67 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Shrine of 'Abdu'l-Bahá:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[42, 0], span=[1, 1]}]
+widget_67 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Humanitarian Relief Fund (World Center):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[42, 0], span=[1, 1]}]
 widget_68 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[42, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_69 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Humanitarian Relief Fund (World Center):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[43, 0], span=[1, 1]}]
+widget_69 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Persian Relief Fund (World Center):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[43, 0], span=[1, 1]}]
 widget_70 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[43, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_71 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Persian Relief Fund (World Center):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[44, 0], span=[1, 1]}]
+widget_71 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "International Temples Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[44, 0], span=[1, 1]}]
 widget_72 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[44, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_73 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "International Temples Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[45, 0], span=[1, 1]}]
+widget_73 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Asian Continental Board:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[45, 0], span=[1, 1]}]
 widget_74 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[45, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_75 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Asian Continental Board:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[46, 0], span=[1, 1]}]
+widget_75 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "US Deputization Fund - International Pioneering:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[46, 0], span=[1, 1]}]
 widget_76 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[46, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_77 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "US Deputization Fund - International Pioneering:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[47, 0], span=[1, 1]}]
-widget_78 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[47, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_77 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[47, 0], span=[1, 1]}]
 
-widget_79 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[48, 0], span=[1, 1]}]
+widget_78 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[48, 0], span=[1, 1]}]
 
-widget_80 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[49, 0], span=[1, 1]}]
+widget_79 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Bahá'í Council:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[49, 0], span=[1, 1]}]
+widget_80 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[49, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_81 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Bahá'í Council:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[50, 0], span=[1, 1]}]
+widget_81 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Deputization Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[50, 0], span=[1, 1]}]
 widget_82 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[50, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_83 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Deputization Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[51, 0], span=[1, 1]}]
+widget_83 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Facilities Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[51, 0], span=[1, 1]}]
 widget_84 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[51, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_85 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Facilities Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[52, 0], span=[1, 1]}]
-widget_86 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[52, 1], span=[1, 1], financial=true, mandatory=false}]
+widget_85 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[52, 0], span=[1, 1]}]
 
-widget_87 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[53, 0], span=[1, 1]}]
+widget_86 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[53, 0], span=[1, 1]}]
 
-widget_88 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[54, 0], span=[1, 1]}]
+widget_87 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Teaching Committee:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[54, 0], span=[1, 1]}]
+widget_88 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[54, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_89 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Teaching Committee:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[55, 0], span=[1, 1]}]
-widget_90 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[55, 1], span=[1, 1], financial=true, mandatory=false}]
-
-widget_91 = ['invisable-spacer', {add=['', 0, 0], size=[0, 1], pos=[56, 0], span=[1, 2]}]
+widget_89 = ['invisable-spacer', {add=['', 0, 0], size=[0, 1], pos=[55, 0], span=[1, 2]}]
 
 [monthly]
 
@@ -284,13 +284,13 @@ widget_03 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EX
 widget_04 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Month of Year:'], style='CB_READONLY', min=[228, 26], add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[4, 0], span=[1, 1], mandatory=true}]
 
 widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Participation:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1]}]
-widget_06 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[60, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1], financial=false, mandatory=true}]
+widget_06 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[60, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1], financial=false, mandatory=false}]
 
 widget_07 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Outstanding Bills:'], min=[-1, -1], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[6, 0], span=[1, 1]}]
-widget_08 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[6, 1], span=[1, 1], financial=true, mandatory=true}]
+widget_08 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[6, 1], span=[1, 1], financial=true, mandatory=false}]
 
 widget_09 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'End of Month Cash on Hand:'], min=[-1, -1], focus=true, add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[7, 0], span=[1, 1]}]
-widget_10 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[7, 1], span=[1, 1], financial=true, mandatory=true}]
+widget_10 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[7, 1], span=[1, 1], financial=true, mandatory=false}]
 
 # Skip position
 

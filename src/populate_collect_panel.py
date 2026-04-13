@@ -482,3 +482,6 @@ class PopulateCollect:
             result = (items[7], items[8])
 
         return result
+
+    def next_or_previous_month(self, direction: str):
+        print(f"{direction.capitalize()} arrow clicked")

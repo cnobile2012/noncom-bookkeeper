@@ -432,16 +432,6 @@ class TestTomlMetaData(BaseTest):
             self.assertEqual(num_in_panel, num, msg.format(num, panel))
 
     #@unittest.skip("Temporarily skipped")
-    def test_months_property(self):
-        """
-        Test that there are the correct number of months.
-        """
-        months = self.tmd.months
-        num_months = len(months)
-        msg = f"There should be {self.NUM_MONTHS}, found {num_months}."
-        self.assertEqual(self.NUM_MONTHS, num_months, msg)
-
-    #@unittest.skip("Temporarily skipped")
     def test_locale_prefix_property(self):
         """
         Test that the locality prefix is correct.

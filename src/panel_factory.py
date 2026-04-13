@@ -58,6 +58,7 @@ class PanelFactory(TomlMetaData):
                         "EVT_COLOR_CHECKBOX\n\n\n")
 
         if panel in ('monthly',):
+            klass.write("from .utilities import StoreObjects\n")
             klass.write("from .custom_widgits import FlatArrowButton, "
                         "EVT_FLAT_ARROW\n\n\n")
 
@@ -65,7 +66,7 @@ class PanelFactory(TomlMetaData):
         klass.write("    def __init__(self, parent, *args, **kwargs):\n")
         klass.write("        super().__init__(parent, *args, **kwargs)\n")
 
-        if panel in ('organization', 'fiscal'):
+        if panel in ('organization', 'fiscal', 'monthly'):
             klass.write("        self._so = StoreObjects()\n")
 
         self._bg_color = panel_kwargs.get('bg_color')
@@ -544,9 +545,9 @@ class PanelFactory(TomlMetaData):
 
     def _add_on_arrows(self, klass):
         klass.write("\n    def on_arrow(self, event) -> None:\n")
+        klass.write("        db = self._so.get_object('Database')\n")
         klass.write("        direction = event.GetDirection()\n")
-        klass.write('        print(f"{direction.capitalize()} arrow '
-                    'clicked")\n')
+        klass.write("        db.next_or_previous_month(direction)\n")
         klass.write("        event.Skip()\n")
 
     def _set_colors(self, klass, widget, value):

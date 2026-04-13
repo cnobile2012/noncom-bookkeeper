@@ -99,6 +99,10 @@ class Database(BaseDatabase):
         data = await self._do_select_query(query)
         return data[0] if len(data) == 1 else data
 
+    #
+    # Fiscal year INSERT and UPDATE methods.
+    #
+
     async def insert_into_fiscal_year_table(self, data: list) -> int:
         """
         Insert a row of data into the `fiscal_year` table.
@@ -107,7 +111,7 @@ class Database(BaseDatabase):
         :returns: The row count caused by the insert.
         :rtype: int
         """
-        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo)
         items = [t + (now, now) for t in data]  # Add the times to the end.
         query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
                  "current, work_on, audit, ctime, mtime) "
@@ -132,7 +136,7 @@ class Database(BaseDatabase):
            [(current_fiscal_year, work_on_this_fiscal_year,
              audit_complete), ...]
         """
-        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo)
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
                  "SET current = :current, work_on = :work_on, audit = :audit, "
                  "mtime = :mtime WHERE year = :year;")
@@ -174,7 +178,7 @@ class Database(BaseDatabase):
         :returns: The row count caused by the insert.
         :rtype: int
         """
-        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo)
         data = [(name, order, now) for order, name in months.items()]
         query = (f"INSERT INTO {self._T_MONTH} (month, ord, ctime) "
                  "VALUES (?, ?, ?);")
@@ -209,14 +213,14 @@ class Database(BaseDatabase):
         :returns: The row count caused by the insert.
         :rtype: int
         """
-        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo)
         data = [(field, now, now) for field in fields]
         query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, ctime, mtime) "
                  "VALUES (?, ?, ?);")
         return await self._do_insert_query(query, data)
 
     #
-    # Data SELECT, INSERT and, UPDATE methods.
+    # Config data SELECT, INSERT and, UPDATE methods.
     #
 
     async def select_from_config_data_table(self, data: dict, year: int=None
@@ -301,7 +305,7 @@ class Database(BaseDatabase):
         fy1 = await self.select_from_fiscal_year_table(current=1)
 
         if fy1:
-            now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
+            now = badidatetime.datetime.now(self.utc_tzinfo)
             f_items = await self.select_from_field_type_table(data)
             f_month = await self.select_from_month_table(order=month)
             fy2 = await self.select_from_fiscal_year_table(year=fy1[1]+1)
@@ -347,12 +351,16 @@ class Database(BaseDatabase):
            Incoming data:
            {pk: value, <field_name>: value, ...}
         """
-        mtime = badidatetime.datetime.now(self.utc_tzinfo, short=True)
+        mtime = badidatetime.datetime.now(self.utc_tzinfo)
         query = (f"UPDATE {self._T_DATA} SET value = :value, "
                  "mtime = :mtime WHERE pk = :pk;")
         items = [{'pk': pk, 'value': value, 'mtime': mtime}
                  for pk, value in data]
         return await self._do_update_query(query, items)
+
+    #
+    # Monthly SELECT, INSERT, and UPDATE methods.
+    #
 
     async def select_from_monthly_table(self, year: int=None, month: int=None
                                         ) -> list:
@@ -364,17 +372,18 @@ class Database(BaseDatabase):
         :returns: The data for the given month.
         :rtype: list
         """
-        query = (f"SELECT m.*, mo.month, mo.ord FROM {self._T_MONTHLY} m "
-                 f"JOIN {self._T_MONTHLY_PIVOT} mp ON mp.mlfk = m.pk "
-                 f"JOIN {self._T_MONTH} mo ON mo.pk = mp.mfk "
-                 f"JOIN {self._T_FISCAL_YEAR} fy ON fy.pk = mp.fyfk "
-                 "WHERE mo.month = :month AND fy.year = :year;")
+        query = (f"SELECT m.*, mo.month, mo.ord FROM {self._T_MONTHLY} AS m "
+                 f"JOIN {self._T_MONTHLY_PIVOT} AS mp ON mp.mlfk = m.pk "
+                 f"JOIN {self._T_MONTH} AS mo ON mo.pk = mp.mfk "
+                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
+                 "WHERE mo.ord = :month AND fy.year = :year;")
         data = {'year': year, 'month': month}
-        return await self._do_select_query(query, data)
+        values = await self._do_select_query(query, data)
+        return values[0] if len(values) == 1 else values
 
     async def insert_into_monthly_table(self, year: int, data: dict) -> int:
         """
-        Insert values into the monthly table.
+        Insert values in the monthly table.
 
         :param int year: A Baha'i year of the transaction.
         :param list data: The data from the any panel  in the form of:
@@ -382,8 +391,7 @@ class Database(BaseDatabase):
         :returns: The row count caused by the update.
         :rtype: int
         """
-        # Data for the monthly table.
-        now = badidatetime.datetime.now(self.utc_tzinfo, short=True)
+        now = badidatetime.datetime.now(self.utc_tzinfo)
         data['ctime'] = data['mtime'] = now
         # Data for the monthly_pivot table.
         month = data.pop('month')
@@ -400,7 +408,28 @@ class Database(BaseDatabase):
 
     async def update_monthly_table(self, year: int, month: int, data: list
                                    ) -> int:
-        pass
+        """
+        Update values in the monthly table.
+
+        :param int year: A Baha'i year of the transaction.
+        :param int month: A Baha'i month of the transaction. This is the order
+                          of the Baha'i month not the name.
+        :param list data: The data from the any panel  in the form of:
+                          [(pk, <value>), ...}.
+        :returns: The row count caused by the update.
+        :rtype: int
+        """
+        data['mtime'] = badidatetime.datetime.now(self.utc_tzinfo)
+        query = (f"UPDATE {self._T_MONTHLY} AS m SET "
+                 "participation = :participation, outstanding = :outstanding, "
+                 "coh = :coh, membership = :membership, "
+                 "treasurer = :treasurer, locality = :locality, "
+                 f"mtime = :mtime FROM {self._T_MONTHLY_PIVOT} AS mp "
+                 f"JOIN {self._T_MONTH} AS mo ON mo.pk = mp.mfk "
+                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
+                 "WHERE mp.mlfk = m.pk AND mo.ord = :month "
+                 "AND fy.year = :year;")
+        return await self._do_update_query(query, items)
 
     #
     # Miscellaneous methods and properties
@@ -421,7 +450,7 @@ class Database(BaseDatabase):
         :returns: An instance of 'badidatetime.date'.
         :rtype: badidatetime.date
         """
-        return badidatetime.date.fromisoformat(value, short=True)
+        return badidatetime.date.fromisoformat(value)
 
     def _ymd_from_iso(self, iso: str) -> tuple:
         """
@@ -431,7 +460,7 @@ class Database(BaseDatabase):
         :returns: The year, month, and day from an ISO string.
         :rtype: tuple
         """
-        return badidatetime.date.fromisoformat(iso, short=True).b_date
+        return badidatetime.date.fromisoformat(iso).b_date
 
     def _today(self) -> badidatetime.date:
         """

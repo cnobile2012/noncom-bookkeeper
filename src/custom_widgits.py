@@ -217,7 +217,7 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
     def _populate_days(self):
         self.grid_sizer.Clear(delete_windows=True)
         max_day = self._max_days_in_month(self.bdate.year, self.bdate.month)
-        today = badidatetime.date.today(short=True)
+        today = badidatetime.date.today()
         size = self.FromDIP((32, 32))
 
         for day in range(1, max_day + 1):
@@ -306,7 +306,7 @@ class BadiDatePickerCtrl(wx.Panel):
         w_bg_color = wx.Colour(222, 237, 230)  # Gray
         self._updating = False
         # Default date
-        self.bdate = bdate or badidatetime.date.today(short=True)
+        self.bdate = bdate or badidatetime.date.today()
         self.text_ctrl = CustomTextCtrl(self, style=wx.BORDER_NONE)
         self.text_ctrl.SetValue(self.bdate.isoformat())
         self.text_ctrl.SetBackgroundColour(w_bg_color)
