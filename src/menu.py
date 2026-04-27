@@ -336,23 +336,23 @@ class MenuBar:
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
 
-        #self._setup_sizer_height_correctly(self.sizer)
+        # self._setup_sizer_height_correctly(self.sizer)
         self.panel.Show()
         self.parent.Layout()
         self.sizer.Layout()
         self.panel.Layout()
 
-        #self.panel.SetBackgroundColour("light blue")
-        #self.parent.SetBackgroundColour("orange")
-        #self.frame.SetBackgroundColour("green")
+        # self.panel.SetBackgroundColour("light blue")
+        # self.parent.SetBackgroundColour("orange")
+        # self.frame.SetBackgroundColour("green")
 
-        #print("Panel size:", self.panel.GetSize())
-        #print("Parent size:", self.parent.GetSize())
-        #print("Frame size:", self.frame.GetSize())
-        #print(self.frame.GetSize(), self.panel.GetSize())
+        # print("Panel size:", self.panel.GetSize())
+        # print("Parent size:", self.parent.GetSize())
+        # print("Frame size:", self.frame.GetSize())
+        # print(self.frame.GetSize(), self.panel.GetSize())
 
         # Force repaint after full layout
-        #wx.CallAfter(self._finalize_panel_display, self.panel)
+        # wx.CallAfter(self._finalize_panel_display, self.panel)
 
     # def _finalize_panel_display(self, panel):
     #     panel.SetSize(536, 808)

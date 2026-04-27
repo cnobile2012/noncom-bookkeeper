@@ -547,7 +547,8 @@ class PanelFactory(TomlMetaData):
         klass.write("\n    def on_arrow(self, event) -> None:\n")
         klass.write("        db = self._so.get_object('Database')\n")
         klass.write("        direction = event.GetDirection()\n")
-        klass.write("        db.next_or_previous_month(direction)\n")
+        klass.write("        db.next_or_previous_month(direction, "
+                    "self.date)\n")
         klass.write("        event.Skip()\n")
 
     def _set_colors(self, klass, widget, value):

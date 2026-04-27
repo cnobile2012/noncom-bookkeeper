@@ -406,19 +406,17 @@ class Database(BaseDatabase):
                   "VALUES (:mfk, :fyfk, last_insert_rowid());")
         return await self._do_insert_query(query, data)
 
-    async def update_monthly_table(self, year: int, month: int, data: list
-                                   ) -> int:
+    async def update_monthly_table(self, year: int, data: dict) -> int:
         """
         Update values in the monthly table.
 
         :param int year: A Baha'i year of the transaction.
-        :param int month: A Baha'i month of the transaction. This is the order
-                          of the Baha'i month not the name.
-        :param list data: The data from the any panel  in the form of:
+        :param dict data: The data from the any panel  in the form of:
                           [(pk, <value>), ...}.
         :returns: The row count caused by the update.
         :rtype: int
         """
+        data['year'] = year
         data['mtime'] = badidatetime.datetime.now(self.utc_tzinfo)
         query = (f"UPDATE {self._T_MONTHLY} AS m SET "
                  "participation = :participation, outstanding = :outstanding, "
@@ -429,7 +427,7 @@ class Database(BaseDatabase):
                  f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
                  "WHERE mp.mlfk = m.pk AND mo.ord = :month "
                  "AND fy.year = :year;")
-        return await self._do_update_query(query, items)
+        return await self._do_update_query(query, data)
 
     #
     # Miscellaneous methods and properties

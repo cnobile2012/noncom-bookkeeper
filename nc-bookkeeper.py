@@ -6,12 +6,11 @@
 import os
 import sys
 import argparse
+import wx
 
 from src import Logger
 from src.config import Settings, TomlPanelConfig, TomlAppConfig
 from src.main_frame import MainFrame
-
-import wx
 
 
 if __name__ == "__main__":

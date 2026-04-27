@@ -483,5 +483,6 @@ class PopulateCollect:
 
         return result
 
-    def next_or_previous_month(self, direction: str):
+    def next_or_previous_month(self, direction: str, date: tuple):
         print(f"{direction.capitalize()} arrow clicked")
+        print(f"Current year and month: {date}")
