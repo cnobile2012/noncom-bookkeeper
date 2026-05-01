@@ -429,6 +429,16 @@ class Database(BaseDatabase):
                  "AND fy.year = :year;")
         return await self._do_update_query(query, data)
 
+    def convert_monthly_list_to_dict(self, items: tuple, data: dict={}):
+        data['month_of_year'] = self.ordinal_month_to_widget(items[10])
+        data['participation'] = items[1]
+        data['outstanding_bills'] = items[2]
+        data['end_of_month_cash_on_hand'] = items[3]
+        data['total_membership_this_month'] = items[4]
+        data['treasurer_this_month'] = items[5]
+        data['locality_prefix_month'] = items[6]
+        return data
+
     #
     # Miscellaneous methods and properties
     #
@@ -496,3 +506,13 @@ class Database(BaseDatabase):
 
         # Zone has no DST at all — any offset is the standard offset
         return datetime.datetime(now.year, 1, 15, tzinfo=tz).utcoffset()
+
+    def ordinal_month_to_widget(self, month):
+        if month == 0:  # Ayyám-i-Há
+            value = 19
+        elif month == 19:  # 'Alá'
+            value = 20
+        else:
+            value = month  # Should be 1 - 18
+
+        return value

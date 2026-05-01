@@ -10,8 +10,9 @@ import wx
 import datetime
 import badidatetime
 
-from .utilities import make_name
+from .utilities import make_name, AsyncDataNavigator, AsyncRunner
 from .config import TomlMetaData, TomlCreatePanel
+from .custom_widgits import ordered_month
 
 
 class PopulateCollect:
@@ -22,6 +23,8 @@ class PopulateCollect:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._adn = AsyncDataNavigator(self.select_from_monthly_table,
+                                       self.get_prev_and_next, AsyncRunner())
 
     @property
     def has_org_info_data(self) -> bool:
@@ -186,10 +189,11 @@ class PopulateCollect:
                                 value = (panel_value if panel_value != value
                                          else value)
                             else:
-                                value = self._db_fiancial_to_panel(value)
+                                value = self._db_financial_to_panel(value)
                         elif not widget1.financial:
                             panel_value = widget1.GetValue()
-                            value = panel_value if panel_value != '' else value
+                            value = (panel_value if panel_value != ''
+                                     else str(value))
                         else:
                             msg = (f"Invalid widget type, found {name0} "
                                    f"with value {value}.")
@@ -332,7 +336,7 @@ class PopulateCollect:
 
         return value
 
-    def _db_fiancial_to_panel(self, value: str) -> str:
+    def _db_financial_to_panel(self, value: str) -> str:
         """
         Convert a fiancial value from the database into a value sutable for
         displaying in a widget.
@@ -483,6 +487,33 @@ class PopulateCollect:
 
         return result
 
-    def next_or_previous_month(self, direction: str, date: tuple):
-        print(f"{direction.capitalize()} arrow clicked")
-        print(f"Current year and month: {date}")
+    MONTHS = list(ordered_month().keys())
+    MONTH_INDEX = {m: i for i, m in enumerate(MONTHS)}
+
+    def get_prev_and_next(self, direction, year, month):
+        idx = self.MONTH_INDEX[month]
+
+        if direction == 'RIGHT':  # Next month
+            idx += 1
+
+            if idx > 19:
+                idx = 0
+                year += 1
+        else:  # LEFT -- previous month
+            idx -= 1
+
+            if idx < 0:
+                idx = 19
+                year -= 1
+
+        return (year, self.MONTHS[idx])
+
+    def populate_monthly(self, data):
+        if data:
+            from .utilities import StoreObjects
+            self._mf = StoreObjects().get_object('MainFrame')
+            monthly_panel = self._mf.panels.get('monthly')
+            items = self.convert_monthly_list_to_dict(data)
+            monthly_panel.initializing = True
+            self.populate_panel_values('monthly', monthly_panel, items)
+            monthly_panel.initializing = False

@@ -16,6 +16,7 @@ from timezonefinder import TimezoneFinder
 from .config import Settings
 from .utilities import StoreObjects
 from .populate_collect_panel import PopulateCollect
+import tracemalloc; tracemalloc.start()
 
 
 class BaseDatabase(PopulateCollect, Settings):
@@ -237,11 +238,11 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         Populate all panels that have data in the database.
         """
-        year, month = await self._get_current_fiscal_year()
+        self.fiscal_years = await self.select_from_fiscal_year_table()
+        year, month = self._get_current_fiscal_year()
 
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
-            self._fiscal_data = await self.select_from_fiscal_year_table()
             pcdp = {name: panel for name, panel in self._mf.panels.items()
                     if name not in self._EXCLUDE_PANELS}
             await self._populate_config_data_panels(year, pcdp)
@@ -286,16 +287,6 @@ class BaseDatabase(PopulateCollect, Settings):
                              year.
         :param wx.Panel panel: The panel object.
         """
-        def _ordinal_to_widget(month):
-            if month == 0:  # Ayyám-i-Há
-                value = 19
-            elif month == 19:  # 'Alá'
-                value = 20
-            else:
-                value = month  # Should be 1 - 18
-
-            return value
-
         data = self._collect_panel_values(panel)
         widget_ord = data['month_of_year']
 
@@ -303,16 +294,14 @@ class BaseDatabase(PopulateCollect, Settings):
             month = 0
         elif widget_ord == 20:  # 'Alá'
             month = 19
-        elif widget_ord != 0:  # Should be 1 - 18
+        elif widget_ord < fy_month:
             month = widget_ord
+            fy_year += 1
         elif widget_ord == 0:
-            month = fy_month
-            data['month_of_year'] = _ordinal_to_widget(fy_month)
-            #panel.dirty = True  # This gets the 1st month to be saved.
-        else:
-            msg = f"The widget ordinal {widget_ord} is out of range."
-            self._log.error(msg)
-            self._mf.statusbar_error = msg
+            month = -1
+            data['month_of_year'] = 0  # Placeholder
+        else:  # Should be fy_month - 18
+            month = widget_ord
 
         values = await self.select_from_monthly_table(fy_year, month)
 
@@ -322,17 +311,13 @@ class BaseDatabase(PopulateCollect, Settings):
                 'total_membership']
 
         if values:
-            data['month_of_year'] = _ordinal_to_widget(values[10])
-            data['participation'] = str(values[1])
-            data['outstanding_bills'] = values[2]
-            data['end_of_month_cash_on_hand'] = values[3]
-            data['total_membership_this_month'] = str(values[4])
-            data['treasurer_this_month'] = values[5]
-            data['locality_prefix_month'] = values[6]
+            data = self.convert_monthly_list_to_dict(values, data)
 
-        panel.initializing = True
-        self.populate_panel_values('monthly', panel, data)
-        panel.initializing = False
+        if month > -1:
+            panel.initializing = True
+            panel.date = (fy_year, month)
+            self.populate_panel_values('monthly', panel, data)
+            panel.initializing = False
 
     async def save_to_database(self, name: str, panel: wx.Panel) -> None:
         """
@@ -433,14 +418,14 @@ class BaseDatabase(PopulateCollect, Settings):
                     ef = ', '.join([f for f in empty_fields])
                     error = f"The '{ef}' field(s) must not be empty."
                     self._log.warning(error)
+                else:
+                    await self._insert_update_monthly_table(
+                        f_year, values['month'], values)
 
-        if f_year and f_month and not error:
-            if name in ('organization', 'budget'):
-                error = await self._insert_update_config_data_table(
-                    f_year, month=f_month, data=data)
-            elif name == 'monthly':
-                await self._insert_update_monthly_table(f_year, f_month,
-                                                        values)
+        if (f_year and f_month and not error
+            and name in ('organization', 'budget')):
+            error = await self._insert_update_config_data_table(
+                f_year, month=f_month, data=data)
 
         return error
 
@@ -504,11 +489,12 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         await self.insert_into_fiscal_year_table([(year, month, day, 0, 0, 0)])
 
-    async def _get_current_fiscal_year(self) -> tuple:
+    def _get_current_fiscal_year(self) -> tuple:
         """
-        Get the current fiscal year.
+        Get the year and month of the current fiscal year.
         """
-        fy = await self.select_from_fiscal_year_table(current=1)
+        fy = self.get_fiscal_year(current=1)
+        #print('POOP', fy)
 
         if len(fy):
             year = fy[1]
@@ -606,10 +592,12 @@ class BaseDatabase(PopulateCollect, Settings):
         return error
 
     async def _insert_update_monthly_table(self, year: int, month: int,
-                                           data: list) -> int:
+                                           data: dict) -> int:
         """
         Insert or update the monthly table.
 
+        :param int year: Year of insert or update.
+        :param int month: Month of insert or update.
         :param list data: The data to be inserted.
         :returns: The row count caused by the insert or update.
         :rtype: int
@@ -847,9 +835,42 @@ class BaseDatabase(PopulateCollect, Settings):
         assert isinstance(self._org_data, dict)
 
     @property
-    def earliest_fiscal_year(self):
+    def earliest_fiscal_year(self) -> tuple:
         """
         Get the earliest year in the `fiscal_year` table.
         """
-        years = [items[1] for items in self._fiscal_data]
-        return min(years) if years else None
+        years = [items[1] for items in self.fiscal_years]
+        return min(years) if years else ()
+
+    @property
+    def fiscal_years(self) -> list:
+        return self._fiscal_data
+
+    @fiscal_years.setter
+    def fiscal_years(self, years: list) -> None:
+        self._fiscal_data = years
+
+    def get_fiscal_year(self, *, year: int=None, current: int=None) -> tuple:
+        """
+        Get the fiscal year data based on given arguments.
+
+        :param int year: The year needed.
+        :param int month: The current year.
+        :returns: Data of the requested fiscal year.
+        :rtype: list
+        """
+        all = (year, current)
+        assert all.count(None) == len(all) - 1, (
+            f"You must choose only one of {all}.")
+        item = []
+
+        for data in self.fiscal_years:
+            fy_year = data[1]
+            fy_current = data[4]
+
+            if fy_year == year:
+                item = data
+            elif fy_current == current:
+                item = data
+
+        return item

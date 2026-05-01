@@ -7,9 +7,10 @@ __docformat__ = "restructuredtext en"
 import os
 import asyncio
 import logging
+import threading
 
 from .config import TomlAppConfig
-from .utilities import StoreObjects
+from .utilities import StoreObjects, AsyncRunner
 from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
                              ColorCheckBox, EVT_COLOR_CHECKBOX)
 
@@ -71,6 +72,9 @@ class MainFrame(wx.Frame, MenuBar):
 
         # Store current object
         StoreObjects().set_object(self.__class__.__name__, self)
+        # Create and store async runner
+        ar = AsyncRunner()
+        StoreObjects().set_object(ar.__class__.__name__, ar)
 
         # Read panel config file and create panels.
         sf = PanelFactory()
