@@ -97,6 +97,8 @@ class Database(BaseDatabase):
 
         query = (f"SELECT * FROM {self._T_FISCAL_YEAR} {where};")
         data = await self._do_select_query(query)
+        # Return the list of a single record or a list of all records
+        # based on the query.
         return data[0] if len(data) == 1 else data
 
     #
@@ -228,9 +230,9 @@ class Database(BaseDatabase):
         """
         Reads a row or rows from the `data` table.
 
-        :param int year: A Baha'i year used to select the current fiscal year.
         :param dict data: The data from the any panel in the form of:
                           {<field name>: <value>,...}.
+        :param int year: A Baha'i year used to select the current fiscal year.
         :returns: A list of rows from the Data table.
         :rtype: list
 
@@ -257,8 +259,7 @@ class Database(BaseDatabase):
              '0182-02-12T05:27:17.251199+00:00')
            ]
         """
-        field_names = list(data.keys())
-        fields = '", "'.join(field_names)
+        fields = '", "'.join(list(data.keys()))
 
         if year:
             params = (year, year+1)
@@ -372,13 +373,20 @@ class Database(BaseDatabase):
         :returns: The data for the given month.
         :rtype: list
         """
+        if month is not None:
+            where = " AND fy.month = :month;"
+            data = {'year': year, 'month': month}
+        else:
+            where = ";"
+            data = {'year': year}
+
         query = (f"SELECT m.*, mo.month, mo.ord FROM {self._T_MONTHLY} AS m "
                  f"JOIN {self._T_MONTHLY_PIVOT} AS mp ON mp.mlfk = m.pk "
                  f"JOIN {self._T_MONTH} AS mo ON mo.pk = mp.mfk "
                  f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
-                 "WHERE mo.ord = :month AND fy.year = :year;")
-        data = {'year': year, 'month': month}
-        values = await self._do_select_query(query, data)
+                 "WHERE  fy.year = :year")
+
+        values = await self._do_select_query(query + where, data)
         return values[0] if len(values) == 1 else values
 
     async def insert_into_monthly_table(self, year: int, data: dict) -> int:

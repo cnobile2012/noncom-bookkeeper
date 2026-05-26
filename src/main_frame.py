@@ -7,7 +7,6 @@ __docformat__ = "restructuredtext en"
 import os
 import asyncio
 import logging
-import threading
 
 from .config import TomlAppConfig
 from .utilities import StoreObjects, AsyncRunner
@@ -126,8 +125,8 @@ class MainFrame(wx.Frame, MenuBar):
             self._log.info("The budget data needs to be entered.")
             self.edit_budget(None)
         elif not db.has_monthly_data:
-            self._log.info("The first month's data needs to be entered.")
-            self.edit_month(None)
+            # Create all monthly records for the fiscal year.
+            pass
         else:
             self.edit_ledger_data(None)
 

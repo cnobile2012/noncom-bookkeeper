@@ -112,10 +112,10 @@ class StoreObjects(Borg):
         super().__init__(*args, **kwargs)
 
     def set_object(self, key, value):
-        self._object_store[key] = value
+        self._object_store[key.upper()] = value
 
     def get_object(self, key):
-        return self._object_store.get(key)
+        return self._object_store.get(key.upper())
 
 
 class GridBagSizer(wx.GridBagSizer):

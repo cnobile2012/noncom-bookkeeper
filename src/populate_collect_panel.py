@@ -51,10 +51,11 @@ class PopulateCollect:
         """
         Check that the db has the Monthly Information.
 
-        :returns: True if data has been saved in the DB and False if not saved.
+        :returns: True if all monthly data has been saved in the DB and
+                  False if not saved.
         :rtype: bool
         """
-        return self._check_panels_for_entries('monthly')
+        return False
 
     @property
     def open_ledger_entry(self) -> bool:
@@ -74,7 +75,7 @@ class PopulateCollect:
         :rtype: bool
         """
         panel = self._mf.panels[name]
-        data = self._collect_panel_values(panel)
+        data = self.collect_panel_values(panel)
         items = []
 
         for w0, w1 in self._find_child_sets(panel):
@@ -86,8 +87,8 @@ class PopulateCollect:
 
         return all([item not in self._EMPTY_FIELDS for item in items])
 
-    def _collect_panel_values(self, panel: wx.Panel, convert_tz: bool=False
-                              ) -> dict:
+    def collect_panel_values(self, panel: wx.Panel, convert_tz: bool=False
+                             ) -> dict:
         """
         Collects the data from the panel widgets and convert if necessary to
         DB appropriate values.
@@ -115,6 +116,9 @@ class PopulateCollect:
                 data[field_name] = widget0.GetSelection()
             elif name0 in ('ColorCheckBox',):
                 data[field_name] = widget0.GetValue()
+
+                if name1 == 'StaticText':
+                    print('POOP', field_name, widget1.GetValue())
             elif name0 == 'StaticText':
                 name1 = w1[0]
                 widget1 = w1[2]

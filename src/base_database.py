@@ -16,6 +16,7 @@ from timezonefinder import TimezoneFinder
 from .config import Settings
 from .utilities import StoreObjects
 from .populate_collect_panel import PopulateCollect
+from .prep_and_cache import DataPreperation, Cache
 import tracemalloc; tracemalloc.start()
 
 
@@ -158,8 +159,8 @@ class BaseDatabase(PopulateCollect, Settings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._mf = StoreObjects().get_object('MainFrame')
-        self._org_data = {}
-        self._fiscal_data = []
+        self._dp = DataPreperation(self)
+        self._cache = Cache(self)
 
     #
     # Schema methods
@@ -188,6 +189,8 @@ class BaseDatabase(PopulateCollect, Settings):
                     await db.execute(query)
                     await db.commit()
 
+                # The for loop below and a few lines above would be used
+                # if there are views in the schema.
                 # for view, params in self._SCHEMA_VIEWS.items():
                 #     fields = ', '.join([field for field in params])
                 #     query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
@@ -260,14 +263,14 @@ class BaseDatabase(PopulateCollect, Settings):
         :param dict panels: A dict of all non-excluded panels.
         """
         for panel_name, panel in panels.items():
-            data = self._collect_panel_values(panel)
+            data = self.collect_panel_values(panel)
             values = await self.select_from_config_data_table(data, year)
 
             # Needed when the app has been run at least one time before.
             if panel_name == 'organization' and values:
                 # This stores and converts a list to a dict.
-                self.organization_data = values
-                items = self.organization_data
+                self._dp.organization_data = values
+                items = self._dp.organization_data
             else:
                 items = {value[1]: value[2] for value in values}
 
@@ -287,27 +290,28 @@ class BaseDatabase(PopulateCollect, Settings):
                              year.
         :param wx.Panel panel: The panel object.
         """
-        data = self._collect_panel_values(panel)
+        data = self.collect_panel_values(panel)
         widget_ord = data['month_of_year']
 
-        if widget_ord == 19:  # Ayyám-i-Há
+        if widget_ord == 0:  # "Choose Current Month" default message.
+            month = -1
+        elif widget_ord == 19:  # Ayyám-i-Há
             month = 0
         elif widget_ord == 20:  # 'Alá'
             month = 19
         elif widget_ord < fy_month:
             month = widget_ord
             fy_year += 1
-        elif widget_ord == 0:
-            month = -1
             data['month_of_year'] = 0  # Placeholder
         else:  # Should be fy_month - 18
             month = widget_ord
 
         values = await self.select_from_monthly_table(fy_year, month)
 
-        if data['treasurer_this_month'] == "" and self.organization_data:
-            data['treasurer_this_month'] = self.organization_data['treasurer']
-            data['total_membership_this_month'] = self.organization_data[
+        if data['treasurer_this_month'] == "" and self._dp.organization_data:
+            data['treasurer_this_month'] = self._dp.organization_data[
+                'treasurer']
+            data['total_membership_this_month'] = self._dp.organization_data[
                 'total_membership']
 
         if values:
@@ -337,68 +341,20 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         error = None
         f_year, f_month = await self.populate_panels()
-        data = self._collect_panel_values(panel)
+        data = self.collect_panel_values(panel)
 
         if name == 'organization':
             if data:
-                # Make sure all fields were entered.
-                empty_fields = [field for field, value in data.items()
-                                if value in self._EMPTY_FIELDS]
-
-                if len(empty_fields) != 0:
-                    ef = ', '.join([f for f in empty_fields])
-                    error = f"The '{ef}' field(s) must not be empty."
-                    self._log.warning(error)
-                else:  # We add to the data dict.
-                    data, error = self._add_location_data(data)
-
-                    if data:  # Adding location can have errors.
-                        sofy = data['start_of_fiscal_year']
-                        p_year = sofy.year
-                        p_month = sofy.month
-                        p_day = sofy.day
-                        # Need ISO date for the DB.
-                        data['start_of_fiscal_year'] = sofy.isoformat()
-                        earliest_fiscal_year = self.earliest_fiscal_year
-
-                        if None in (f_year, f_month):
-                            self.organization_data = data
-                            await self.first_run_initialization(
-                                p_year, p_month, p_day)
-                            f_year = p_year
-                            f_month = p_month
-                        elif f_year == p_year:  # Update current year
-                            self.organization_data = data
-                        elif (f_year + 1) == p_year:
-                            self.organization_data = data
-                            await self.entered_next_year(
-                                p_year, p_month, p_day)
-                        elif (earliest_fiscal_year and
-                              (earliest_fiscal_year - 1) == p_year):
-                            await self.entered_previous_year(
-                                p_year, p_month, p_day)
-                        else:
-                            year = month = None
-                            error = ("Cannot enter a year that is not "
-                                     "immediately before or after the "
-                                     "earliest or current year.")
-                            self._log.warning(error)
-                    else:
-                        self._log.warning(error)
-            else:  # If no org data was entered.
-                error = ("Organization Information data must be entered "
-                         "before any other data can be entered.")
-                self._log.warning(error)
+                error = await self._dp.organization(data, f_year, f_month)
         elif name == 'fiscal':
-            items = [(f_year, f_month, 1, data['current_fiscal_year'],
-                      data['work_on_this_fiscal_year'],
-                      data['audit_complete'])]
-            await self.update_fiscal_year_table(items)
+            data = await self._dp.fiscal(data, f_year, f_month)
             f_year = f_month = None
         elif name == 'fiscal_settings':
             f_year = f_month = None
         elif name == 'budget':
-            pass  # No pre-processing needs to be done.
+            if f_year and f_month:
+                error = await self._insert_update_config_data_table(
+                    f_year, month=f_month, data=data)
         elif name == 'monthly':
             if data:
                 empty_fields = []
@@ -408,7 +364,7 @@ class BaseDatabase(PopulateCollect, Settings):
                     f_name, manditory = self._MONTHLY_FIELD_MAP.get(
                         field, ('unknown', True))
                     assert f_name != 'unknown', ("An unknown field was found "
-                                               "in the monthly panel.")
+                                                 "in the monthly panel.")
                     values[f_name] = value if value else 0
 
                     if manditory and value in self._EMPTY_FIELDS:
@@ -422,79 +378,38 @@ class BaseDatabase(PopulateCollect, Settings):
                     await self._insert_update_monthly_table(
                         f_year, values['month'], values)
 
-        if (f_year and f_month and not error
-            and name in ('organization', 'budget')):
-            error = await self._insert_update_config_data_table(
-                f_year, month=f_month, data=data)
-
         return error
 
-    async def first_run_initialization(self, year: int, month: int, day: int):
+    def get_fiscal_year(self, *, year: int=None, current: int=None) -> tuple:
         """
-        The first run of the application.
+        Get the fiscal year data based on given arguments.
 
-        .. note::
-
-           1. Insert a year marked as current.
-           2. Insert the next year.
-           3. Insert all months.
-           4. Insert fields from all panels.
-
-        :param int year: This is the UI entered year.
-        :param int month: This is the UI entered month.
-        :param int day: This is the UI entered day.
+        :param int year: The year needed.
+        :param int month: The current year.
+        :returns: Data of the requested fiscal year.
+        :rtype: list
         """
-        # year, month, day, current, audit, work_on
-        data = [(year, month, day, 1, 1, 0), (year+1, month, day, 0, 0, 0)]
-        await self.insert_into_fiscal_year_table(data)
-        # Populate the Badí months in the database.
-        await self._insert_into_month_table()
+        all = (year, current)
+        assert all.count(None) == len(all) - 1, (
+            f"You must choose only one of {all}.")
+        item = []
 
-        # Populate all panel fields in the database.
-        for name, panel in self._mf.panels.items():
-            if name in self._EXCLUDE_PANELS: continue
-            panel_data = self._collect_panel_values(panel)
-            await self._add_fields_to_field_type_table(panel_data)
+        for data in self.fiscal_years:
+            fy_year = data[1]
+            fy_current = data[4]
 
-    async def entered_next_year(self, year: int, month: int, day: int):
-        """
-        Follow up years.
+            if fy_year == year:
+                item = data
+            elif fy_current == current:
+                item = data
 
-        .. note::
-
-           1. Update the previous current year.
-           2. Update the previous next year to the current year.
-           3. Insert a new next year.
-
-        :param int year: This is the UI entered year.
-        :param int month: This is the UI entered month.
-        :param int day: This is the UI entered day.
-        """
-        data = [(year-1, month, day, 0, 0, 0), (year, month, day, 1, 1, 0)]
-        await self.update_fiscal_year_table(data)
-        await self.insert_into_fiscal_year_table(
-            [(year+1, month, day, 0, 0, 0)])
-
-    async def entered_previous_year(self, year: int, month: int, day: int):
-        """
-        Previous up years.
-
-        .. note::
-
-           Insert previous year.
-
-        :param int year: This is the UI entered year.
-        :param int month: This is the UI entered month.
-        :param int day: This is the UI entered day.
-        """
-        await self.insert_into_fiscal_year_table([(year, month, day, 0, 0, 0)])
+        return item
 
     def _get_current_fiscal_year(self) -> tuple:
         """
         Get the year and month of the current fiscal year.
         """
         fy = self.get_fiscal_year(current=1)
-        #print('POOP', fy)
 
         if len(fy):
             year = fy[1]
@@ -590,6 +505,19 @@ class BaseDatabase(PopulateCollect, Settings):
                                                                update_data)
 
         return error
+
+    async def _select_monthly_table(self, year: int, month: int=None) -> list:
+        """
+        Select data from the monthly table.
+
+        :param int year: Year of insert or update.
+        :param int month: Month of insert or update.
+        :returns: Monthly data.
+        :rtype: list
+        """
+        months = await self.select_from_monthly_table(year, month)
+        
+        return 
 
     async def _insert_update_monthly_table(self, year: int, month: int,
                                            data: dict) -> int:
@@ -728,149 +656,3 @@ class BaseDatabase(PopulateCollect, Settings):
         new_fields = set(new)  # Just get the keys if a dict.
         old_fields = set(old)
         return new_fields - old_fields
-
-    def _add_location_data(self, data: dict) -> dict:
-        """
-        Add the location data `iana_name`, `latitude` and, `longitude` to
-        the organization data.
-
-        :param dict data: The `organization` data.
-        :returns: The updated `organization` data.
-        :rtype: dict
-        """
-        location_city_name = data['location_city_name']
-
-        if location_city_name:
-            iana, lat, lon, error = self._find_timezone(location_city_name)
-
-            if error is None:
-                data['iana_name'] = iana
-                data['latitude'] = lat
-                data['longitude'] = lon
-            else:
-                data = None
-        else:
-            error = ("The 'location_city_name' field was not found, this "
-                     "will cause some dates to be set to the wrong timezone, "
-                     "most likely UTC:00:00.")
-            data = None
-
-        return data, error
-
-    def _find_timezone(self, address: str):
-        """
-        Find the IANA timezone name, latitude, and longitude.
-
-        :param str address: The address, City, or town used to find the
-                            required information.
-        :returns: The IANA timezone name, latitude, and longitude.
-        :rtype: tuple
-        """
-        error = None
-        geolocator = Nominatim(user_agent='nc-bookkeeper')
-
-        try:
-            location = geolocator.geocode(address)
-        except exc.GeocoderError as e:
-            error = f"Could not get information on {address}"
-            self._log.error(error + ", %s", e)
-        else:
-            error = None
-
-        if location:
-            lat = location.latitude
-            lon = location.longitude
-            tf = TimezoneFinder()
-            iana = tf.timezone_at(lng=lon, lat=lat)
-        elif error:
-            iana = lat = lon = None
-        else:
-            iana = lat = lon = None
-            error = f"Cannot find the timezone for '{address}'."
-
-        return iana, lat, lon, error
-
-    #
-    # Properties
-    #
-
-    @property
-    def organization_data(self) -> dict:
-        """
-        This property gets the organization data that are used throughout
-        the application without having to do a select on the DB everytime.
-
-        :returns: The organization data as defined by {<field name>: <value>}.
-        :rtype: dict
-        """
-        return self._org_data
-
-    @organization_data.setter
-    def organization_data(self, values) -> None:
-        """
-        This property sets the organization constants that are used throughout
-        the application without having to do a select on the DB everytime.
-
-        .. note::
-
-           Only the second and three fields are stored when the incoming
-           values are a list otherwise the dict is used as is.
-
-        :param list or dict values: A list of tuples where each tuple is the
-                                    raw data for one field in the form of
-                                    (PK, <field name>, <value>, <fiscal year>,
-                                    <next year>, <ctime>, <mtime>).
-        """
-        if isinstance(values, list):
-            self._org_data = {value[1]: value[2] for value in values}
-        elif isinstance(values, dict):
-            self._org_data = values
-        else:
-            msg = ("The argument 'value' must be a 'list' or 'dict', "
-                   f"found {type(values)}.")
-            self._log.error(msg)
-            self._mf.statusbar_error = msg
-            self._org_data = None
-
-        assert isinstance(self._org_data, dict)
-
-    @property
-    def earliest_fiscal_year(self) -> tuple:
-        """
-        Get the earliest year in the `fiscal_year` table.
-        """
-        years = [items[1] for items in self.fiscal_years]
-        return min(years) if years else ()
-
-    @property
-    def fiscal_years(self) -> list:
-        return self._fiscal_data
-
-    @fiscal_years.setter
-    def fiscal_years(self, years: list) -> None:
-        self._fiscal_data = years
-
-    def get_fiscal_year(self, *, year: int=None, current: int=None) -> tuple:
-        """
-        Get the fiscal year data based on given arguments.
-
-        :param int year: The year needed.
-        :param int month: The current year.
-        :returns: Data of the requested fiscal year.
-        :rtype: list
-        """
-        all = (year, current)
-        assert all.count(None) == len(all) - 1, (
-            f"You must choose only one of {all}.")
-        item = []
-
-        for data in self.fiscal_years:
-            fy_year = data[1]
-            fy_current = data[4]
-
-            if fy_year == year:
-                item = data
-            elif fy_current == current:
-                item = data
-
-        return item
