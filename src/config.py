@@ -23,6 +23,7 @@ class Settings(AppDirs, Borg):
     system.
     """
     _DEBUG = False
+    _TESTING = False
     _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     _APP_NAME = "nc-bookkeeper"
     _DEVELOPERS = ('Carl J. Nobile',)
@@ -37,9 +38,11 @@ class Settings(AppDirs, Borg):
                               'generic': 'generic.toml'}}
 
     # Even if not in debug mode these two variables need to be defined
-    # or the Borg won't like it.
+    # or the Borg won't like it and you may get assimilated.
     _debug_data_dir = ''
     _debug_log_dir = ''
+    _testing_data_dir = ''
+    _testing_log_dir = ''
 
     def __init__(self, *args, **kwargs):
         super().__init__(appname=self.app_name,
@@ -65,31 +68,46 @@ class Settings(AppDirs, Borg):
             self._debug_data_dir = os.path.join(self._BASE_DIR, 'data')
             self._debug_log_dir = os.path.join(self._debug_data_dir, 'log')
 
-            if not os.path.exists(self._debug_data_dir):
+            if not os.path.exists(self._debug_data_dir):  # pragma: no cover
                 os.makedirs(self._debug_data_dir, mode=0o775, exist_ok=True)
 
-            if not os.path.exists(self._debug_log_dir):
+            if not os.path.exists(self._debug_log_dir):  # pragma: no cover
                 os.makedirs(self._debug_log_dir, mode=0o775, exist_ok=True)
 
-            if not os.path.exists(self.cached_factory_dir):
+            if not os.path.exists(self.cached_factory_dir):  # pragma: no cover
                 os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
 
             paths = (self._debug_data_dir, self._debug_log_dir,
                      self.cached_factory_dir)
+        elif self.testing:
+            self._testing_data_dir = os.path.join(self._BASE_DIR, 'testing')
+            self._testing_log_dir = os.path.join(self._testing_data_dir, 'log')
+
+            if not os.path.exists(self._testing_data_dir):  # pragma: no cover
+                os.makedirs(self._testing_data_dir, mode=0o775, exist_ok=True)
+
+            if not os.path.exists(self._testing_log_dir):  # pragma: no cover
+                os.makedirs(self._testing_log_dir, mode=0o775, exist_ok=True)
+
+            if not os.path.exists(self.cached_factory_dir):  # pragma: no cover
+                os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
+
+            paths = (self._testing_data_dir, self._testing_log_dir,
+                     self.cached_factory_dir)
         else:
-            if not os.path.exists(self.user_data_dir):
+            if not os.path.exists(self.user_data_dir):  # pragma: no cover
                 os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)
 
-            if not os.path.exists(self.user_config_dir):
+            if not os.path.exists(self.user_config_dir):  # pragma: no cover
                 os.makedirs(self.user_config_dir, mode=0o775, exist_ok=True)
 
-            if not os.path.exists(self.user_cache_dir):
+            if not os.path.exists(self.user_cache_dir):  # pragma: no cover
                 os.makedirs(self.user_cache_dir, mode=0o775, exist_ok=True)
 
-            if not os.path.exists(self.user_log_dir):
+            if not os.path.exists(self.user_log_dir):  # pragma: no cover
                 os.makedirs(self.user_log_dir, mode=0o775, exist_ok=True)
 
-            if not os.path.exists(self.cached_factory_dir):
+            if not os.path.exists(self.cached_factory_dir):  # pragma: no cover
                 os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
 
             paths = (self.user_data_dir, self.user_config_dir,
@@ -99,26 +117,34 @@ class Settings(AppDirs, Borg):
         self._log.info("Created, if necessary, the following paths: %s", paths)
 
     @property
-    def debug(self):
+    def debug(self) -> bool:
         return self._DEBUG
 
     @debug.setter
-    def debug(self, value: bool):
+    def debug(self, value: bool) -> None:
         self._DEBUG = value
 
+    @property
+    def testing(self) -> bool:
+        return self._TESTING
+
+    @testing.setter
+    def testing(self, value: bool) -> None:
+        self._TESTING = value
+
     @staticmethod
-    def base_dir():
+    def base_dir() -> str:
         return Settings._BASE_DIR
 
     @property
-    def app_name(self):
+    def app_name(self) -> str:
         return self._APP_NAME
 
     @property
-    def primary_developer(self):
+    def primary_developer(self) -> str:
         return self._DEVELOPERS[0]
 
-    def contributors(self, array=False):
+    def contributors(self, array: bool=False) -> str | tuple:
         result = None
 
         if array:
@@ -129,82 +155,93 @@ class Settings(AppDirs, Borg):
         return result
 
     @property
-    def logger_name(self):
+    def logger_name(self) -> str:  # pragma: no cover
         return self._LOGGER_NAME
 
     @property
-    def logfile_name(self):
+    def logfile_name(self) -> str:  # pragma: no cover
         return self._LOGFILE_NAME
 
     @property
-    def data_file_name(self):
+    def data_file_name(self) -> str:
         return self._DATA_FILE
 
     @property
-    def panel_factory_name(self):
+    def panel_factory_name(self) -> str:
         return self._PANEL_FACTORY_DIR
 
     @property
-    def user_data_fullpath(self):
+    def user_data_fullpath(self) -> str:
         if self.debug:
             path = os.path.join(self._debug_data_dir, self.data_file_name)
+        elif self.testing:
+            path = os.path.join(self._testing_data_dir, self.data_file_name)
         else:
             path = os.path.join(self.user_data_dir, self.data_file_name)
 
-        assert 'data' in path or '.local' in path, (
+        assert 'data' in path or '.local' in path or 'testing' in path, (
             f"user_data_fullpath: {path}")
         return path
 
     @property
-    def user_config_fullpath(self):
+    def user_config_fullpath(self) -> str:
         if self.debug:
             path = os.path.join(self._debug_data_dir, self.__user_toml)
+        elif self.testing:
+            path = os.path.join(self._testing_data_dir, self.__user_toml)
         else:
             path = os.path.join(self.user_config_dir, self.__user_toml)
 
-        assert 'data' in path or '.config' in path, (
+        assert 'data' in path or '.config' in path or 'testing' in path, (
             f"user_config_fullpath: {path}")
         return path
 
     @property
-    def user_app_config_fullpath(self):
+    def user_app_config_fullpath(self) -> str:
         if self.debug:
             path = os.path.join(self._debug_data_dir, self.__app_toml)
+        elif self.testing:
+            path = os.path.join(self._testing_data_dir, self.__app_toml)
         else:
             path = os.path.join(self.user_config_dir, self.__app_toml)
 
-        assert 'data' in path or '.config' in path, (
+        assert 'data' in path or '.config' in path or 'testing' in path, (
             f"user_app_config_fullpath: {path}")
         return path
 
     @property
-    def user_log_fullpath(self):
+    def user_log_fullpath(self) -> str:  # pragma: no cover
         if self.debug:
             path = os.path.join(self._debug_log_dir, self.logfile_name)
+        elif self.testing:
+            path = os.path.join(self._testing_log_dir, self.logfile_name)
         else:
             path = os.path.join(self.user_log_dir, self.logfile_name)
 
-        assert 'data' in path or '.cache' in path, (
+        assert 'data' in path or '.cache' in path or 'testing' in path, (
             f"user_log_fullpath: {path}")
         return path
 
     @property
-    def cached_factory_dir(self):
+    def cached_factory_dir(self) -> str:
         if self.debug:
             path = os.path.join(self._debug_data_dir, self.panel_factory_name)
+        elif self.testing:
+            path = os.path.join(self._testing_data_dir,
+                                self.panel_factory_name)
         else:
             path = os.path.join(self.user_cache_dir, self.panel_factory_name)
 
-        assert 'data' in path or '.cache' in path, (
+        assert 'data' in path or '.cache' in path or 'testing' in path, (
             f"cached_factory_dir: {path}")
         return path
 
     @property
-    def local_config_fullpath(self):
+    def local_config_fullpath(self) -> str:
         return os.path.join(self._LOCAL_CONFIG, self.__local_toml)
 
     @property
-    def config_type(self):
+    def config_type(self) -> str:
         return self.__config_type
 
 
@@ -222,6 +259,11 @@ class BaseSystemData(Settings):
                     ERR_TOML_ERROR: "Cannot parse file '{}' may be corrupted.",
                     ERR_ZERO_LENGTH_FILE: "Cannot parse zero length file '{}'."
                     }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__err_msg = None
+        self.__error = None
 
     @property
     def panel_config(self):
@@ -283,6 +325,22 @@ class BaseSystemData(Settings):
                 error = self.ERR_ZERO_LENGTH_FILE
 
         return error if error else doc
+
+    @property
+    def err_msg(self) -> str:
+        return self.__err_msg
+
+    @err_msg.setter
+    def err_msg(self, msg: str) -> None:
+        self.__err_msg = msg
+
+    @property
+    def error(self) -> int:
+        return self.__error
+
+    @error.setter
+    def error(self, err: int) -> None:
+        self.__error = err
 
 
 class TomlMetaData(BaseSystemData):
@@ -351,11 +409,26 @@ class TomlPanelConfig(BaseSystemData):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__error = None
-        self.__err_msg = None
 
     @property
-    def _has_local_config(self):
+    def _has_user_config(self) -> bool:
+        """
+        Check if the user panel config exists.
+
+        :returns: True if file exists and False if it does not exist.
+        :rtype: bool
+         """
+        fullpath = self.user_config_fullpath
+
+        if not (has := os.path.exists(fullpath)):
+            msg = "The path '%s' does not exist, file will be copied."
+            self._log.info(msg, fullpath)
+            self.err_msg = msg
+
+        return has
+
+    @property
+    def _has_local_config(self) -> bool:
         """
         Check if the local panel config exists. This is a fatal and
         critical error if it does not exist.
@@ -363,27 +436,12 @@ class TomlPanelConfig(BaseSystemData):
         :returns: True if file exists and False if it does not exist.
         :rtype: bool
         """
-        if not (has := os.path.exists(self.local_config_fullpath)):
-            msg = (f"The path '{self.local_config_fullpath}' does not exist, "
-                   "exiting application.")
-            self._log.critical(msg)
-            self.__err_msg = msg
+        fullpath = self.local_config_fullpath
 
-        return has
-
-    @property
-    def _has_user_config(self):
-        """
-        Check if the user panel config exists.
-
-        :returns: True if file exists and False if it does not exist.
-        :rtype: bool
-         """
-        if not (has := os.path.exists(self.user_config_fullpath)):
-            msg = (f"The path '{self.user_config_fullpath}' does not exist, "
-                   "file will be copied.")
-            self._log.info(msg)
-            self.__err_msg = msg
+        if not (has := os.path.exists(fullpath)):
+            msg = "The path '%s' does not exist, exiting application."
+            self._log.critical(msg, fullpath)
+            self.err_msg = msg
 
         return has
 
@@ -397,8 +455,8 @@ class TomlPanelConfig(BaseSystemData):
             count += 1
             self._read_file(self.user_config_fullpath)
 
-            if self.__error:
-                self.__err_msg = self.ERR_MESSAGES[self.__error].format(
+            if self.error:
+                self.err_msg = self.ERR_MESSAGES[self.error].format(
                     self.local_config_fullpath)
 
                 if count < 2:
@@ -406,7 +464,7 @@ class TomlPanelConfig(BaseSystemData):
                         "Error: %s is corrupted, using the backup file.",
                         self.user_config_fullpath)
                     self._copy_file(backup_file, self.user_config_fullpath)
-                else:
+                else:  # pragma: no cover
                     ret = False
                     break
         else:
@@ -416,18 +474,14 @@ class TomlPanelConfig(BaseSystemData):
                 self._copy_file(self.local_config_fullpath, backup_file)
                 self._read_file(self.user_config_fullpath)
 
-                if self.__error:  # All these errors are critical.
-                    self.__err_msg = self.ERR_MESSAGES[self.__error].format(
+                if self.error:  # All these errors are critical.
+                    self.err_msg = self.ERR_MESSAGES[self.error].format(
                         self.user_config_fullpath)
                     ret = False
             else:
                 ret = False
 
         return ret
-
-    @property
-    def get_err_msg(self):
-        return self.__err_msg
 
     def _read_file(self, filepath):
         """
@@ -437,10 +491,10 @@ class TomlPanelConfig(BaseSystemData):
         assert doc, "Invalid document--possible coding error."
 
         if isinstance(doc, int):  # Has an error
-            self.__error = doc
+            self.error = doc  # If an error then doc is an error code.
         else:
             self.panel_config = doc
-            self.__error = None
+            self.error = None
 
     def _copy_file(self, fname0, fname1):
         try:
@@ -460,83 +514,66 @@ class TomlAppConfig(BaseSystemData):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__error = None
-        self.__err_msg = None
 
     @property
-    def _has_user_config(self):
+    def _has_app_user_config(self) -> bool:
         """
         Check if the user app config exists.
 
         :returns: True if file exists and False if it does not exist.
         :rtype: bool
-         """
-        if not (has := os.path.exists(self.user_app_config_fullpath)):
-            msg = (f"The path '{self.user_config_fullpath}' does not exist, "
-                   "file will be copied.")
-            self._log.info(msg)
-            self.__err_msg = msg
+        """
+        fullpath = self.user_app_config_fullpath
+
+        if not (has := os.path.exists(fullpath)):
+            msg = "The path '%s' does not exist, file will be copied."
+            self._log.info(msg, fullpath)
+            self.err_msg = msg
 
         return has
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """
         Test the app config file that it can be parsed and that it exists.
         This property always returns True.
+
+        :returns: A `True` or `False` depending on the validity of the
+                  toml file.
+        :rtype: bool
         """
         ret = True
+        fullpath = self.user_app_config_fullpath
 
-        if self._has_user_config:
-            ret = self.__loop_has_user_config()
+        if self._has_app_user_config:
+            self._read_file(fullpath)
+
+            if self.error:
+                self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
+                self._log.warning("Error: %s is corrupted, recreating file.",
+                                  fullpath)
+                self._create_app_config()
+                self._read_file(fullpath)
         else:
             self._create_app_config()
-            ret = self.__loop_has_user_config()
 
         return ret
 
-    def __loop_has_user_config(self):
-        count = 0
-        ret = True
-
-        while self._has_user_config and count < 2:
-            count += 1
-            self._read_file(self.user_app_config_fullpath)
-
-            if self.__error:
-                self.__err_msg = self.ERR_MESSAGES[self.__error].format(
-                    self.user_app_config_fullpath)
-
-                if count < 2:
-                    self._log.warning(
-                        "Error: %s is corrupted, recreating file.",
-                        self.user_app_config_fullpath)
-                    self._create_app_config()
-                    count = 0
-                else:
-                    self._log.critical("The %s is corrupted beyond repair "
-                                       "contact the developer.",
-                                       self.user_app_config_fullpath)
-                    ret = False
-
-        return ret
-
-    @property
-    def get_err_msg(self):
-        return self.__err_msg
-
-    def _read_file(self, filepath):
+    def _read_file(self, filepath) -> None:
         """
-        Open and read the local panel file.
+        Open and read the local panel file. If successful store the toml
+        document object.
+
+        :param str filepath: The full path to the toml document file.
         """
         doc = self.parse_toml(filepath)
         assert doc, "Invalid document--possible coding error."
 
         if isinstance(doc, int):  # Has an error
-            self.__error = doc
+            self.error = doc  # If an error then doc is an error code.
         else:
             self.app_config = doc
-            self.__error = None
+            self.error = None
 
     def _create_app_config(self):
         doc = tk.document()

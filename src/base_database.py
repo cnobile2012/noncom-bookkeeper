@@ -17,7 +17,8 @@ from .config import Settings
 from .utilities import StoreObjects
 from .populate_collect_panel import PopulateCollect
 from .prep_and_cache import DataPreperation, Cache
-import tracemalloc; tracemalloc.start()
+import tracemalloc
+tracemalloc.start()
 
 
 class BaseDatabase(PopulateCollect, Settings):
@@ -161,6 +162,10 @@ class BaseDatabase(PopulateCollect, Settings):
         self._mf = StoreObjects().get_object('MainFrame')
         self._dp = DataPreperation(self)
         self._cache = Cache(self)
+
+    @property
+    def cache(self):
+        return self._cache
 
     #
     # Schema methods
@@ -516,8 +521,8 @@ class BaseDatabase(PopulateCollect, Settings):
         :rtype: list
         """
         months = await self.select_from_monthly_table(year, month)
-        
-        return 
+
+        return
 
     async def _insert_update_monthly_table(self, year: int, month: int,
                                            data: dict) -> int:

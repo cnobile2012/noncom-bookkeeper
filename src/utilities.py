@@ -643,7 +643,7 @@ class AsyncRunner:
                 try:
                     result = f.result()
                 except Exception as e:
-                    print("ASYNC ERROR:", e)   # <-- you'll see the real problem
+                    print("ASYNC ERROR:", e)  # <-- you'll see the real problem
                     result = []               # safe fallback
 
                 wx.CallAfter(callback, result)
@@ -651,4 +651,3 @@ class AsyncRunner:
             future.add_done_callback(done)
 
         return future
-

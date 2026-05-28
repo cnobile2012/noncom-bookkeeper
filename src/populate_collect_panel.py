@@ -117,21 +117,20 @@ class PopulateCollect:
             elif name0 in ('ColorCheckBox',):
                 data[field_name] = widget0.GetValue()
 
-                if name1 == 'StaticText':
-                    print('POOP', field_name, widget1.GetValue())
+                #if field_name == 'StaticText':
+                #    print('POOP', field_name, w1.GetValue())
             elif name0 == 'StaticText':
-                name1 = w1[0]
                 widget1 = w1[2]
                 value = widget1.GetValue()
 
-                if name1 == 'TextCtrl':
+                if field_name == 'TextCtrl':
                     data[field_name] = self._value_to_db(
                         value, financial=widget1.financial)
-                elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl',
-                               'ColorCheckBox', 'CheckBox'):
+                elif field_name in ('BadiDatePickerCtrl', 'DatePickerCtrl',
+                                    'ColorCheckBox', 'CheckBox'):
                     data[field_name] = value
                 else:
-                    msg = f"Invalid widget type '{name1}'."
+                    msg = f"Invalid widget type '{field_name}'."
                     self._log.error(msg)
                     self._mf.statusbar_error = msg
             else:

@@ -85,15 +85,14 @@ class DataPreperation:
         self._log.warning(error)
 
     async def fiscal(self, data, f_year, f_month):
-            items = [(f_year, f_month, 1, data['current_fiscal_year'],
-                      data['work_on_this_fiscal_year'],
-                      data['audit_complete'])]
-            rowcount = await self._db.update_fiscal_year_table(items)
-            self._log.debug("Inserted %s rows of fiscal year data.", rowcount)
-            return data
+        items = [(f_year, f_month, 1, data['current_fiscal_year'],
+                  data['work_on_this_fiscal_year'],
+                  data['audit_complete'])]
+        rowcount = await self._db.update_fiscal_year_table(items)
+        self._log.debug("Inserted %s rows of fiscal year data.", rowcount)
+        return data
 
     #async def fiscal_settings(self, ):
-
 
     async def first_run_initialization(self, year: int, month: int, day: int):
         """
@@ -218,14 +217,6 @@ class DataPreperation:
         return iana, lat, lon, error
 
     @property
-    def earliest_fiscal_year(self) -> tuple:
-        """
-        Get the earliest year in the `fiscal_year` table.
-        """
-        years = [items[1] for items in self.fiscal_years]
-        return min(years) if years else ()
-
-    @property
     def organization_data(self) -> dict:
         """
         This property gets the organization data that are used throughout
@@ -303,10 +294,6 @@ class Cache:
         self._db = db
         self._store: dict[str] = {}
 
-    # ------------------------------------------------------------------
-    # Startup: load all data
-    # ------------------------------------------------------------------
-
     async def load(self, year: int, data: dict) -> None:
         """
         Call once at app startup to populate the cache from the DB.
@@ -324,11 +311,44 @@ class Cache:
                                'total_membership': 0, 'iana_name': ''}
         """
         items = await self._db.select_from_config_data_table(data, year)
-        self._store['organization'] = {year: items}
+        values = {year: items} if items else {}
+        self._store['organization'] = values
         items = await self._db.select_from_fiscal_year_table(year=year)
-        self._store['fiscal'] = {year: items}
+        values = {year: items} if items else {}
+        self._store['fiscal'] = values
         items = await self._db._select_monthly_table(year)
-        self._store['monthly'] = {year: items}
+        values = {year: items} if items else {}
+        self._store['monthly'] = values
+
+    @property
+    def has_organization_cache_data(self) -> bool:
+        """
+        Check that the cache has Organization data.
+
+        :returns: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
+        """
+        return self._store.get('organization') is not None
+
+    @property
+    def has_fiscal_cache_data(self) -> bool:
+        """
+        Check that the cache has fiscal year data.
+
+        :returns: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
+        """
+        return self._store.get('fiacal') is not None
+
+    @property
+    def has_monthly_cache_data(self) -> bool:
+        """
+        Check that the cache has monthly data.
+
+        :returns: True if data has been saved in the DB and False if not saved.
+        :rtype: bool
+        """
+        return self._store.get('monthly') is not None
 
     def get(self, entity_key: str, record_key: str) -> list | tuple:
         """
