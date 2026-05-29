@@ -8,6 +8,7 @@ import re
 import random
 import string
 import unittest
+import aiosqlite
 
 from unittest.mock import patch
 
@@ -73,6 +74,7 @@ class BaseTests:
 
         return line if line else ""
 
+
 class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     """
     The base class for all test classes that will be running database access
@@ -86,13 +88,16 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
-
-    async def setup_db(self):
         self._db = Database()
         self._db.testing = True
         self._db.create_dirs()
-        await self._db.create_db()
 
+    @property
+    def db(self):
+        return self._db
+
+    async def setup_db(self):
+        await self._db.create_db()
 
     # @classmethod
     # def setUpClass(cls):
@@ -156,7 +161,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         query1 = ("SELECT name FROM sqlite_master "
                   "WHERE name = 'sqlite_sequence';")
 
-        async with aiosqlite.connect(self.bd.db_fullpath) as db:
+        async with aiosqlite.connect(self._db.user_data_fullpath) as db:
             async with db.execute(query0) as cursor:
                 for table in [row[0] for row in await cursor.fetchall()]:
                     await cursor.execute(f"DELETE FROM '{table}';")

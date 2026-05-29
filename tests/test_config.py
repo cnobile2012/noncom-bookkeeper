@@ -16,6 +16,8 @@ import tomlkit as tk
 from . import LOGGER_NAME, LOGFILE_NAME, log, check_flag
 from .base_dir import BASE_DIR
 from .base_database_test import BaseTests
+from .conftest import (_TMP_USER_CONFIG_FILE, _TMP_USER_APP_CONFIG_FILE,
+                       _TMP_LOCAL_CONFIG_FILE)
 
 PATH = os.path.join(BASE_DIR, 'logs')
 
@@ -149,8 +151,6 @@ class TestSettings(unittest.TestCase):
         check_flag(self.__class__.__name__)
         patchers(self)
         self._set = Settings()
-        # Reset the Borg class.
-        #self._set.clear_state()
 
     def tearDown(self):
         self._set.debug = False
@@ -340,7 +340,6 @@ class TestSettings(unittest.TestCase):
         data = (
             (None, 'user_cache_dir'),
             ('debug', '_debug_data_dir'),
-            ('testing', '_testing_data_dir'),
             )
         msg = "Expected {}, found {}"
 
@@ -368,8 +367,6 @@ class TestSettings(unittest.TestCase):
 
 
 class TestBaseSystemData(BaseTests, unittest.TestCase):
-    _TMP_USER_CONFIG_FILE = '/tmp/user_config.toml'
-    _TMP_USER_APP_CONFIG_FILE = '/tmp/user_app_config.toml'
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -382,12 +379,12 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
 
     def tearDown(self):
         try:
-            os.remove(self._TMP_USER_CONFIG_FILE)
+            os.remove(_TMP_USER_CONFIG_FILE)
         except FileNotFoundError:
             pass
 
         try:
-            os.remove(self._TMP_USER_APP_CONFIG_FILE)
+            os.remove(_TMP_USER_APP_CONFIG_FILE)
         except FileNotFoundError:
             pass
 
@@ -411,8 +408,7 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
         # Create or copy files to temporary locations.
         tac = TomlAppConfig()
         tac._create_app_config()
-        shutil.copy2(self._bsd.local_config_fullpath,
-                     self._TMP_USER_CONFIG_FILE)
+        shutil.copy2(self._bsd.local_config_fullpath, _TMP_USER_CONFIG_FILE)
         TOMLDocument = tk.toml_document.TOMLDocument
         data = ('user_config_fullpath', 'user_app_config_fullpath')
         msg = "Expected {}, filepath {}, found {}."
@@ -464,11 +460,11 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
                 pass  # The file was never created.
             elif err_code == self._bsd.ERR_TOML_ERROR:
                 # Create an unparsable file.
-                with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
+                with open(_TMP_USER_CONFIG_FILE, 'w') as f:
                     f.write("[meta]\nsomevar = {junk='some_value'")
             elif err_code == self._bsd.ERR_ZERO_LENGTH_FILE:
                 # Create a zero length file.
-                with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
+                with open(_TMP_USER_CONFIG_FILE, 'w') as f:
                     f.write("")
             else:
                 self.assertTrue(false, f"Invalid error code {err_code}.")
@@ -724,8 +720,6 @@ class TestTomlMetaData(BaseTomlTest):
 
 
 class TestTomlPanelConfig(BaseTomlTest):
-    _TMP_USER_CONFIG_FILE = '/tmp/user_config.toml'
-    _TMP_LOCAL_CONFIG_FILE = '/tmp/default_bahai.toml'
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -738,12 +732,12 @@ class TestTomlPanelConfig(BaseTomlTest):
 
     def tearDown(self):
         try:
-            os.remove(self._TMP_USER_CONFIG_FILE)
+            os.remove(_TMP_USER_CONFIG_FILE)
         except FileNotFoundError:
             pass
 
         try:
-            os.remove(self._TMP_LOCAL_CONFIG_FILE)
+            os.remove(_TMP_LOCAL_CONFIG_FILE)
         except FileNotFoundError:
             pass
 
@@ -759,7 +753,7 @@ class TestTomlPanelConfig(BaseTomlTest):
         err_msg0 = "The path '{}' does not exist, file will be copied."
         data = (False, True)
         msg = "Expected {}, found {}."
-        good_file = self._TMP_USER_CONFIG_FILE
+        good_file = _TMP_USER_CONFIG_FILE
 
         for expected in data:
             if expected:
@@ -817,8 +811,7 @@ class TestTomlPanelConfig(BaseTomlTest):
         Test that the is_valid property returns a True for normal operation.
         """
         # Create or copy files to temporary locations.
-        shutil.copy2(self._tpc.local_config_fullpath,
-                     self._TMP_USER_CONFIG_FILE)
+        shutil.copy2(self._tpc.local_config_fullpath, _TMP_USER_CONFIG_FILE)
         # Run test
         ret = self._tpc.is_valid
         msg = f"Expected True, found {ret}."
@@ -854,7 +847,7 @@ class TestTomlPanelConfig(BaseTomlTest):
             2. The response to error code 3.
         """
         # Create an unparsable file.
-        with open(self._TMP_USER_CONFIG_FILE, 'w') as f:
+        with open(_TMP_USER_CONFIG_FILE, 'w') as f:
             f.write('')
 
         ret = self._tpc.is_valid
@@ -885,7 +878,7 @@ class TestTomlPanelConfig(BaseTomlTest):
         Toml file in the `local_config_fullpath` property.
         """
         # Create an unparsable file.
-        with open(self._TMP_LOCAL_CONFIG_FILE, 'w') as f:
+        with open(_TMP_LOCAL_CONFIG_FILE, 'w') as f:
             f.write("[meta]\nsomevar = {junk='some_value'")
 
         ret = self._tpc.is_valid
@@ -897,7 +890,7 @@ class TestTomlPanelConfig(BaseTomlTest):
         """
         Test that the _copy_file method correctly copies a file.
         """
-        file0 = self._TMP_USER_CONFIG_FILE
+        file0 = _TMP_USER_CONFIG_FILE
         file1 = file0 + '.bak'
         err_msg0 = f"Could not copy file {file0} to {file1},"
 
@@ -1025,37 +1018,6 @@ class TestTomlAppConfig(BaseTomlTest):
                 result = self._tac.is_valid
 
             self.assertEqual(expected, result, msg.format(expected, result))
-
-    @unittest.skip("Temporarily skipped")
-    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
-           _TMP_USER_APP_FILE)
-    def test_is_valid_property_user_not_found(self):
-        """
-        Test that the is_valid property returns a boolean for a bad
-        path in the `user_app_config_fullpath` property.
-        """
-        ret = self._tac.is_valid
-        msg = f"Expected True, found {ret}."
-        self.assertTrue(ret, msg)
-
-    @unittest.skip("Temporarily skipped")
-    @patch('src.config.TomlAppConfig.user_app_config_fullpath',
-           _TMP_USER_APP_FILE)
-    def test_is_valid_property_user_unparsable(self):
-        """
-        Test that the is_valid property returns a boolean for a bad
-        path in the `user_app_config_fullpath` property.
-        """
-        # Create a zero length file.
-        with open(self._TMP_USER_APP_FILE, 'w') as f:
-            f.write('')
-
-        ret = self._tac.is_valid
-        msg = f"Expected True, found {ret}."
-        self.assertTrue(ret, msg)
-
-
-
 
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.TomlAppConfig.user_app_config_fullpath',
@@ -1235,7 +1197,7 @@ class TestTomlCreatePanel(BaseTomlTest):
         return tk.loads(data)
 
     #@unittest.skip("Temporarily skipped")
-    def test_set_and_get_panel(self):
+    def test_set_and_get_current_panel(self):
         """
         Test both the setter and getter for the current_panel properties.
         """

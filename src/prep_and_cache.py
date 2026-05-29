@@ -276,7 +276,7 @@ class DataPreperation:
 class Cache:
     """
     Write-through cache, loaded once at startup, persists for the app lifetime.
-    Supports lookup by ID and write-through DB updates.
+    Supports write-through DB updates.
 
     Storage keys
     ------------
@@ -285,12 +285,13 @@ class Cache:
     3. monthly
     """
 
-    def __init__(self, db) -> None:
+    def __init__(self, db, *args, **kwargs) -> None:
         """
         Constructor
 
         :param object db: The database self object.
         """
+        super().__init__(*args, **kwargs)
         self._db = db
         self._store: dict[str] = {}
 
@@ -328,7 +329,7 @@ class Cache:
         :returns: True if data has been saved in the DB and False if not saved.
         :rtype: bool
         """
-        return self._store.get('organization') is not None
+        return len(self._store.get('organization', {})) > 0
 
     @property
     def has_fiscal_cache_data(self) -> bool:
@@ -338,7 +339,7 @@ class Cache:
         :returns: True if data has been saved in the DB and False if not saved.
         :rtype: bool
         """
-        return self._store.get('fiacal') is not None
+        return len(self._store.get('fiscal', {})) > 0
 
     @property
     def has_monthly_cache_data(self) -> bool:
@@ -348,7 +349,7 @@ class Cache:
         :returns: True if data has been saved in the DB and False if not saved.
         :rtype: bool
         """
-        return self._store.get('monthly') is not None
+        return len(self._store.get('monthly', {})) > 0
 
     def get(self, entity_key: str, record_key: str) -> list | tuple:
         """
@@ -403,7 +404,7 @@ class Cache:
                                entity.
         :param dict data: The data to insert.
         :returns: The actual data inserted.
-        :rtype: list
+        :rtype: dict
         """
         # DB returns full record
         match entity_key:

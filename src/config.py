@@ -42,9 +42,8 @@ class Settings(AppDirs, Borg):
     _debug_data_dir = ''
     _debug_log_dir = ''
     _testing_data_dir = ''
-    _testing_log_dir = ''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(appname=self.app_name,
                          appauthor=self.primary_developer, *args, **kwargs)
         # The three lines below read an environment variable which is used
@@ -63,7 +62,11 @@ class Settings(AppDirs, Borg):
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
 
-    def create_dirs(self):
+    def create_dirs(self) -> None:
+        """
+        Create the directory tree based on the debug, testing, or absence
+        of these flags.
+        """
         if self.debug:
             self._debug_data_dir = os.path.join(self._BASE_DIR, 'data')
             self._debug_log_dir = os.path.join(self._debug_data_dir, 'log')
@@ -80,20 +83,13 @@ class Settings(AppDirs, Borg):
             paths = (self._debug_data_dir, self._debug_log_dir,
                      self.cached_factory_dir)
         elif self.testing:
-            self._testing_data_dir = os.path.join(self._BASE_DIR, 'testing')
-            self._testing_log_dir = os.path.join(self._testing_data_dir, 'log')
+            self._testing_data_dir = os.path.join(
+                self._BASE_DIR, 'tests', 'data')
 
             if not os.path.exists(self._testing_data_dir):  # pragma: no cover
                 os.makedirs(self._testing_data_dir, mode=0o775, exist_ok=True)
 
-            if not os.path.exists(self._testing_log_dir):  # pragma: no cover
-                os.makedirs(self._testing_log_dir, mode=0o775, exist_ok=True)
-
-            if not os.path.exists(self.cached_factory_dir):  # pragma: no cover
-                os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
-
-            paths = (self._testing_data_dir, self._testing_log_dir,
-                     self.cached_factory_dir)
+            paths = (self._testing_data_dir,)
         else:
             if not os.path.exists(self.user_data_dir):  # pragma: no cover
                 os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)
@@ -179,7 +175,7 @@ class Settings(AppDirs, Borg):
         else:
             path = os.path.join(self.user_data_dir, self.data_file_name)
 
-        assert 'data' in path or '.local' in path or 'testing' in path, (
+        assert 'data' in path or '.local' in path, (
             f"user_data_fullpath: {path}")
         return path
 
@@ -192,7 +188,7 @@ class Settings(AppDirs, Borg):
         else:
             path = os.path.join(self.user_config_dir, self.__user_toml)
 
-        assert 'data' in path or '.config' in path or 'testing' in path, (
+        assert 'data' in path or '.config' in path, (
             f"user_config_fullpath: {path}")
         return path
 
@@ -205,7 +201,7 @@ class Settings(AppDirs, Borg):
         else:
             path = os.path.join(self.user_config_dir, self.__app_toml)
 
-        assert 'data' in path or '.config' in path or 'testing' in path, (
+        assert 'data' in path or '.config' in path, (
             f"user_app_config_fullpath: {path}")
         return path
 
@@ -218,7 +214,7 @@ class Settings(AppDirs, Borg):
         else:
             path = os.path.join(self.user_log_dir, self.logfile_name)
 
-        assert 'data' in path or '.cache' in path or 'testing' in path, (
+        assert 'data' in path or '.cache' in path, (
             f"user_log_fullpath: {path}")
         return path
 
@@ -232,7 +228,7 @@ class Settings(AppDirs, Borg):
         else:
             path = os.path.join(self.user_cache_dir, self.panel_factory_name)
 
-        assert 'data' in path or '.cache' in path or 'testing' in path, (
+        assert 'data' in path or '.cache' in path, (
             f"cached_factory_dir: {path}")
         return path
 
@@ -260,27 +256,27 @@ class BaseSystemData(Settings):
                     ERR_ZERO_LENGTH_FILE: "Cannot parse zero length file '{}'."
                     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__err_msg = None
         self.__error = None
 
     @property
-    def panel_config(self):
+    def panel_config(self) -> tk.TOMLDocument:
         """
         Get the entire TOML doc for the panels.
 
         :returns: The TOML document.
-        :rtype: tk.toml_document.TOMLDocument
+        :rtype: tk.TOMLDocument
         """
         return self.SYS_FILES.get('panel_config')
 
     @panel_config.setter
-    def panel_config(self, value):
+    def panel_config(self, value) -> None:
         """
         Set the entire TOML doc for the panels.
 
-        :param tk.toml_document.TOMLDocument value: The TOML doc.
+        :param tk.TOMLDocument value: The TOML doc.
         """
         self.SYS_FILES['panel_config'] = value
 
@@ -292,13 +288,13 @@ class BaseSystemData(Settings):
     def app_config(self, value):
         self.SYS_FILES['app_config'] = value
 
-    def parse_toml(self, filepath: str):
+    def parse_toml(self, filepath: str) -> tk.TOMLDocument | int:
         """
         Open and read the specified TOML file.
 
         :param str filepath: The file to open and read.
         :return: TOML doc if no error or a tuple (errmsg, errcode) if an error.
-        :rtype: TOLM doc or int
+        :rtype: tk.TOMLDocument or int
         """
         error = doc = None
 
@@ -348,11 +344,11 @@ class TomlMetaData(BaseSystemData):
     Get the META data from the TOML panel config file.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
     @property
-    def title(self):
+    def title(self) -> str:
         return self.panel_config.get('meta', {}).get('title')
 
     @property
@@ -364,27 +360,27 @@ class TomlMetaData(BaseSystemData):
         return self.panel_config.get('meta', {}).get('locale_prefix')
 
     @property
-    def font_16_bold(self):
+    def font_16_bold(self) -> list:
         return self.panel_config.get('meta', {}).get('font_16_bold')
 
     @property
-    def font_14_bold(self):
+    def font_14_bold(self) -> list:
         return self.panel_config.get('meta', {}).get('font_14_bold')
 
     @property
-    def font_12_normal(self):
+    def font_12_normal(self) -> list:
         return self.panel_config.get('meta', {}).get('font_12_normal')
 
     @property
-    def font_12_bold(self):
+    def font_12_bold(self) -> list:
         return self.panel_config.get('meta', {}).get('font_12_bold')
 
     @property
-    def font_10_normal(self):
+    def font_10_normal(self) -> list:
         return self.panel_config.get('meta', {}).get('font_10_normal')
 
     @property
-    def font_10_bold(self):
+    def font_10_bold(self) -> list:
         return self.panel_config.get('meta', {}).get('font_10_bold')
 
     def get_font(self, font_type):
@@ -575,7 +571,7 @@ class TomlAppConfig(BaseSystemData):
             self.app_config = doc
             self.error = None
 
-    def _create_app_config(self):
+    def _create_app_config(self) -> None:
         doc = tk.document()
         # Create header
         doc.add(tk.comment(""))
@@ -591,7 +587,7 @@ class TomlAppConfig(BaseSystemData):
         doc.add('app_size', app_size)
         self._write_file(tk.dumps(doc))
 
-    def get_value(self, table, key):
+    def get_value(self, table: str, key: str) -> None:
         doc = self.app_config
         assert doc, f"The {doc=} must be a valid toml document."
         item_table = doc.get(table)
@@ -609,7 +605,7 @@ class TomlAppConfig(BaseSystemData):
         self._log.error(msg)
         assert have_keys, msg
 
-    def update_app_config(self, table, key, value):
+    def update_app_config(self, table: str, key: str, value) -> None:
         doc = self.app_config
         item_table = doc.get(table)
 
@@ -627,7 +623,7 @@ class TomlAppConfig(BaseSystemData):
 
         self._write_file(tk.dumps(doc))
 
-    def _write_file(self, data):
+    def _write_file(self, data) -> None:
         try:
             with open(self.user_app_config_fullpath, 'w') as f:
                 f.write(data)
@@ -657,12 +653,11 @@ class TomlCreatePanel(BaseSystemData):
         return self.__panel
 
     @current_panel.setter
-    def current_panel(self, current):
+    def current_panel(self, current) -> tk.TOMLDocument:
         """
         Make a copy of the Toml doc of the current panel.
 
-        :param  current: The current panel's Toml doc.
-        :type current: tomlkit.toml_document.TOMLDocument
+        :param tk.TOMLDocument current: The current panel's Toml doc.
         """
         self.__panel = current.copy()
 
@@ -706,10 +701,10 @@ class TomlCreatePanel(BaseSystemData):
 
         return items
 
-    def add_name(self, name, key_num=None):
+    def add_name(self, name: str, key_num: int=None) -> None:
         """
         Add the named StaticText and it companion the TextCtrl to the end
-        Toml file. If `key_num` is provided the `key_num is the y coordinate
+        Toml file. If `key_num` is provided the `key_num is the x coordinate
         and 0 will be the y continent.
 
         :param str name: The value name of the StaticText widget.
