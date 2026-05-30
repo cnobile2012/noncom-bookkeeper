@@ -262,12 +262,12 @@ class BaseSystemData(Settings):
         self.__error = None
 
     @property
-    def panel_config(self) -> tk.TOMLDocument:
+    def panel_config(self) -> tk.TOMLDocument | None:
         """
         Get the entire TOML doc for the panels.
 
         :returns: The TOML document.
-        :rtype: tk.TOMLDocument
+        :rtype: tk.TOMLDocument or None
         """
         return self.SYS_FILES.get('panel_config')
 
@@ -522,7 +522,7 @@ class TomlAppConfig(BaseSystemData):
         fullpath = self.user_app_config_fullpath
 
         if not (has := os.path.exists(fullpath)):
-            msg = "The path '%s' does not exist, file will be copied."
+            msg = "The path '%s' does not exist, file will be created."
             self._log.info(msg, fullpath)
             self.err_msg = msg
 
@@ -552,6 +552,7 @@ class TomlAppConfig(BaseSystemData):
                 self._read_file(fullpath)
         else:
             self._create_app_config()
+            self._read_file(fullpath)
 
         return ret
 

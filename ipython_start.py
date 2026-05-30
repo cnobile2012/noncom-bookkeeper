@@ -1,8 +1,14 @@
 # %load ipython_start.py
 # %load_ext autoreload
 from src.bahai_database import Database
+from src.config import (TomlMetaData, TomlPanelConfig, TomlAppConfig,
+                        TomlCreatePanel)
 
 db = Database()
+tmd = TomlMetaData()
+tpc = TomlPanelConfig()
+tac = TomlAppConfig()
+tcp = TomlCreatePanel()
 
 async def start():
     db.debug = True
@@ -10,7 +16,7 @@ async def start():
     await db.create_db()
 
 await start()
-# print(f"DB Path: {db.user_data_fullpath}")
+
 
 org_data = {'longitude': 0.0, 'location_city_name': '', 'latitude': 0.0,
             'locality_prefix': 0, 'start_of_fiscal_year': '',

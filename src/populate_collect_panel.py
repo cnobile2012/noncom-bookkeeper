@@ -71,6 +71,7 @@ class PopulateCollect:
         """
         Check that the given panel name has entries.
 
+        :param str name: The panel name.
         :returns: True if data has been saved in the DB and False if not saved.
         :rtype: bool
         """
@@ -94,8 +95,8 @@ class PopulateCollect:
         DB appropriate values.
 
         :param wx.Panel panel: The panel to collect data from.
-        :param convert_tz: If `True` convert to the local timezone and if
-                              `False` (default) do not convert.
+        :param bool convert_tz: If `True` convert to the local timezone and
+                                if `False` (default) do not convert.
         :returns: A dictonary of db field names and values as in
                   {<field name>: <value>}.
         :rtype: dict
@@ -116,21 +117,19 @@ class PopulateCollect:
                 data[field_name] = widget0.GetSelection()
             elif name0 in ('ColorCheckBox',):
                 data[field_name] = widget0.GetValue()
-
-                #if field_name == 'StaticText':
-                #    print('POOP', field_name, w1.GetValue())
             elif name0 == 'StaticText':
+                name1 = w1[0]
                 widget1 = w1[2]
                 value = widget1.GetValue()
 
-                if field_name == 'TextCtrl':
+                if name1 == 'TextCtrl':
                     data[field_name] = self._value_to_db(
                         value, financial=widget1.financial)
-                elif field_name in ('BadiDatePickerCtrl', 'DatePickerCtrl',
-                                    'ColorCheckBox', 'CheckBox'):
+                elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl',
+                               'ColorCheckBox', 'CheckBox'):
                     data[field_name] = value
                 else:
-                    msg = f"Invalid widget type '{field_name}'."
+                    msg = f"Invalid widget type '{name1}'."
                     self._log.error(msg)
                     self._mf.statusbar_error = msg
             else:
