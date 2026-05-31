@@ -113,29 +113,6 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     # def full_log_path(self):
     #     return AppConfig().full_log_path
 
-    # async def create_database(self, tav: dict) -> None:
-    #     """
-    #     Create the tables and views needed for a specify test class.
-
-    #     :param dict tav: The tables and views to be created. Where
-    #                      tables_and_views is
-    #                      {'tables': (table0, table1, ...),
-    #                       'views': (view0, view1, ...)}
-    #     """
-    #     async with aiosqlite.connect(self.bd.db_fullpath) as db:
-    #         for tv, tables in tav.items():
-    #             type_tv = 'TABLE' if tv == 'tables' else 'VIEW'
-
-    #             for table in tables:
-    #                 params = self.bd._SCHEMA[table]
-    #                 fields = ', '.join([field for field in params])
-    #                 query = (f"CREATE {type_tv} IF NOT EXISTS {table} "
-    #                          f"({fields})")
-    #                 extra_params = self.bd._SCHEMA_EXTRA.get(table)
-    #                 query += f' {extra_params};' if extra_params else ';'
-    #                 await db.execute(query)
-    #                 await db.commit()
-
     # async def does_table_exist(self, table: str) -> bool:
     #     """
     #     Do an SQL query to see if a table exists.

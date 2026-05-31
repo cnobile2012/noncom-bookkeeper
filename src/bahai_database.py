@@ -190,20 +190,23 @@ class Database(BaseDatabase):
     # Field Names SELECT, INSERT and, UPDATE methods.
     #
 
-    async def select_from_field_type_table(self, data: dict) -> list:
+    async def select_from_field_type_table(self, data: list | None) -> list:
         """
         Select from the field_type table.
 
-        :param dict data: The data from the Organization Information panel in
-                          the form of: {<field name>: <value>,...}.
+        :param list data: The field names for any data in this table or `None`
+                          if all data is needed.
         :returns: The values read from the FieldType table in the form of
                   [(<pk>, <field>, <rids>, <ctime>, <mtime>), ...].
         :rtype: list of tuples
         """
-        assert data, f"There must be valid data, found '{data}'."
-        fields = '", "'.join(data)
-        query = (f'SELECT * FROM {self._T_FIELD_TYPE} WHERE field IN '
-                 f'("{fields}");')
+        if data is not None:
+            fields = '", "'.join(data)
+            where = f' WHERE field IN ("{fields}");'
+        else:
+            where = ";"
+
+        query = f'SELECT * FROM {self._T_FIELD_TYPE}' + where
         return await self._do_select_query(query)
 
     async def insert_into_field_type_table(self, fields: set) -> int:
@@ -225,7 +228,7 @@ class Database(BaseDatabase):
     # Config data SELECT, INSERT and, UPDATE methods.
     #
 
-    async def select_from_config_data_table(self, data: dict, year: int=None
+    async def select_from_config_data_table(self, data: list, year: int=None
                                             ) -> list:
         """
         Reads a row or rows from the `data` table.
@@ -259,7 +262,7 @@ class Database(BaseDatabase):
              '0182-02-12T05:27:17.251199+00:00')
            ]
         """
-        fields = '", "'.join(list(data.keys()))
+        fields = '", "'.join(data)
 
         if year:
             params = (year, year+1)

@@ -269,7 +269,8 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         for panel_name, panel in panels.items():
             data = self.collect_panel_values(panel)
-            values = await self.select_from_config_data_table(data, year)
+            keys = list(data.keys())
+            values = await self.select_from_config_data_table(keys, year)
 
             # Needed when the app has been run at least one time before.
             if panel_name == 'organization' and values:
@@ -435,11 +436,11 @@ class BaseDatabase(PopulateCollect, Settings):
         :param dict data: The data from the Organization Information panel in
                           the form of: {<field name>: <value>,...}.
         """
-        items = await self.select_from_field_type_table(data)
+        keys = list(data.keys())
+        items = await self.select_from_field_type_table(keys)
         old_fields = [item[1] for item in items]
-        new_fields = [fd for fd in data if (
-            len(fd) <= self._MAX_FIELD_LEN or
-            fd not in self._FIELDS_NOT_ADDED)]
+        new_fields = [fd for fd in data if (len(fd) <= self._MAX_FIELD_LEN or
+                                            fd not in self._FIELDS_NOT_ADDED)]
         fields = self._find_fields(new_fields, old_fields)
 
         if fields:
@@ -476,7 +477,8 @@ class BaseDatabase(PopulateCollect, Settings):
         :rtype: None or str
         """
         error = None
-        values = await self.select_from_config_data_table(data, year)
+        keys = list(data.keys())
+        values = await self.select_from_config_data_table(keys, year)
 
         if not values:  # Do insert
             await self.insert_into_config_data_table(year, month, data)

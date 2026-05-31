@@ -10,11 +10,15 @@ import sys
 import asyncio
 import pprint
 
+from io import StringIO
+
 PWD = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(PWD)
 sys.path.append(BASE_DIR)
 
+import badidatetime
 from src.bahai_database import Database
+from src.prep_and_cache import Cache
 
 
 class CreateTestData:
@@ -25,11 +29,33 @@ class CreateTestData:
         self.db = Database()
         self.db.debug = True
         self.db.create_dirs()
+        self._cache = Cache(self.db)
 
     def start(self):
         asyncio.run(self._create())
 
     async def _create(self):
+        await self._cache.load(183)
+        buff = StringIO()
+        filename = self.options.output
+        buff.write("# -*- coding: utf-8 -*-\n")
+        buff.write(f"#\n# {filename}\n#\n")
+        buff.write('__docformat__ = "restructuredtext en"\n\n')
+        buff.write("import badidatetime\n\n\n")
+        prefix = "ORG_FIELDS = "
+        org_data = self._format_data(self._cache.ORG_FIELDS, prefix, width=70)
+        buff.write(f"{org_data}\n")
+        prefix = "BDG_FIELDS = "
+        bdg_data = self._format_data(self._cache.get_bgt_fields, prefix,
+                                     width=67)
+        buff.write(f"{bdg_data}\n")
+        buff.write(f"{await self._format_table_data()}\n")
+
+        with open(filename, 'w') as f:
+            f.write(buff.getvalue())
+            buff.close()
+
+    async def _format_table_data(self):
         query = "SELECT * from {};"
         data = {}
 
@@ -37,12 +63,23 @@ class CreateTestData:
             values = await self.db._do_select_query(query.format(table))
             data.setdefault(table, values)
 
-        self._pretty_print(data)
+        prefix = "TEST_DATA = "
+        return self._format_data(data, prefix, width=70)
 
-    def _pretty_print(self, data):
-        pp = pprint.pformat(data, indent=1, compact=True, sort_dicts=True)
-        print(pp)
+    def _format_data(self, data, prefix: str, indent: int=1, width=80):
+        formatted = pprint.pformat(data, indent=indent, width=width,
+                                   compact=True, sort_dicts=True)
+        split_fmt = formatted.split('\n')
+        indent = ' ' * len(prefix)
+        new_format = ''
 
+        for i, line in enumerate(split_fmt):
+            if i == 0:
+                new_format += prefix + line + '\n'
+            else:
+                new_format += indent + line + '\n'
+
+        return new_format
 
 
 if __name__ == '__main__':
@@ -68,7 +105,7 @@ if __name__ == '__main__':
         try:
             ctd = CreateTestData(options)
             ctd.start()
-        except Exception as e:
+        except Exception:
             ret = 1
             tb = sys.exc_info()[2]
             traceback.print_tb(tb)

@@ -277,13 +277,10 @@ class Cache:
     """
     Write-through cache, loaded once at startup, persists for the app lifetime.
     Supports write-through DB updates.
-
-    Storage keys
-    ------------
-    1. organization
-    2. fiscal
-    3. monthly
     """
+    ORG_FIELDS = ['longitude', 'location_city_name', 'latitude',
+                  'location_prefix', 'start_of_fiscal_year', 'locale_name',
+                  'treasurer', 'total_membership', 'iana_name']
 
     def __init__(self, db, *args, **kwargs) -> None:
         """
@@ -294,90 +291,176 @@ class Cache:
         super().__init__(*args, **kwargs)
         self._db = db
         self._store: dict[str] = {}
+        self._year = None
 
-    async def load(self, year: int, data: dict) -> None:
+    @property
+    def year(self) -> int | None:
+        return self._year
+
+    @year.setter
+    def year(self, year: int) -> None:
+        self._year = year
+
+    async def load(self) -> None:
         """
         Call once at app startup to populate the cache from the DB.
 
-        :param int year: Year of insert or update.
-        :param dict data: Determine the data needed.
-
         .. note::
 
-           The values are not needed when doing a select.
-           organization data: {'longitude': 0.0, 'location_city_name': '',
-                               'latitude': 0.0, 'location_prefix': 0,
-                               'start_of_fiscal_year': <date>,
-                               'locale_name': '', 'treasurer': '',
-                               'total_membership': 0, 'iana_name': ''}
+           1. The `fields` data is stored by the `fields` key only.
+           2. The `config_data` is stored by the year and table name.
+           3. The `fiscal_year` data is stored by the year and table name.
+           4. The `month`  data is stored by the year and table name.
+           5. The `monthly`  data is stored by the year and table name.
         """
-        items = await self._db.select_from_config_data_table(data, year)
-        values = {year: items} if items else {}
-        self._store['organization'] = values
-        items = await self._db.select_from_fiscal_year_table(year=year)
-        values = {year: items} if items else {}
-        self._store['fiscal'] = values
-        items = await self._db._select_monthly_table(year)
-        values = {year: items} if items else {}
-        self._store['monthly'] = values
+        assert self.year is not None, (
+            "You must set the year before excuting this method.")
+        # fields
+        fields = [
+            i[1] for i in await self._db.select_from_field_type_table(None)]
+        self._store['fields'] = fields
+        # config_data
+        items = await self._db.select_from_config_data_table(fields, self.year)
+        values = {self.year: items} if items else {}
+        self._store[self._db._T_DATA] = values
+        # fiscal_year
+        items = await self._db.select_from_fiscal_year_table(year=self.year)
+        values = {self.year: items} if items else {}
+        self._store[self._db._T_FISCAL_YEAR] = values
+        # month
+        items = await self._db.select_from_month_table()
+        values = {self.year: items} if items else {}
+        self._store[self._db._T_MONTH] = values
+        # monthly
+        items = await self._db._select_monthly_table(self.year)
+        values = {self.year: items} if items else {}
+        self._store[self._db._T_MONTHLY] = values
+
+    @property
+    def has_fields_data(self) -> bool:
+        """
+        Check that the cache has fields data.
+
+        :returns: True if data has been saved in the cache and False if not
+                  saved.
+        :rtype: bool
+        """
+        return len(self.fields) > 0
 
     @property
     def has_organization_cache_data(self) -> bool:
         """
         Check that the cache has Organization data.
 
-        :returns: True if data has been saved in the DB and False if not saved.
+        :returns: True if data has been saved in the cache and False if not
+                  saved.
         :rtype: bool
         """
-        return len(self._store.get('organization', {})) > 0
+        return len(self.get(self._db._T_DATA, 'organization')) > 0
+
+    @property
+    def has_budget_cache_data(self) -> bool:
+        """
+        Check that the cache has Budget data.
+
+        :returns: True if data has been saved in the cache and False if not
+                  saved.
+        :rtype: bool
+        """
+        return len(self.get(self._db._T_DATA, 'budget')) > 0
 
     @property
     def has_fiscal_cache_data(self) -> bool:
         """
         Check that the cache has fiscal year data.
 
-        :returns: True if data has been saved in the DB and False if not saved.
+        :returns: True if data has been saved in the cache and False if not
+                  saved.
         :rtype: bool
         """
-        return len(self._store.get('fiscal', {})) > 0
+        return len(self._store.get(self._db._T_FISCAL_YEAR, {})) > 0
+
+    @property
+    def has_month_cache_data(self) -> bool:
+        """
+        Check that the cache has month data.
+
+        :returns: True if data has been saved in the cache and False if not
+                  saved.
+        :rtype: bool
+        """
+        return len(self._store.get(self._db._T_MONTH, {})) > 0
 
     @property
     def has_monthly_cache_data(self) -> bool:
         """
         Check that the cache has monthly data.
 
-        :returns: True if data has been saved in the DB and False if not saved.
+        :returns: True if data has been saved in the cache and False if not
+                  saved.
         :rtype: bool
         """
-        return len(self._store.get('monthly', {})) > 0
+        return len(self._store.get(self._db._T_MONTHLY, {})) > 0
 
-    def get(self, entity_key: str, record_key: str) -> list | tuple:
+    @property
+    def fields(self):
+         self._store.get('fields', [])
+
+    def get(self, table_name: str, r_type: str=None
+            ) -> list | tuple:
         """
-        Get records of the `entity_key` type. If a `record_key` is provided
-        return just that record based on the `entity_key` type.
+        Get records of the `table_name`. If a `r_type` is provided return
+        just that record based on the `table_name` type.
 
-        :param str entity_key: This key determines the type of data returned.
-        :param str record_key: This key determines a specific record in the
-                               entity.
-        :returns: Records based on the `entity_key`.
+        :param str table_name: This determines the type of data returned.
+        :param str r_type: This determines a specific record in the entity.
+        :returns: Records based on the `table_name`.
         :rtype: list
-        """
-        entity_data = self._store.get(entity_key, {})
-        return entity_data.get(record_key)
 
-    async def update(self, entity_key: str, record_key: str, changes: dict):
+        .. note::
+
+           1. The `fields` data is accessed by the `fields` key.
+           2. There are two types of `config_data` data.
+              a. The `organization` data is accessed by the year, table name,
+                 and type.
+              b. The `budget` data is accessed by the year, table name, and
+                 type.
+           3. The `fiscal_year` data is accessed by the year and table name.
+           4. The `month`  data is accessed by the year and table name.
+           5. The `monthly`  data is accessed by the year and table name.
+        """
+        entity_data = self._store.get(self.year, {})
+        data = {}
+
+        if entity_data:
+            if table_name == self._db._T_DATA:
+                fields = (self.get_bgt_fields if r_type == 'budget'
+                        else self.ORG_FIELDS)
+                data = [item for item in entity_data.get(r_type)
+                        if item[1] in fields]
+            else:
+                data = entity_data.get(r_type)
+
+        return data
+
+    @property
+    def get_bgt_fields(self):
+        fields = self._store.get('fields')
+        return list(set(fields) - set(self.ORG_FIELDS)) if fields else []
+
+    async def update(self, table_name: str, r_type: str, changes: dict):
         """
         Update a record in the cache and push the change to the DB.
 
-        :param str entity_key: This key determines the type of data returned.
-        :param str record_key: This key determines a specific record in the
-                               entity.
+        :param str table_name: This key determines the type of data returned.
+        :param str r_type: This key determines a specific record in the
+                           entity.
         :param dict data: The data to update.
         """
-        record = self.get(entity_key, record_key)
+        record = self.get(table_name, r_type)
 
         if record is None:
-            raise KeyError(f"No {entity_key} record with key {record_key}")
+            raise KeyError(f"No {table_name} record with key {r_type}")
 
         # Update cache first (instant, in-memory)
         year = changes.get('year')
@@ -386,7 +469,7 @@ class Cache:
         record = data
 
         # Then persist to DB
-        match entity_key:
+        match table_name:
             case 'organization':
                 await self._db.update_config_data_table(year, month, data)
             case 'fiscal':
@@ -394,20 +477,20 @@ class Cache:
             case 'monthly':
                 await self._db.update_monthly_table(year, data)
 
-    async def insert(self, entity_key: str, record_key: str, record: dict
+    async def insert(self, table_name: str, r_type: str, record: dict
                      ) -> dict:
         """
         Insert a new record into the DB and add it to the cache.
 
-        :param str entity_key: This key determines the type of data returned.
-        :param str record_key: This key determines a specific record in the
-                               entity.
+        :param str table_name: This key determines the type of data returned.
+        :param str r_type: This key determines a specific record in the
+                           entity.
         :param dict data: The data to insert.
         :returns: The actual data inserted.
         :rtype: dict
         """
         # DB returns full record
-        match entity_key:
+        match table_name:
             case 'organization':
                 year = record['year']
                 month = record['month']
@@ -421,5 +504,5 @@ class Cache:
                 data = record['data']
                 await self._db.insert_into_monthly_table(year, data)
 
-        self._store.setdefault(entity_key, {})[record_key] = data
+        self._store.setdefault(table_name, {})[r_type] = data
         return data
