@@ -219,25 +219,33 @@ class Database(BaseDatabase):
             fields = '", "'.join(data)
             where = f' WHERE field IN ("{fields}");'
         else:
-            where = ";"
+            where = ';'
 
         query = f'SELECT * FROM {self._T_FIELD_TYPE}' + where
         return await self._do_select_query(query)
 
-    async def insert_into_field_type_table(self, fields: set) -> int:
+    async def insert_into_field_type_table(self, data: set | list) -> int:
         """
         Insert fields into the field_type table.
 
-        :param set fields: The fields from any panel in the form of:
-                           {<field name>,...}.
+        :param set or list data: The fields from any panel or a list for
+                                 inserting all records.
         :returns: The row count caused by the insert.
         :rtype: int
         """
-        now = badidatetime.datetime.now(self.utc_tzinfo)
-        data = [(field, now, now) for field in fields]
-        query = (f"INSERT INTO {self._T_FIELD_TYPE} (field, ctime, mtime) "
-                 "VALUES (?, ?, ?);")
-        return await self._do_insert_query(query, data)
+        if isinstance(data[0], tuple) and len(data[0]) == 4:
+            items = data
+            fields = 'pk, field, ctime, mtime'
+            values = '?, ?, ?, ?'
+        else:
+            now = badidatetime.datetime.now(self.utc_tzinfo)
+            items = [(field, now, now) for field in data]
+            fields = 'field, ctime, mtime'
+            values = '?, ?, ?'
+
+        query = (f"INSERT INTO {self._T_FIELD_TYPE} ({fields}) "
+                 f"VALUES ({values});")
+        return await self._do_insert_query(query, items)
 
     #
     # Config data SELECT, INSERT and, UPDATE methods.
@@ -431,8 +439,9 @@ class Database(BaseDatabase):
                           [(pk, participation, outstanding, coh, membership,
                             treasurer, locality, ctime, mtime), ...].
         """
-        query = (f"INSERT INTO {self._T_MONTHLY} (pk, value, fy1fk, fy2fk, "
-                 "mfk, ffk, ctime, mtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
+        query = (f"INSERT INTO {self._T_MONTHLY} (pk, participation, "
+                 "outstanding, coh, membership, treasurer, locality, ctime, "
+                 "mtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
         return await self._do_insert_query(query, data)
 
     async def insert_into_monthly_table(self, year: int, data: dict) -> int:

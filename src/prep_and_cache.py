@@ -290,6 +290,7 @@ class Cache:
         """
         super().__init__(*args, **kwargs)
         self.db = db
+        #self._log = logging.getLogger(self._tac.logger_name)
         self._flush_cache()
         self._year = None
 
@@ -313,7 +314,7 @@ class Cache:
 
         .. note::
 
-           1. The `fields` data is stored by the `fields` key only.
+           1. The `field_type` data is stored by the table name only.
            2. The `config_data` is stored by the year and table name.
            3. The `fiscal_year` data is stored by the year and table name.
            4. The `month`  data is stored by the year and table name.
@@ -321,10 +322,10 @@ class Cache:
         """
         assert self.year is not None, (
             "You must set the year before excuting this method.")
-        # fields
-        fields = [
-            i[1] for i in await self.db.select_from_field_type_table(None)]
-        self._store['fields'] = fields
+        # field_type
+        items = await self.db.select_from_field_type_table(None)
+        self._store[self.db._T_FIELD_TYPE] = items
+        fields = [item[1] for item in items]
         # config_data
         items = await self.db.select_from_config_data_table(fields, self.year)
         values = {self.year: items} if items else {}
@@ -351,7 +352,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self.fields) > 0
+        return len(self._store.get(self.db._T_FIELD_TYPE)) > 0
 
     @property
     def has_organization_cache_data(self) -> bool:
@@ -410,7 +411,7 @@ class Cache:
 
     @property
     def fields(self):
-         self._store.get('fields', [])
+         self._store.get(self.db._T_FIELD_TYPE, [])
 
     def get(self, table_name: str, r_type: str=None
             ) -> list | tuple:
@@ -464,6 +465,8 @@ class Cache:
         :rtype: dict
         """
         match table_name:
+            case self.db._T_FIELD_TYPE:
+                rowcount = await self.db.insert_into_field_type_table(data)
             case self.db._T_DATA:
                 rowcount = await self.db.insert_all_into_config_data_table(
                     data)

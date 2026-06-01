@@ -38,7 +38,6 @@ class TestCache(BaseAsyncTests):
         await self.cache.load()
 
     async def asyncTearDown(self):
-        self._cache = None
         await self.truncate_all_tables()
 
     #@unittest.skip("Temporarily skipped")
@@ -48,15 +47,20 @@ class TestCache(BaseAsyncTests):
         and `monthly` data with an empty DB.
         """
         await self.truncate_all_tables()
-        year = 183
         expected = False
         msg = "Expected {}, found {}"
         await self.cache.load()
+        has_flds = self.cache.has_fields_data
         has_orgz = self.cache.has_organization_cache_data
+        has_bdgt = self.cache.has_budget_cache_data
         has_fscl = self.cache.has_fiscal_cache_data
+        has_mnth = self.cache.has_month_cache_data
         has_mnly = self.cache.has_monthly_cache_data
+        self.assertFalse(has_flds, msg.format(expected, has_flds))
         self.assertFalse(has_orgz, msg.format(expected, has_orgz))
+        self.assertFalse(has_bdgt, msg.format(expected, has_bdgt))
         self.assertFalse(has_fscl, msg.format(expected, has_fscl))
+        self.assertFalse(has_mnth, msg.format(expected, has_mnth))
         self.assertFalse(has_mnly, msg.format(expected, has_mnly))
 
     #@unittest.skip("Temporarily skipped")
@@ -65,4 +69,19 @@ class TestCache(BaseAsyncTests):
         Test that the load method loads all the `organization`, `fiscal`,
         and `monthly` data.
         """
-        pass
+        msg = "Expected {}, found {}"
+        await self.cache.load()
+        expected = True
+        has_flds = self.cache.has_fields_data
+        has_orgz = self.cache.has_organization_cache_data
+        has_bdgt = self.cache.has_budget_cache_data
+        has_fscl = self.cache.has_fiscal_cache_data
+        has_mnth = self.cache.has_month_cache_data
+        has_mnly = self.cache.has_monthly_cache_data
+        self.assertTrue(has_flds, msg.format(expected, has_flds))
+        self.assertTrue(has_orgz, msg.format(expected, has_orgz))
+        self.assertTrue(has_bdgt, msg.format(expected, has_bdgt))
+        self.assertTrue(has_fscl, msg.format(expected, has_fscl))
+        self.assertTrue(has_mnth, msg.format(expected, has_mnth))
+        self.assertTrue(has_mnly, msg.format(expected, has_mnly))
+

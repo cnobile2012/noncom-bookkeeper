@@ -105,25 +105,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         self.cache._flush_cache()
 
         for table, data in TEST_DATA.items():
-            await self.cache.insert_all(table, data)
-
-
-
-    # async def does_table_exist(self, table: str) -> bool:
-    #     """
-    #     Do an SQL query to see if a table exists.
-
-    #     :param str table: The name of the table.
-    #     :returns: Returns 'True' if a table exists and 'False' if it does
-    #                       not exist.
-    #     :rtype: bool
-    #     """
-    #     query = ("SELECT name FROM sqlite_master WHERE type = 'table' "
-    #              "AND name = ?;")
-
-    #     async with aiosqlite.connect(self.bd.db_fullpath) as db:
-    #         cursor = await db.execute(query, (table,))
-    #         return await cursor.fetchone() != ()
+            data = await self.cache.insert_all(table, data)
 
     async def truncate_all_tables(self):
         """
