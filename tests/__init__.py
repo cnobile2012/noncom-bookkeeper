@@ -16,7 +16,12 @@ LOGFILE_NAME = 'config.log'
 def setup_logging():
     from src import Logger
 
-    full_path = os.path.abspath(os.path.join(BASE_DIR, 'logs', LOGFILE_NAME))
+    log_path = os.path.abspath(os.path.join(BASE_DIR, 'logs'))
+
+    if not os.path.exists(log_path):
+        os.mkdir(log_path)
+
+    full_path = os.path.abspath(os.path.join(log_path, LOGFILE_NAME))
     logger = Logger()
     logger.config(LOGGER_NAME, full_path, logging.DEBUG, initial_msg=False)
     return logging.getLogger(LOGGER_NAME)
@@ -50,7 +55,9 @@ RUN_FLAG = {'TestBadiCalendarPopup': False,
             'TestGridBagSizer': False,
             'TestConfirmationDialog': False,
             'Test_ClickPosition': False,
-            'TestEventStaticText': False}
+            'TestEventStaticText': False,
+            'TestDataPreperation': False,
+            'TestCache': False}
 
 
 def check_flag(name):

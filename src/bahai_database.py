@@ -51,6 +51,10 @@ class Database(BaseDatabase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    #
+    # Fiscal year SELECT, INSERT and UPDATE methods.
+    #
+
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,
                                             current: int=None,
@@ -101,10 +105,6 @@ class Database(BaseDatabase):
         # based on the query.
         return data[0] if len(data) == 1 else data
 
-    #
-    # Fiscal year INSERT and UPDATE methods.
-    #
-
     async def insert_into_fiscal_year_table(self, data: list) -> int:
         """
         Insert a row of data into the `fiscal_year` table.
@@ -113,11 +113,19 @@ class Database(BaseDatabase):
         :returns: The row count caused by the insert.
         :rtype: int
         """
-        now = badidatetime.datetime.now(self.utc_tzinfo)
-        items = [t + (now, now) for t in data]  # Add the times to the end.
-        query = (f"INSERT INTO {self._T_FISCAL_YEAR} (year, month, day, "
-                 "current, work_on, audit, ctime, mtime) "
-                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
+        if isinstance(data[0], tuple) and len(data[0]) == 9:
+            items = data
+            fields = ("pk, year, month, day, current, work_on, audit, ctime, "
+                      "mtime")
+            values = "?, ?, ?, ?, ?, ?, ?, ?, ?"
+        else:
+            now = badidatetime.datetime.now(self.utc_tzinfo)
+            items = [t + (now, now) for t in data]  # Add the times to the end.
+            fields = "year, month, day, current, work_on, audit, ctime, mtime"
+            values = "?, ?, ?, ?, ?, ?, ?, ?"
+
+        query = (f"INSERT INTO {self._T_FISCAL_YEAR} ({fields}) "
+                 f"VALUES ({values});")
         return await self._do_insert_query(query, items)
 
     async def update_fiscal_year_table(self, data: list) -> int:
@@ -180,10 +188,17 @@ class Database(BaseDatabase):
         :returns: The row count caused by the insert.
         :rtype: int
         """
-        now = badidatetime.datetime.now(self.utc_tzinfo)
-        data = [(name, order, now) for order, name in months.items()]
-        query = (f"INSERT INTO {self._T_MONTH} (month, ord, ctime) "
-                 "VALUES (?, ?, ?);")
+        if isinstance(months[0], tuple) and len(months[0]) == 4:
+            data = months
+            fields = "pk, month, ord, ctime"
+            values = "?, ?, ?, ?"
+        else:
+            now = badidatetime.datetime.now(self.utc_tzinfo)
+            data = [(name, order, now) for order, name in months.items()]
+            fields = "month, ord, ctime"
+            values = "?, ?, ?"
+
+        query = f"INSERT INTO {self._T_MONTH} ({fields}) VALUES ({values});"
         return await self._do_insert_query(query, data)
 
     #
@@ -287,6 +302,22 @@ class Database(BaseDatabase):
                 )
 
         return await self._do_select_query(query, params)
+
+    async def insert_all_into_config_data_table(self, data: list) -> int:
+        """
+        Insert all values into the Data table.
+
+        :param list data: Multi-row data.
+        :returns: The row count caused by the insert.
+        :rtype: int
+
+        .. note::
+
+           Incomming data: (pk, value, fy1fk, fy2fk, mfk, ffk, ctime, mtime)
+        """
+        query = (f"INSERT INTO {self._T_DATA} (pk, value, fy1fk, fy2fk, mfk, "
+                 "ffk, ctime, mtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
+        return await self._do_insert_query(query, data)
 
     async def insert_into_config_data_table(self, year: int, month: int,
                                             data: dict) -> int:
@@ -392,13 +423,25 @@ class Database(BaseDatabase):
         values = await self._do_select_query(query + where, data)
         return values[0] if len(values) == 1 else values
 
+    async def insert_all_into_monthly_table(self, data: list) -> int:
+        """
+        Insert all data into the monthly table.
+
+        :param list data: The data from the any panel  in the form of:
+                          [(pk, participation, outstanding, coh, membership,
+                            treasurer, locality, ctime, mtime), ...].
+        """
+        query = (f"INSERT INTO {self._T_MONTHLY} (pk, value, fy1fk, fy2fk, "
+                 "mfk, ffk, ctime, mtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
+        return await self._do_insert_query(query, data)
+
     async def insert_into_monthly_table(self, year: int, data: dict) -> int:
         """
         Insert values in the monthly table.
 
         :param int year: A Baha'i year of the transaction.
-        :param list data: The data from the any panel  in the form of:
-                          [(pk, <value>), ...}.
+        :param dict data: The data from any panel in the form of:
+                          {'participation': <value>, ...}.
         :returns: The row count caused by the update.
         :rtype: int
         """

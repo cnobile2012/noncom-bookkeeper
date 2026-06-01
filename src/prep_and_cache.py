@@ -289,9 +289,15 @@ class Cache:
         :param object db: The database self object.
         """
         super().__init__(*args, **kwargs)
-        self._db = db
-        self._store: dict[str] = {}
+        self.db = db
+        self._flush_cache()
         self._year = None
+
+    def _flush_cache(self) -> None:
+        """
+        Remove all data from the cache.
+        """
+        self._store: dict[str] = {}
 
     @property
     def year(self) -> int | None:
@@ -317,24 +323,24 @@ class Cache:
             "You must set the year before excuting this method.")
         # fields
         fields = [
-            i[1] for i in await self._db.select_from_field_type_table(None)]
+            i[1] for i in await self.db.select_from_field_type_table(None)]
         self._store['fields'] = fields
         # config_data
-        items = await self._db.select_from_config_data_table(fields, self.year)
+        items = await self.db.select_from_config_data_table(fields, self.year)
         values = {self.year: items} if items else {}
-        self._store[self._db._T_DATA] = values
+        self._store[self.db._T_DATA] = values
         # fiscal_year
-        items = await self._db.select_from_fiscal_year_table(year=self.year)
+        items = await self.db.select_from_fiscal_year_table(year=self.year)
         values = {self.year: items} if items else {}
-        self._store[self._db._T_FISCAL_YEAR] = values
+        self._store[self.db._T_FISCAL_YEAR] = values
         # month
-        items = await self._db.select_from_month_table()
+        items = await self.db.select_from_month_table()
         values = {self.year: items} if items else {}
-        self._store[self._db._T_MONTH] = values
+        self._store[self.db._T_MONTH] = values
         # monthly
-        items = await self._db._select_monthly_table(self.year)
+        items = await self.db._select_monthly_table(self.year)
         values = {self.year: items} if items else {}
-        self._store[self._db._T_MONTHLY] = values
+        self._store[self.db._T_MONTHLY] = values
 
     @property
     def has_fields_data(self) -> bool:
@@ -356,7 +362,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self.get(self._db._T_DATA, 'organization')) > 0
+        return len(self.get(self.db._T_DATA, 'organization')) > 0
 
     @property
     def has_budget_cache_data(self) -> bool:
@@ -367,7 +373,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self.get(self._db._T_DATA, 'budget')) > 0
+        return len(self.get(self.db._T_DATA, 'budget')) > 0
 
     @property
     def has_fiscal_cache_data(self) -> bool:
@@ -378,7 +384,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self._store.get(self._db._T_FISCAL_YEAR, {})) > 0
+        return len(self._store.get(self.db._T_FISCAL_YEAR, {})) > 0
 
     @property
     def has_month_cache_data(self) -> bool:
@@ -389,7 +395,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self._store.get(self._db._T_MONTH, {})) > 0
+        return len(self._store.get(self.db._T_MONTH, {})) > 0
 
     @property
     def has_monthly_cache_data(self) -> bool:
@@ -400,7 +406,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self._store.get(self._db._T_MONTHLY, {})) > 0
+        return len(self._store.get(self.db._T_MONTHLY, {})) > 0
 
     @property
     def fields(self):
@@ -433,7 +439,7 @@ class Cache:
         data = {}
 
         if entity_data:
-            if table_name == self._db._T_DATA:
+            if table_name == self.db._T_DATA:
                 fields = (self.get_bgt_fields if r_type == 'budget'
                         else self.ORG_FIELDS)
                 data = [item for item in entity_data.get(r_type)
@@ -447,6 +453,79 @@ class Cache:
     def get_bgt_fields(self):
         fields = self._store.get('fields')
         return list(set(fields) - set(self.ORG_FIELDS)) if fields else []
+
+    async def insert_all(self, table_name: str, data: list) -> list:
+        """
+        Insert all date in a table.
+
+        :param str table_name: This key determines the type of data returned.
+        :param dict data: The data to insert.
+        :returns: The actual data inserted.
+        :rtype: dict
+        """
+        match table_name:
+            case self.db._T_DATA:
+                rowcount = await self.db.insert_all_into_config_data_table(
+                    data)
+            case self.db._T_FISCAL_YEAR:
+                rowcount = await self.db.insert_into_fiscal_year_table(data)
+            case self.db._T_MONTH:
+                rowcount = await self.db.insert_into_month_table(data)
+            case self.db._T_MONTHLY:
+                rowcount = await self.db.insert_all_into_monthly_table(data)
+            case _:
+                data = []
+                rowcount = 0
+
+        assert len(data) == rowcount, (
+            f"Invalid inserted {rowcount}, found {len(data)} rows for "
+            f"table {table_name}.")
+
+        for item in data:
+            if table_name == self.db._T_MONTH:
+                key = item[2]  # ord field
+            else:
+                key = item[0]
+
+            self._store.setdefault(table_name, {})[key] = item
+
+        return data
+
+    async def insert(self, table_name: str, r_type: str, record: dict
+                     ) -> dict:
+        """
+        Insert a new record into the DB and add it to the cache.
+
+        :param str table_name: This key determines the type of data returned.
+        :param str r_type: This key determines a specific record in the
+                           entity. In many cases it's the primary key.
+        :param dict data: The data to insert.
+        :returns: The actual data inserted.
+        :rtype: dict
+        """
+        match table_name:
+            case self.db._T_DATA:
+                year = record['year']
+                month = record['month']
+                data = record['data']
+                await self.db.insert_into_config_data_table(year, month, data)
+            case self.db._T_FISCAL_YEAR:
+                data = record['data']
+                await self.db.insert_into_fiscal_year_table(data)
+            case self.db._T_MONTH:
+                data = [(name, order) for order, name in record.items()]
+                await self.db.insert_into_month_table(record)
+            case self.db._T_MONTHLY:
+                year = record['year']
+                data = record['data']
+                await self.db.insert_into_monthly_table(year, data)
+            case _:
+                data = []
+
+        if data:
+            self._store.setdefault(table_name, {})[r_type] = data
+
+        return data
 
     async def update(self, table_name: str, r_type: str, changes: dict):
         """
@@ -470,39 +549,9 @@ class Cache:
 
         # Then persist to DB
         match table_name:
-            case 'organization':
-                await self._db.update_config_data_table(year, month, data)
-            case 'fiscal':
-                await self._db.update_fiscal_year_table(data)
-            case 'monthly':
-                await self._db.update_monthly_table(year, data)
-
-    async def insert(self, table_name: str, r_type: str, record: dict
-                     ) -> dict:
-        """
-        Insert a new record into the DB and add it to the cache.
-
-        :param str table_name: This key determines the type of data returned.
-        :param str r_type: This key determines a specific record in the
-                           entity.
-        :param dict data: The data to insert.
-        :returns: The actual data inserted.
-        :rtype: dict
-        """
-        # DB returns full record
-        match table_name:
-            case 'organization':
-                year = record['year']
-                month = record['month']
-                data = record['data']
-                await self._db.insert_into_config_data_table(year, month, data)
-            case 'fiscal':
-                data = record['data']
-                await self._db.insert_into_fiscal_year_table(data)
-            case 'monthly':
-                year = record['year']
-                data = record['data']
-                await self._db.insert_into_monthly_table(year, data)
-
-        self._store.setdefault(table_name, {})[r_type] = data
-        return data
+            case self.db._T_DATA:
+                await self.db.update_config_data_table(year, month, data)
+            case self.db._T_FISCAL_YEAR:
+                await self.db.update_fiscal_year_table(data)
+            case self.db._T_MONTHLY:
+                await self.db.update_monthly_table(year, data)

@@ -948,7 +948,7 @@ class TestTomlAppConfig(BaseTomlTest):
         depending on if the local config file exists and that on `False` a
         log message is created.
         """
-        err_msg0 = "The path '{}' does not exist, file will be copied."
+        err_msg0 = "The path '{}' does not exist, file will be created."
         data = (True, False)
         msg = "Expected {}, found {}."
         good_file = self._TMP_USER_APP_FILE

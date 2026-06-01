@@ -1,6 +1,6 @@
 # %load ipython_start.py
 # %load_ext autoreload
-impoer badidatetime
+import badidatetime
 from src.bahai_database import Database
 from src.config import (TomlMetaData, TomlPanelConfig, TomlAppConfig,
                         TomlCreatePanel)
@@ -17,4 +17,5 @@ async def start():
     await db.create_db()
 
 await start()
-await db._cache.load(183)
+db._cache.year = 183
+await db._cache.load()

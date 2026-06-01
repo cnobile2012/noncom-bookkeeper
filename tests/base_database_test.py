@@ -13,6 +13,9 @@ import aiosqlite
 from unittest.mock import patch
 
 from src.bahai_database import Database
+from src.prep_and_cache import Cache
+
+from .test_data import ORG_FIELDS, BDG_FIELDS, TEST_DATA
 
 __all__ = ('BaseAsyncTests',)
 
@@ -83,35 +86,28 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     The one caveat is that self.bd = BaseDatabase() must be defined in the
     async def asyncSetUp(self): methods.
     """
-    TEST_DB = 'testing.db'
-    _log = None
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
-        self._db = Database()
-        self._db.testing = True
-        self._db.create_dirs()
+
+    @classmethod
+    def setUpClass(cls):
+        cls._db = Database()
+        cls._db.testing = True
+        cls._db.create_dirs()
+        cls.cache = Cache(cls._db)
 
     @property
     def db(self):
         return self._db
 
-    async def setup_db(self):
-        await self._db.create_db()
+    async def insert_data(self):
+        self.cache._flush_cache()
 
-    # @classmethod
-    # def setUpClass(cls):
-    #     if cls._log is None:
-    #         cls._log = AppConfig.start_logging(testing=True)
-    #         cls._log.propagate = False
+        for table, data in TEST_DATA.items():
+            await self.cache.insert_all(table, data)
 
-    # @property
-    # def logger_name(self):
-    #     return AppConfig().logger_name
 
-    # @property
-    # def full_log_path(self):
-    #     return AppConfig().full_log_path
 
     # async def does_table_exist(self, table: str) -> bool:
     #     """

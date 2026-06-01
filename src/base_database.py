@@ -533,7 +533,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
         :param int year: Year of insert or update.
         :param int month: Month of insert or update.
-        :param list data: The data to be inserted.
+        :param dict data: The data to be inserted.
         :returns: The row count caused by the insert or update.
         :rtype: int
         """
