@@ -57,9 +57,9 @@ class Database(BaseDatabase):
 
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,
-                                            current: int=None,
-                                            work_on: int=None, audit: int=None
-                                            ) -> list:
+                                            current: int=None, audit: int=None,
+                                            work_on: int=None, fiscal: bool
+                                            ) -> list | tuple:
         """
         Select from the `fiscal_year` table. Only the year is needed to
         select the correct row of data.
@@ -72,12 +72,13 @@ class Database(BaseDatabase):
         :param int current: This will return the current fiscal year if `1`
                             or the next year if `0`. If set to `None`
                             (default) then do a query for the provided year.
-        :param int work_on: The `work_on` is used to switch the fiscal year
-                            that is being worked on..
         :param int audit: The `audit` is used to query all years audited or
                           not audited.
+        :param int work_on: The `work_on` is used to switch the fiscal year
+                            that is being worked on.
+        :param bool fiscal: The current year and the one after.
         :returns: The `fiscal_year` table data for the year requested.
-        :rtype: list
+        :rtype: list or tuple
         """
         assert (year, month, day, current,
                 work_on, audit).count(None) in (5, 6), (
@@ -96,6 +97,11 @@ class Database(BaseDatabase):
             where = f"WHERE work_on={work_on}"
         elif audit:    # Get all years that have or have not been audited.
             where = f"WHERE audit={audit}"
+        elif fiscal:   # Get the current and the year after.
+            where = (f"WHERE year IN (SELECT year FROM {self._T_FISCAL_YEAR} "
+                     "WHERE current = 1 UNION "
+                     f"SELECT year + 1 FROM {self._T_FISCAL_YEAR} "
+                     "WHERE current = 1) ORDER BY year ASC")
         else:          # Get all fiscal years.
             where = ""
 

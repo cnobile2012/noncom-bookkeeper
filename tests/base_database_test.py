@@ -111,6 +111,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         """
         Truncate all tables.
         """
+        self.cache._flush_cache()  # We also need to purge the cache.
         query0 = ("SELECT name FROM sqlite_master "
                   "WHERE type='table' AND name NOT LIKE 'sqlite_%';")
         query1 = ("SELECT name FROM sqlite_master "

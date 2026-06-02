@@ -2,6 +2,7 @@
 #
 # tests/conftest.py
 #
+__docformat__ = "restructuredtext en"
 
 import os
 import pytest
