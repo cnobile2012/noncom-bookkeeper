@@ -4,12 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
-import unittest
-
-from src.bahai_database import Database
-from src.prep_and_cache import DataPreperation
-
-from . import check_flag, log
+from . import check_flag
 from .base_database_test import BaseAsyncTests
 
 
@@ -131,15 +126,14 @@ class TestCache(BaseAsyncTests):
 
                 match table_name:
                     case self.db._T_DATA:
-                        index = 1
+                        test_fields = result.keys()
                     case self.db._T_FISCAL_YEAR:
-                        index = 1  # year
+                        test_fields = [item[1] for item in result]  # year
                     case self.db._T_MONTH:
-                        index = 1  # month
+                        test_fields = [item[1] for item in result]  # month
                     case self.db._T_MONTHLY:
-                        index = 5
+                        test_fields = [item[5] for item in result]  # treasurer
 
-                test_fields = [item[index] for item in result]
                 self.assertIn(data_to_find, test_fields, msg.format(
                     data_to_find, test_fields))
             else:

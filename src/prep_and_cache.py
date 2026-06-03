@@ -22,12 +22,12 @@ class DataPreperation:
     _EXCLUDE_PANELS = ('fiscal', 'monthly')
 
     def __init__(self, db, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         self._db = db
         so = StoreObjects()
         self._mf = so.get_object('MainFrame')
-        self._org_data = {}
         self._fiscal_data = []
 
     async def organization(self, data, f_year, f_month):
@@ -53,15 +53,11 @@ class DataPreperation:
                     earliest_fiscal_year = self.earliest_fiscal_year
 
                     if None in (f_year, f_month):
-                        self.organization_data = data
                         await self.first_run_initialization(p_year, p_month,
                                                             p_day)
                         f_year = p_year
                         f_month = p_month
-                    elif f_year == p_year:  # Update current year
-                        self.organization_data = data
                     elif (f_year + 1) == p_year:
-                        self.organization_data = data
                         await self.entered_next_year(p_year, p_month, p_day)
                     elif (earliest_fiscal_year and
                           (earliest_fiscal_year - 1) == p_year):
@@ -76,8 +72,10 @@ class DataPreperation:
                 else:
                     self._log.warning(error)
 
-            return await self._db._insert_update_config_data_table(
+            rowcount = await self._db._insert_update_config_data_table(
                 f_year, month=f_month, data=data)
+            await self._db.cache.reload(self._db._T_DATA)
+            return rowcount
 
         # If no org data was entered.
         error = ("Organization Information data must be entered before "
@@ -91,8 +89,6 @@ class DataPreperation:
         rowcount = await self._db.update_fiscal_year_table(items)
         self._log.debug("Inserted %s rows of fiscal year data.", rowcount)
         return data
-
-    #async def fiscal_settings(self, ):
 
     async def first_run_initialization(self, year: int, month: int, day: int):
         """
@@ -220,41 +216,12 @@ class DataPreperation:
     def organization_data(self) -> dict:
         """
         This property gets the organization data that are used throughout
-        the application without having to do a select on the DB everytime.
+        the application.
 
         :returns: The organization data as defined by {<field name>: <value>}.
         :rtype: dict
         """
-        return self._org_data
-
-    @organization_data.setter
-    def organization_data(self, values) -> None:
-        """
-        This property sets the organization constants that are used throughout
-        the application without having to do a select on the DB everytime.
-
-        .. note::
-
-           Only the second and three fields are stored when the incoming
-           values are a list otherwise the dict is used as is.
-
-        :param list or dict values: A list of tuples where each tuple is the
-                                    raw data for one field in the form of
-                                    (PK, <field name>, <value>, <fiscal year>,
-                                    <next year>, <ctime>, <mtime>).
-        """
-        if isinstance(values, list):
-            self._org_data = {value[1]: value[2] for value in values}
-        elif isinstance(values, dict):
-            self._org_data = values
-        else:
-            msg = ("The argument 'value' must be a 'list' or 'dict', "
-                   f"found {type(values)}.")
-            self._log.error(msg)
-            self._mf.statusbar_error = msg
-            self._org_data = None
-
-        assert isinstance(self._org_data, dict)
+        return self._db.cache.get(self._db._T_DATA, 'organization')
 
     @property
     def earliest_fiscal_year(self) -> tuple:
@@ -289,10 +256,15 @@ class Cache:
         :param object db: The database self object.
         """
         super().__init__(*args, **kwargs)
+        self._tac = TomlAppConfig()
         self.db = db
-        #self._log = logging.getLogger(self._tac.logger_name)
+        self._log = logging.getLogger(self._tac.logger_name)
         self._flush_cache()
         self._year = None
+
+    @property
+    def has_cache(self):
+        return self._store
 
     def _flush_cache(self) -> None:
         """
@@ -322,29 +294,65 @@ class Cache:
         """
         assert self.year is not None, (
             "You must set the year before excuting this method.")
+
         # field_type
-        items = await self.db.select_from_field_type_table(None)
-        self._store[self.db._T_FIELD_TYPE] = items
-        fields = [item[1] for item in items]
-        #print(self._store[self.db._T_FIELD_TYPE])
+        await self._load_field_type()
         # Setup for yearly data
         self._store[self.year] = {}
         # config_data
-        items = await self.db.select_from_config_data_table(fields, self.year)
-        self._store[self.year][self.db._T_DATA] = items
-        #print(self._store[self.year][self.db._T_DATA])
+        await self._load_config_data()
         # fiscal_year
+        await self._load_fiscal_year()
+        # month
+        await self._load_month()
+        # monthly
+        await self._load_monthly()
+        self._log.info("Loaded database data in the cashe.")
+
+    async def reload(self, table_name: str) -> None:
+        """
+        Reload specific table data.
+        """
+        if self.has_cache and self.year:
+            match table_name:
+                case self.db._T_FIELD_TYPE:
+                    await self._load_field_type()
+                    await self._load_config_data()  # dependency
+                case self.db._T_DATA:
+                    await self._load_config_data()
+                case self.db._T_FISCAL_YEAR:
+                    await self._load_fiscal_year()
+                case self.db._T_MONTH:
+                    await self._load_month()
+                case self.db._T_MONTHLY:
+                    await self._load_monthly()
+                case _:
+                    raise ValueError(f"Unknown table: {table_name}")
+
+            self._log.info("Reloaded the %s table.", table_name)
+        else:
+            await self.load()
+
+    async def _load_field_type(self):
+        items = await self.db.select_from_field_type_table(None)
+        self._store[self.db._T_FIELD_TYPE] = items
+
+    async def _load_config_data(self):
+        items = await self.db.select_from_config_data_table(
+            self.fields, self.year)
+        self._store[self.year][self.db._T_DATA] = items
+
+    async def _load_fiscal_year(self):
         items = await self.db.select_from_fiscal_year_table(fiscal=True)
         self._store[self.year][self.db._T_FISCAL_YEAR] = items
-        #print(self._store[self.year][self.db._T_FISCAL_YEAR])
-        # month
+
+    async def _load_month(self):
         items = await self.db.select_from_month_table()
         self._store[self.year][self.db._T_MONTH] = items
-        #print(self._store[self.year][self.db._T_MONTH])
-        # monthly
+
+    async def _load_monthly(self):
         items = await self.db._select_monthly_table(self.year)
         self._store[self.year][self.db._T_MONTHLY] = items
-        #print(self._store[self.year][self.db._T_DATA])
 
     @property
     def has_fields_data(self) -> bool:
@@ -414,7 +422,7 @@ class Cache:
 
     @property
     def fields(self):
-         return [item[1] for item in self._store.get(self.db._T_FIELD_TYPE)]
+        return [itm[1] for itm in self._store.get(self.db._T_FIELD_TYPE, [])]
 
     @property
     def get_bgt_fields(self):
@@ -447,7 +455,7 @@ class Cache:
         data = {}
 
         if entity_data and entity_data.get(table_name):
-            if table_name == self.db._T_DATA:
+            if table_name == self.db._T_DATA and r_type is not None:
                 match r_type:
                     case 'organization':
                         fields = self.ORG_FIELDS
@@ -457,8 +465,9 @@ class Cache:
                         assert r_type in ('organization', 'budget'), (
                             f"Invalid `r_type`, found {r_type}.")
 
-                data = [item for item in entity_data.get(table_name)
-                        if item[1] in fields]
+                data = {item[1]: item[2]
+                        for item in entity_data.get(table_name, [])
+                        if item[1] in fields}
             else:
                 items = entity_data.get(table_name)
 
@@ -467,6 +476,7 @@ class Cache:
                 else:
                     data = items
 
+        self._log.info("Retrived %s data.", table_name)
         return data
 
     async def insert_all(self, table_name: str, data: list) -> None:
@@ -529,6 +539,8 @@ class Cache:
         if data:
             self._store.setdefault(table_name, {})[r_type] = data
 
+        self._log.info("Inserted data into the %s table using record type %s.",
+                       table_name, r_type)
         return data
 
     async def update(self, table_name: str, r_type: str, changes: dict):
@@ -559,3 +571,6 @@ class Cache:
                 await self.db.update_fiscal_year_table(data)
             case self.db._T_MONTHLY:
                 await self.db.update_monthly_table(year, data)
+
+        self._log.info("Updated data in the %s table using record type %s.",
+                       table_name, r_type)

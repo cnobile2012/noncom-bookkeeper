@@ -251,6 +251,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
+            self.cache.year = year
             pcdp = {name: panel for name, panel in self._mf.panels.items()
                     if name not in self._EXCLUDE_PANELS}
             await self._populate_config_data_panels(year, pcdp)
@@ -267,6 +268,9 @@ class BaseDatabase(PopulateCollect, Settings):
         :param int year: The current fiscal year.
         :param dict panels: A dict of all non-excluded panels.
         """
+        if not self.cache.has_cache:
+            await self.cache.load()
+
         for panel_name, panel in panels.items():
             data = self.collect_panel_values(panel)
             keys = list(data.keys())
@@ -275,7 +279,6 @@ class BaseDatabase(PopulateCollect, Settings):
             # Needed when the app has been run at least one time before.
             if panel_name == 'organization' and values:
                 # This stores and converts a list to a dict.
-                self._dp.organization_data = values
                 items = self._dp.organization_data
             else:
                 items = {value[1]: value[2] for value in values}
@@ -350,8 +353,7 @@ class BaseDatabase(PopulateCollect, Settings):
         data = self.collect_panel_values(panel)
 
         if name == 'organization':
-            if data:
-                error = await self._dp.organization(data, f_year, f_month)
+            error = await self._dp.organization(data, f_year, f_month)
         elif name == 'fiscal':
             data = await self._dp.fiscal(data, f_year, f_month)
             f_year = f_month = None

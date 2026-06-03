@@ -10,8 +10,9 @@ exclude =
     data
 
 per-file-ignores =
-    ipython_start.py: E302, F704
+    ipython_start.py: E302, F401, F704
     src/*: E125, E128, E129, E252, E701, F401, F841
-    tests/*: E252, E265, E701, E741, F821, F841
+    tests/create_test_data.py: E252, E402
+    tests/*: E252, E265, E501, E701, E741, F821, F841
     tests/individual/*: E252, E402, E701
     scripts/*: E402, E701

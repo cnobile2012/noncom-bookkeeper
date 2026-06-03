@@ -58,7 +58,8 @@ class Database(BaseDatabase):
     async def select_from_fiscal_year_table(self, *, year: int=None,
                                             month: int=None, day: int=None,
                                             current: int=None, audit: int=None,
-                                            work_on: int=None, fiscal: bool
+                                            work_on: int=None,
+                                            fiscal: bool=False
                                             ) -> list | tuple:
         """
         Select from the `fiscal_year` table. Only the year is needed to

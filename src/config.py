@@ -209,8 +209,6 @@ class Settings(AppDirs, Borg):
     def user_log_fullpath(self) -> str:  # pragma: no cover
         if self.debug:
             path = os.path.join(self._debug_log_dir, self.logfile_name)
-        elif self.testing:
-            path = os.path.join(self._testing_log_dir, self.logfile_name)
         else:
             path = os.path.join(self.user_log_dir, self.logfile_name)
 

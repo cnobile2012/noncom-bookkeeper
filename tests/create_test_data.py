@@ -16,7 +16,6 @@ PWD = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(PWD)
 sys.path.append(BASE_DIR)
 
-import badidatetime
 from src.bahai_database import Database
 from src.prep_and_cache import Cache
 
@@ -35,7 +34,8 @@ class CreateTestData:
         asyncio.run(self._create())
 
     async def _create(self):
-        await self._cache.load(183)
+        self._cache.year = 183
+        await self._cache.load()
         buff = StringIO()
         filename = self.options.output
         buff.write("# -*- coding: utf-8 -*-\n")
@@ -49,7 +49,7 @@ class CreateTestData:
         bdg_data = self._format_data(self._cache.get_bgt_fields, prefix,
                                      width=67)
         buff.write(f"{bdg_data}\n")
-        buff.write(f"{await self._format_table_data()}\n")
+        buff.write(f"{await self._format_table_data()}")
 
         with open(filename, 'w') as f:
             f.write(buff.getvalue())
@@ -66,7 +66,7 @@ class CreateTestData:
         prefix = "TEST_DATA = "
         return self._format_data(data, prefix, width=70)
 
-    def _format_data(self, data, prefix: str, indent: int=1, width=80):
+    def _format_data(self, data, prefix: str, indent: int=1, width: int=80):
         formatted = pprint.pformat(data, indent=indent, width=width,
                                    compact=True, sort_dicts=True)
         split_fmt = formatted.split('\n')

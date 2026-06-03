@@ -17,5 +17,5 @@ async def start():
     await db.create_db()
 
 await start()
-db._cache.year = 183
-await db._cache.load()
+db.cache.year = 183
+await db.cache.load()
