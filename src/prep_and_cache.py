@@ -248,6 +248,7 @@ class Cache:
     ORG_FIELDS = ['longitude', 'location_city_name', 'latitude',
                   'locality_prefix', 'start_of_fiscal_year', 'locale_name',
                   'treasurer', 'total_membership', 'iana_name']
+    ORG_FIELDS.sort()
 
     def __init__(self, db, *args, **kwargs) -> None:
         """
@@ -427,7 +428,9 @@ class Cache:
     @property
     def get_bgt_fields(self):
         fields = self.fields
-        return list(set(fields) - set(self.ORG_FIELDS)) if fields else []
+        bgt_fields = list(set(fields) - set(self.ORG_FIELDS)) if fields else []
+        bgt_fields.sort()
+        return bgt_fields
 
     def get(self, table_name: str, r_type: str=None) -> list | tuple:
         """
