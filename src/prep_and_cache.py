@@ -28,7 +28,6 @@ class DataPreperation:
         self._db = db
         so = StoreObjects()
         self._mf = so.get_object('MainFrame')
-        self._fiscal_data = []
 
     async def organization(self, data, f_year, f_month):
         if data:
@@ -228,16 +227,8 @@ class DataPreperation:
         """
         Get the earliest year in the `fiscal_year` table.
         """
-        years = [items[1] for items in self.fiscal_years]
+        years = [items[1] for items in self.cache.get(self._db._T_FISCAL_YEAR)]
         return min(years) if years else ()
-
-    @property
-    def fiscal_years(self) -> list:
-        return self._fiscal_data
-
-    @fiscal_years.setter
-    def fiscal_years(self, years: list) -> None:
-        self._fiscal_data = years
 
 
 class Cache:
@@ -265,7 +256,7 @@ class Cache:
 
     @property
     def has_cache(self):
-        return self._store
+        return self._store != {}
 
     def _flush_cache(self) -> None:
         """
@@ -293,17 +284,13 @@ class Cache:
            4. The `month`  data is stored by the year and table name.
            5. The `monthly`  data is stored by the year and table name.
         """
-        assert self.year is not None, (
-            "You must set the year before excuting this method.")
-
-        # field_type
+        # field_type  -- Also sets the year.
         await self._load_field_type()
         # Setup for yearly data
-        self._store[self.year] = {}
-        # config_data
-        await self._load_config_data()
         # fiscal_year
         await self._load_fiscal_year()
+        # config_data
+        await self._load_config_data()
         # month
         await self._load_month()
         # monthly
@@ -334,6 +321,12 @@ class Cache:
         else:
             await self.load()
 
+    async def _load_fiscal_year(self):
+        items = await self.db.select_from_fiscal_year_table(fiscal=True)
+        self.year = min([item[1] for item in items])
+        self._store[self.year] = {}
+        self._store[self.year][self.db._T_FISCAL_YEAR] = items
+
     async def _load_field_type(self):
         items = await self.db.select_from_field_type_table(None)
         self._store[self.db._T_FIELD_TYPE] = items
@@ -342,10 +335,6 @@ class Cache:
         items = await self.db.select_from_config_data_table(
             self.fields, self.year)
         self._store[self.year][self.db._T_DATA] = items
-
-    async def _load_fiscal_year(self):
-        items = await self.db.select_from_fiscal_year_table(fiscal=True)
-        self._store[self.year][self.db._T_FISCAL_YEAR] = items
 
     async def _load_month(self):
         items = await self.db.select_from_month_table()
@@ -474,12 +463,12 @@ class Cache:
             else:
                 items = entity_data.get(table_name)
 
-                if r_type:  # This is currently not used.
-                    data = items.get(r_type)
-                else:
-                    data = items
+                # if r_type:  # This is currently not used.
+                #     data = items.get(r_type)
+                # else:
+                data = items
 
-        self._log.info("Retrived %s data.", table_name)
+        self._log.info("Retrived '%s' data.", table_name)
         return data
 
     async def insert_all(self, table_name: str, data: list) -> None:

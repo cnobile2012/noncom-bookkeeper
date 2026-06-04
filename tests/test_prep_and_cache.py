@@ -18,7 +18,6 @@ class TestDataPreperation(BaseAsyncTests):
 
 
 class TestCache(BaseAsyncTests):
-    _YEAR = 183
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -28,7 +27,6 @@ class TestCache(BaseAsyncTests):
 
     async def asyncSetUp(self):
         await self.db.create_db()
-        self.cache.year = self._YEAR
         await self.insert_data()
         await self.cache.load()
 
@@ -107,20 +105,19 @@ class TestCache(BaseAsyncTests):
         DB table.
         """
         err_msg0 = "Invalid `r_type`, found {}."
+        year = self.cache.year
         data = (
-            (183, self.db._T_DATA, 'organization', True, 'iana_name'),
-            (183, self.db._T_DATA, 'budget', True, 'cash_in_bank'),
-            (183, self.db._T_FISCAL_YEAR, None, True, 184),
-            (183, self.db._T_MONTH, None, True, 'Ayyám-i-Há'),
-            #(183, self.db._T_MONTHLY, None, True, 'Joe Shmo'),
-            (183, self.db._T_DATA, 'invalid', False,
+            (year, self.db._T_DATA, 'organization', True, 'iana_name'),
+            (year, self.db._T_DATA, 'budget', True, 'cash_in_bank'),
+            (year, self.db._T_FISCAL_YEAR, None, True, 184),
+            (year, self.db._T_MONTH, None, True, 'Ayyám-i-Há'),
+            #(year, self.db._T_MONTHLY, None, True, 'Joe Shmo'),
+            (year, self.db._T_DATA, 'invalid', False,
              err_msg0.format('invalid')),
             )
         msg = "Expected {}, found {}"
 
         for year, table_name, record_type, valid, data_to_find in data:
-            self.cache.year = year
-
             if valid:
                 result = self.cache.get(table_name, record_type)
 

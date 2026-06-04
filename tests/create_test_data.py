@@ -34,7 +34,6 @@ class CreateTestData:
         asyncio.run(self._create())
 
     async def _create(self):
-        self._cache.year = 183
         await self._cache.load()
         buff = StringIO()
         filename = self.options.output

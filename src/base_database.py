@@ -246,12 +246,20 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         Populate all panels that have data in the database.
         """
-        self.fiscal_years = await self.select_from_fiscal_year_table()
-        year, month = self._get_current_fiscal_year()
+        if not self.cache.has_cache:
+            await self.cache.load()
+
+        fiscal_years = self.cache.get(self._T_FISCAL_YEAR)
+        fy = fiscal_years[0]
+
+        if len(fy):
+            year = fy[1]
+            month = fy[2]
+        else:  # Only for first time use.
+            year = month = None
 
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
-            self.cache.year = year
             pcdp = {name: panel for name, panel in self._mf.panels.items()
                     if name not in self._EXCLUDE_PANELS}
             await self._populate_config_data_panels(year, pcdp)
@@ -268,9 +276,6 @@ class BaseDatabase(PopulateCollect, Settings):
         :param int year: The current fiscal year.
         :param dict panels: A dict of all non-excluded panels.
         """
-        if not self.cache.has_cache:
-            await self.cache.load()
-
         for panel_name, panel in panels.items():
             data = self.collect_panel_values(panel)
             keys = list(data.keys())
@@ -387,45 +392,6 @@ class BaseDatabase(PopulateCollect, Settings):
                         f_year, values['month'], values)
 
         return error
-
-    def get_fiscal_year(self, *, year: int=None, current: int=None) -> tuple:
-        """
-        Get the fiscal year data based on given arguments.
-
-        :param int year: The year needed.
-        :param int month: The current year.
-        :returns: Data of the requested fiscal year.
-        :rtype: list
-        """
-        all = (year, current)
-        assert all.count(None) == len(all) - 1, (
-            f"You must choose only one of {all}.")
-        item = []
-
-        for data in self.fiscal_years:
-            fy_year = data[1]
-            fy_current = data[4]
-
-            if fy_year == year:
-                item = data
-            elif fy_current == current:
-                item = data
-
-        return item
-
-    def _get_current_fiscal_year(self) -> tuple:
-        """
-        Get the year and month of the current fiscal year.
-        """
-        fy = self.get_fiscal_year(current=1)
-
-        if len(fy):
-            year = fy[1]
-            month = fy[2]
-        else:  # Only for first time use.
-            year = month = None
-
-        return year, month
 
     #
     # Database access methods.
