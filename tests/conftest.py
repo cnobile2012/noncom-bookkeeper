@@ -5,7 +5,6 @@
 __docformat__ = "restructuredtext en"
 
 import os
-import pytest
 from src.config import Settings
 
 s = Settings()

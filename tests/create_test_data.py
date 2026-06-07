@@ -6,6 +6,7 @@
 __docformat__ = "restructuredtext en"
 
 import os
+import re
 import sys
 import asyncio
 import pprint
@@ -55,6 +56,11 @@ class CreateTestData:
             buff.close()
 
     async def _format_table_data(self):
+        def _fix_value(value):
+            r = list(record)
+            r[1] = value
+            return tuple(r)
+
         query = "SELECT * from {};"
         data = {}
 
@@ -62,10 +68,40 @@ class CreateTestData:
             values = await self.db._do_select_query(query.format(table))
             data.setdefault(table, values)
 
+        # Take out personal info.
+        config_data = data.get(self.db._T_DATA)
+
+        if config_data:
+            new_cd = []
+
+            for idx, record in enumerate(config_data):
+                value = record[1]
+
+                if '/' in value:
+                    record = _fix_value('America/New_York')
+                elif re.match(r'^-?\d+(?:\.\d+)$', value) is not None:
+                    v = float(value)
+
+                    if v > 0:
+                        record = _fix_value('40.7127281')
+                    else:
+                        record = _fix_value('-74.0060152')
+                elif 'County' in value:
+                    record = _fix_value('New York')
+                elif 'Var' in value:
+                    record = _fix_value('New York')
+                elif 'J.' in value:
+                    record = _fix_value('Joe Schmo')
+
+                new_cd.append(record)
+
+            data[self.db._T_DATA] = new_cd
+
         prefix = "TEST_DATA = "
         return self._format_data(data, prefix, width=70)
 
-    def _format_data(self, data, prefix: str, indent: int=1, width: int=80):
+    def _format_data(self, data: dict, prefix: str, indent: int=1,
+                     width: int=80):
         formatted = pprint.pformat(data, indent=indent, width=width,
                                    compact=True, sort_dicts=True)
         split_fmt = formatted.split('\n')

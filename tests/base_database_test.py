@@ -8,7 +8,6 @@ import unittest
 import aiosqlite
 
 from src.bahai_database import Database
-from src.prep_and_cache import Cache
 
 from .test_data import TEST_DATA
 
@@ -90,23 +89,53 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         cls._db = Database()
         cls._db.testing = True
         cls._db.create_dirs()
-        cls.cache = Cache(cls._db)
 
     @property
     def db(self):
         return self._db
 
     async def insert_data(self):
-        self.cache._flush_cache()
+        rowcount = 0
 
         for table, data in TEST_DATA.items():
-            data = await self.cache.insert_all(table, data)
+            rowcount += await self.insert_all(table, data)
+
+        return rowcount
+
+    async def insert_all(self, table_name: str, data: list) -> None:
+        """
+        Insert all date in a table.
+
+        :param str table_name: The DB table to insert into.
+        :param dict data: The data to insert.
+        :returns: The insertion rowcount.
+        :rtype: int
+        """
+        match table_name:
+            case self.db._T_FISCAL_YEAR:
+                rowcount = await self.db.insert_into_fiscal_year_table(data)
+            case self.db._T_FIELD_TYPE:
+                rowcount = await self.db.insert_into_field_type_table(data)
+            case self.db._T_DATA:
+                rowcount = await self.db.insert_all_into_config_data_table(
+                    data)
+            case self.db._T_MONTH:
+                rowcount = await self.db.insert_into_month_table(data)
+            case self.db._T_MONTHLY:
+                rowcount = await self.db.insert_all_into_monthly_table(data)
+            case _:
+                rowcount = 0
+
+        assert len(data) == rowcount, (
+            f"Invalid inserted {rowcount}, found {len(data)} rows for "
+            f"table {table_name}.")
+
+        return rowcount
 
     async def truncate_all_tables(self):
         """
         Truncate all tables.
         """
-        self.cache._flush_cache()  # We also need to purge the cache.
         query0 = ("SELECT name FROM sqlite_master "
                   "WHERE type='table' AND name NOT LIKE 'sqlite_%';")
         query1 = ("SELECT name FROM sqlite_master "

@@ -117,18 +117,18 @@ class Database(BaseDatabase):
         Insert a row of data into the `fiscal_year` table.
 
         :param list data: The data to be inserted.
-        :returns: The row count caused by the insert.
+        :returns: The insertion rowcount.
         :rtype: int
         """
+        fields = "year, month, day, current, work_on, audit, ctime, mtime"
+
         if isinstance(data[0], tuple) and len(data[0]) == 9:
             items = data
-            fields = ("pk, year, month, day, current, work_on, audit, ctime, "
-                      "mtime")
+            fields = "pk, " + fields
             values = "?, ?, ?, ?, ?, ?, ?, ?, ?"
         else:
             now = badidatetime.datetime.now(self.utc_tzinfo)
-            items = [t + (now, now) for t in data]  # Add the times to the end.
-            fields = "year, month, day, current, work_on, audit, ctime, mtime"
+            items = [t + (now, now) for t in data]
             values = "?, ?, ?, ?, ?, ?, ?, ?"
 
         query = (f"INSERT INTO {self._T_FISCAL_YEAR} ({fields}) "
@@ -147,11 +147,12 @@ class Database(BaseDatabase):
         .. note::
 
            Incoming data:
-           From the fiscal year table:
-           [(year, month, day, current, work_on, audit, current), ...]
-           From the fiscal panel:
-           [(current_fiscal_year, work_on_this_fiscal_year,
-             audit_complete), ...]
+
+             1. From the fiscal year table:
+                [(year, month, day, current, work_on, audit, current), ...]
+             2. From the fiscal panel:
+                [(current_fiscal_year, work_on_this_fiscal_year,
+                  audit_complete), ...]
         """
         now = badidatetime.datetime.now(self.utc_tzinfo)
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
@@ -186,23 +187,24 @@ class Database(BaseDatabase):
         data = await self._do_select_query(query)
         return data[0] if len(data) == 1 else data
 
-    async def insert_into_month_table(self, months: dict) -> int:
+    async def insert_into_month_table(self, months: list) -> int:
         """
         Insert into the `month` table.
 
-        :param list months: A dict where the key is the order of the month
-                            and the value is the month name.
+        :param list months: A list of tuples where the 1st value is the month
+                            name and the 2nd value is the order of the month.
         :returns: The row count caused by the insert.
         :rtype: int
         """
+        fields = "month, ord, ctime"
+
         if isinstance(months[0], tuple) and len(months[0]) == 4:
             data = months
-            fields = "pk, month, ord, ctime"
+            fields = "pk, " + fields
             values = "?, ?, ?, ?"
         else:
             now = badidatetime.datetime.now(self.utc_tzinfo)
-            data = [(name, order, now) for order, name in months.items()]
-            fields = "month, ord, ctime"
+            data = [(name, order, now) for name, order in months]
             values = "?, ?, ?"
 
         query = f"INSERT INTO {self._T_MONTH} ({fields}) VALUES ({values});"
@@ -513,12 +515,11 @@ class Database(BaseDatabase):
     # Miscellaneous methods and properties
     #
 
-    def _ordered_month(self):
+    def ordered_month(self):
         """
         Provides the order of the Badi months from the custom_widgets module.
-        Called in the BaseBatabase class.
         """
-        return ordered_month()
+        return [(name, ord) for ord, name in ordered_month().items()]
 
     def _convert_date_to_yymmdd(self, value: str) -> badidatetime.date:
         """

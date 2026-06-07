@@ -5,56 +5,20 @@
 __docformat__ = "restructuredtext en"
 
 import os
-import sys
 import unittest
 import shutil
 
-from unittest.mock import patch, PropertyMock
+from unittest.mock import patch
 
 import tomlkit as tk
 
-from . import LOGGER_NAME, LOGFILE_NAME, log, check_flag
-from .base_dir import BASE_DIR
+from . import (BASE_DIR, PATH, LOGGER_NAME, LOGFILE_NAME, log, check_flag,
+               patchers)
 from .base_database_test import BaseTests
 from .conftest import (_TMP_USER_CONFIG_FILE, _TMP_USER_APP_CONFIG_FILE,
                        _TMP_LOCAL_CONFIG_FILE)
-
-PATH = os.path.join(BASE_DIR, 'logs')
-
-
-def import_in_globals():
-    import src
-    from src import config
-    globals()['src'] = src.__init__
-    globals()['Settings'] = config.Settings
-    globals()['BaseSystemData'] = config.BaseSystemData
-    globals()['TomlMetaData'] = config.TomlMetaData
-    globals()['TomlPanelConfig'] = config.TomlPanelConfig
-    globals()['TomlAppConfig'] = config.TomlAppConfig
-    globals()['TomlCreatePanel'] = config.TomlCreatePanel
-
-
-def patchers(self):
-    sys.modules.pop('src', None)
-
-    logger_name_patcher = patch('src.config.Settings.logger_name',
-                                new_callable=PropertyMock)
-    mock_name_patcher = logger_name_patcher.start()
-    self.addCleanup(logger_name_patcher.stop)
-    mock_name_patcher.return_value = LOGGER_NAME
-
-    logfile_path_patcher = patch('src.config.Settings.user_log_fullpath',
-                                 new_callable=PropertyMock)
-    mock_logfile_path = logfile_path_patcher.start()
-    self.addCleanup(logfile_path_patcher.stop)
-    mock_logfile_path.return_value = PATH
-
-    logfile_name_patcher = patch('src.config.Settings.logfile_name',
-                                 new_callable=PropertyMock)
-    mock_logfile_name = logfile_name_patcher.start()
-    self.addCleanup(logfile_name_patcher.stop)
-    mock_logfile_name.return_value = LOGFILE_NAME
-    import_in_globals()
+from src.config import (Settings, BaseSystemData, TomlMetaData,
+                        TomlPanelConfig, TomlAppConfig, TomlCreatePanel)
 
 
 class TestSettingsBorg(unittest.TestCase):

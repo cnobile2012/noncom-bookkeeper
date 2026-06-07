@@ -153,7 +153,6 @@ class BaseDatabase(PopulateCollect, Settings):
     _INDICES = [name.split()[0] for name in _SCHEMA_INDICES]
     _INDICES.sort()
     _EXCLUDE_PANELS = ('fiscal', 'monthly')
-    _FIELDS_NOT_ADDED = ()  # Fields not in the field_table.
     _MAX_FIELD_LEN = 40  # Max length of fields allowed in the field_table.
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
 
@@ -250,11 +249,10 @@ class BaseDatabase(PopulateCollect, Settings):
             await self.cache.load()
 
         fiscal_years = self.cache.get(self._T_FISCAL_YEAR)
-        fy = fiscal_years[0]
 
-        if len(fy):
-            year = fy[1]
-            month = fy[2]
+        if len(fiscal_years):
+            # Find the start year
+            year, month = min([(item[1], item[2]) for item in fiscal_years])
         else:  # Only for first time use.
             year = month = None
 
@@ -304,6 +302,11 @@ class BaseDatabase(PopulateCollect, Settings):
                              year.
         :param wx.Panel panel: The panel object.
         """
+        fiscal_years = self.cache.get(self._T_FISCAL_YEAR)
+
+        if len(fiscal_years):
+            years_months = [(item[1], item[2]) for item in fiscal_years]
+
         data = self.collect_panel_values(panel)
         widget_ord = data['month_of_year']
 
@@ -405,31 +408,12 @@ class BaseDatabase(PopulateCollect, Settings):
                           the form of: {<field name>: <value>,...}.
         """
         keys = list(data.keys())
-        items = await self.select_from_field_type_table(keys)
-        old_fields = [item[1] for item in items]
-        new_fields = [fd for fd in data if (len(fd) <= self._MAX_FIELD_LEN or
-                                            fd not in self._FIELDS_NOT_ADDED)]
-        fields = self._find_fields(new_fields, old_fields)
+        current_fields = self.cache.fields
+        new_fields = [fd for fd in data if (len(fd) <= self._MAX_FIELD_LEN)]
+        fields = set(new_fields) - set(current_fields)
 
         if fields:
             await self.insert_into_field_type_table(fields)
-
-    async def _insert_into_month_table(self) -> None:
-        """
-        Populate the `month` table with all months.
-        """
-        items = await self.select_from_month_table()
-        months = self._ordered_month()
-
-        if not items:  # Insert all months and their order.
-            await self.insert_into_month_table(months)
-        else:  # Insert only months and their order if not in the database.
-            data = [item[1:3] for item in items]
-            con_months = [(month, order) for order, month in months.items()]
-
-            for item in data:
-                if item not in con_months:
-                    await self.insert_into_month_table(item)
 
     async def _insert_update_config_data_table(
         self, year: int, *, month: int=None, data: dict={}) -> None:
@@ -471,28 +455,27 @@ class BaseDatabase(PopulateCollect, Settings):
                 else:                          # Update
                     update_data.append((pk, value))
 
-            if insert_data:  # Do insert
+            if insert_data:                    # Do insert
                 rowcount = await self.insert_into_config_data_table(
                     year, month, insert_data)
 
-            if update_data:  # Do update
+            if update_data:                    # Do update
                 rowcount = await self.update_config_data_table(year, month,
                                                                update_data)
 
         return error
 
-    async def _select_monthly_table(self, year: int, month: int=None) -> list:
-        """
-        Select data from the monthly table.
+    # async def _select_monthly_table(self, year: int, month: int=None) -> list:
+    #     """
+    #     Select data from the monthly table.
 
-        :param int year: Year of insert or update.
-        :param int month: Month of insert or update.
-        :returns: Monthly data.
-        :rtype: list
-        """
-        months = await self.select_from_monthly_table(year, month)
-
-        return
+    #     :param int year: Year of insert or update.
+    #     :param int month: Month of insert or update.
+    #     :returns: Monthly data.
+    #     :rtype: list
+    #     """
+    #     months = await self.select_from_monthly_table(year, month)
+    #     return months
 
     async def _insert_update_monthly_table(self, year: int, month: int,
                                            data: dict) -> int:
@@ -613,21 +596,3 @@ class BaseDatabase(PopulateCollect, Settings):
                                 exc_info=True)
 
         return rowcount
-
-    #
-    # Utility methods
-    #
-
-    def _find_fields(self, new: list, old: list) -> set:
-        """
-        Find the fields to select or insert.
-
-        :param list or dict new: The new fields in the form of:
-                                 [<field name>,...].
-        :param list old: The old fields in the form of: [<field name>,...].
-        :returns: A list of fields.
-        :rtype: list
-        """
-        new_fields = set(new)  # Just get the keys if a dict.
-        old_fields = set(old)
-        return new_fields - old_fields

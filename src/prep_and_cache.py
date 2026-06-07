@@ -25,7 +25,7 @@ class DataPreperation:
         super().__init__(*args, **kwargs)
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
-        self._db = db
+        self.db = db
         so = StoreObjects()
         self._mf = so.get_object('MainFrame')
 
@@ -33,7 +33,7 @@ class DataPreperation:
         if data:
             # Make sure all fields were entered.
             empty_fields = [field for field, value in data.items()
-                            if value in self._db._EMPTY_FIELDS]
+                            if value in self.db._EMPTY_FIELDS]
 
             if len(empty_fields) != 0:
                 ef = ', '.join([f for f in empty_fields])
@@ -49,19 +49,18 @@ class DataPreperation:
                     p_day = sofy.day
                     # Need ISO date for the DB.
                     data['start_of_fiscal_year'] = sofy.isoformat()
-                    earliest_fiscal_year = self.earliest_fiscal_year
+                    earliest_fy = self._earliest_fiscal_year
 
                     if None in (f_year, f_month):
-                        await self.first_run_initialization(p_year, p_month,
-                                                            p_day)
+                        await self._first_run_initialization(
+                            p_year, p_month, p_day)
                         f_year = p_year
                         f_month = p_month
                     elif (f_year + 1) == p_year:
-                        await self.entered_next_year(p_year, p_month, p_day)
-                    elif (earliest_fiscal_year and
-                          (earliest_fiscal_year - 1) == p_year):
-                        await self.entered_previous_year(p_year, p_month,
-                                                         p_day)
+                        await self._entered_next_year(p_year, p_month, p_day)
+                    elif earliest_fy and (earliest_fy - 1) == p_year:
+                        await self._entered_previous_year(
+                            p_year, p_month, p_day)
                     else:
                         year = month = None
                         error = ("Cannot enter a year that is not immediately "
@@ -71,9 +70,9 @@ class DataPreperation:
                 else:
                     self._log.warning(error)
 
-            rowcount = await self._db._insert_update_config_data_table(
+            rowcount = await self.db._insert_update_config_data_table(
                 f_year, month=f_month, data=data)
-            await self._db.cache.reload(self._db._T_DATA)
+            await self.db.cache.reload(self.db._T_DATA)
             return rowcount
 
         # If no org data was entered.
@@ -81,44 +80,60 @@ class DataPreperation:
                  "any other data can be entered.")
         self._log.warning(error)
 
-    async def fiscal(self, data, f_year, f_month):
-        items = [(f_year, f_month, 1, data['current_fiscal_year'],
-                  data['work_on_this_fiscal_year'],
-                  data['audit_complete'])]
-        rowcount = await self._db.update_fiscal_year_table(items)
-        self._log.debug("Inserted %s rows of fiscal year data.", rowcount)
-        return data
+    async def fiscal(self, data: dict, f_year: int, f_month: int) -> list:
+        """
+        Convert panel data to data appropreate for inserting into the database,
+        then update it.
 
-    async def first_run_initialization(self, year: int, month: int, day: int):
+        :param dict data: Panel data.
+        :param int f_year: The current fiscal year.
+        :param int f_month: The current fiscal year month.
+        :returns: The updated fiscal year data.
+        :rtype: list
+        """
+        items = [(f_year, f_month, 1, data['current_fiscal_year'],
+                  data['work_on_this_fiscal_year'], data['audit_complete'])]
+        values = {'year': f_year, 'data': items}
+        rowcount = await self.db.cache.update(
+            self.db._T_FISCAL_YEAR, {'data': items})
+        self._log.debug("Inserted %s row(s) of fiscal year data.", rowcount)
+        return items
+
+    async def _first_run_initialization(self, year: int, month: int, day: int):
         """
         The first run of the application.
 
         .. note::
 
-           1. Insert a year marked as current.
-           2. Insert the next year.
+           1. Insert a fiscal year marked as current.
+           2. Insert the next fiscal year.
            3. Insert all months.
-           4. Insert fields from all panels.
+           4. Insert fields from all current panels.
 
         :param int year: This is the UI entered year.
         :param int month: This is the UI entered month.
         :param int day: This is the UI entered day.
         """
         # year, month, day, current, audit, work_on
-        data = [(year, month, day, 1, 1, 0), (year+1, month, day, 0, 0, 0)]
-        await self._db.insert_into_fiscal_year_table(data)
+        data = {'data':[(year, month, day, 1, 1, 0),
+                        (year+1, month, day, 0, 0, 0)]}
+        await self.db.cache.insert(self.db._T_FISCAL_YEAR, data)
+
+        #await self.db.insert_into_fiscal_year_table(data)
         # Populate the Badí months in the database.
-        await self._db._insert_into_month_table()
+        data = {'data': self.db.ordered_month()}
+        await self.db.cache.insert(self.db._T_MONTH, data)
+        #await self.db._insert_into_month_table()
 
         # Populate all panel fields in the database.
         for name, panel in self._mf.panels.items():
             if name in self._EXCLUDE_PANELS: continue
-            panel_data = self._db.collect_panel_values(panel)
-            await self._db._add_fields_to_field_type_table(panel_data)
+            panel_data = self.db.collect_panel_values(panel)
+            await self.db._add_fields_to_field_type_table(panel_data)
 
-    async def entered_next_year(self, year: int, month: int, day: int):
+    async def _entered_next_year(self, year: int, month: int, day: int) -> int:
         """
-        Follow up years.
+        Enter the next fiscal year and update the previous two years.
 
         .. note::
 
@@ -129,35 +144,50 @@ class DataPreperation:
         :param int year: This is the UI entered year.
         :param int month: This is the UI entered month.
         :param int day: This is the UI entered day.
+        :returns: The number of DB rows affected.
+        :rtype: int
         """
-        data = [(year-1, month, day, 0, 0, 0), (year, month, day, 1, 1, 0)]
-        await self._db.update_fiscal_year_table(data)
-        await self._db.insert_into_fiscal_year_table(
-            [(year+1, month, day, 0, 0, 0)])
+        rowcount = await self.db.cache.update(
+            self.db._T_FISCAL_YEAR, {'data': [(year-1, month, day, 0, 0, 0),
+                                              (year, month, day, 1, 1, 0)]})
+        rowcount += await self.db.cache.insert(
+            self.db._T_FISCAL_YEAR, {'data': [(year+1, month, day, 0, 0, 0)]})
+        return rowcount
 
-    async def entered_previous_year(self, year: int, month: int, day: int):
+    async def _entered_previous_year(self, year: int, month: int, day: int
+                                     ) -> int:
         """
-        Previous up years.
-
-        .. note::
-
-           Insert previous year.
+        Enter the next year.
 
         :param int year: This is the UI entered year.
         :param int month: This is the UI entered month.
         :param int day: This is the UI entered day.
+        :returns: The number of DB rows affected.
+        :rtype: int
         """
-        await self._db.insert_into_fiscal_year_table(
-            [(year, month, day, 0, 0, 0)])
+        rowcount = await self.db.cache.insert(
+            self.db._T_FISCAL_YEAR, {'data': [(year, month, day, 0, 0, 0)]})
+        return rowcount
 
-    def _add_location_data(self, data: dict) -> dict:
+    def _add_location_data(self, data: dict) -> tuple:
         """
         Add the location data `iana_name`, `latitude` and, `longitude` to
         the organization data.
 
         :param dict data: The `organization` data.
-        :returns: The updated `organization` data.
-        :rtype: dict
+        :returns: The updated `organization` data and any error that may
+                  have happened.
+        :rtype: tuple
+
+        .. note::
+
+           Organization data structure:
+           {'iana_name': 'America/New_York', 'latitude': '<your latutude>',
+            'locale_name': '<your locale>', 'locality_prefix': '0',
+            'location_city_name': '<your city name>',
+            'longitude': '<your longitude>',
+            'start_of_fiscal_year': '0183-03-05', 'total_membership': '20',
+            'treasurer': '<your treasurer>'}
         """
         location_city_name = data['location_city_name']
 
@@ -173,7 +203,7 @@ class DataPreperation:
         else:
             error = ("The 'location_city_name' field was not found, this "
                      "will cause some dates to be set to the wrong timezone, "
-                     "most likely UTC:00:00.")
+                     "most likely to UTC:00:00.")
             data = None
 
         return data, error
@@ -212,6 +242,14 @@ class DataPreperation:
         return iana, lat, lon, error
 
     @property
+    def _earliest_fiscal_year(self) -> tuple:
+        """
+        Get the earliest year in the `fiscal_year` table.
+        """
+        return min([items[0]
+                   for items in self.db.cache.get(self.db._T_FISCAL_YEAR)])
+
+    @property
     def organization_data(self) -> dict:
         """
         This property gets the organization data that are used throughout
@@ -220,15 +258,7 @@ class DataPreperation:
         :returns: The organization data as defined by {<field name>: <value>}.
         :rtype: dict
         """
-        return self._db.cache.get(self._db._T_DATA, 'organization')
-
-    @property
-    def earliest_fiscal_year(self) -> tuple:
-        """
-        Get the earliest year in the `fiscal_year` table.
-        """
-        years = [items[1] for items in self.cache.get(self._db._T_FISCAL_YEAR)]
-        return min(years) if years else ()
+        return self.db.cache.get(self.db._T_DATA, r_type='organization')
 
 
 class Cache:
@@ -263,6 +293,7 @@ class Cache:
         Remove all data from the cache.
         """
         self._store: dict[str] = {}
+        self._year = None
 
     @property
     def year(self) -> int | None:
@@ -286,7 +317,6 @@ class Cache:
         """
         # field_type  -- Also sets the year.
         await self._load_field_type()
-        # Setup for yearly data
         # fiscal_year
         await self._load_fiscal_year()
         # config_data
@@ -295,7 +325,7 @@ class Cache:
         await self._load_month()
         # monthly
         await self._load_monthly()
-        self._log.info("Loaded database data in the cashe.")
+        self._log.info("Loaded cache with DB data, year set to %s.", self.year)
 
     async def reload(self, table_name: str) -> None:
         """
@@ -305,11 +335,11 @@ class Cache:
             match table_name:
                 case self.db._T_FIELD_TYPE:
                     await self._load_field_type()
-                    await self._load_config_data()  # dependency
-                case self.db._T_DATA:
-                    await self._load_config_data()
+                    #await self._load_config_data()  # dependency
                 case self.db._T_FISCAL_YEAR:
                     await self._load_fiscal_year()
+                case self.db._T_DATA:
+                    await self._load_config_data()
                 case self.db._T_MONTH:
                     await self._load_month()
                 case self.db._T_MONTHLY:
@@ -321,28 +351,38 @@ class Cache:
         else:
             await self.load()
 
-    async def _load_fiscal_year(self):
-        items = await self.db.select_from_fiscal_year_table(fiscal=True)
-        self.year = min([item[1] for item in items])
-        self._store[self.year] = {}
-        self._store[self.year][self.db._T_FISCAL_YEAR] = items
-
-    async def _load_field_type(self):
+    async def _load_field_type(self) -> None:
         items = await self.db.select_from_field_type_table(None)
         self._store[self.db._T_FIELD_TYPE] = items
 
-    async def _load_config_data(self):
+    async def _load_fiscal_year(self) -> None:
+        items = await self.db.select_from_fiscal_year_table(fiscal=True)
+        self._split_fiscal_years(items, 1)
+
+    async def _load_config_data(self) -> None:
         items = await self.db.select_from_config_data_table(
             self.fields, self.year)
         self._store[self.year][self.db._T_DATA] = items
 
-    async def _load_month(self):
+    async def _load_month(self) -> None:
         items = await self.db.select_from_month_table()
         self._store[self.year][self.db._T_MONTH] = items
 
-    async def _load_monthly(self):
-        items = await self.db._select_monthly_table(self.year)
+    async def _load_monthly(self) -> None:
+        items = await self.db.select_from_monthly_table(self.year)
         self._store[self.year][self.db._T_MONTHLY] = items
+
+    def _split_fiscal_years(self, items: list, idx: int):
+        years = sorted(items, key=lambda x: x[idx])
+
+        for i, fy in enumerate(years):
+            year = fy[idx]
+
+            if i == 0:
+                self.year = year
+
+            self._store[year] = {}
+            self._store[year][self.db._T_FISCAL_YEAR] = [fy]
 
     @property
     def has_fields_data(self) -> bool:
@@ -364,7 +404,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self.get(self.db._T_DATA, 'organization')) > 0
+        return len(self.get(self.db._T_DATA, r_type='organization')) > 0
 
     @property
     def has_budget_cache_data(self) -> bool:
@@ -375,7 +415,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self.get(self.db._T_DATA, 'budget')) > 0
+        return len(self.get(self.db._T_DATA, r_type='budget')) > 0
 
     @property
     def has_fiscal_cache_data(self) -> bool:
@@ -386,7 +426,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self.get(self.db._T_FISCAL_YEAR, {})) > 0
+        return len(self.get(self.db._T_FISCAL_YEAR)) > 0
 
     @property
     def has_month_cache_data(self) -> bool:
@@ -397,7 +437,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self.get(self.db._T_MONTH, {})) > 0
+        return len(self.get(self.db._T_MONTH)) > 0
 
     @property
     def has_monthly_cache_data(self) -> bool:
@@ -408,7 +448,7 @@ class Cache:
                   saved.
         :rtype: bool
         """
-        return len(self.get(self.db._T_MONTHLY, {})) > 0
+        return len(self.get(self.db._T_MONTHLY)) > 0
 
     @property
     def fields(self):
@@ -421,12 +461,14 @@ class Cache:
         bgt_fields.sort()
         return bgt_fields
 
-    def get(self, table_name: str, r_type: str=None) -> list | tuple:
+    def get(self, table_name: str, *, year: int=None, r_type: str=None
+            ) -> list:
         """
         Get records of the `table_name`. If a `r_type` is provided return
         just that record based on the `table_name` type.
 
-        :param str table_name: This determines the type of data returned.
+        :param int year: The fiscal year.
+        :param str table_name: The DB table to query.
         :param str r_type: This determines a specific record in the entity.
         :returns: Records based on the `table_name`.
         :rtype: list
@@ -443,7 +485,8 @@ class Cache:
            4. The `month`  data is accessed by the year and table name.
            5. The `monthly`  data is accessed by the year and table name.
         """
-        entity_data = self._store.get(self.year, {})
+        year = self.year if year is None else year
+        entity_data = self._store.get(year, {})
         data = {}
 
         if entity_data and entity_data.get(table_name):
@@ -471,98 +514,79 @@ class Cache:
         self._log.info("Retrived '%s' data.", table_name)
         return data
 
-    async def insert_all(self, table_name: str, data: list) -> None:
+    async def insert(self, table_name: str, record: dict) -> int:
         """
-        Insert all date in a table.
+        Insert a new record into the DB and add it to the cache. All records
+        are in a dict even if there is only one item thus keeping a uniform
+        interface.
 
-        :param str table_name: This key determines the type of data returned.
+        :param str table_name: The DB table to query to insert into.
         :param dict data: The data to insert.
+        :returns: The insertion rowcount.
+        :rtype: int
         """
         match table_name:
-            case self.db._T_FIELD_TYPE:
-                rowcount = await self.db.insert_into_field_type_table(data)
-            case self.db._T_DATA:
-                rowcount = await self.db.insert_all_into_config_data_table(
-                    data)
             case self.db._T_FISCAL_YEAR:
+                data = record['data']
                 rowcount = await self.db.insert_into_fiscal_year_table(data)
-            case self.db._T_MONTH:
-                rowcount = await self.db.insert_into_month_table(data)
-            case self.db._T_MONTHLY:
-                rowcount = await self.db.insert_all_into_monthly_table(data)
-            case _:
-                rowcount = 0
-
-        assert len(data) == rowcount, (
-            f"Invalid inserted {rowcount}, found {len(data)} rows for "
-            f"table {table_name}.")
-
-    async def insert(self, table_name: str, r_type: str, record: dict
-                     ) -> dict:
-        """
-        Insert a new record into the DB and add it to the cache.
-
-        :param str table_name: This key determines the type of data returned.
-        :param str r_type: This key determines a specific record in the
-                           entity. In many cases it's the primary key.
-        :param dict data: The data to insert.
-        :returns: The actual data inserted.
-        :rtype: dict
-        """
-        match table_name:
+            case self.db._T_FIELD_TYPE:
+                # Name, now, now
+                data = record['data']
+                rowcount= await self.db.insert_into_field_type_table(data)
             case self.db._T_DATA:
                 year = record['year']
                 month = record['month']
                 data = record['data']
-                await self.db.insert_into_config_data_table(year, month, data)
-            case self.db._T_FISCAL_YEAR:
-                data = record['data']
-                await self.db.insert_into_fiscal_year_table(data)
+                rowcount = await self.db.insert_into_config_data_table(
+                    year, month, data)
             case self.db._T_MONTH:
-                data = [(name, order) for order, name in record.items()]
-                await self.db.insert_into_month_table(record)
+                data = record['data']
+                rowcount = await self.db.insert_into_month_table(data)
             case self.db._T_MONTHLY:
                 year = record['year']
                 data = record['data']
-                await self.db.insert_into_monthly_table(year, data)
+                rowcount = await self.db.insert_into_monthly_table(year, data)
             case _:
                 data = []
+                rowcount = 0
 
         if data:
-            self._store.setdefault(table_name, {})[r_type] = data
+            if table_name == self.db._T_FISCAL_YEAR:
+                self._split_fiscal_years(data, 0)
+            else:
+                self._store[self.year][table_name] = data
 
-        self._log.info("Inserted data into the %s table using record type %s.",
-                       table_name, r_type)
-        return data
+            self._log.info("Inserted data into the %s table.", table_name)
 
-    async def update(self, table_name: str, r_type: str, changes: dict):
+        return rowcount
+
+    async def update(self, table_name: str, changes: dict) -> int:
         """
         Update a record in the cache and push the change to the DB.
 
-        :param str table_name: This key determines the type of data returned.
-        :param str r_type: This key determines a specific record in the
-                           entity.
-        :param dict data: The data to update.
+        :param str table_name: The DB table to update.
+        :param dict changes: The data to update.
+        :returns: The insertion rowcount.
+        :rtype: int
         """
-        record = self.get(table_name, r_type)
-
-        if record is None:
-            raise KeyError(f"No {table_name} record with key {r_type}")
-
-        # Update cache first (instant, in-memory)
         year = changes.get('year')
         month = changes.get('month')
         data = changes.get('data')
-        record = data
 
         # Then persist to DB
         match table_name:
-            case self.db._T_DATA:
-                await self.db.update_config_data_table(year, month, data)
             case self.db._T_FISCAL_YEAR:
-                await self.db.update_fiscal_year_table(data)
+                rowcount = await self.db.update_fiscal_year_table(data)
+            case self.db._T_DATA:
+                rowcount = await self.db.update_config_data_table(
+                    year, month, data)
             case self.db._T_MONTHLY:
-                await self.db.update_monthly_table(year, data)
+                rowcount = await self.db.update_monthly_table(year, data)
 
-        self._log.info("Updated data in the %s table using record type %s.",
-                       table_name, r_type)
+        if table_name == self.db._T_FISCAL_YEAR:
+            self._split_fiscal_years(data, 0)
+        else:
+            self._store[year][table_name] = data
+
+        self._log.info("Updated data in the %s table.", table_name)
+        return rowcount
