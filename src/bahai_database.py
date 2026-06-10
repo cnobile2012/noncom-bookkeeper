@@ -141,7 +141,7 @@ class Database(BaseDatabase):
         are needed to do updates.
 
         :param list data: The data to be updated.
-        :returns: The row count caused by the update.
+        :returns: The rowcount of the update.
         :rtype: int
 
         .. note::
@@ -233,7 +233,7 @@ class Database(BaseDatabase):
         query = f'SELECT * FROM {self._T_FIELD_TYPE}' + where
         return await self._do_select_query(query)
 
-    async def insert_into_field_type_table(self, data: set | list) -> int:
+    async def insert_into_field_type_table(self, data: list) -> int:
         """
         Insert fields into the field_type table.
 
@@ -309,7 +309,8 @@ class Database(BaseDatabase):
                 f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.pk = d.fy2fk "
                 "      AND y2.year = ? "
                 )
-        else:
+        else:  # *** TODO *** May not be used anymore.
+            print("IMPORTANT", fields)
             params = ()
             query = (
                 "SELECT d.pk, f.field, d.value, d.ctime, d.mtime "
@@ -330,31 +331,27 @@ class Database(BaseDatabase):
 
         .. note::
 
-           Incomming data: (pk, value, fy1fk, fy2fk, mfk, ffk, ctime, mtime)
+           Incoming data: (pk, value, fy1fk, fy2fk, mfk, ffk, ctime, mtime)
         """
         query = (f"INSERT INTO {self._T_DATA} (pk, value, fy1fk, fy2fk, mfk, "
                  "ffk, ctime, mtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
         return await self._do_insert_query(query, data)
 
     async def insert_into_config_data_table(self, year: int, month: int,
-                                            data: dict) -> int:
+                                            data: list) -> int:
         """
         Insert values into the Data table.
 
         :param int year: A Baha'i year of the transaction.
         :param int month: A Baha'i month of the transaction. This is the order
                           of the Baha'i month not the name.
-        :param dict data: The data from the any panel  in the form of:
-                          {<field name>: <value>,...}.
+        :param list data: The data from the any panel in the form of:
+                          [(<field_name>, <value>), ...].
         :returns: The row count caused by the insert.
         :rtype: int
-
-        .. note::
-
-           Incoming data:
-           {<field_name>: value, ...}
         """
         fy1 = await self.select_from_fiscal_year_table(current=1)
+        items = dict(data)
 
         if fy1:
             now = badidatetime.datetime.now(self.utc_tzinfo)
@@ -374,7 +371,7 @@ class Database(BaseDatabase):
                 mfk = f_month[0]
                 fy1fk = fy1[0]  # We want the FK not the year.
                 fy2fk = fy2[0]  # We want the FK not the year.
-                values.append({'value': data[field], 'fy1fk': fy1fk,
+                values.append({'value': items[field], 'fy1fk': fy1fk,
                                'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
                                'ctime': now, 'mtime': now})
 
@@ -385,23 +382,14 @@ class Database(BaseDatabase):
 
         return rowcount
 
-    async def update_config_data_table(self, year: int, month: int, data: list
-                                       ) -> int:
+    async def update_config_data_table(self, data: list) -> int:
         """
         Update the `data` table.
 
-        :param int year: A Baha'i year of the transaction.
-        :param int month: A Baha'i month of the transaction. This is the order
-                          of the Baha'i month not the name.
         :param list data: The data from the any panel  in the form of:
-                          [(pk, <value>), ...}.
+                          [(<pk>, <value>), ...}.
         :returns: The row count caused by the update.
         :rtype: int
-
-        .. note::
-
-           Incoming data:
-           {pk: value, <field_name>: value, ...}
         """
         mtime = badidatetime.datetime.now(self.utc_tzinfo)
         query = (f"UPDATE {self._T_DATA} SET value = :value, "

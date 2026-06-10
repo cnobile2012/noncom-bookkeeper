@@ -6,6 +6,7 @@
 import re
 import unittest
 import aiosqlite
+import wx
 
 from src.bahai_database import Database
 
@@ -89,6 +90,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         cls._db = Database()
         cls._db.testing = True
         cls._db.create_dirs()
+        cls.app = wx.App(False)
 
     @property
     def db(self):

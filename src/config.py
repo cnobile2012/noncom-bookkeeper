@@ -89,7 +89,10 @@ class Settings(AppDirs, Borg):
             if not os.path.exists(self._testing_data_dir):  # pragma: no cover
                 os.makedirs(self._testing_data_dir, mode=0o775, exist_ok=True)
 
-            paths = (self._testing_data_dir,)
+            if not os.path.exists(self.cached_factory_dir):  # pragma: no cover
+                os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
+
+            paths = (self._testing_data_dir, self.cached_factory_dir)
         else:
             if not os.path.exists(self.user_data_dir):  # pragma: no cover
                 os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)

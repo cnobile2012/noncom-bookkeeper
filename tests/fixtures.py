@@ -6,11 +6,27 @@ __docformat__ = "restructuredtext en"
 
 import wx
 
+from src.main_frame import MainFrame
 from src.bases import BaseGenerated
 from src.custom_widgits import (
     ColorCheckBox, EVT_COLOR_CHECKBOX)
+from src.config import Settings, TomlPanelConfig, TomlAppConfig
 
-__all__ = ('FakeFrame', 'FakeWidget', 'FakeEvent', 'FakePanel')
+__all__ = ('FakeFrame', 'FakeMainFrame', 'FakeWidget', 'FakeEvent',
+           'FakePanel')
+
+
+class FakeMainFrame(MainFrame):
+
+    def __init__(self, options=None, *args, **kwargs):
+        settings = Settings()
+        settings.testing = True
+        settings.create_dirs()
+        tpc = TomlPanelConfig()
+        tpc.is_valid
+        self.tac = TomlAppConfig()
+        self.tac.is_valid
+        super().__init__(options, *args, **kwargs)
 
 
 class FakeFrame(wx.Frame):

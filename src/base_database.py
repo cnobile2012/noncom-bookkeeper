@@ -153,7 +153,7 @@ class BaseDatabase(PopulateCollect, Settings):
     _INDICES = [name.split()[0] for name in _SCHEMA_INDICES]
     _INDICES.sort()
     _EXCLUDE_PANELS = ('fiscal', 'monthly')
-    _MAX_FIELD_LEN = 40  # Max length of fields allowed in the field_table.
+    _MAX_FIELD_LEN = 50  # Max length of fields allowed in the field_table.
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
 
     def __init__(self, *args, **kwargs):
@@ -276,20 +276,12 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         for panel_name, panel in panels.items():
             data = self.collect_panel_values(panel)
-            keys = list(data.keys())
-            values = await self.select_from_config_data_table(keys, year)
-
-            # Needed when the app has been run at least one time before.
-            if panel_name == 'organization' and values:
-                # This stores and converts a list to a dict.
-                items = self._dp.organization_data
-            else:
-                items = {value[1]: value[2] for value in values}
-
+            items = self.cache.get(self._T_DATA, year=year, r_type=panel_name)
             # Add any new fields to the database.
             await self._add_fields_to_field_type_table(data)
             panel.initializing = True
-            self.populate_panel_values(panel_name, panel, items)
+            values = {item[1]: item[2] for item in items}
+            self.populate_panel_values(panel_name, panel, values)
             panel.initializing = False
 
     async def _populate_monthly_panel(self, fy_year: int, fy_month: int,
@@ -400,23 +392,37 @@ class BaseDatabase(PopulateCollect, Settings):
     # Database access methods.
     #
 
-    async def _add_fields_to_field_type_table(self, data: dict) -> None:
+    async def _add_fields_to_field_type_table(self, data: dict) -> int:
         """
         Add fields to the field_type table if they don't already exist.
 
-        :param dict data: The data from the Organization Information panel in
+        :param dict data: The data from the Organization or Budget panels in
                           the form of: {<field name>: <value>,...}.
+        :returns: The insertion rowcount.
+        :rtype: int
         """
-        keys = list(data.keys())
         current_fields = self.cache.fields
-        new_fields = [fd for fd in data if (len(fd) <= self._MAX_FIELD_LEN)]
-        fields = set(new_fields) - set(current_fields)
+        new_fields = [fd for fd in data]
+        fields = list(set(new_fields) - set(current_fields))
+        fields.sort()
+        long = [field for field in new_fields
+                if len(field) > self._MAX_FIELD_LEN]
+
+        if long:
+            self._log.warning("Found field(s) that are longer than %s, %s",
+                              self._MAX_FIELD_LEN, long)
 
         if fields:
-            await self.insert_into_field_type_table(fields)
+            rowcount = await self.cache.insert(self._T_FIELD_TYPE,
+                                               {'data': fields})
+        else:
+            rowcount = 0
 
-    async def _insert_update_config_data_table(
-        self, year: int, *, month: int=None, data: dict={}) -> None:
+        return rowcount
+
+    async def _insert_update_config_data_table(self, year: int, *,
+                                               month: int=None, data: dict={}
+                                               ) -> str:
         """
         Insert or update `data` table.
 
@@ -429,53 +435,42 @@ class BaseDatabase(PopulateCollect, Settings):
         :rtype: None or str
         """
         error = None
-        keys = list(data.keys())
-        values = await self.select_from_config_data_table(keys, year)
+        values = self.cache.get(self._T_DATA, year=year, r_type='budget')
 
         if not values:  # Do insert
-            await self.insert_into_config_data_table(year, month, data)
+            items = {'year': year, 'month': month, 'data': data}
+            rowcount = await self.cache.insert(self._T_DATA, items)
             self._log.info("Inserted %s table data: %s.", self._T_DATA, data)
         else:
-            insert_data = {}
-            update_data = []
+            insert_data = {'year': year, 'month': month}
+            update_data = {}
+            # See select_from_config_data_table() for the mapping.
             #        field,    pk,      y1
             items = {item[1]: (item[0], item[3]) for item in values}
 
             for field, value in data.items():  # Loop through incoming data.
-                pk, y1 = items.get(field, (None, None))  # Selected data
+                pk, y1 = items.get(field, (None, None))  # pk, y1
 
-                if not pk or not y1:           # Error condition
+                if None in (pk, y1):           # Error condition
                     error = f"Could not find field {field} in {data}."
                     self._mf.statusbar_error = error
                     self._log.error(error)
                     break
 
                 if year != y1:                 # Insert
-                    insert_data[field] = value
+                    values = insert_data.setdefault('data', [])
+                    values.append((field, value))
                 else:                          # Update
-                    update_data.append((pk, value))
+                    values = update_data.setdefault('data', [])
+                    values.append((pk, value))
 
             if insert_data:                    # Do insert
-                rowcount = await self.insert_into_config_data_table(
-                    year, month, insert_data)
+                rowcount = await self.cache.insert(self._T_DATA, insert_data)
 
             if update_data:                    # Do update
-                rowcount = await self.update_config_data_table(year, month,
-                                                               update_data)
+                rowcount = await self.cache.update(self._T_DATA, update_data)
 
         return error
-
-    # async def _select_monthly_table(self, year: int, month: int=None) -> list:
-    #     """
-    #     Select data from the monthly table.
-
-    #     :param int year: Year of insert or update.
-    #     :param int month: Month of insert or update.
-    #     :returns: Monthly data.
-    #     :rtype: list
-    #     """
-    #     months = await self.select_from_monthly_table(year, month)
-    #     return months
 
     async def _insert_update_monthly_table(self, year: int, month: int,
                                            data: dict) -> int:

@@ -4,23 +4,16 @@
 #
 __docformat__ = "restructuredtext en"
 
+import os
 import unittest
+import badidatetime
+
+from src.config import TomlPanelConfig
 from src.prep_and_cache import DataPreperation
-from src.utilities import StoreObjects
 
-from . import log, check_flag, patchers
+from . import LOGFILE_NAME, log, check_flag, patchers
 from .base_database_test import BaseAsyncTests
-
-
-class FakeMainFrame:
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._mf = StoreObjects().get_object('MainFrame')
-
-    @property
-    def panel(self):
-        return {}
+#from .fixtures import FakeMainFrame
 
 
 class TestDataPreperation(BaseAsyncTests):
@@ -31,6 +24,8 @@ class TestDataPreperation(BaseAsyncTests):
     def setUp(self):
         check_flag(self.__class__.__name__)
         patchers(self)
+        self._tpc = TomlPanelConfig()
+        self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
 
     async def asyncSetUp(self):
         await self.db.create_db()
@@ -46,7 +41,53 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the organization method inserts or updates the config_date,
         fiscal_year, and field_type tables.
         """
-        pass
+        sofy = badidatetime.date(183, 3, 5)
+        err_msg0 = ("Organization Information data must be entered before "
+                    "any other data can be entered.")
+        err_msg1 = "The '{}' field(s) must not be empty."
+        part_data = {'locale_name': '', 'locality_prefix': '0',
+                     'location_city_name': 'New York',
+                     'start_of_fiscal_year': sofy, 'total_membership': '20',
+                     'treasurer': ''}
+        all_data = {'locale_name': 'New York', 'locality_prefix': '0',
+                    'location_city_name': 'New York',
+                    'start_of_fiscal_year': sofy, 'total_membership': '20',
+                    'treasurer': 'Joe Schmo'}
+        data = (
+            ({}, None, None, False, False, err_msg0),  # No data
+            (part_data, 183, 3, True, True, err_msg1.format(
+                "locale_name, treasurer")),
+            (all_data, 183, 3, True, False, 1),
+            )
+        msg = "Expexted {}, found {}."
+        fiscal_years = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
+        rowcount = await self.tdp.db.cache.insert(
+            self.tdp.db._T_FISCAL_YEAR, fiscal_years)
+        self.assertEqual(2, rowcount)
+
+        for items, year, month, valid, partial, expected in data:
+            rowcount = await self.tdp.organization(items, year, month)
+
+            if valid:
+                if partial:
+                    file_data = self.read_text_file(self.log_path)
+                    result = self.find_text(
+                        file_data, 'config prep_and_cache organization',
+                        2, expected)
+                    self.assertIn(expected, result, msg.format(
+                        expected, result))
+
+                result = self.db.cache.get(self.db._T_FIELD_TYPE, year=year,
+                                           r_type='organization')
+                #print('POOP', result)
+
+
+            else:
+                file_data = self.read_text_file(self.log_path)
+                result = self.find_text(file_data,
+                                        'config prep_and_cache organization',
+                                        2, expected)
+                self.assertIn(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test_fiscal(self):
@@ -75,53 +116,59 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the _first_run_initialization method initializes the database
         with all current panel data.
         """
+        class Options:
+            file_dump = True
+
         # First day of fiscal year.
         year = 183
         month = 3
         day = 5
-        mf = FakeMainFrame()
-        StoreObjects().set_object('MainFrame', self)
+        #mf = FakeMainFrame(options=Options())
+
         await self.tdp._first_run_initialization(year, month, day)
         result = self.db.cache.get(self.db._T_FISCAL_YEAR)
         print(result)
         # *** TODO *** Make a fake MainFrame fixture.
 
     #@unittest.skip("Temporarily skipped")
-    async def test__entered_next_year(self):
+    async def test__enter_next_year(self):
         """
-        Test that the _entered_next_year method updates the previous fiscal
+        Test that the _enter_next_year method updates the previous fiscal
         year, updates this fiscal year, and inserts the next fiscal year.
         """
         items = {'data': [(182, 3, 5, 1, 1, 0), (183, 3, 5, 0, 0, 0)]}
         rowcount = await self.tdp.db.cache.insert(
             self.tdp.db._T_FISCAL_YEAR, items)
         self.assertEqual(2, rowcount)
-        rowcount = await self.tdp._entered_next_year(183, 3, 5)
+        rowcount = await self.tdp._enter_next_year(183, 3, 5)
         self.assertEqual(3, rowcount)
 
         data = (
-            (182, [(182, 3, 5, 0, 0, 0)]),
-            (183, [(183, 3, 5, 1, 1, 0)]),
-            (184, [(184, 3, 5, 0, 0, 0)]),
+            (182, (182, 3, 5, 0, 0, 0)),
+            (183, (183, 3, 5, 1, 1, 0)),
+            (184, (184, 3, 5, 0, 0, 0)),
             )
-        msg = "Expected {}, found{}."
+        msg = "Expected {}, found {}."
 
         for year, expected in data:
             result = self.tdp.db.cache.get(self.db._T_FISCAL_YEAR, year=year)
-            self.assertEqual(expected, result, msg.format(expected, result))
+            record = result[0][1:-2]
+            self.assertEqual(expected, record, msg.format(
+                expected, record))
 
     #@unittest.skip("Temporarily skipped")
-    async def test__entered_previous_year(self):
+    async def test__enter_previous_year(self):
         """
-        Test that the _entered_previous_year method inserts the next
+        Test that the _enter_previous_year method inserts the next
         fiscal year.
         """
-        expected = [(183, 3, 5, 0, 0, 0)]
-        rowcount = await self.tdp._entered_previous_year(183, 3, 5)
+        expected = (183, 3, 5, 0, 0, 0)
+        rowcount = await self.tdp._enter_previous_year(183, 3, 5)
         self.assertEqual(1, rowcount)
         result = self.tdp.db.cache.get(self.db._T_FISCAL_YEAR, year=183)
-        msg = f"Expected {expected}, found{result}."
-        self.assertEqual(expected, result, msg)
+        record = result[0][1:-2]
+        msg = f"Expected {expected}, found {record}."
+        self.assertEqual(expected, record, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test__add_location_data(self):
@@ -176,6 +223,7 @@ class TestDataPreperation(BaseAsyncTests):
                 (184, 3, 5, 0, 0, 0)]
         rowcount = await self.tdp.db.cache.insert(
             self.tdp.db._T_FISCAL_YEAR, {'data': data})
+        self.assertEqual(len(data), rowcount)
         result = self.tdp._earliest_fiscal_year
         self.assertEqual(data[0][0], result)
 

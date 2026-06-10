@@ -50,16 +50,16 @@ class PanelFactory(TomlMetaData):
         klass = StringIO()
 
         if panel in ('organization',):
-            klass.write("from .utilities import StoreObjects\n\n\n")
+            klass.write("from src.utilities import StoreObjects\n\n\n")
 
         if panel in ('fiscal',):
-            klass.write("from .utilities import StoreObjects\n")
-            klass.write("from .custom_widgits import ColorCheckBox, "
+            klass.write("from src.utilities import StoreObjects\n")
+            klass.write("from src.custom_widgits import ColorCheckBox, "
                         "EVT_COLOR_CHECKBOX\n\n\n")
 
         if panel in ('monthly',):
-            klass.write("from .utilities import StoreObjects\n")
-            klass.write("from .custom_widgits import FlatArrowButton, "
+            klass.write("from src.utilities import StoreObjects\n")
+            klass.write("from src.custom_widgits import FlatArrowButton, "
                         "EVT_FLAT_ARROW\n\n\n")
 
         klass.write(f"class {class_name}(BaseGenerated):\n")
