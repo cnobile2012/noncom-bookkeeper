@@ -114,15 +114,15 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         :rtype: int
         """
         match table_name:
-            case self.db._T_FISCAL_YEAR:
-                rowcount = await self.db.insert_into_fiscal_year_table(data)
             case self.db._T_FIELD_TYPE:
                 rowcount = await self.db.insert_into_field_type_table(data)
+            case self.db._T_MONTH:
+                rowcount = await self.db.insert_into_month_table(data)
+            case self.db._T_FISCAL_YEAR:
+                rowcount = await self.db.insert_into_fiscal_year_table(data)
             case self.db._T_DATA:
                 rowcount = await self.db.insert_all_into_config_data_table(
                     data)
-            case self.db._T_MONTH:
-                rowcount = await self.db.insert_into_month_table(data)
             case self.db._T_MONTHLY:
                 rowcount = await self.db.insert_all_into_monthly_table(data)
             case _:

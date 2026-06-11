@@ -361,7 +361,7 @@ class BaseDatabase(PopulateCollect, Settings):
             f_year = f_month = None
         elif name == 'budget':
             if f_year and f_month:
-                error = await self._insert_update_config_data_table(
+                error, _ = await self._insert_update_config_data_table(
                     f_year, month=f_month, data=data)
         elif name == 'monthly':
             if data:
@@ -422,7 +422,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
     async def _insert_update_config_data_table(self, year: int, *,
                                                month: int=None, data: dict={}
-                                               ) -> str:
+                                               ) -> tuple:
         """
         Insert or update `data` table.
 
@@ -430,9 +430,9 @@ class BaseDatabase(PopulateCollect, Settings):
         :param int month: A Baha'i month of the transaction. This is the order
                           of the Baha'i month not the name.
         :param dict data: The data from the any panel  in the form of:
-                          {<field name>: <value>,...}.
-        :returns: None if no errors. If an error a, error message.
-        :rtype: None or str
+                          [(<field name>, <value>), ...].
+        :returns: (<None if no errors>, rowcount)
+        :rtype: tuple
         """
         error = None
         values = self.cache.get(self._T_DATA, year=year, r_type='budget')
@@ -447,6 +447,7 @@ class BaseDatabase(PopulateCollect, Settings):
             # See select_from_config_data_table() for the mapping.
             #        field,    pk,      y1
             items = {item[1]: (item[0], item[3]) for item in values}
+            rowcount = 0
 
             for field, value in data.items():  # Loop through incoming data.
                 pk, y1 = items.get(field, (None, None))  # pk, y1
@@ -470,7 +471,7 @@ class BaseDatabase(PopulateCollect, Settings):
             if update_data:                    # Do update
                 rowcount = await self.cache.update(self._T_DATA, update_data)
 
-        return error
+        return error, rowcount
 
     async def _insert_update_monthly_table(self, year: int, month: int,
                                            data: dict) -> int:

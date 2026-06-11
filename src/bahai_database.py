@@ -351,11 +351,11 @@ class Database(BaseDatabase):
         :rtype: int
         """
         fy1 = await self.select_from_fiscal_year_table(current=1)
-        items = dict(data)
+        items = dict(data)  # Convert a list of tuples into a dict.
 
         if fy1:
             now = badidatetime.datetime.now(self.utc_tzinfo)
-            f_items = await self.select_from_field_type_table(data)
+            f_items = await self.select_from_field_type_table(items)
             f_month = await self.select_from_month_table(order=month)
             fy2 = await self.select_from_fiscal_year_table(year=fy1[1]+1)
 
@@ -391,6 +391,12 @@ class Database(BaseDatabase):
         :returns: The row count caused by the update.
         :rtype: int
         """
+        for item in data:
+            assert isinstance(item[0], int), (
+                f"The pk '{item[0]}' is not an integer.")
+            assert isinstance(item[1], str), (
+                f"The value '{item[1]}' is not a string.")
+
         mtime = badidatetime.datetime.now(self.utc_tzinfo)
         query = (f"UPDATE {self._T_DATA} SET value = :value, "
                  "mtime = :mtime WHERE pk = :pk;")

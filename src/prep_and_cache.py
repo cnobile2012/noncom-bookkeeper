@@ -79,11 +79,12 @@ class DataPreperation:
                 else:
                     self._log.warning(error)
 
-            rowcount = await self.db._insert_update_config_data_table(
+            error, rowcount = await self.db._insert_update_config_data_table(
                 f_year, month=f_month, data=data)
+            error and self._log.warning(error)
             return rowcount
 
-        # If no org data was entered.
+        # If no organization data was entered.
         error = ("Organization Information data must be entered before "
                  "any other data can be entered.")
         self._log.warning(error)
@@ -127,12 +128,9 @@ class DataPreperation:
         data = {'data':[(year, month, day, 1, 1, 0),
                         (year+1, month, day, 0, 0, 0)]}
         await self.db.cache.insert(self.db._T_FISCAL_YEAR, data)
-
-        #await self.db.insert_into_fiscal_year_table(data)
         # Populate the Badí months in the database.
         data = {'data': self.db.ordered_month()}
         await self.db.cache.insert(self.db._T_MONTH, data)
-        #await self.db._insert_into_month_table()
 
         # Populate all panel fields in the database.
         for name, panel in self._mf.panels.items():
@@ -231,7 +229,7 @@ class DataPreperation:
 
         try:
             location = geolocator.geocode(address)
-        except exc.GeocoderError as e:
+        except exc.GeocoderError as e:  # pragma: no cover
             error = f"Could not get information on {address}"
             self._log.error(error + ", %s", e)
         else:
@@ -242,7 +240,7 @@ class DataPreperation:
             lon = location.longitude
             tf = TimezoneFinder()
             iana = tf.timezone_at(lng=lon, lat=lat)
-        elif error:
+        elif error:  # pragma: no cover
             iana = lat = lon = None
         else:
             iana = lat = lon = None
@@ -346,29 +344,29 @@ class Cache:
             self._log.info("Loaded cache with DB data, year set to %s.",
                            self.year)
 
-    async def reload(self, table_name: str) -> None:
-        """
-        Reload specific table data.
-        """
-        if self.has_cache and self.year:
-            match table_name:
-                case self.db._T_FIELD_TYPE:
-                    await self._load_field_type()
-                    #await self._load_config_data()  # dependency
-                case self.db._T_FISCAL_YEAR:
-                    await self._load_fiscal_year()
-                case self.db._T_DATA:
-                    await self._load_config_data()
-                case self.db._T_MONTH:
-                    await self._load_month()
-                case self.db._T_MONTHLY:
-                    await self._load_monthly()
-                case _:
-                    raise ValueError(f"Unknown table: {table_name}")
+    # async def reload(self, table_name: str) -> None:
+    #     """
+    #     Reload specific table data.
+    #     """
+    #     if self.has_cache and self.year:
+    #         match table_name:
+    #             case self.db._T_FIELD_TYPE:
+    #                 await self._load_field_type()
+    #                 #await self._load_config_data()  # dependency
+    #             case self.db._T_FISCAL_YEAR:
+    #                 await self._load_fiscal_year()
+    #             case self.db._T_DATA:
+    #                 await self._load_config_data()
+    #             case self.db._T_MONTH:
+    #                 await self._load_month()
+    #             case self.db._T_MONTHLY:
+    #                 await self._load_monthly()
+    #             case _:
+    #                 raise ValueError(f"Unknown table: {table_name}")
 
-            self._log.info("Reloaded the %s table.", table_name)
-        else:
-            await self.load()
+    #         self._log.info("Reloaded the %s table.", table_name)
+    #     else:
+    #         await self.load()
 
     async def _load_field_type(self) -> None:
         items = await self.db.select_from_field_type_table(None)
@@ -531,7 +529,7 @@ class Cache:
 
                     data = [item for item in items if item[1] in fields]
                 else:
-                    data = {}
+                    data = []
             case self.db._T_MONTH:
                 data = self._store.get(self.db._T_MONTH, [])
             case self.db._T_MONTHLY:
@@ -551,34 +549,31 @@ class Cache:
         :returns: The insertion rowcount.
         :rtype: int
         """
+        data = record.get('data', [])
+
         match table_name:
             case self.db._T_FIELD_TYPE:
                 # Name, now, now
-                data = record['data']
                 rowcount= await self.db.insert_into_field_type_table(data)
                 await self._load_field_type()
+            case self.db._T_MONTH:
+                rowcount = await self.db.insert_into_month_table(data)
+                await self._load_month()
             case self.db._T_FISCAL_YEAR:
-                data = record['data']
                 rowcount = await self.db.insert_into_fiscal_year_table(data)
                 await self._load_fiscal_year()
             case self.db._T_DATA:
                 year = record['year']
                 month = record['month']
-                data = record['data']
                 rowcount = await self.db.insert_into_config_data_table(
                     year, month, data)
                 await self._load_config_data()
-            case self.db._T_MONTH:
-                data = record['data']
-                rowcount = await self.db.insert_into_month_table(data)
-                await self._load_month()
             case self.db._T_MONTHLY:
                 year = record['year']
-                data = record['data']
                 rowcount = await self.db.insert_into_monthly_table(year, data)
                 await self._load_monthly()
             case _:
-                data = []
+                self._log.error("Invalid table name %s.", table_name)
                 rowcount = 0
 
         self._log.info("Inserted data into the %s table.", table_name)
@@ -597,6 +592,9 @@ class Cache:
 
         # Then persist to DB
         match table_name:
+            # case self.db._T_FIELD_TYPE:
+            # *** TODO *** What if a field name is spelled wrong and
+            # needs to be fixed? How will that affect the whole system.
             case self.db._T_FISCAL_YEAR:
                 rowcount = await self.db.update_fiscal_year_table(data)
                 await self._load_fiscal_year()
@@ -607,6 +605,9 @@ class Cache:
                 year = changes.get('year')
                 rowcount = await self.db.update_monthly_table(year, data)
                 await self._load_monthly()
+            case _:
+                self._log.error("Invalid table name %s.", table_name)
+                rowcount = 0
 
         self._log.info("Updated data in the %s table.", table_name)
         return rowcount

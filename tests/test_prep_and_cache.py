@@ -42,22 +42,28 @@ class TestDataPreperation(BaseAsyncTests):
         fiscal_year, and field_type tables.
         """
         sofy = badidatetime.date(183, 3, 5)
+        next_sofy = badidatetime.date(184, 3, 5)
         err_msg0 = ("Organization Information data must be entered before "
                     "any other data can be entered.")
         err_msg1 = "The '{}' field(s) must not be empty."
         part_data = {'locale_name': '', 'locality_prefix': '0',
                      'location_city_name': 'New York',
-                     'start_of_fiscal_year': sofy, 'total_membership': '20',
-                     'treasurer': ''}
-        all_data = {'locale_name': 'New York', 'locality_prefix': '0',
+                     'start_of_fiscal_year': sofy,
+                     'total_membership': '20', 'treasurer': ''}
+        full_data = {'locale_name': 'New York', 'locality_prefix': '0',
+                     'location_city_name': 'New York',
+                     'start_of_fiscal_year': sofy,
+                     'total_membership': '20', 'treasurer': 'Joe Schmo'}
+        next_data = {'locale_name': 'New York', 'locality_prefix': '0',
                     'location_city_name': 'New York',
-                    'start_of_fiscal_year': sofy, 'total_membership': '20',
-                    'treasurer': 'Joe Schmo'}
+                    'start_of_fiscal_year': next_sofy,
+                    'total_membership': '20', 'treasurer': 'Joe Schmo'}
         data = (
-            ({}, None, None, False, False, err_msg0),  # No data
-            (part_data, 183, 3, True, True, err_msg1.format(
-                "locale_name, treasurer")),
-            (all_data, 183, 3, True, False, 1),
+            ({}, None, None, False, False, False, err_msg0),  # No data
+            (part_data, 183, 3, True, True, False, err_msg1.format(
+                "locale_name, treasurer")),  # Partial data
+            (full_data, 183, 3, True, False, False, 1),  # Full data
+            (next_data, 184, 3, True, False, False, 0),  # Next year
             )
         msg = "Expexted {}, found {}."
         fiscal_years = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
@@ -65,7 +71,7 @@ class TestDataPreperation(BaseAsyncTests):
             self.tdp.db._T_FISCAL_YEAR, fiscal_years)
         self.assertEqual(2, rowcount)
 
-        for items, year, month, valid, partial, expected in data:
+        for items, year, month, valid, partial, no_fys, expected in data:
             rowcount = await self.tdp.organization(items, year, month)
 
             if valid:
@@ -76,11 +82,13 @@ class TestDataPreperation(BaseAsyncTests):
                         2, expected)
                     self.assertIn(expected, result, msg.format(
                         expected, result))
+                elif no_fys:
+                    self.db.cache._flush_cache()
+                    await self.truncate_all_tables()
 
                 result = self.db.cache.get(self.db._T_FIELD_TYPE, year=year,
                                            r_type='organization')
-                #print('POOP', result)
-
+                #print('POOP', result, rowcount, self.db.cache._store)
 
             else:
                 file_data = self.read_text_file(self.log_path)
@@ -176,24 +184,47 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the _add_location_data method correctly adds the IANA key,
         latitude and longitude to the organization record.
         """
+        err_msg0 = "Cannot find the timezone for '{}'."
+        err_msg1 = ("The 'location_city_name' field was not found, this "
+                    "will cause some dates to be set to the wrong timezone, "
+                    "most likely to UTC:00:00.")
+        new_org = {'locale_name': 'New York', 'locality_prefix': '0',
+                   'location_city_name': 'New York',
+                   'start_of_fiscal_year': '0183-03-05',
+                   'total_membership': '20', 'treasurer': '<your treasurer>'}
+        bad_loc = {'locale_name': 'New York', 'locality_prefix': '0',
+                   'location_city_name': "Someplace That Doesn't Exist",
+                   'start_of_fiscal_year': '0183-03-05',
+                   'total_membership': '20', 'treasurer': '<your treasurer>'}
+        no_loc = {'locale_name': 'New York', 'locality_prefix': '0',
+                  'location_city_name': "",
+                  'start_of_fiscal_year': '0183-03-05',
+                  'total_membership': '20', 'treasurer': '<your treasurer>'}
+        data = (
+            (new_org, True, ('America/New_York', 40.7127281, -74.0060152)),
+            (bad_loc, False, err_msg0.format(bad_loc['location_city_name'])),
+            (no_loc, False, err_msg1)
+            )
         msg = "Expected {}, found {}."
-        data = {'locale_name': 'New York', 'locality_prefix': '0',
-                'location_city_name': 'New York',
-                'start_of_fiscal_year': '0183-03-05', 'total_membership': '20',
-                'treasurer': '<your treasurer>'}
-        data, error = self.tdp._add_location_data(data)
-        expect_iana = 'America/New_York'
-        iana_name = data.get('iana_name')
-        expect_latitude = 40.7127281
-        latitude = data.get('latitude')
-        expect_longitude = -74.0060152
-        longitude = data.get('longitude')
-        self.assertEqual(expect_iana, iana_name, msg.format(
-            expect_iana, iana_name))
-        self.assertEqual(expect_latitude, latitude, msg.format(
-            expect_latitude, latitude))
-        self.assertEqual(expect_longitude, longitude, msg.format(
-            expect_longitude, longitude))
+
+        for data, valid, expected in data:
+            result, error = self.tdp._add_location_data(data)
+
+            if valid:
+                expect_iana = expected[0]
+                iana_name = result.get('iana_name')
+                expect_latitude = expected[1]
+                latitude = result.get('latitude')
+                expect_longitude = expected[2]
+                longitude = result.get('longitude')
+                self.assertEqual(expect_iana, iana_name, msg.format(
+                    expect_iana, iana_name))
+                self.assertEqual(expect_latitude, latitude, msg.format(
+                    expect_latitude, latitude))
+                self.assertEqual(expect_longitude, longitude, msg.format(
+                    expect_longitude, longitude))
+            else:
+                self.assertEqual(expected, error, msg.format(expected, error))
 
     #@unittest.skip("Temporarily skipped")
     def test__find_timezone(self):
@@ -249,6 +280,7 @@ class TestCache(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        patchers(self)
 
     async def asyncSetUp(self):
         await self.db.create_db()
@@ -259,6 +291,26 @@ class TestCache(BaseAsyncTests):
     async def asyncTearDown(self):
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_has_cache(self):
+        """
+        Test that the has_cache property returns True if there is cashed
+        items and False if not.
+        """
+        self.db.cache._flush_cache()
+        await self.truncate_all_tables()
+        data = (False, True)
+        msg = "Expected {} found {}."
+
+        for has_data in data:
+            if has_data:
+                await self.db.cache.load()
+                result = self.db.cache.has_cache
+            else:
+                result = self.db.cache.has_cache
+
+            self.assertEqual(has_data, result, msg.format(has_data, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test_load_no_data(self):
@@ -339,6 +391,7 @@ class TestCache(BaseAsyncTests):
         data = (
             (183, self.db._T_DATA, 'organization', True, 'iana_name'),
             (183, self.db._T_DATA, 'budget', True, 'cash_in_bank'),
+            (183, self.db._T_DATA, None, True, []),
             (184, self.db._T_FISCAL_YEAR, None, True, 184),
             (183, self.db._T_MONTH, None, True, 'Ayyám-i-Há'),
             #(183, self.db._T_MONTHLY, None, True, 'Joe Shmo'),
@@ -347,14 +400,14 @@ class TestCache(BaseAsyncTests):
             )
         msg = "Expected {}, found {}"
 
-        for year, table_name, record_type, valid, data_to_find in data:
+        for year, table_name, record_type, valid, expected in data:
             if valid:
                 result = self.db.cache.get(table_name, year=year,
                                            r_type=record_type)
 
                 match table_name:
                     case self.db._T_DATA:
-                        test_fields = result.keys()
+                        test_fields = [item[1] for item in result]  # value
                     case self.db._T_FISCAL_YEAR:
                         test_fields = [item[1] for item in result]  # year
                     case self.db._T_MONTH:
@@ -362,12 +415,78 @@ class TestCache(BaseAsyncTests):
                     case self.db._T_MONTHLY:
                         test_fields = [item[5] for item in result]  # treasurer
 
-                self.assertIn(data_to_find, test_fields, msg.format(
-                    data_to_find, test_fields))
+                if expected:
+                    self.assertIn(expected, test_fields, msg.format(
+                        expected, test_fields))
+                else:
+                    self.assertEqual(expected, test_fields, msg.format(
+                        expected, test_fields))
             else:
                 with self.assertRaises(AssertionError) as cm:
                     self.db.cache.get(table_name, year=year,
                                       r_type=record_type)
 
-                expect = str(cm.exception)
-                self.assertEqual(expect, data_to_find)
+                result = str(cm.exception)
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_insert(self):
+        """
+        Test that the insert method properly inserts data in the database
+        and cache.
+        """
+        self.db.cache._flush_cache()
+        await self.truncate_all_tables()
+        t_month = {'data': self.db.ordered_month()}
+        t_data = {'year': 183, 'month': 3, 'data': [
+            ('iana_name', 'America/New_York'), ('latitude', 40.7127281),
+            ('locale_name', 'New York'), ('locality_prefix', '0'),
+            ('location_city_name', 'New York'), ('longitude', -74.0060152),
+            ('start_of_fiscal_year', '183-03-05'), ('total_membership', '20'),
+            ('treasurer', '<your treasurer>')]}
+        t_fs = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
+        data = (
+            (self.db._T_FIELD_TYPE, {'data': self.db.cache.ORG_FIELDS}, 9),
+            (self.db._T_MONTH, t_month, 20),
+            (self.db._T_FISCAL_YEAR, t_fs, 2),
+            (self.db._T_DATA, t_data, 9),
+            #(self.db._T_MONTHLY, None, 20),
+            ('InvalidTable', {}, 0)
+            )
+        msg = "Expected {}, found {}"
+
+        for table_name, inserts, expected in data:
+            rowcount = await self.db.cache.insert(table_name, inserts)
+            self.assertEqual(expected, rowcount, msg.format(
+                expected, rowcount))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_update(self):
+        """
+        Test that the update method updates data in the database
+        and cache.
+        """
+        t_fs = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
+        data = self.db.cache.get(self.db._T_DATA, year=183,
+                                 r_type='organization')
+        t_data = {'data': []}
+
+        for item in data:
+            if item[1] == 'total_membership':
+                t_data['data'].append((item[0], '25'))
+            elif item[1] == 'treasurer':
+                t_data['data'].append((item[0], '<a different treasurer>'))
+
+        data = (
+            (self.db._T_FISCAL_YEAR, t_fs, 2),
+            (self.db._T_DATA, t_data, 2),
+            #(self.db._T_MONTHLY, None, 20),
+            ('InvalidTable', {}, 0)
+            )
+        msg = "Expected {}, found {}"
+
+        for table_name, updates, expected in data:
+            rowcount = await self.db.cache.update(table_name, updates)
+            self.assertEqual(expected, rowcount, msg.format(
+                expected, rowcount))
