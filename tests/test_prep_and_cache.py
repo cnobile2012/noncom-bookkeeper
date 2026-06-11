@@ -360,6 +360,100 @@ class TestCache(BaseAsyncTests):
         #self.assertTrue(has_mnly, msg.format(expected, has_mnly))
 
     #@unittest.skip("Temporarily skipped")
+    async def test__load_field_type(self):
+        """
+        Test that the _load_field_type method selects from the database
+        all field_type data and populates storage with it.
+        """
+        err_msg0 = f"'{self.db._T_FIELD_TYPE}'"
+        self.db.cache._flush_cache()
+
+        with self.assertRaises(KeyError) as cm:
+            self.db.cache._store[self.db._T_FIELD_TYPE]
+
+        expected = str(cm.exception)
+        self.assertEqual(expected, err_msg0)
+        await self.db.cache._load_field_type()
+        result = self.db.cache._store[self.db._T_FIELD_TYPE]
+        self.assertIsInstance(result, list)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__load_month(self):
+        """
+        Test that the _load_month method selects from the database
+        all field_type data and populates storage with it.
+        """
+        err_msg0 = f"'{self.db._T_MONTH}'"
+        self.db.cache._flush_cache()
+
+        with self.assertRaises(KeyError) as cm:
+            self.db.cache._store[self.db._T_MONTH]
+
+        expected = str(cm.exception)
+        self.assertEqual(expected, err_msg0)
+        await self.db.cache._load_month()
+        result = self.db.cache._store[self.db._T_MONTH]
+        self.assertIsInstance(result, list)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__load_fiscal_year(self):
+        """
+        Test that the _load_fiscal_year method selects from the database
+        all fiscal_year data and populates storage with it.
+        """
+        err_msg0 = "183"
+        self.db.cache._flush_cache()
+
+        with self.assertRaises(KeyError) as cm:
+            self.db.cache._store[183][self.db._T_FISCAL_YEAR]
+
+        expected = str(cm.exception)
+        self.assertEqual(expected, err_msg0)
+        await self.db.cache._load_fiscal_year()
+        result = self.db.cache._store[183][self.db._T_FISCAL_YEAR]
+        self.assertIsInstance(result, list)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__load_config_data(self):
+        """
+        Test that the _load_config_data method selects from the database
+        all config_data data and populates storage with it.
+        """
+        err_msg0 = "None"
+        self.db.cache._flush_cache()
+
+        with self.assertRaises(KeyError) as cm:
+            self.db.cache._store[None][self.db._T_DATA]
+
+        expected = str(cm.exception)
+        self.assertEqual(expected, err_msg0)
+        self.db.cache.year = 183
+        self.db.cache._store[self.db.cache.year] = {}
+        await self.db.cache._load_config_data()
+        result = self.db.cache._store[183][self.db._T_DATA]
+        self.assertIsInstance(result, list)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__load_monthly(self):
+        """
+        Test that the _load_monthly method selects from the database
+        all config_data data and populates storage with it.
+        """
+        err_msg0 = "None"
+        self.db.cache._flush_cache()
+
+        with self.assertRaises(KeyError) as cm:
+            self.db.cache._store[None][self.db._T_MONTHLY]
+
+        expected = str(cm.exception)
+        self.assertEqual(expected, err_msg0)
+        self.db.cache.year = 183
+        self.db.cache._store[self.db.cache.year] = {}
+        await self.db.cache._load_monthly()
+        result = self.db.cache._store[183][self.db._T_MONTHLY]
+        self.assertIsInstance(result, list)
+
+    #@unittest.skip("Temporarily skipped")
     def test_fields(self):
         """
         Test that the fields property returns just the field names.
@@ -382,6 +476,15 @@ class TestCache(BaseAsyncTests):
             self.assertNotIn(field, result, msg.format(field, result))
 
     #@unittest.skip("Temporarily skipped")
+    def test_available_years(self):
+        """
+        Test that the available_years property a list of years in the cache.
+        """
+        expected = [183, 184]
+        result = self.db.cache.available_years
+        self.assertEqual(expected, result)
+
+    #@unittest.skip("Temporarily skipped")
     def test_get(self):
         """
         Test that the get method returns the correct data depending on the
@@ -389,6 +492,7 @@ class TestCache(BaseAsyncTests):
         """
         err_msg0 = "Invalid `r_type`, found {}."
         data = (
+            (183, self.db._T_FIELD_TYPE, None, True, 'longitude'),
             (183, self.db._T_DATA, 'organization', True, 'iana_name'),
             (183, self.db._T_DATA, 'budget', True, 'cash_in_bank'),
             (183, self.db._T_DATA, None, True, []),
@@ -406,6 +510,8 @@ class TestCache(BaseAsyncTests):
                                            r_type=record_type)
 
                 match table_name:
+                    case self.db._T_FIELD_TYPE:
+                        test_fields = [item[1] for item in result]  # field
                     case self.db._T_DATA:
                         test_fields = [item[1] for item in result]  # value
                     case self.db._T_FISCAL_YEAR:

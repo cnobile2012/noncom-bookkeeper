@@ -310,7 +310,7 @@ class Database(BaseDatabase):
                 "      AND y2.year = ? "
                 )
         else:  # *** TODO *** May not be used anymore.
-            print("IMPORTANT", fields)
+            print(f"IMPORTANT--fields: {fields}")
             params = ()
             query = (
                 "SELECT d.pk, f.field, d.value, d.ctime, d.mtime "

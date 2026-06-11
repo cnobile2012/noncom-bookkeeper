@@ -39,16 +39,17 @@ class DataPreperation:
         :returns: The row count caused by the insert or update.
         :rtype: int
         """
+        error = None
+
         if data:
             # Make sure all fields were entered.
             empty_fields = [field for field, value in data.items()
                             if value == '']
 
-            if len(empty_fields) != 0:  # This should insert
+            if len(empty_fields) != 0:  # This should do a partial insert
                 ef = ', '.join([f for f in empty_fields])
                 error = f"The '{ef}' field(s) must not be empty."
-                self._log.warning(error)
-            else:  # This should update
+            else:
                 data, error = self._add_location_data(data)
 
                 if data:  # Adding location can have errors.
@@ -73,22 +74,23 @@ class DataPreperation:
                     else:
                         year = month = None
                         error = ("Cannot enter a year that is not immediately "
-                                 "before or after the earliest or current "
-                                 "year.")
+                                "before or after the earliest or current "
+                                "year.")
                         self._log.warning(error)
-                else:
-                    self._log.warning(error)
 
-            error, rowcount = await self.db._insert_update_config_data_table(
-                f_year, month=f_month, data=data)
+                    if not error:
+                        error, rc = (await
+                                     self.db._insert_update_config_data_table(
+                                         f_year, month=f_month, data=data))
+
             error and self._log.warning(error)
-            return rowcount
+            return error
 
         # If no organization data was entered.
         error = ("Organization Information data must be entered before "
                  "any other data can be entered.")
         self._log.warning(error)
-        return 0
+        return error
 
     async def fiscal(self, data: dict, f_year: int, f_month: int) -> list:
         """
@@ -372,10 +374,14 @@ class Cache:
         items = await self.db.select_from_field_type_table(None)
         self._store[self.db._T_FIELD_TYPE] = items
 
+    async def _load_month(self) -> None:
+        items = await self.db.select_from_month_table()
+        self._store[self.db._T_MONTH] = items
+
     async def _load_fiscal_year(self) -> None:
         items = await self.db.select_from_fiscal_year_table()
 
-        if isinstance(items, tuple):
+        if isinstance(items, tuple):  # pragma: no cover
             items = [items]
 
         for fy in sorted(items, key=lambda x: x[1]):
@@ -391,10 +397,6 @@ class Cache:
         items = await self.db.select_from_config_data_table(
             self.fields, self.year)
         self._store[self.year][self.db._T_DATA] = items
-
-    async def _load_month(self) -> None:
-        items = await self.db.select_from_month_table()
-        self._store[self.db._T_MONTH] = items
 
     async def _load_monthly(self) -> None:
         items = await self.db.select_from_monthly_table(self.year)
@@ -480,7 +482,7 @@ class Cache:
     @property
     def available_years(self):
         return [key for key in self._store.keys()
-                if key != self.db._T_FIELD_TYPE]
+                if key not in (self.db._T_FIELD_TYPE, self.db._T_MONTH)]
 
     def get(self, table_name: str, *, year: int=None, r_type: str=None
             ) -> list:
