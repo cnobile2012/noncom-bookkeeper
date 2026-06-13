@@ -5,7 +5,9 @@
 __docformat__ = "restructuredtext en"
 
 import logging
+import random
 
+from string import ascii_lowercase, ascii_uppercase, digits
 from geopy.geocoders import Nominatim
 from geopy import exc
 from timezonefinder import TimezoneFinder
@@ -127,8 +129,8 @@ class DataPreperation:
         :param int day: This is the UI entered day.
         """
         # year, month, day, current, audit, work_on
-        data = {'data':[(year, month, day, 1, 1, 0),
-                        (year+1, month, day, 0, 0, 0)]}
+        data = {'data': [(year, month, day, 1, 1, 0),
+                         (year+1, month, day, 0, 0, 0)]}
         await self.db.cache.insert(self.db._T_FISCAL_YEAR, data)
         # Populate the Badí months in the database.
         data = {'data': self.db.ordered_month()}
@@ -298,7 +300,6 @@ class Cache:
         self.db = db
         self._log = logging.getLogger(self._tac.logger_name)
         self._flush_cache()
-        self._year = None
 
     @property
     def has_cache(self):
@@ -308,8 +309,16 @@ class Cache:
         """
         Remove all data from the cache.
         """
-        self._store: dict[str] = {}
+        self._store: dict = {}
         self._year = None
+
+    @property
+    def key(self) -> str | None:
+        return self._store.get('key')
+
+    @key.setter
+    def key(self, key: str) -> None:
+        self._store['key'] = key
 
     @property
     def year(self) -> int | None:
@@ -346,6 +355,12 @@ class Cache:
             self._log.info("Loaded cache with DB data, year set to %s.",
                            self.year)
 
+        if self.has_cache:
+            # Create a cache ID.
+            rand = random.SystemRandom()
+            domain = ascii_lowercase + ascii_uppercase + digits
+            self.key = ''.join(rand.choice(domain) for i in range(9))
+
     # async def reload(self, table_name: str) -> None:
     #     """
     #     Reload specific table data.
@@ -372,11 +387,15 @@ class Cache:
 
     async def _load_field_type(self) -> None:
         items = await self.db.select_from_field_type_table(None)
-        self._store[self.db._T_FIELD_TYPE] = items
+
+        if items:
+            self._store[self.db._T_FIELD_TYPE] = items
 
     async def _load_month(self) -> None:
         items = await self.db.select_from_month_table()
-        self._store[self.db._T_MONTH] = items
+
+        if items:
+            self._store[self.db._T_MONTH] = items
 
     async def _load_fiscal_year(self) -> None:
         items = await self.db.select_from_fiscal_year_table()
@@ -482,7 +501,7 @@ class Cache:
     @property
     def available_years(self):
         return [key for key in self._store.keys()
-                if key not in (self.db._T_FIELD_TYPE, self.db._T_MONTH)]
+                if key not in (self.db._T_FIELD_TYPE, self.db._T_MONTH, 'key')]
 
     def get(self, table_name: str, *, year: int=None, r_type: str=None
             ) -> list:
@@ -556,7 +575,7 @@ class Cache:
         match table_name:
             case self.db._T_FIELD_TYPE:
                 # Name, now, now
-                rowcount= await self.db.insert_into_field_type_table(data)
+                rowcount = await self.db.insert_into_field_type_table(data)
                 await self._load_field_type()
             case self.db._T_MONTH:
                 rowcount = await self.db.insert_into_month_table(data)

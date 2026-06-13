@@ -11,7 +11,7 @@ import badidatetime
 from src.config import TomlPanelConfig
 from src.prep_and_cache import DataPreperation
 
-from . import LOGFILE_NAME, log, check_flag, patchers
+from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
 #from .fixtures import FakeMainFrame
 
@@ -55,9 +55,9 @@ class TestDataPreperation(BaseAsyncTests):
                      'start_of_fiscal_year': sofy,
                      'total_membership': '20', 'treasurer': 'Joe Schmo'}
         next_data = {'locale_name': 'New York', 'locality_prefix': '0',
-                    'location_city_name': 'New York',
-                    'start_of_fiscal_year': next_sofy,
-                    'total_membership': '20', 'treasurer': 'Joe Schmo'}
+                     'location_city_name': 'New York',
+                     'start_of_fiscal_year': next_sofy,
+                     'total_membership': '20', 'treasurer': 'Joe Schmo'}
         data = (
             ({}, None, None, False, False, False, err_msg0),  # No data
             (part_data, 183, 3, True, True, False, err_msg1.format(
@@ -300,17 +300,26 @@ class TestCache(BaseAsyncTests):
         """
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
-        data = (False, True)
         msg = "Expected {} found {}."
 
-        for has_data in data:
+        for has_data in (False, True):
             if has_data:
+                await self.insert_data()
                 await self.db.cache.load()
                 result = self.db.cache.has_cache
             else:
                 result = self.db.cache.has_cache
 
             self.assertEqual(has_data, result, msg.format(has_data, result))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_key_set_get(self):
+        """
+        Test that the key set and get properties work correctly.
+        """
+        self.db.cache.key = 'JUNK'
+        result = self.db.cache.key
+        self.assertEqual('JUNK', result)
 
     #@unittest.skip("Temporarily skipped")
     async def test_load_no_data(self):
@@ -343,7 +352,6 @@ class TestCache(BaseAsyncTests):
         Test that the load method loads all the `organization`, `fiscal`,
         and `monthly` data.
         """
-        #log.debug("%s", self.db.cache._store[183])
         msg = "Expected {}, found {}"
         expected = True
         has_flds = self.db.cache.has_fields_data

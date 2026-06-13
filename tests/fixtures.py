@@ -4,19 +4,20 @@
 #
 __docformat__ = "restructuredtext en"
 
+import os
 import wx
 
-from src.main_frame import MainFrame
 from src.bases import BaseGenerated
 from src.custom_widgits import (
     ColorCheckBox, EVT_COLOR_CHECKBOX)
 from src.config import Settings, TomlPanelConfig, TomlAppConfig
+from src.panel_factory import PanelFactory
 
 __all__ = ('FakeFrame', 'FakeMainFrame', 'FakeWidget', 'FakeEvent',
            'FakePanel')
 
 
-class FakeMainFrame(MainFrame):
+class FakeMainFrame:
 
     def __init__(self, options=None, *args, **kwargs):
         settings = Settings()
@@ -26,7 +27,28 @@ class FakeMainFrame(MainFrame):
         tpc.is_valid
         self.tac = TomlAppConfig()
         self.tac.is_valid
-        super().__init__(options, *args, **kwargs)
+        super().__init__(*args, **kwargs)
+        sf = PanelFactory()
+        sf.parse()
+
+        for panel in sf.class_name_keys:
+            code = sf.get_panel_code(panel)
+
+            if code:
+                # Only used for debugging.
+                if options.file_dump:  # Write the code files to the cache.
+                    filename = f"{panel}.py"
+                    dir = self.tac.cached_factory_dir
+                    pathname = os.path.join(dir, filename)
+
+                    with open(pathname, 'w') as f:
+                        f.write(code)
+
+                # Create the panels.
+                exec(code, globals())
+                class_name = sf.get_class_name(panel)
+                self.__panel_classes[panel] = globals(
+                    )[class_name](self, *args, **kwargs)
 
 
 class FakeFrame(wx.Frame):

@@ -227,13 +227,17 @@ class BaseDatabase(PopulateCollect, Settings):
             msg = ("Database table count is wrong it should be "
                    f"'{self._TABLES}' found '{table_names}'")
             self._log.error(msg)
-            self._mf.statusbar_error = msg
+
+            if hasattr(self._mf, 'statusbar_error'):
+                self._mf.statusbar_error = msg
 
         if not i_check:
             msg = ("Database index count is wrong it should be "
                    f"'{self._INDICES}' found '{index_names}'")
             self._log.error(msg)
-            self._mf.statusbar_error = msg
+
+            if hasattr(self._mf, 'statusbar_error'):
+                self._mf.statusbar_error = msg
 
         return t_check + i_check == 2
 

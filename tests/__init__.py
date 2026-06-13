@@ -64,7 +64,8 @@ RUN_FLAG = {'TestBadiCalendarPopup': False,
             'Test_ClickPosition': False,
             'TestEventStaticText': False,
             'TestDataPreperation': False,
-            'TestCache': False}
+            'TestCache': False,
+            'TestBaseDatabase': False}
 
 
 def check_flag(name):

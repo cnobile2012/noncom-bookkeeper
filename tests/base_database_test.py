@@ -2,6 +2,7 @@
 #
 # tests/base_database_test.py
 #
+__docformat__ = "restructuredtext en"
 
 import re
 import unittest
