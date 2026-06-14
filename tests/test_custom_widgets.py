@@ -48,9 +48,17 @@ class TestCustomTextCtrl(unittest.TestCase):
     def __init__(self, name):
         super().__init__(name)
 
+    @classmethod
+    def setUpClass(cls):
+        cls.app = wx.App(False)
+
+    @classmethod
+    def tearDownClass(cls):
+        if wx.GetApp():
+            wx.GetApp().Destroy()
+
     def setUp(self):
         check_flag(self.__class__.__name__)
-        self.app = wx.App(False)
         self.frame = FakeFrame()
         self.panel = FakePanel(self.frame)
         self.widget = CustomTextCtrl(self.panel)

@@ -130,8 +130,17 @@ class BaseTests(unittest.TestCase):
     def __init__(self, name):
         super().__init__(name)
 
+    @classmethod
+    def setUpClass(cls):
+        cls.app = wx.App(False)
+        cls.create_objects(cls)
+
+    @classmethod
+    def tearDownClass(self):
+        if wx.GetApp():
+            wx.GetApp().Destroy()
+
     def create_objects(self):
-        self.app = wx.App()
         self.frame = wx.Frame(None)
         self.gbs = GridBagSizer()
         self.frame.SetSizer(self.gbs)
@@ -168,10 +177,6 @@ class TestGridBagSizer(BaseTests):
 
     def __init__(self, name):
         super().__init__(name)
-
-    @classmethod
-    def setUpClass(self):
-        self.create_objects(self)
 
     def setUp(self):
         check_flag(self.__class__.__name__)
@@ -400,11 +405,8 @@ class Test_ClickPosition(unittest.TestCase):
         self.widget_name = "NewWidget"
         # Get rid of any previous data, since we are dealing with a
         # borg class.
-        self.cp._new_types.clear()
-
-    @classmethod
-    def setUpClass(self):
         self.cp = _ClickPosition()
+        self.cp._new_types.clear()
 
     #@unittest.skip("Temporarily skipped")
     def test_get_new_event_type(self):
