@@ -11,7 +11,7 @@ import wx
 
 from src.bahai_database import Database
 
-from .test_data import TEST_DATA
+from .sample_data import TEST_DATA
 
 __all__ = ('BaseAsyncTests',)
 
@@ -91,7 +91,15 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         cls._db = Database()
         cls._db.testing = True
         cls._db.create_dirs()
-        cls.app = wx.App(False)
+        cls.app = wx.GetApp()
+
+        if cls.app is None:
+            cls.app = wx.App(False)
+
+    @classmethod
+    def tearDownClass(cls):
+        if wx.GetApp():
+            wx.GetApp().Destroy()
 
     @property
     def db(self):

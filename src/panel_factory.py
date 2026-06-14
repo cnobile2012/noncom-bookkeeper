@@ -50,6 +50,8 @@ class PanelFactory(TomlMetaData):
         klass = StringIO()
 
         if panel in ('organization',):
+            klass.write("from src.custom_widgits import BadiDatePickerCtrl, "
+                        "EVT_BADI_DATE_CHANGED\n")
             klass.write("from src.utilities import StoreObjects\n\n\n")
 
         if panel in ('fiscal',):

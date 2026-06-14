@@ -12,14 +12,22 @@ from src.custom_widgits import (
     ColorCheckBox, EVT_COLOR_CHECKBOX)
 from src.config import Settings, TomlPanelConfig, TomlAppConfig
 from src.panel_factory import PanelFactory
+from src.utilities import StoreObjects
 
-__all__ = ('FakeFrame', 'FakeMainFrame', 'FakeWidget', 'FakeEvent',
+__all__ = ('FakeFrame', 'FakeMainFrame', 'Options', 'FakeWidget', 'FakeEvent',
            'FakePanel')
 
 
-class FakeMainFrame:
+class Options:
+    file_dump = True
 
-    def __init__(self, options=None, *args, **kwargs):
+
+class FakeMainFrame(wx.Frame):
+    __panel_classes = {}
+
+    def __init__(self, parent=None, id=wx.ID_ANY,
+                 style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
+                 options=None, *args, **kwargs):
         settings = Settings()
         settings.testing = True
         settings.create_dirs()
@@ -27,7 +35,8 @@ class FakeMainFrame:
         tpc.is_valid
         self.tac = TomlAppConfig()
         self.tac.is_valid
-        super().__init__(*args, **kwargs)
+        super().__init__(parent, id=id, style=style, *args, **kwargs)
+        StoreObjects().set_object('MainFrame', self)
         sf = PanelFactory()
         sf.parse()
 
@@ -49,6 +58,29 @@ class FakeMainFrame:
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = globals(
                     )[class_name](self, *args, **kwargs)
+
+    @property
+    def panels(self):
+        return self.__panel_classes
+
+    @panels.setter
+    def panels(self, values):
+        assert isinstance(values, tuple), ("The 'values' argument must be "
+                                           f"a tuple, found {type(values)}.")
+        #                    panel name   panel object
+        self.__panel_classes[values[0]] = values[1]
+
+    def statusbar_warning(self, value):
+        pass
+    statusbar_warning = property(None, statusbar_warning)
+
+    def statusbar_error(self, value):
+        pass
+    statusbar_error = property(None, statusbar_error)
+
+    def statusbar_message(self, value):
+        pass
+    statusbar_message = property(None, statusbar_message)
 
 
 class FakeFrame(wx.Frame):

@@ -10,10 +10,12 @@ import unittest
 from unittest.mock import patch
 
 from src.config import TomlPanelConfig
+from src.utilities import StoreObjects
+from src.bahai_database import Database
 
 from . import LOGFILE_NAME, check_flag, patchers
-from .fixtures import FakeMainFrame
 from .base_database_test import BaseAsyncTests
+from .fixtures import FakeMainFrame, Options
 
 
 class TestBaseDatabase(BaseAsyncTests):
@@ -26,9 +28,13 @@ class TestBaseDatabase(BaseAsyncTests):
         patchers(self)
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
+        FakeMainFrame(options=Options())
 
     async def asyncSetUp(self):
-        await self.db.create_db()
+        with patch.object(self.db, '_mf',
+                          StoreObjects().get_object('MainFrame')):
+            await self.db.create_db()
+
         self.db.cache._flush_cache()
         await self.insert_data()
         await self.db.cache.load()
@@ -53,6 +59,8 @@ class TestBaseDatabase(BaseAsyncTests):
 
         for delete, expected in data:
             if delete:
+                # Remove one iten from both tables and indexes to force
+                # a failure.
                 all_tables = dict(self.db._SCHEMA_TABLES)
                 mis_tables = all_tables
                 mis_tables.pop(self.db._T_LEDGER_EXPENSE)
@@ -60,9 +68,11 @@ class TestBaseDatabase(BaseAsyncTests):
                 mis_indices = all_indices
                 mis_indices.pop()
 
-                with patch.multiple(self.db,
-                                    _SCHEMA_TABLES=mis_tables,
-                                    _SCHEMA_INDICES=mis_indices):
+                with patch.multiple(
+                    self.db, _SCHEMA_TABLES=mis_tables,
+                    _SCHEMA_INDICES=mis_indices,
+                    _mf=StoreObjects().get_object('MainFrame')):
+
                     os.remove(self.db.user_data_fullpath)
                     await self.db.create_db()
                     result = await self.db.has_schema
@@ -77,30 +87,30 @@ class TestBaseDatabase(BaseAsyncTests):
                 self.assertEqual(expected, result, msg.format(
                     expected, delete, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test_populate_panels(self):
         """
         Test that the populate_panels method populates the panels if data
         is available.
         """
-        class Options:
-            file_dump = True
-
+        fy = self.db.cache.get(self.db._T_FISCAL_YEAR)
         data = (
             (False, (None, None)),
-            (True, (183, 3)),
+            (True, (fy[0][1], fy[0][2])),
             )
         msg = "Expected {}, found {}."
 
         for load, expected in data:
             if load:
                 await self.insert_data()
-                fmf = FakeMainFrame(Options())
             else:
                 self.db.cache._flush_cache()
                 await self.truncate_all_tables()
 
-            result = await self.db.populate_panels()
+            with patch.object(self.db, '_mf',
+                              StoreObjects().get_object('MainFrame')):
+                result = await self.db.populate_panels()
+
             self.assertEqual(expected, result, msg.format(expected, result))
 
     @unittest.skip("Temporarily skipped")

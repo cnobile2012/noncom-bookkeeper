@@ -124,7 +124,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Create test data.")
     parser.add_argument('-o', '--output', type=str, dest='output',
                         help=("The output file path and name. "
-                              "(tests/test_data.py)"))
+                              "(tests/sample_data.py)"))
     parser.add_argument('-D', '--debug', action='store_true', default=False,
                         dest='debug', help="Run in debug mode.")
     options = parser.parse_args()
