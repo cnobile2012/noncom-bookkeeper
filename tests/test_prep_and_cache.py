@@ -60,11 +60,11 @@ class TestDataPreperation(BaseAsyncTests):
                      'start_of_fiscal_year': next_sofy,
                      'total_membership': '18', 'treasurer': 'Joe Schmo'}
         data = (
-            ({}, None, None, False, False, err_msg0),  # No data
-            (part_data, 183, 3, False, True, err_msg1.format(
-                "locale_name, treasurer")),            # Partial data
-            (full_data, None, None, True, False, 1),   # Full data
-            #(next_data, 184, 3, True, False, 0),       # Next year
+            ({}, None, None, False, False, False, err_msg0),  # No data
+            (part_data, 183, 3, False, True, False, err_msg1.format(
+                "locale_name, treasurer")),                   # Partial data
+            (full_data, None, None, True, False, False, 0),   # Full data
+            #(next_data, 183, 3, True, False, True, 0),        # Next year
             )
         msg = "Expexted {}, found {}."
         fiscal_years = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
@@ -72,7 +72,7 @@ class TestDataPreperation(BaseAsyncTests):
             self.tdp.db._T_FISCAL_YEAR, fiscal_years)
         self.assertEqual(2, rowcount)
 
-        for items, year, month, valid, partial, expected in data:
+        for items, year, month, valid, partial, next_fs, expected in data:
             rowcount = await self.tdp.organization(items, year, month)
 
             if valid:
@@ -83,7 +83,14 @@ class TestDataPreperation(BaseAsyncTests):
                         2, expected)
                     self.assertIn(expected, result, msg.format(
                         expected, result))
-                else:  # Full data
+                elif next_fs:  # Next year
+                    fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=183)
+                    self.assertEqual(0, fy0[0][4])  # Current fld previous year
+                    fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=184)
+                    self.assertEqual(1, fy1[0][4])  # Current fld current year
+                    fy2 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=185)
+                    self.assertEqual(0, fy1[0][4])  # Current fld next year
+                else:  # Current Year (full_data)
                     fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=183)
                     self.assertEqual(expected, len(fy0))
                     fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=184)

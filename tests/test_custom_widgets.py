@@ -65,7 +65,7 @@ class TestCustomTextCtrl(unittest.TestCase):
         self.panel.sizer.Add(self.widget, 0, wx.CENTER | wx.ALL, 10)
         self.other = wx.TextCtrl(self.panel)  # Used for focus-shifting
         self.panel.sizer.Add(self.other, 0, wx.CENTER | wx.ALL, 10)
-        self.frame.Show()
+        # self.frame.Show()  # No need to show the window.
 
     def tearDown(self):
         self.frame.Destroy()
@@ -74,7 +74,6 @@ class TestCustomTextCtrl(unittest.TestCase):
     def simulate_left_click(self, widget):
         """
         Thanks to OpenAI for this method.
-        This method will not work without the toplevel window shown.
         """
         simulator = wx.UIActionSimulator()
         rect = widget.GetScreenRect()

@@ -471,7 +471,6 @@ class TestEventStaticText(BaseTests):
     def simulate_left_click(self, widget):
         """
         Thanks to OpenAI for this method.
-        This method will not work without the toplevel window shown.
         """
         simulator = wx.UIActionSimulator()
         rect = widget.GetScreenRect()
@@ -505,6 +504,7 @@ class TestEventStaticText(BaseTests):
     def test_WidgetEvent_data(self):
         """
         Test that the WidgetEvent data returns properly.
+        ** Must have a GUI display to not fail. **
         """
         widget = self.get_widget(1)
         expected_label = widget.GetLabel()
