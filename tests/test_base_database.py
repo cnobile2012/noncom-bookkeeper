@@ -114,48 +114,53 @@ class TestBaseDatabase(BaseAsyncTests):
             self.assertEqual(expected, result, msg.format(expected, result))
 
     @unittest.skip("Temporarily skipped")
-    async def test__do_select_one_query(self):
+    async def test__populate_config_data_panels(self):
         """
-        Test that the _do_select_one_query method returns one record
-        in the selected table.
+        Test that the _populate_config_data_panels method 
         """
-        query = "SELECT * FROM members;"
-        values = await self.bd._do_select_one_query(query)
-        self.assertTrue(len(values), 7)
+        pass
 
     @unittest.skip("Temporarily skipped")
-    async def test__do_select_read_only(self):
+    async def test__populate_monthly_panel(self):
         """
-        Test that the _do_select_read_only method returns the correct
-        number of rows depending on if the 'fetchone' argument is True or
-        False. Also handles any type of write to the DB correctly.
+        Test that the _populate_monthly_panel method 
         """
-        start = "Start _do_select_read_only"
-        self._log.info(start)
-        err_msg0 = "Invalid query "
-        select_query = "SELECT * FROM members;"
-        insert_query = "INSERT INTO config VALUES (?, ?);"
-        data = (
-            (select_query, (), False, (5, 6)),  # Count rows and columns
-            (select_query, (), True, (6, 6)),   # Count coumns and columns
-            (insert_query, ('things', '5'), False, (0, 0, err_msg0)),
-            )
-        msg = ("Expected {}, with query {}, params {}, and fetchone {}, "
-               "found {}.")
+        pass
 
-        for query, params, fetchone, expected in data:
-            data, columns = await self.bd._do_select_read_only(
-                query, params, fetchone)
-            self.assertEqual(expected[0], len(data), msg.format(
-                expected[0], query, params, fetchone, len(data)))
-            self.assertEqual(expected[1], len(columns), msg.format(
-                expected[1], query, params, fetchone, len(columns)))
+    @unittest.skip("Temporarily skipped")
+    async def test_save_to_database(self):
+        """
+        Test that the save_to_database method 
+        """
+        pass
 
-            if expected[0] == 0:
-                full_log = self.read_text_file(self.full_log_path)
-                sub_log = self.find_text_span(full_log, start, 2)
-                self.assertTrue([True for msg in sub_log
-                                 if expected[2] in msg])
+    @unittest.skip("Temporarily skipped")
+    async def test__add_fields_to_field_type_table(self):
+        """
+        Test that the _add_fields_to_field_type_table method 
+        """
+        pass
+
+    @unittest.skip("Temporarily skipped")
+    async def test__insert_update_config_data_table(self):
+        """
+        Test that the _insert_update_config_data_table method 
+        """
+        pass
+
+    @unittest.skip("Temporarily skipped")
+    async def test__insert_update_monthly_table(self):
+        """
+        Test that the _insert_update_monthly_table method 
+        """
+        pass
+
+    @unittest.skip("Temporarily skipped")
+    async def test__do_select_query(self):
+        """
+        Test that the _do_select_query method 
+        """
+        pass
 
     @unittest.skip("Temporarily skipped")
     async def test__do_insert_query(self):
@@ -163,9 +168,7 @@ class TestBaseDatabase(BaseAsyncTests):
         Test that the _do_insert_query method returns the correct row
         count that was inserted.
         """
-        query = "INSERT INTO config VALUES (?, ?);"
-        rowcount = await self.bd._do_insert_query(query, ('things', '5'))
-        self.assertEqual(1, rowcount)
+        pass
 
     @unittest.skip("Temporarily skipped")
     async def test__do_update_query(self):
@@ -173,9 +176,7 @@ class TestBaseDatabase(BaseAsyncTests):
         Test that the _do_update_query method returns returns the correct row
         count that was updated.
         """
-        query = "UPDATE config SET key = ?, value = ?;"
-        rowcount = await self.bd._do_update_query(query, ('things', '5'))
-        self.assertEqual(1, rowcount)
+        pass
 
     @unittest.skip("Temporarily skipped")
     async def test__do_delete_query(self):
@@ -183,9 +184,7 @@ class TestBaseDatabase(BaseAsyncTests):
         Test that the _do_delete_query method returns returns the correct row
         count that was deleted.
         """
-        query = "DELETE FROM config WHERE key = ?;"
-        rowcount = await self.bd._do_delete_query(query, ('grace_period',))
-        self.assertEqual(1, rowcount)
+        pass
 
     @unittest.skip("Temporarily skipped")
     async def test__do_query(self):

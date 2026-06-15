@@ -43,7 +43,6 @@ class TestDataPreperation(BaseAsyncTests):
         fiscal_year, and field_type tables.
         """
         sofy = badidatetime.date(183, 3, 5)
-        next_sofy = badidatetime.date(184, 3, 5)
         err_msg0 = ("Organization Information data must be entered before "
                     "any other data can be entered.")
         err_msg1 = "The '{}' field(s) must not be empty."
@@ -55,16 +54,11 @@ class TestDataPreperation(BaseAsyncTests):
                      'location_city_name': 'New York',
                      'start_of_fiscal_year': sofy,
                      'total_membership': '19', 'treasurer': 'Joe Schmo'}
-        next_data = {'locale_name': 'New York', 'locality_prefix': '0',
-                     'location_city_name': 'New York',
-                     'start_of_fiscal_year': next_sofy,
-                     'total_membership': '18', 'treasurer': 'Joe Schmo'}
         data = (
-            ({}, None, None, False, False, False, err_msg0),  # No data
-            (part_data, 183, 3, False, True, False, err_msg1.format(
-                "locale_name, treasurer")),                   # Partial data
-            (full_data, None, None, True, False, False, 0),   # Full data
-            #(next_data, 183, 3, True, False, True, 0),        # Next year
+            ({}, None, None, False, False, err_msg0),  # No data
+            (part_data, 183, 3, False, True, err_msg1.format(
+                "locale_name, treasurer")),            # Partial data
+            (full_data, None, None, True, False, None),   # Full data
             )
         msg = "Expexted {}, found {}."
         fiscal_years = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
@@ -72,39 +66,85 @@ class TestDataPreperation(BaseAsyncTests):
             self.tdp.db._T_FISCAL_YEAR, fiscal_years)
         self.assertEqual(2, rowcount)
 
-        for items, year, month, valid, partial, next_fs, expected in data:
-            rowcount = await self.tdp.organization(items, year, month)
+        for items, year, month, valid, partial, expected in data:
+            error = await self.tdp.organization(items, year, month)
 
             if valid:
                 if partial:
+                    self.assertEqual(expected, error)
                     file_data = self.read_text_file(self.log_path)
                     result = self.find_text(
                         file_data, 'config prep_and_cache organization',
                         2, expected)
                     self.assertIn(expected, result, msg.format(
                         expected, result))
-                elif next_fs:  # Next year
-                    fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=183)
-                    self.assertEqual(0, fy0[0][4])  # Current fld previous year
-                    fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=184)
-                    self.assertEqual(1, fy1[0][4])  # Current fld current year
-                    fy2 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=185)
-                    self.assertEqual(0, fy1[0][4])  # Current fld next year
                 else:  # Current Year (full_data)
+                    self.assertEqual(expected, error)
                     fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=183)
-                    self.assertEqual(expected, len(fy0))
+                    self.assertEqual(1, len(fy0), msg.format(
+                        expected, len(fy0)))
                     fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=184)
-                    self.assertEqual(expected, len(fy0))
-                    months =  self.db.cache.get(self.db._T_MONTH)
-                    self.assertEqual(20, len(months))
+                    self.assertEqual(1, len(fy0), msg.format(
+                        expected, len(fy0)))
+                    months = self.db.cache.get(self.db._T_MONTH)
+                    self.assertEqual(20, len(months), msg.format(
+                        20, len(months)))
                     fields = self.db.cache.get(self.db._T_FIELD_TYPE)
-                    self.assertEqual(45, len(fields))
+                    self.assertEqual(45, len(fields), msg.format(
+                        45, len(fields)))
             else:
+                self.assertEqual(expected, error)
                 file_data = self.read_text_file(self.log_path)
                 result = self.find_text(file_data,
                                         'config prep_and_cache organization',
                                         2, expected)
                 self.assertIn(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_organization_prev_next_year(self):
+        """
+        Test that the organization method inserts or updates the fiscal_year
+        table for the previous and next years.
+        """
+        err_msg0 = ("Cannot enter a year that is not immediately before or "
+                    "after the earliest or latest year. Found {} with "
+                    "earliest: {}, and latest: {}.")
+        prev_2_sofy = badidatetime.date(181, 3, 5)
+        next_2_sofy = badidatetime.date(185, 3, 5)
+        prev_sofy = badidatetime.date(182, 3, 5)
+        next_sofy = badidatetime.date(184, 3, 5)
+        org_data = {'locale_name': 'New York', 'locality_prefix': '0',
+                    'location_city_name': 'New York',
+                    'start_of_fiscal_year': None,
+                    'total_membership': '18', 'treasurer': 'Joe Schmo'}
+        data = (
+            (prev_2_sofy, 183, 3, (), err_msg0.format(181, 183, 184)),
+            (next_2_sofy, 183, 3, (), err_msg0.format(185, 183, 184)),
+            (prev_sofy, 183, 3, (182, 183, 184), None),  # Previous year
+            (next_sofy, 183, 3, (183, 184, 185), None),  # Next year
+            )
+        msg = "Expexted {}, found {}."
+        fys = [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]
+        rowcount = await self.tdp.db.cache.insert(
+            self.tdp.db._T_FISCAL_YEAR, {'data': fys})
+
+        for date, year, month, years, expected in data:
+            org_data['start_of_fiscal_year'] = date
+            error = await self.tdp.organization(org_data, year, month)
+
+            if expected is None:
+                self.assertEqual(expected, error)
+                # Current field previous year
+                fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=years[0])
+                self.assertEqual(0, fy0[0][4], msg.format(0, fy0[0][4]))
+                # Current field current year
+                fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=years[1])
+                self.assertEqual(1, fy1[0][4], msg.format(1, fy1[0][4]))
+                # Current field next year
+                fy2 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=years[2])
+                self.assertEqual(0, fy2[0][4], msg.format(0, fy2[0][4]))
+            else:
+                self.assertEqual(expected, error, msg.format(expected, error))
 
     #@unittest.skip("Temporarily skipped")
     async def test_fiscal(self):
@@ -150,7 +190,7 @@ class TestDataPreperation(BaseAsyncTests):
                 self.assertEqual(current, fy0[0][4])
                 fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year+1)
                 self.assertEqual(audit, fy0[0][5])
-                months =  self.db.cache.get(self.db._T_MONTH)
+                months = self.db.cache.get(self.db._T_MONTH)
                 self.assertEqual(num_mon, len(months))
                 fields = self.db.cache.get(self.db._T_FIELD_TYPE)
                 self.assertEqual(num_flds, len(fields))
@@ -276,6 +316,20 @@ class TestDataPreperation(BaseAsyncTests):
         self.assertEqual(len(data), rowcount)
         result = self.tdp._earliest_fiscal_year
         self.assertEqual(data[0][0], result)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__latest_fiscal_year(self):
+        """
+        Test that the _latest_fiscal_year property returns the 1st fiscal
+        year in the DB.
+        """
+        data = [(182, 3, 5, 0, 0, 0), (183, 3, 5, 1, 1, 0),
+                (184, 3, 5, 0, 0, 0)]
+        rowcount = await self.tdp.db.cache.insert(
+            self.tdp.db._T_FISCAL_YEAR, {'data': data})
+        self.assertEqual(len(data), rowcount)
+        result = self.tdp._latest_fiscal_year
+        self.assertEqual(data[2][0], result)
 
     #@unittest.skip("Temporarily skipped")
     async def test_organization_data(self):

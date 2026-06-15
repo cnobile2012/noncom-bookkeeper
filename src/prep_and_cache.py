@@ -31,15 +31,15 @@ class DataPreperation:
         so = StoreObjects()
         self._mf = so.get_object('MainFrame')
 
-    async def organization(self, data, f_year, f_month) -> int:
+    async def organization(self, data, f_year, f_month) -> str | None:
         """
         Insert or update the organization data.
 
         :param dict data: The data to insert or update.
         :param int f_year: The fiscal year.
         :param int f_month: The month that the fiscal year starts.
-        :returns: The row count caused by the insert or update.
-        :rtype: int
+        :returns: An error message or None.
+        :rtype: str or None
         """
         error = None
 
@@ -62,22 +62,23 @@ class DataPreperation:
                     # Need ISO date for the DB.
                     data['start_of_fiscal_year'] = sofy.isoformat()
                     earliest_fy = self._earliest_fiscal_year
+                    latest_fy = self._latest_fiscal_year
 
                     if None in (f_year, f_month):
                         await self._first_run_initialization(
                             p_year, p_month, p_day)
                         f_year = p_year
                         f_month = p_month
-                    elif (f_year + 1) == p_year:
-                        await self._enter_next_year(p_year, p_month, p_day)
                     elif earliest_fy and (earliest_fy - 1) == p_year:
                         await self._enter_previous_year(
                             p_year, p_month, p_day)
+                    elif latest_fy and latest_fy == p_year:
+                        await self._enter_next_year(p_year, p_month, p_day)
                     else:
-                        year = month = None
                         error = ("Cannot enter a year that is not immediately "
-                                "before or after the earliest or current "
-                                "year.")
+                                 "before or after the earliest or latest "
+                                 f"year. Found {p_year} with earliest: "
+                                 f"{earliest_fy}, and latest: {latest_fy}.")
                         self._log.warning(error)
 
                     if not error:
@@ -144,7 +145,9 @@ class DataPreperation:
 
     async def _enter_next_year(self, year: int, month: int, day: int) -> int:
         """
-        Enter the next fiscal year and update the previous two years.
+        Update the current fiscal year to be the previous fiscal year then
+        updated the following year to be the current fiscal year then inserted
+        the next fiscal year.
 
         .. note::
 
@@ -257,6 +260,18 @@ class DataPreperation:
         """
         Get the earliest year in the `fiscal_year` table.
         """
+        years = self.__get_all_fiscal_years()
+        return min(years) if years else None
+
+    @property
+    def _latest_fiscal_year(self) -> tuple:
+        """
+        Get the latest year in the `fiscal_year` table.
+        """
+        years = self.__get_all_fiscal_years()
+        return max(years) if years else None
+
+    def __get_all_fiscal_years(self) -> list:
         years = []
 
         for year in self.db.cache.available_years:
@@ -264,7 +279,7 @@ class DataPreperation:
             if not fy: break
             years.append(fy[0][1])
 
-        return min(years) if years else None
+        return years
 
     @property
     def organization_data(self) -> dict:
