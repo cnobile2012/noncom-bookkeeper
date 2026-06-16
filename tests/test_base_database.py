@@ -5,10 +5,13 @@
 __docformat__ = "restructuredtext en"
 
 import os
+import wx
 import unittest
+import badidatetime
 
 from unittest.mock import patch
 
+from src.bases import BaseGenerated
 from src.config import TomlPanelConfig
 from src.utilities import StoreObjects
 from src.bahai_database import Database
@@ -28,7 +31,7 @@ class TestBaseDatabase(BaseAsyncTests):
         patchers(self)
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
-        FakeMainFrame(options=Options())
+        self.frame = FakeMainFrame(options=Options())
 
     async def asyncSetUp(self):
         with patch.object(self.db, '_mf',
@@ -59,8 +62,8 @@ class TestBaseDatabase(BaseAsyncTests):
 
         for delete, expected in data:
             if delete:
-                # Remove one iten from both tables and indexes to force
-                # a failure.
+                # Remove one item from both tables and indexes so a failure
+                # situation can be tested.
                 all_tables = dict(self.db._SCHEMA_TABLES)
                 mis_tables = all_tables
                 mis_tables.pop(self.db._T_LEDGER_EXPENSE)
@@ -104,8 +107,7 @@ class TestBaseDatabase(BaseAsyncTests):
             if load:
                 await self.insert_data()
             else:
-                self.db.cache._flush_cache()
-                await self.truncate_all_tables()
+                await self.asyncTearDown()
 
             with patch.object(self.db, '_mf',
                               StoreObjects().get_object('MainFrame')):
@@ -113,12 +115,38 @@ class TestBaseDatabase(BaseAsyncTests):
 
             self.assertEqual(expected, result, msg.format(expected, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test__populate_config_data_panels(self):
         """
-        Test that the _populate_config_data_panels method 
+        Test that the _populate_config_data_panels method populates all
+        panals that use the config_data table.
         """
-        pass
+        msg = "Expected {}, found {}."
+        self.db.cache._flush_cache()
+        # Test that the cache and DB are empty.
+        self.assertFalse(self.db.cache.fields)
+        widgets = ('TextCtrl', 'BadiDatePickerCtrl')
+        data = {4: 'New York', 6: '20', 8: 'Joe Schmo',
+                10: badidatetime.date(183, 3, 5), 14: 'New York'}
+
+        with patch.object(self.db, '_mf',
+                          StoreObjects().get_object('MainFrame')):
+            await self.db._populate_config_data_panels(183, self.db._mf.panels)
+            # Test that fields have be repopulated.
+            self.assertTrue(self.db.cache.fields)
+            # Now reload the data and test that the data is in the panels.
+            await self.db.cache.load()
+            await self.db._populate_config_data_panels(183, self.db._mf.panels)
+            org_panel = self.db._mf.panels['organization']
+
+            for idx, child in enumerate(org_panel.GetChildren()):
+                if child.__class__.__name__ in widgets:
+                    result = child.GetValue()
+                    expected = data.get(idx)
+
+                    if expected:
+                        self.assertEqual(expected, result, msg.format(
+                            expected, result))
 
     @unittest.skip("Temporarily skipped")
     async def test__populate_monthly_panel(self):
@@ -134,19 +162,44 @@ class TestBaseDatabase(BaseAsyncTests):
         """
         pass
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test__add_fields_to_field_type_table(self):
         """
-        Test that the _add_fields_to_field_type_table method 
+        Test that the _add_fields_to_field_type_table method correctly adds
+        fields to the field_type table and the cache.
         """
-        pass
+        msg = "Expected {}, found {}."
+        await self.asyncTearDown()
+        long_field = "abc12" * 11
+        fields = self.db.cache.ORG_FIELDS + [long_field]
+        data = {field: 0 for field in fields}
+        rowcount = await self.db._add_fields_to_field_type_table(data)
+        fld_len = len(fields)
+        err_msg0 = ("Found field(s) that are longer than "
+                    f"{self.db._MAX_FIELD_LEN}, ['{long_field}'].")
+        self.assertEqual(fld_len, rowcount, msg.format(fld_len, rowcount))
+        file_data = self.read_text_file(self.log_path)
+        result = self.find_text(file_data, err_msg0, 1, err_msg0)
+        self.assertIn(err_msg0, result)
 
     @unittest.skip("Temporarily skipped")
     async def test__insert_update_config_data_table(self):
         """
-        Test that the _insert_update_config_data_table method 
+        Test that the _insert_update_config_data_table method inserts or
+        updates the config_date table.
         """
-        pass
+        err_msg0 = "Could not find field {} in {}."
+        await self.asyncTearDown()
+        data = {field: 0 for field in self.db.cache.ORG_FIELDS}
+        rowcount = await self.db._add_fields_to_field_type_table(data)
+        data = (
+            (183, 3, 'organization', org_data),
+            #('budget', ),
+            )
+        msg = "Expected {}, found {}."
+
+        for r_type in data:
+            pass
 
     @unittest.skip("Temporarily skipped")
     async def test__insert_update_monthly_table(self):

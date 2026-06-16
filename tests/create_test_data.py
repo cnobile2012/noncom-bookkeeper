@@ -18,7 +18,7 @@ BASE_DIR = os.path.dirname(PWD)
 sys.path.append(BASE_DIR)
 
 from src.bahai_database import Database
-from src.prep_and_cache import Cache
+from src.cache import Cache
 
 
 class CreateTestData:

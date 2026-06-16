@@ -67,6 +67,8 @@ class BaseTests:
         :returns: The line in the file that contains the queried text.
         :rtype: str
         """
+        line = ""
+
         for line in self._find_text_span(data_str, start, num_lines):
             if text in line:
                 break

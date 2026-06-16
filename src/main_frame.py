@@ -242,8 +242,8 @@ class MainFrame(wx.Frame, MenuBar):
         default_color = wx.Colour('black')
         self._statusbar.SetBackgroundColour(color)
         self._statusbar.SetForegroundColour(default_color)
-        # Wait for 10 seconds before resetting the message.
-        wx.CallLater(15000, self.__reset_status, default_color)
+        # Wait for 20 seconds before resetting the message.
+        wx.CallLater(20000, self.__reset_status, default_color)
 
     def __reset_status(self, default_color):
         self._statusbar.SetStatusText("", 0)

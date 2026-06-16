@@ -16,7 +16,8 @@ from timezonefinder import TimezoneFinder
 from .config import Settings
 from .utilities import StoreObjects
 from .populate_collect_panel import PopulateCollect
-from .prep_and_cache import DataPreperation, Cache
+from .preperation import DataPreperation
+from .cache import Cache
 import tracemalloc
 tracemalloc.start()
 
@@ -258,16 +259,15 @@ class BaseDatabase(PopulateCollect, Settings):
 
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
-            pcdp = {name: panel for name, panel in self._mf.panels.items()
-                    if name not in self._EXCLUDE_PANELS}
-            await self._populate_config_data_panels(year, pcdp)
+            await self._populate_config_data_panels(year, self._mf.panels)
             monthly = self._mf.panels.get('monthly')
             await self._populate_monthly_panel(year, month, monthly)
             # *** TODO *** Populate the fiscal panel
 
         return year, month
 
-    async def _populate_config_data_panels(self, year, panels) -> None:
+    async def _populate_config_data_panels(self, year: int, panels: dict
+                                           ) -> None:
         """
         Populate all panels that use the config data table.
 
@@ -275,14 +275,16 @@ class BaseDatabase(PopulateCollect, Settings):
         :param dict panels: A dict of all non-excluded panels.
         """
         for panel_name, panel in panels.items():
-            data = self.collect_panel_values(panel)
-            items = self.cache.get(self._T_DATA, year=year, r_type=panel_name)
-            # Add any new fields to the database.
-            await self._add_fields_to_field_type_table(data)
-            panel.initializing = True
-            values = {item[1]: item[2] for item in items}
-            self.populate_panel_values(panel_name, panel, values)
-            panel.initializing = False
+            if panel_name not in self._EXCLUDE_PANELS:
+                data = self.collect_panel_values(panel)
+                items = self.cache.get(self._T_DATA, year=year,
+                                       r_type=panel_name)
+                # Add any new fields to the database.
+                await self._add_fields_to_field_type_table(data)
+                panel.initializing = True
+                values = {item[1]: item[2] for item in items}
+                self.populate_panel_values(panel_name, panel, values)
+                panel.initializing = False
 
     async def _populate_monthly_panel(self, fy_year: int, fy_month: int,
                                       panel: wx.Panel) -> None:
@@ -362,7 +364,7 @@ class BaseDatabase(PopulateCollect, Settings):
         elif name == 'budget':
             if f_year and f_month:
                 error, _ = await self._insert_update_config_data_table(
-                    f_year, month=f_month, data=data)
+                    f_year, month=f_month, r_type='budget', data=data)
         elif name == 'monthly':
             if data:
                 empty_fields = []
@@ -401,41 +403,39 @@ class BaseDatabase(PopulateCollect, Settings):
         :returns: The insertion rowcount.
         :rtype: int
         """
-        current_fields = self.cache.fields
-        new_fields = [fd for fd in data]
-        fields = list(set(new_fields) - set(current_fields))
-        fields.sort()
-        long = [field for field in new_fields
+        long = [field for field in data.keys()  # Test new key length.
                 if len(field) > self._MAX_FIELD_LEN]
 
         if long:
-            self._log.warning("Found field(s) that are longer than %s, %s",
+            self._log.warning("Found field(s) that are longer than %s, %s.",
                               self._MAX_FIELD_LEN, long)
+
+        fields = list(set(data.keys()) - set(self.cache.fields))
+        fields.sort()
+        rowcount = 0
 
         if fields:
             rowcount = await self.cache.insert(self._T_FIELD_TYPE,
                                                {'data': fields})
-        else:
-            rowcount = 0
 
         return rowcount
 
-    async def _insert_update_config_data_table(self, year: int, *,
-                                               month: int=None, data: dict={}
-                                               ) -> tuple:
+    async def _insert_update_config_data_table(
+        self, year: int, *, month: int=None, r_type: str=None, data: dict={}
+        ) -> tuple:
         """
         Insert or update `data` table.
 
-        :param int year: A Baha'i year of the transaction.
-        :param int month: A Baha'i month of the transaction. This is the order
-                          of the Baha'i month not the name.
+        :param int year: A Baha'i fiscal year of the transaction.
+        :param int month: A Baha'i fiscal month of the transaction. This is
+                          the order of the Baha'i month not the name.
         :param dict data: The data from the any panel  in the form of:
                           [(<field name>, <value>), ...].
-        :returns: (<None if no errors>, rowcount)
+        :returns: (<error or None>, rowcount)
         :rtype: tuple
         """
         error = None
-        values = self.cache.get(self._T_DATA, year=year, r_type='budget')
+        values = self.cache.get(self._T_DATA, year=year, r_type=r_type)
 
         if not values:  # Do insert
             items = {'year': year, 'month': month, 'data': data}
@@ -449,7 +449,7 @@ class BaseDatabase(PopulateCollect, Settings):
             items = {item[1]: (item[0], item[3]) for item in values}
             rowcount = 0
 
-            for field, value in data.items():  # Loop through incoming data.
+            for field, value in data.items():  # Loop through incoming data
                 pk, y1 = items.get(field, (None, None))  # pk, y1
 
                 if None in (pk, y1):           # Error condition
@@ -460,10 +460,10 @@ class BaseDatabase(PopulateCollect, Settings):
 
                 if year != y1:                 # Insert
                     values = insert_data.setdefault('data', [])
-                    values.append((field, value))
+                    values.append((field, str(value)))
                 else:                          # Update
                     values = update_data.setdefault('data', [])
-                    values.append((pk, value))
+                    values.append((pk, str(value)))
 
             if insert_data:                    # Do insert
                 rowcount = await self.cache.insert(self._T_DATA, insert_data)
