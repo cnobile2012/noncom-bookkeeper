@@ -13,7 +13,6 @@ from src.preperation import DataPreperation
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
-from .fixtures import FakeMainFrame, Options
 
 
 class TestDataPreperation(BaseAsyncTests):
@@ -26,7 +25,6 @@ class TestDataPreperation(BaseAsyncTests):
         patchers(self)
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
-        FakeMainFrame(options=Options())
 
     async def asyncSetUp(self):
         await self.db.create_db()
@@ -55,10 +53,10 @@ class TestDataPreperation(BaseAsyncTests):
                      'start_of_fiscal_year': sofy,
                      'total_membership': '19', 'treasurer': 'Joe Schmo'}
         data = (
-            ({}, None, None, False, False, err_msg0),  # No data
+            ({}, None, None, False, False, err_msg0),    # No data
             (part_data, 183, 3, False, True, err_msg1.format(
-                "locale_name, treasurer")),            # Partial data
-            (full_data, None, None, True, False, None),   # Full data
+                "locale_name, treasurer")),              # Partial data
+            (full_data, None, None, True, False, None),  # Full data
             )
         msg = "Expexted {}, found {}."
         fiscal_years = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
@@ -74,7 +72,7 @@ class TestDataPreperation(BaseAsyncTests):
                     self.assertEqual(expected, error)
                     file_data = self.read_text_file(self.log_path)
                     result = self.find_text(
-                        file_data, 'config preperation organization',
+                        file_data, 'testing preperation organization',
                         2, expected)
                     self.assertIn(expected, result, msg.format(
                         expected, result))
@@ -96,7 +94,7 @@ class TestDataPreperation(BaseAsyncTests):
                 self.assertEqual(expected, error)
                 file_data = self.read_text_file(self.log_path)
                 result = self.find_text(file_data,
-                                        'config preperation organization',
+                                        'testing preperation organization',
                                         2, expected)
                 self.assertIn(expected, result, msg.format(expected, result))
 
@@ -166,6 +164,38 @@ class TestDataPreperation(BaseAsyncTests):
         self.assertEqual(updated_data['current_fiscal_year'], cfy)
         self.assertEqual(updated_data['work_on_this_fiscal_year'], wotfy)
         self.assertEqual(updated_data['audit_complete'], ac)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_budget(self):
+        """
+        Test that the budget method inserts or updates budget data properly.
+        """
+        data = (
+            ({'administration': 100}, 183, 3, True),
+            )
+        msg = "Expected {}, found {}."
+
+        for bgt_data, year, month, insert in data:
+            if insert:
+                items = self.db.cache.get(self.db._T_DATA, year=year,
+                                          r_type='budget')
+                # Should not have data
+                self.assertEqual([], items, msg.format([], items))
+                await self.insert_fiscal_year()
+                await self.insert_field_data('budget')
+                error = await self.tdp.budget(bgt_data, year, month)
+                items = self.db.cache.get(self.db._T_DATA, year=year,
+                                          r_type='budget')
+                value = bgt_data['administration']
+                #print('POOP1', bgt_data, items)
+                #self.assertEqual(value, items[0][1], msg.format(
+                #    value, items[0][1]))
+            else:
+                await self.insert_data()
+                await self.tdp.db.cache.load()
+                result = self.db.cache.get(self.db._T_DATA, year=183,
+                                           r_type='budget')
+                #print('POOP', result)
 
     #@unittest.skip("Temporarily skipped")
     async def test__first_run_initialization(self):
@@ -302,6 +332,25 @@ class TestDataPreperation(BaseAsyncTests):
             expect_latitude, lat))
         self.assertEqual(expect_longitude, lon, msg.format(
             expect_longitude, lon))
+
+    @unittest.skip("Temporarily skipped")
+    async def test__insert_update_config_data_table(self):
+        """
+        Test that the _insert_update_config_data_table method inserts or
+        updates the config_date table.
+        """
+        err_msg0 = "Could not find field {} in {}."
+        await self.asyncTearDown()
+        data = {field: 0 for field in self.db.cache.ORG_FIELDS}
+        rowcount = await self.db._add_fields_to_field_type_table(data)
+        data = (
+            (183, 3, 'organization', org_data),
+            #('budget', ),
+            )
+        msg = "Expected {}, found {}."
+
+        for r_type in data:
+            pass
 
     #@unittest.skip("Temporarily skipped")
     async def test__earliest_fiscal_year(self):

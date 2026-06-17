@@ -9,8 +9,12 @@ import unittest
 import aiosqlite
 import wx
 
-from src.bahai_database import Database
+from unittest.mock import patch
 
+from src.bahai_database import Database
+from src.utilities import StoreObjects
+
+from .fixtures import FakeMainFrame, Options
 from .sample_data import TEST_DATA
 
 __all__ = ('BaseAsyncTests',)
@@ -98,6 +102,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         if cls.app is None:
             cls.app = wx.App(False)
 
+        cls._fmf = FakeMainFrame(options=Options())
+
     @classmethod
     def tearDownClass(cls):
         if wx.GetApp():
@@ -106,6 +112,10 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     @property
     def db(self):
         return self._db
+
+    @property
+    def fmf(self):
+        return self._fmf
 
     async def insert_data(self):
         rowcount = 0
@@ -166,3 +176,23 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                     await cursor.execute("DELETE FROM sqlite_sequence;")
 
                 await db.commit()
+
+    async def insert_fiscal_year(self) -> int:
+        """
+        Some tests need the fiscal year in the DB but not everything else.
+        """
+        fy_data = {'data': TEST_DATA[self.db._T_FISCAL_YEAR]}
+        rowcount = await self.db.cache.insert(self.db._T_FISCAL_YEAR, fy_data)
+        self.assertEqual(len(fy_data['data']), rowcount)
+        return rowcount
+
+    async def insert_field_data(self, panel_name: str) -> int:
+        """
+        Some tests need field data in the DB, but not everything else.
+        """
+        with patch.object(self.db, '_mf',
+                          StoreObjects().get_object('MainFrame')):
+            panel = self.db._mf.panels[panel_name]
+
+        data = {'data': self.db.collect_panel_values(panel)}
+        return await self.db._add_fields_to_field_type_table(data)

@@ -29,7 +29,8 @@ class DataPreperation:
         so = StoreObjects()
         self._mf = so.get_object('MainFrame')
 
-    async def organization(self, data, f_year, f_month) -> str | None:
+    async def organization(self, data: dict, f_year: int, f_month: int
+                           ) -> str | None:
         """
         Insert or update the organization data.
 
@@ -82,10 +83,10 @@ class DataPreperation:
                         self._log.warning(error)
 
                     if not error:
-                        error, rc = (await
-                                     self.db._insert_update_config_data_table(
-                                         f_year, month=f_month,
-                                         r_type='organization', data=data))
+                        error, rc = (
+                            await self._insert_update_config_data_table(
+                                f_year, month=f_month, r_type='organization',
+                                data=data))
 
             error and self._log.warning(error)
             return error
@@ -98,8 +99,8 @@ class DataPreperation:
 
     async def fiscal(self, data: dict, f_year: int, f_month: int) -> list:
         """
-        Convert panel data to data appropreate for inserting into the database,
-        then update it.
+        Converts panel data to data appropreate for updating the fiscal year
+        table in the database, then update it.
 
         :param dict data: Panel data.
         :param int f_year: The current fiscal year.
@@ -114,6 +115,24 @@ class DataPreperation:
             self.db._T_FISCAL_YEAR, {'data': items})
         self._log.debug("Inserted %s row(s) of fiscal year data.", rowcount)
         return items
+
+    async def budget(self, data: dict, f_year: int, f_month: int
+                     ) -> str | None:
+        """
+        Converts panel data to data appropreate for updating the budget data
+        in the config data table, then update it.
+
+        :param dict data: Panel data.
+        :param int f_year: The current fiscal year.
+        :param int f_month: The current fiscal year month.
+        :returns: Any errors or None.
+        :rtype: str or None
+        """
+        error, rowcount = await self._insert_update_config_data_table(
+            f_year, month=f_month, r_type='budget', data=data)
+        self._log.debug("Inserted or updated %s row(s) of budget data.",
+                        rowcount)
+        return error
 
     async def _first_run_initialization(self, year: int, month: int, day: int):
         """
@@ -255,6 +274,62 @@ class DataPreperation:
             error = f"Cannot find the timezone for '{address}'."
 
         return iana, lat, lon, error
+
+    async def _insert_update_config_data_table(
+        self, year: int, *, month: int=None, r_type: str=None, data: dict={}
+        ) -> tuple:
+        """
+        Insert or update `data` table.
+
+        :param int year: A Baha'i fiscal year of the transaction.
+        :param int month: A Baha'i fiscal month of the transaction. This is
+                          the order of the Baha'i month not the name.
+        :param dict data: The data from the any panel  in the form of:
+                          {<field name>: <value>, ...}.
+        :returns: (<error or None>, rowcount)
+        :rtype: tuple
+        """
+        error = None
+        values = self.db.cache.get(self.db._T_DATA, year=year, r_type=r_type)
+
+        if not values:  # Do insert
+            items = {'year': year, 'month': month, 'data': data}
+            rowcount = await self.db.cache.insert(self.db._T_DATA, items)
+            self._log.info("Inserted %s table data: %s.",
+                           self.db._T_DATA, data)
+        else:
+            insert_data = {'year': year, 'month': month}
+            update_data = {}
+            # See select_from_config_data_table() for the mapping.
+            #        field,    pk,      y1
+            items = {item[1]: (item[0], item[3]) for item in values}
+            rowcount = 0
+
+            for field, value in data.items():  # Loop through incoming data
+                pk, y1 = items.get(field, (None, None))  # pk, y1
+
+                if None in (pk, y1):           # Error condition
+                    error = f"Could not find field {field} in {data}."
+                    self._mf.statusbar_error = error
+                    self._log.error(error)
+                    break
+
+                if year != y1:                 # Insert
+                    values = insert_data.setdefault('data', [])
+                    values.append((field, str(value)))
+                else:                          # Update
+                    values = update_data.setdefault('data', [])
+                    values.append((pk, str(value)))
+
+            if insert_data:                    # Do insert
+                rowcount = await self.cache.insert(
+                    self.db._T_DATA, insert_data)
+
+            if update_data:                    # Do update
+                rowcount = await self.cache.update(
+                    self.db._T_DATA, update_data)
+
+        return error, rowcount
 
     @property
     def _earliest_fiscal_year(self) -> tuple:

@@ -291,13 +291,13 @@ class TestCache(BaseAsyncTests):
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
         t_month = {'data': self.db.ordered_month()}
-        t_data = {'year': 183, 'month': 3, 'data': [
-            ('iana_name', 'America/New_York'), ('latitude', 40.7127281),
-            ('locale_name', 'New York'), ('locality_prefix', '0'),
-            ('location_city_name', 'New York'), ('longitude', -74.0060152),
-            ('start_of_fiscal_year', '183-03-05'), ('total_membership', '20'),
-            ('treasurer', '<your treasurer>')]}
         t_fs = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
+        t_data = {'year': 183, 'month': 3, 'data': {
+            'iana_name': 'America/New_York', 'latitude': 40.7127281,
+            'locale_name': 'New York', 'locality_prefix': '0',
+            'location_city_name': 'New York', 'longitude': -74.0060152,
+            'start_of_fiscal_year': '183-03-05', 'total_membership': '20',
+            'treasurer': '<your treasurer>'}}
         data = (
             (self.db._T_FIELD_TYPE, {'data': self.db.cache.ORG_FIELDS}, 9),
             (self.db._T_MONTH, t_month, 20),

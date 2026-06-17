@@ -363,8 +363,7 @@ class BaseDatabase(PopulateCollect, Settings):
             f_year = f_month = None
         elif name == 'budget':
             if f_year and f_month:
-                error, _ = await self._insert_update_config_data_table(
-                    f_year, month=f_month, r_type='budget', data=data)
+                error = await self._dp.budget(data, f_year, f_month)
         elif name == 'monthly':
             if data:
                 empty_fields = []
@@ -419,59 +418,6 @@ class BaseDatabase(PopulateCollect, Settings):
                                                {'data': fields})
 
         return rowcount
-
-    async def _insert_update_config_data_table(
-        self, year: int, *, month: int=None, r_type: str=None, data: dict={}
-        ) -> tuple:
-        """
-        Insert or update `data` table.
-
-        :param int year: A Baha'i fiscal year of the transaction.
-        :param int month: A Baha'i fiscal month of the transaction. This is
-                          the order of the Baha'i month not the name.
-        :param dict data: The data from the any panel  in the form of:
-                          [(<field name>, <value>), ...].
-        :returns: (<error or None>, rowcount)
-        :rtype: tuple
-        """
-        error = None
-        values = self.cache.get(self._T_DATA, year=year, r_type=r_type)
-
-        if not values:  # Do insert
-            items = {'year': year, 'month': month, 'data': data}
-            rowcount = await self.cache.insert(self._T_DATA, items)
-            self._log.info("Inserted %s table data: %s.", self._T_DATA, data)
-        else:
-            insert_data = {'year': year, 'month': month}
-            update_data = {}
-            # See select_from_config_data_table() for the mapping.
-            #        field,    pk,      y1
-            items = {item[1]: (item[0], item[3]) for item in values}
-            rowcount = 0
-
-            for field, value in data.items():  # Loop through incoming data
-                pk, y1 = items.get(field, (None, None))  # pk, y1
-
-                if None in (pk, y1):           # Error condition
-                    error = f"Could not find field {field} in {data}."
-                    self._mf.statusbar_error = error
-                    self._log.error(error)
-                    break
-
-                if year != y1:                 # Insert
-                    values = insert_data.setdefault('data', [])
-                    values.append((field, str(value)))
-                else:                          # Update
-                    values = update_data.setdefault('data', [])
-                    values.append((pk, str(value)))
-
-            if insert_data:                    # Do insert
-                rowcount = await self.cache.insert(self._T_DATA, insert_data)
-
-            if update_data:                    # Do update
-                rowcount = await self.cache.update(self._T_DATA, update_data)
-
-        return error, rowcount
 
     async def _insert_update_monthly_table(self, year: int, month: int,
                                            data: dict) -> int:

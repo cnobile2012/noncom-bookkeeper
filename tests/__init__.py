@@ -15,8 +15,8 @@ __all__ = ('FakeFrame', 'FakeWidget', 'FakeEvent', 'FakePanel', 'log',
            'check_flag', 'Settings', 'BaseSystemData', 'TomlMetaData',
            'TomlPanelConfig', 'TomlAppConfig', 'TomlCreatePanel')
 
-LOGGER_NAME = 'config'
-LOGFILE_NAME = 'config.log'
+LOGGER_NAME = 'testing'
+LOGFILE_NAME = 'testing.log'
 PATH = os.path.join(BASE_DIR, 'logs')
 
 
@@ -34,7 +34,7 @@ def setup_logging():
     return logging.getLogger(LOGGER_NAME)
 
 
-log = setup_logging()
+log = setup_logging()  # Only used in test_config.py
 
 
 def initial_log_message(message, *args, **kwargs):
@@ -76,7 +76,7 @@ def check_flag(name):
 
 def patchers(self):
     sys.modules.pop('src', None)
-    logger_name_patcher = patch('src.config.Settings.logger_name',
+    logger_name_patcher = patch('src.config.Settings._LOGGER_NAME',
                                 new_callable=PropertyMock)
     mock_name_patcher = logger_name_patcher.start()
     self.addCleanup(logger_name_patcher.stop)
@@ -88,7 +88,7 @@ def patchers(self):
     self.addCleanup(logfile_path_patcher.stop)
     mock_logfile_path.return_value = PATH
 
-    logfile_name_patcher = patch('src.config.Settings.logfile_name',
+    logfile_name_patcher = patch('src.config.Settings._LOGFILE_NAME',
                                  new_callable=PropertyMock)
     mock_logfile_name = logfile_name_patcher.start()
     self.addCleanup(logfile_name_patcher.stop)

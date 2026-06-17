@@ -263,7 +263,7 @@ class Database(BaseDatabase):
     async def select_from_config_data_table(self, data: list, year: int=None
                                             ) -> list:
         """
-        Reads a row or rows from the `data` table.
+        Reads a row or rows from the config data table.
 
         :param dict data: The data from the any panel in the form of:
                           {<field name>: <value>,...}.
@@ -323,7 +323,7 @@ class Database(BaseDatabase):
 
     async def insert_all_into_config_data_table(self, data: list) -> int:
         """
-        Insert all values into the Data table.
+        Insert all values into the config data table.
 
         :param list data: Multi-row data.
         :returns: The row count caused by the insert.
@@ -340,7 +340,7 @@ class Database(BaseDatabase):
     async def insert_into_config_data_table(self, year: int, month: int,
                                             data: list) -> int:
         """
-        Insert values into the Data table.
+        Insert values into the config data table.
 
         :param int year: A Baha'i year of the transaction.
         :param int month: A Baha'i month of the transaction. This is the order
@@ -351,11 +351,10 @@ class Database(BaseDatabase):
         :rtype: int
         """
         fy1 = await self.select_from_fiscal_year_table(current=1)
-        items = dict(data)  # Convert a list of tuples into a dict.
 
         if fy1:
             now = badidatetime.datetime.now(self.utc_tzinfo)
-            f_items = await self.select_from_field_type_table(items)
+            f_items = await self.select_from_field_type_table(data)
             f_month = await self.select_from_month_table(order=month)
             fy2 = await self.select_from_fiscal_year_table(year=fy1[1]+1)
 
@@ -371,7 +370,7 @@ class Database(BaseDatabase):
                 mfk = f_month[0]
                 fy1fk = fy1[0]  # We want the FK not the year.
                 fy2fk = fy2[0]  # We want the FK not the year.
-                values.append({'value': items[field], 'fy1fk': fy1fk,
+                values.append({'value': data[field], 'fy1fk': fy1fk,
                                'fy2fk': fy2fk, 'mfk': mfk, 'ffk': pk,
                                'ctime': now, 'mtime': now})
 
@@ -384,7 +383,7 @@ class Database(BaseDatabase):
 
     async def update_config_data_table(self, data: list) -> int:
         """
-        Update the `data` table.
+        Update the config data table.
 
         :param list data: The data from the any panel  in the form of:
                           [(<pk>, <value>), ...}.

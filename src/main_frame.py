@@ -203,11 +203,11 @@ class MainFrame(wx.Frame, MenuBar):
                 panel.SetSizeHints(width, height)
 
     @property
-    def panels(self):
+    def panels(self) -> dict:
         return self.__panel_classes
 
     @panels.setter
-    def panels(self, values):
+    def panels(self, values: tuple) -> None:
         assert isinstance(values, tuple), ("The 'values' argument must be "
                                            f"a tuple, found {type(values)}.")
         #                    panel name   panel object

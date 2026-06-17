@@ -4,12 +4,9 @@
 #
 __docformat__ = "restructuredtext en"
 
-import logging
 import random
 
 from string import ascii_lowercase, ascii_uppercase, digits
-
-from .config import TomlAppConfig
 
 
 class Cache:
@@ -29,9 +26,8 @@ class Cache:
         :param object db: The database self object.
         """
         super().__init__(*args, **kwargs)
-        self._tac = TomlAppConfig()
         self.db = db
-        self._log = logging.getLogger(self._tac.logger_name)
+        self._log = db._log
         self._flush_cache()
 
     @property
@@ -306,7 +302,9 @@ class Cache:
                 self._log.error("Invalid table name %s.", table_name)
                 rowcount = 0
 
-        self._log.info("Inserted data into the %s table.", table_name)
+        #print('POOP2', rowcount, table_name, self._log)
+        self._log.info("Inserted %s row(s) into the %s table.",
+                       rowcount, table_name)
         return rowcount
 
     async def update(self, table_name: str, changes: dict) -> int:

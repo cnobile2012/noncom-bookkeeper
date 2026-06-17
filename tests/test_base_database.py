@@ -183,25 +183,6 @@ class TestBaseDatabase(BaseAsyncTests):
         self.assertIn(err_msg0, result)
 
     @unittest.skip("Temporarily skipped")
-    async def test__insert_update_config_data_table(self):
-        """
-        Test that the _insert_update_config_data_table method inserts or
-        updates the config_date table.
-        """
-        err_msg0 = "Could not find field {} in {}."
-        await self.asyncTearDown()
-        data = {field: 0 for field in self.db.cache.ORG_FIELDS}
-        rowcount = await self.db._add_fields_to_field_type_table(data)
-        data = (
-            (183, 3, 'organization', org_data),
-            #('budget', ),
-            )
-        msg = "Expected {}, found {}."
-
-        for r_type in data:
-            pass
-
-    @unittest.skip("Temporarily skipped")
     async def test__insert_update_monthly_table(self):
         """
         Test that the _insert_update_monthly_table method 

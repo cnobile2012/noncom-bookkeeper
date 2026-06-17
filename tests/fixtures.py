@@ -20,6 +20,7 @@ __all__ = ('FakeFrame', 'FakeMainFrame', 'Options', 'FakeWidget', 'FakeEvent',
 
 class Options:
     file_dump = True
+    debug = True
 
 
 class FakeMainFrame(wx.Frame):

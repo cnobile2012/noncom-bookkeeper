@@ -61,6 +61,7 @@ class Settings(AppDirs, Borg):
         # Setup the logger for this monule.
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
+        self.log_level = logging.INFO
 
     def create_dirs(self) -> None:
         """
@@ -116,6 +117,14 @@ class Settings(AppDirs, Borg):
         self._log.info("Created, if necessary, the following paths: %s", paths)
 
     @property
+    def log_level(self) -> int:
+        return self._log.level
+
+    @log_level.setter
+    def log_level(self, level: int) -> None:
+        self._log.setLevel(level)
+
+    @property
     def debug(self) -> bool:
         return self._DEBUG
 
@@ -154,11 +163,11 @@ class Settings(AppDirs, Borg):
         return result
 
     @property
-    def logger_name(self) -> str:  # pragma: no cover
+    def logger_name(self) -> str:
         return self._LOGGER_NAME
 
     @property
-    def logfile_name(self) -> str:  # pragma: no cover
+    def logfile_name(self) -> str:
         return self._LOGFILE_NAME
 
     @property
