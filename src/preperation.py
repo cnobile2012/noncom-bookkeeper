@@ -282,8 +282,8 @@ class DataPreperation:
         Insert or update `data` table.
 
         :param int year: A Baha'i fiscal year of the transaction.
-        :param int month: A Baha'i fiscal month of the transaction. This is
-                          the order of the Baha'i month not the name.
+        :param int month: A Baha'i fiscal month of the transaction. This
+                          is the order of the Baha'i month not the name.
         :param dict data: The data from the any panel  in the form of:
                           {<field name>: <value>, ...}.
         :returns: (<error or None>, rowcount)
@@ -322,11 +322,11 @@ class DataPreperation:
                     values.append((pk, str(value)))
 
             if insert_data:                    # Do insert
-                rowcount = await self.cache.insert(
+                rowcount = await self.db.cache.insert(
                     self.db._T_DATA, insert_data)
 
             if update_data:                    # Do update
-                rowcount = await self.cache.update(
+                rowcount = await self.db.cache.update(
                     self.db._T_DATA, update_data)
 
         return error, rowcount

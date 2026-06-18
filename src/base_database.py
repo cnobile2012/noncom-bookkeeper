@@ -251,8 +251,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
         fiscal_years = self.cache.get(self._T_FISCAL_YEAR)
 
-        if len(fiscal_years):
-            # Find the start year
+        if len(fiscal_years):  # Find the start year
             year, month = min([(item[1], item[2]) for item in fiscal_years])
         else:  # Only for first time use.
             year = month = None

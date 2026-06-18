@@ -18,7 +18,6 @@ from src.bahai_database import Database
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
-from .fixtures import FakeMainFrame, Options
 
 
 class TestBaseDatabase(BaseAsyncTests):
@@ -31,7 +30,6 @@ class TestBaseDatabase(BaseAsyncTests):
         patchers(self)
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
-        self.frame = FakeMainFrame(options=Options())
 
     async def asyncSetUp(self):
         with patch.object(self.db, '_mf',
@@ -158,9 +156,41 @@ class TestBaseDatabase(BaseAsyncTests):
     @unittest.skip("Temporarily skipped")
     async def test_save_to_database(self):
         """
-        Test that the save_to_database method 
+        Test that the save_to_database method inserts or updates panel
+        data in the database.
         """
-        pass
+        err_msg0 = ("The 'locale_name, total_membership, treasurer, "
+                    "location_city_name' field(s) must not be empty.")
+        sofy = badidatetime.date(183, 3, 5)
+        full_data = {'locale_name': 'New York', 'locality_prefix': '0',
+                     'location_city_name': 'New York',
+                     'start_of_fiscal_year': sofy,
+                     'total_membership': '19', 'treasurer': 'Joe Schmo'}
+
+        data = (
+            ('organization', False, err_msg0),
+            ('organization', True, None),
+            )
+        msg = "Expexted {}, found {}."
+        await self.asyncTearDown()
+        #await self.insert_fiscal_year()
+
+        for panel_name, valid, expected in data:
+            panel = self.get_panel(panel_name)
+
+            with patch.object(self.db, '_mf',
+                              StoreObjects().get_object('MainFrame')):
+                error = await self.db.save_to_database(panel_name, panel)
+
+            if valid:
+                panels = {panel_name: panel}
+                #await self.insert_field_data(panel_name)
+                await self.db._populate_config_data_panels(sofy.year, panels)
+                result = self.db.cache.get(self.db._T_DATA, year=sofy.year,
+                                           r_type=panel_name)
+                #print('POOP', self.db.cache._store)
+            else:
+                self.assertEqual(expected, error, msg.format(expected, error))
 
     #@unittest.skip("Temporarily skipped")
     async def test__add_fields_to_field_type_table(self):

@@ -52,17 +52,17 @@ class TestDataPreperation(BaseAsyncTests):
                      'location_city_name': 'New York',
                      'start_of_fiscal_year': sofy,
                      'total_membership': '19', 'treasurer': 'Joe Schmo'}
+        update_data = dict(full_data)
+        update_data['total_membership'] = '25'
         data = (
             ({}, None, None, False, False, err_msg0),    # No data
             (part_data, 183, 3, False, True, err_msg1.format(
                 "locale_name, treasurer")),              # Partial data
             (full_data, None, None, True, False, None),  # Full data
+            (update_data, 183, 3, True, False, None),    # Updated data
             )
         msg = "Expexted {}, found {}."
-        fiscal_years = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
-        rowcount = await self.tdp.db.cache.insert(
-            self.tdp.db._T_FISCAL_YEAR, fiscal_years)
-        self.assertEqual(2, rowcount)
+        await self.insert_fiscal_year()
 
         for items, year, month, valid, partial, expected in data:
             error = await self.tdp.organization(items, year, month)
@@ -195,6 +195,7 @@ class TestDataPreperation(BaseAsyncTests):
                 await self.tdp.db.cache.load()
                 result = self.db.cache.get(self.db._T_DATA, year=183,
                                            r_type='budget')
+
                 #print('POOP', result)
 
     #@unittest.skip("Temporarily skipped")
@@ -333,7 +334,7 @@ class TestDataPreperation(BaseAsyncTests):
         self.assertEqual(expect_longitude, lon, msg.format(
             expect_longitude, lon))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test__insert_update_config_data_table(self):
         """
         Test that the _insert_update_config_data_table method inserts or
@@ -343,14 +344,36 @@ class TestDataPreperation(BaseAsyncTests):
         await self.asyncTearDown()
         data = {field: 0 for field in self.db.cache.ORG_FIELDS}
         rowcount = await self.db._add_fields_to_field_type_table(data)
+        org_data = {'locale_name': 'New York', 'locality_prefix': '0',
+                    'location_city_name': 'New York', 'treasurer': 'Joe Schmo',
+                    'start_of_fiscal_year': '0183-03-05',
+                    'total_membership': '19'}
+        update_org_data = dict(org_data)
+        update_org_data['total_membership'] = '25'
+        next_year_data = dict(org_data)
+        next_year_data['start_of_fiscal_year'] = '0184-03-05'
+        invalid_field = dict(org_data)
+        invalid_field['INVALID_FIELD'] = 'JUNK'
         data = (
-            (183, 3, 'organization', org_data),
-            #('budget', ),
+            (183, 3, 'organization', org_data, None),
+            (183, 3, 'organization', update_org_data, None),
+            (183, 3, 'organization', next_year_data, None),
+            (183, 3, 'organization', invalid_field,
+             err_msg0.format('INVALID_FIELD', invalid_field)),
             )
         msg = "Expected {}, found {}."
+        await self.insert_fiscal_year()
+        await self.insert_months()
 
-        for r_type in data:
-            pass
+        for year, month, r_type, items, expected in data:
+            error, rowcount = await self.tdp._insert_update_config_data_table(
+                year, month=month, r_type=r_type, data=items)
+
+            if not expected:
+                self.assertEqual(len(items), rowcount, msg.format(
+                    len(items), rowcount))
+            else:
+                self.assertEqual(expected, error, msg.format(expected, error))
 
     #@unittest.skip("Temporarily skipped")
     async def test__earliest_fiscal_year(self):
