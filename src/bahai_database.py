@@ -416,22 +416,29 @@ class Database(BaseDatabase):
         :param int month: The ordinal value of the month needed.
         :returns: The data for the given month.
         :rtype: list
-        """
-        if month is not None:
-            where = " AND fy.month = :month;"
-            data = {'year': year, 'month': month}
-        else:
-            where = ";"
-            data = {'year': year}
 
-        query = (f"SELECT m.*, mo.month, mo.ord FROM {self._T_MONTHLY} AS m "
+        .. note::
+
+           The result is:
+           [(pk, participation, outstanding, coh, membership, '<treasurer>',
+             locality, <ctime>, <mtime>, <year>, '<month name>',
+             <month ordinal>), ...]
+        """
+        data = {'year': year}
+
+        if month is None:
+            where = ";"
+        else:
+            where = " AND fy.month = :month;"
+            data.update({'month': month})
+
+        query = ("SELECT m.*, fy.year, mo.month, mo.ord FROM "
+                 f"{self._T_MONTHLY} AS m "
                  f"JOIN {self._T_MONTHLY_PIVOT} AS mp ON mp.mlfk = m.pk "
                  f"JOIN {self._T_MONTH} AS mo ON mo.pk = mp.mfk "
                  f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
                  "WHERE  fy.year = :year")
-
-        values = await self._do_select_query(query + where, data)
-        return values[0] if len(values) == 1 else values
+        return await self._do_select_query(query + where, data)
 
     async def insert_all_into_monthly_table(self, data: list) -> int:
         """
@@ -494,16 +501,6 @@ class Database(BaseDatabase):
                  "AND fy.year = :year;")
         return await self._do_update_query(query, data)
 
-    def convert_monthly_list_to_dict(self, items: tuple, data: dict={}):
-        data['month_of_year'] = self.ordinal_month_to_widget(items[10])
-        data['participation'] = items[1]
-        data['outstanding_bills'] = items[2]
-        data['end_of_month_cash_on_hand'] = items[3]
-        data['total_membership_this_month'] = items[4]
-        data['treasurer_this_month'] = items[5]
-        data['locality_prefix_month'] = items[6]
-        return data
-
     #
     # Miscellaneous methods and properties
     #
@@ -534,7 +531,7 @@ class Database(BaseDatabase):
         """
         return badidatetime.date.fromisoformat(iso).b_date
 
-    def _today(self) -> badidatetime.date:
+    def today(self) -> badidatetime.date:
         """
         Return an instance of 'date' for today.
 
@@ -571,12 +568,92 @@ class Database(BaseDatabase):
         # Zone has no DST at all — any offset is the standard offset
         return datetime.datetime(now.year, 1, 15, tzinfo=tz).utcoffset()
 
-    def ordinal_month_to_widget(self, month):
-        if month == 0:  # Ayyám-i-Há
-            value = 19
-        elif month == 19:  # 'Alá'
-            value = 20
-        else:
-            value = month  # Should be 1 - 18
+    def full_fiscal_year_data(self):
+        """
+        Get all months in the current fiscal year.
 
-        return value
+        :returns: A list of data for the months in the fiscal year.
+        :rtype: list
+        """
+        year_month = []
+        year = self.cache.year
+
+        if year:
+            fy0 = self.cache.get(self._T_FISCAL_YEAR, year=year)
+            fy1 = self.cache.get(self._T_FISCAL_YEAR, year=year+1)
+
+            if fy0 and fy1:
+                year_month = self._fiscal_year_months(fy0[0], fy1[0])
+
+        return year_month
+
+    def _fiscal_year_months(self, start_rec: tuple, end_rec: tuple) -> list:
+        """
+        Create a list of tuples that are in sequential order of the Badi year
+        and month for the entire fiscal year.
+
+        :param tuple start_rec: A tuple of the fiscal year data.
+        :param tuple end_rec: A tuple of the fiscal year data.
+        :returns: A list of tuples of the year, ordinal, month name.
+        :rtype: list
+
+        .. note::
+
+           Result assuming the fiscal year starts 183-03-05:
+           [(1, 183, 3, 'Jamál'),
+            (2, 183, 4, "'Aẓamat"),
+            (3, 183, 5, 'Núr'),
+            ...
+            (19, 184, 1, 'Bahá'),
+            (20, 184, 2, 'Jalál'),
+            (21, 184, 3, 'Jamál')]
+        """
+        months = self.ordered_month()
+        order = [o for m, o in months]
+        next_month = {m: order[i + 1] for i, m in enumerate(order[:-1])}
+        rank = {o: i for i, (m, o) in enumerate(months)}
+        name = {o: m for m, o in months}
+
+        def badi_ym_sequence(year, month):
+            while True:
+                yield (year, month)
+
+                if month == 19:
+                    year += 1
+                    month = 1
+                else:
+                    month = next_month[month]
+
+        end_key = (end_rec[1], rank[end_rec[2]])
+        result = []
+
+        for i, (y, o) in enumerate(badi_ym_sequence(start_rec[1],
+                                                    start_rec[2]), start=1):
+            if (y, rank[o]) > end_key:
+                break
+
+            result.append((i, y, o, name[o]))
+
+        return result
+
+    def populate_monthly_data(self, month_idx: int,  items: tuple,
+                              data: dict={}):
+        # month_idx sets the dropdown to the current month.
+        data['month_of_year'] = month_idx
+
+        if items:
+            values = items[0]
+            data['participation'] = values[1]
+            data['outstanding_bills'] = values[2]
+            data['end_of_month_cash_on_hand'] = values[3]
+            data['total_membership_this_month'] = values[4]
+            data['treasurer_this_month'] = values[5]
+            data['locality_prefix_month'] = values[6]
+
+        if data['treasurer_this_month'] == "" and self._dp.organization_data:
+            data['treasurer_this_month'] = self._dp.organization_data[
+                'treasurer']
+            data['total_membership_this_month'] = self._dp.organization_data[
+                'total_membership']
+
+        return data

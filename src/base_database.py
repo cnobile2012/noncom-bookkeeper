@@ -246,9 +246,6 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         Populate all panels that have data in the database.
         """
-        if not self.cache.has_cache:
-            await self.cache.load()
-
         fiscal_years = self.cache.get(self._T_FISCAL_YEAR)
 
         if len(fiscal_years):  # Find the start year
@@ -259,10 +256,10 @@ class BaseDatabase(PopulateCollect, Settings):
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
             await self._populate_config_data_panels(year, self._mf.panels)
-            monthly = self._mf.panels.get('monthly')
-            await self._populate_monthly_panel(year, month, monthly)
-            # *** TODO *** Populate the fiscal panel
 
+        today = self.today()
+        monthly = self._mf.panels.get('monthly')
+        await self._populate_month(today.year, today.month, monthly)
         return year, month
 
     async def _populate_config_data_panels(self, year: int, panels: dict
@@ -285,51 +282,35 @@ class BaseDatabase(PopulateCollect, Settings):
                 self.populate_panel_values(panel_name, panel, values)
                 panel.initializing = False
 
-    async def _populate_monthly_panel(self, fy_year: int, fy_month: int,
-                                      panel: wx.Panel) -> None:
+    async def _populate_month(self, year: int, month: int, panel: wx.Panel
+                              ) -> None:
         """
-        Populate the monthly panel.
+        Populate the currently chosen month with that month's data.
 
-        :param int fy_year: The fiscal year.
-        :param int fy_month: The ordinal for the month in the current fiscal
-                             year.
+        :param int year: The chosen year.
+        :param int month: The ordinal for the chosen month in the current
+                          fiscal year.
         :param wx.Panel panel: The panel object.
         """
-        fiscal_years = self.cache.get(self._T_FISCAL_YEAR)
+        fy0 = self.cache.get(self._T_FISCAL_YEAR, year=year)
+        fy1 = self.cache.get(self._T_FISCAL_YEAR, year=year+1)
 
-        if len(fiscal_years):
-            years_months = [(item[1], item[2]) for item in fiscal_years]
+        if fy0 and fy1:
+            year_month = self._fiscal_year_months(fy0[0], fy1[0])
 
-        data = self.collect_panel_values(panel)
-        widget_ord = data['month_of_year']
+            for mon_idx, yr, ord, name in year_month:
+                if year == yr and month == ord:
+                    break
 
-        if widget_ord == 0:  # "Choose Current Month" default message.
-            month = -1
-        elif widget_ord == 19:  # Ayyám-i-Há
-            month = 0
-        elif widget_ord == 20:  # 'Alá'
-            month = 19
-        elif widget_ord < fy_month:
-            month = widget_ord
-            fy_year += 1
-            data['month_of_year'] = 0  # Placeholder
-        else:  # Should be fy_month - 18
-            month = widget_ord
+            data = self.collect_panel_values(panel)
+            items = self.cache.get(self._T_MONTHLY, year=fy0[0][1])
 
-        values = await self.select_from_monthly_table(fy_year, month)
+            for months in items:
+                pass
 
-        if data['treasurer_this_month'] == "" and self._dp.organization_data:
-            data['treasurer_this_month'] = self._dp.organization_data[
-                'treasurer']
-            data['total_membership_this_month'] = self._dp.organization_data[
-                'total_membership']
-
-        if values:
-            data = self.convert_monthly_list_to_dict(values, data)
-
-        if month > -1:
+            data = self.populate_monthly_data(mon_idx, items, data)
             panel.initializing = True
-            panel.date = (fy_year, month)
+            panel.date = (year, month)
             self.populate_panel_values('monthly', panel, data)
             panel.initializing = False
 
@@ -365,26 +346,7 @@ class BaseDatabase(PopulateCollect, Settings):
                 error = await self._dp.budget(data, f_year, f_month)
         elif name == 'monthly':
             if data:
-                empty_fields = []
-                values = {}
-
-                for field, value in data.items():
-                    f_name, manditory = self._MONTHLY_FIELD_MAP.get(
-                        field, ('unknown', True))
-                    assert f_name != 'unknown', ("An unknown field was found "
-                                                 "in the monthly panel.")
-                    values[f_name] = value if value else 0
-
-                    if manditory and value in self._EMPTY_FIELDS:
-                        empty_fields.append(field)
-
-                if len(empty_fields) != 0:
-                    ef = ', '.join([f for f in empty_fields])
-                    error = f"The '{ef}' field(s) must not be empty."
-                    self._log.warning(error)
-                else:
-                    await self._insert_update_monthly_table(
-                        f_year, values['month'], values)
+                error = await self._dp.monthly(data, f_year)
 
         return error
 
@@ -415,29 +377,6 @@ class BaseDatabase(PopulateCollect, Settings):
         if fields:
             rowcount = await self.cache.insert(self._T_FIELD_TYPE,
                                                {'data': fields})
-
-        return rowcount
-
-    async def _insert_update_monthly_table(self, year: int, month: int,
-                                           data: dict) -> int:
-        """
-        Insert or update the monthly table.
-
-        :param int year: Year of insert or update.
-        :param int month: Month of insert or update.
-        :param dict data: The data to be inserted.
-        :returns: The row count caused by the insert or update.
-        :rtype: int
-        """
-        values = await self.select_from_monthly_table(year, month)
-
-        if values:  # Do update
-            rowcount = await self.update_monthly_table(year, data)
-            self._log.info("Updated %s table data: %s.", self._T_MONTHLY, data)
-        else:  # Do insert
-            rowcount = await self.insert_into_monthly_table(year, data)
-            self._log.info("Inserted %s table data: %s.", self._T_MONTHLY,
-                           data)
 
         return rowcount
 

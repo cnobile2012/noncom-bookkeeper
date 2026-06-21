@@ -51,10 +51,16 @@ class Cache:
 
     @property
     def year(self) -> int | None:
+        """
+        This will always be the current fiscal year.
+        """
         return self._year
 
     @year.setter
     def year(self, year: int) -> None:
+        """
+        Set the current fiscal year.
+        """
         self._year = year
 
     async def load(self) -> None:

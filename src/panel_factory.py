@@ -9,6 +9,7 @@ from io import StringIO
 from .config import TomlMetaData
 from .bases import find_dict
 from .custom_widgits import ordered_month
+from .utilities import StoreObjects
 
 # https://pwwang.github.io/python-varname/
 # from varname import varname, nameof
@@ -23,6 +24,7 @@ class PanelFactory(TomlMetaData):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._db = StoreObjects().get_object('Database')
 
     @property
     def class_name_keys(self):
@@ -119,8 +121,8 @@ class PanelFactory(TomlMetaData):
                 self.color_check_box(klass, panel, widget, value)
             elif value[0] == 'StaticLine':
                 self.static_line(klass, widget, value)
-            elif value[0] == 'invisable-spacer':
-                self.invisable_spacer(klass, value)
+            elif value[0] == 'invisible-spacer':
+                self.invisible_spacer(klass, value)
             elif value[0] == 'left-right-buttons':
                 self.left_right_buttons(klass, value)
             elif value == 'sizer_span':
@@ -320,8 +322,9 @@ class PanelFactory(TomlMetaData):
 
         if widget_type == 'ComboBox':
             if panel == 'monthly':
-                choices = [f"{ord:>2} {month}"
-                           for ord, month in ordered_month().items()]
+                fy_data = self._db.full_fiscal_year_data()
+                choices = [f"{year}-{ord:>02} {month}"
+                           for idx, year, ord, month in fy_data]
                 first = 'Choose Current Month'
                 choices.insert(0, first)
                 label = f"value='''{first}''',"
@@ -404,14 +407,14 @@ class PanelFactory(TomlMetaData):
         self._set_colors(klass, widget, value)
         self._set_add_to_sizer(klass, widget, value)
 
-    def invisable_spacer(self, klass, value):
+    def invisible_spacer(self, klass, value):
         dict_ = find_dict(value)
         size = dict_.get('size')
 
         if size:
             self._set_add_to_sizer(klass, size, value)
         else:
-            self._log.critical("Invalid size in 'invisable-spacer', check "
+            self._log.critical("Invalid size in 'invisible-spacer', check "
                                "toml config file.")
 
     def sizer_span(self, klass):

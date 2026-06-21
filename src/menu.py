@@ -62,7 +62,7 @@ class MenuBar:
                                       'edit_budget', None, True, None]),
                           ('monthly', [202, f"&{names[2]}\tCTRL+M",
                                        "Edit monthy data.",
-                                       'edit_month', None, True, None]),
+                                       'edit_monthly', None, True, None]),
                           ('ledger', [203, "&Ledget Data Entry\tCTRL+L",
                                       "Ledger Data Entry", 'edit_ledger_data',
                                       None, True, None]),
@@ -247,7 +247,7 @@ class MenuBar:
     def edit_budget(self, event):  # TODO No fill screen issues
         self._do_panel_switch('budget')
 
-    def edit_month(self, event):  # TODO No fill screen issues
+    def edit_monthly(self, event):  # TODO No fill screen issues
         self._do_panel_switch('monthly')
 
     def edit_ledger_data(self, event):  # TODO Has screen fill issues

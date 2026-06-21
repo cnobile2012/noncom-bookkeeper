@@ -96,15 +96,13 @@ class TestBaseDatabase(BaseAsyncTests):
         """
         fy = self.db.cache.get(self.db._T_FISCAL_YEAR)
         data = (
-            (False, (None, None)),
             (True, (fy[0][1], fy[0][2])),
+            (False, (None, None)),
             )
         msg = "Expected {}, found {}."
 
         for load, expected in data:
-            if load:
-                await self.insert_data()
-            else:
+            if not load:
                 await self.asyncTearDown()
 
             with patch.object(self.db, '_mf',
@@ -147,9 +145,10 @@ class TestBaseDatabase(BaseAsyncTests):
                             expected, result))
 
     @unittest.skip("Temporarily skipped")
-    async def test__populate_monthly_panel(self):
+    async def test__populate_month(self):
         """
-        Test that the _populate_monthly_panel method 
+        Test that the _populate_month method populates the currently
+        chosen month with that months data.
         """
         pass
 
@@ -211,13 +210,6 @@ class TestBaseDatabase(BaseAsyncTests):
         file_data = self.read_text_file(self.log_path)
         result = self.find_text(file_data, err_msg0, 1, err_msg0)
         self.assertIn(err_msg0, result)
-
-    @unittest.skip("Temporarily skipped")
-    async def test__insert_update_monthly_table(self):
-        """
-        Test that the _insert_update_monthly_table method 
-        """
-        pass
 
     @unittest.skip("Temporarily skipped")
     async def test__do_select_query(self):

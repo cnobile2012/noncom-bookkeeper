@@ -41,6 +41,8 @@ class MainFrame(wx.Frame, MenuBar):
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
                  size=(500, 800), options=None, *args, **kwargs):
         super().__init__(parent, id=id, style=style)
+        self.args = args
+        self.kwargs = kwargs
         self.options = options
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
@@ -75,30 +77,14 @@ class MainFrame(wx.Frame, MenuBar):
         ar = AsyncRunner()
         StoreObjects().set_object(ar.__class__.__name__, ar)
 
-        # Read panel config file and create panels.
-        sf = PanelFactory()
-        sf.parse()
+        # Create and store the Database
+        if self._tac.config_type == 'bahai':
+            from .bahai_database import Database
+        else:  # generic
+            pass
 
-        for panel in sf.class_name_keys:
-            code = sf.get_panel_code(panel)
-
-            if code:
-                # Only used for debugging.
-                if options.file_dump:  # Write the code files to the cache.
-                    filename = f"{panel}.py"
-                    dir = self._tac.cached_factory_dir
-                    pathname = os.path.join(dir, filename)
-
-                    with open(pathname, 'w') as f:
-                        f.write(code)
-
-                # Create the panels.
-                exec(code, globals())
-                class_name = sf.get_class_name(panel)
-                self.__panel_classes[panel] = globals(
-                    )[class_name](self.parent, *args, **kwargs)
-
-        self.create_menu()
+        self.db = Database()
+        StoreObjects().set_object(self.db.__class__.__name__, self.db)
         asyncio.run(self.start(), debug=options.debug)
 
     async def start(self):
@@ -106,41 +92,38 @@ class MainFrame(wx.Frame, MenuBar):
         Check that the db has the Organization Information. If not start
         the 'Organization Information' panel.
         """
-        if self._tac.config_type == 'bahai':
-            from .bahai_database import Database
-        else:  # generic
-            pass
+        if not self.db.cache.has_cache:
+            await self.db.cache.load()
 
-        db = Database()
-        StoreObjects().set_object(db.__class__.__name__, db)
-        await db.create_db()
-        await db.populate_panels()
+        # Read panel config file and create panels.
+        self.load_panels()
+        self.create_menu()
+        await self.db.create_db()
+        await self.db.populate_panels()
         # *** TODO *** Display a panel that offers the user the ability
         #              to add or change fields.
 
-        if not db.has_org_info_data:
+        if not self.db.has_org_info_data:
             self._log.info("The Organization data needs to be entered.")
             self.edit_config(None)
-        elif not db.has_budget_data:
+        elif not self.db.has_budget_data:
             self._log.info("The budget data needs to be entered.")
             self.edit_budget(None)
-        elif not db.has_monthly_data:
-            # Create all monthly records for the fiscal year.
-            pass
         else:
-            self.edit_ledger_data(None)
+            self.edit_monthly(None)
+            #self.edit_ledger_data(None)
 
         self._timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.on_timer_closure(db), self._timer)
+        self.Bind(wx.EVT_TIMER, self.on_timer_closure(), self._timer)
         seconds = 1000*10  # = 10 seconds
         self._log.info("Checking panel dirty flag every %s seconds.",
                        seconds/1000)
         self._timer.Start(seconds)
 
-    def on_timer_closure(self, db):
-        def do_save(db, name, panel):
+    def on_timer_closure(self):
+        def do_save(name, panel):
             self._log.debug("Checking '%s' for changes.", name)
-            error = asyncio.run(db.save_to_database(name, panel),
+            error = asyncio.run(self.db.save_to_database(name, panel),
                                 debug=self.options.debug)
             panel.dirty = False
 
@@ -157,19 +140,42 @@ class MainFrame(wx.Frame, MenuBar):
                     if name in ('organization',):
                         if panel.save:
                             panel.save = False
-                            do_save(db, name, panel)
+                            do_save(name, panel)
                         elif panel.cancel:
                             panel.cancel = False
-                            db.populate_panel_values(
-                                name, panel, db.organization_data)
+                            self.db.populate_panel_values(
+                                name, panel, self.db.organization_data)
                             panel.dirty = False
                             c_name = name.capitalize()
                             self.statusbar_message = (
                                 f"Finished restoring {c_name} data.")
                     else:
-                        do_save(db, name, panel)
+                        do_save(name, panel)
 
         return on_timer
+
+    def load_panels(self):
+        sf = PanelFactory()
+        sf.parse()
+
+        for panel in sf.class_name_keys:
+            code = sf.get_panel_code(panel)
+
+            if code:
+                # Write the code files to the cache, only used for debugging.
+                if self.options.file_dump:
+                    filename = f"{panel}.py"
+                    dir = self._tac.cached_factory_dir
+                    pathname = os.path.join(dir, filename)
+
+                    with open(pathname, 'w') as f:
+                        f.write(code)
+
+                # Create the panels.
+                exec(code, globals())
+                class_name = sf.get_class_name(panel)
+                self.__panel_classes[panel] = globals(
+                    )[class_name](self.parent, *self.args, **self.kwargs)
 
     def set_size(self, size, key='size'):
         """

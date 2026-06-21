@@ -134,6 +134,63 @@ class DataPreperation:
                         rowcount)
         return error
 
+    async def monthly(self, data: dict, year: int) -> str | None:
+        """
+        Converts panel data to data appropreate for updating a monthly record.
+
+        :param dict data: Panel data.
+        :param int f_year: The current fiscal year.
+        :returns: Any errors or None.
+        :rtype: str or None
+        """
+        error = None
+        empty_fields = []
+
+        for field, value in data.items():
+            name, manditory = self.db._MONTHLY_FIELD_MAP.get(
+                field, ('unknown', True))
+
+            if name == 'unknown':
+                error = (f"An unknown field '{name}' was found in the "
+                         "monthly panel.")
+                self._log.critical(error)
+                assert name != 'unknown', error
+
+            if manditory and value in self.db._EMPTY_FIELDS:
+                empty_fields.append(field)
+
+            if len(empty_fields) != 0:
+                ef = ', '.join([f for f in empty_fields])
+                error = f"The '{ef}' field(s) must not be empty."
+                self._log.warning(error)
+            else:
+                values = self.db.cache.get(self.db._T_MONTHLY, year=year)
+
+                for rec in values:
+                    pass
+
+
+                #print('POOP', data, values)
+
+                # *** TODO *** Need to find the month currently being woked on.
+
+                # if values:
+                #     items = {'year': year, 'data': data}
+                #     rowcount = await self.db.cache.update(
+                #         self.db._T_MONTHLY, items)
+                #     self._log.info("Updated %s table data: %s.",
+                #                    self.db._T_MONTHLY, items)
+                # else:
+                #     items = {'year': year, 'data': data}
+                #     rowcount = await self.db.cache.insert(
+                #         self.db._T_MONTHLY, items)
+                #     self._log.info("Inserted %s table data: %s.",
+                #                    self.db._T_MONTHLY, items)
+
+                #await self._insert_update_monthly_table(
+                #    f_year, values['month'], values)
+        return error
+
     async def _first_run_initialization(self, year: int, month: int, day: int):
         """
         The first run of the application.

@@ -11,6 +11,7 @@ from src.bases import BaseGenerated
 from src.custom_widgits import (
     ColorCheckBox, EVT_COLOR_CHECKBOX)
 from src.config import Settings, TomlPanelConfig, TomlAppConfig
+from src.bahai_database import Database
 from src.panel_factory import PanelFactory
 from src.utilities import StoreObjects
 
@@ -38,6 +39,9 @@ class FakeMainFrame(wx.Frame):
         self.tac.is_valid
         super().__init__(parent, id=id, style=style, *args, **kwargs)
         StoreObjects().set_object('MainFrame', self)
+        db = Database()
+        StoreObjects().set_object(db.__class__.__name__, db)
+
         sf = PanelFactory()
         sf.parse()
 

@@ -47,17 +47,6 @@ class PopulateCollect:
         return self._check_panels_for_entries('budget')
 
     @property
-    def has_monthly_data(self) -> bool:
-        """
-        Check that the db has the Monthly Information.
-
-        :returns: True if all monthly data has been saved in the DB and
-                  False if not saved.
-        :rtype: bool
-        """
-        return False
-
-    @property
     def open_ledger_entry(self) -> bool:
         """
         Check that the db has the Monthly Information.
@@ -114,7 +103,10 @@ class PopulateCollect:
             if name0 in self._EXCLUDE_WIDGETS:
                 continue
             elif name0 in ('RadioBox', 'ComboBox'):
-                data[field_name] = widget0.GetSelection()
+                if field_name == 'month_of_year':
+                    data[field_name] = widget0.GetStringSelection()
+                else:
+                    data[field_name] = widget0.GetSelection()
             elif name0 in ('ColorCheckBox',):
                 data[field_name] = widget0.GetValue()
             elif name0 == 'StaticText':
@@ -164,9 +156,9 @@ class PopulateCollect:
         """
         if data:  # When run after first time.
             for w0, w1 in self._find_child_sets(panel):
-                name0 = w0[0]
+                name0 = w0[0]  # Widget name
                 if name0 in self._EXCLUDE_WIDGETS: continue
-                field_name = w0[1]
+                field_name = w0[1]  # DB name
                 widget0 = w0[2]
                 value = data[field_name]
 
@@ -204,7 +196,7 @@ class PopulateCollect:
                             continue
                     elif value and name1 in ('BadiDatePickerCtrl',
                                              'DatePickerCtrl'):
-                        iso_today = self._today().isoformat()
+                        iso_today = self.today().isoformat()
                         panel_value = widget1.GetValue()
 
                         if iso_today == panel_value.isoformat():
@@ -515,7 +507,7 @@ class PopulateCollect:
             from .utilities import StoreObjects
             self._mf = StoreObjects().get_object('MainFrame')
             monthly_panel = self._mf.panels.get('monthly')
-            items = self.convert_monthly_list_to_dict(data)
+            items = self.populate_monthly_data(data) # *** TODO *** Broken
             monthly_panel.initializing = True
             self.populate_panel_values('monthly', monthly_panel, items)
             monthly_panel.initializing = False
