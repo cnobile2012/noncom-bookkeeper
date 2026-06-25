@@ -149,8 +149,6 @@ class PanelFactory(TomlMetaData):
             self._create_save_cancel_events(klass)
         elif panel == 'fiscal':
             self._create_combobox_select_event(klass)
-        elif panel in ('monthly',):
-            self._add_on_arrows(klass)
 
         self.__panels[panel] = klass.getvalue()
         klass.close()
@@ -325,8 +323,7 @@ class PanelFactory(TomlMetaData):
                 fy_data = self._db.full_fiscal_year_data()
                 choices = [f"{year}-{ord:>02} {month}"
                            for idx, year, ord, month in fy_data]
-                first = 'Choose Current Month'
-                choices.insert(0, first)
+                first = choices[0]
                 label = f"value='''{first}''',"
             elif panel == 'fiscal':
                 choices = []

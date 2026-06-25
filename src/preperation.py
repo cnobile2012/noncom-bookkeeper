@@ -164,13 +164,9 @@ class DataPreperation:
                 error = f"The '{ef}' field(s) must not be empty."
                 self._log.warning(error)
             else:
+                self._find_fiscal_year_for_record(data['month_of_year'])
                 values = self.db.cache.get(self.db._T_MONTHLY, year=year)
-
-                for rec in values:
-                    pass
-
-
-                #print('POOP', data, values)
+                print('POOP', data, values)
 
                 # *** TODO *** Need to find the month currently being woked on.
 
@@ -187,9 +183,25 @@ class DataPreperation:
                 #     self._log.info("Inserted %s table data: %s.",
                 #                    self.db._T_MONTHLY, items)
 
-                #await self._insert_update_monthly_table(
-                #    f_year, values['month'], values)
         return error
+
+    def _find_fiscal_year_for_record(self, date: str | tuple) -> int:
+        """
+        Determine which fiscal year this record belongs in.
+
+        :param str ot tuple date: The date.
+        :returns: The fiscal year the date belongs in.
+        :rtype: int
+        """
+        # Find the calendar year, month, and/or day.
+        if isinstance(date, str):
+            date = tuple([int(d) for d in date.split(' ')[0].split('-')])
+
+        year = self.db.cache.year
+        fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year-1)
+        fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year)
+        fy2 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year+1)
+        print([date < (fy[1], fy[2], fy[3]) for fy in (fy0 + fy1 + fy2)])
 
     async def _first_run_initialization(self, year: int, month: int, day: int):
         """

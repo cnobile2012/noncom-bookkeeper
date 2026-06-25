@@ -214,6 +214,21 @@ class Cache:
         return [key for key in self._store.keys()
                 if key not in (self.db._T_FIELD_TYPE, self.db._T_MONTH, 'key')]
 
+    def get_all_fiscal_years(self):
+        """
+        Get all fiscal year data.
+
+        :returns: All fiscal year data.
+        :rtype: list
+        """
+        data = []
+        years = [year for year in self._store.keys() if isinstance(year, int)]
+
+        for year in years:
+            data += self.get(self.db._T_FISCAL_YEAR, year=year)
+
+        return data
+
     def get(self, table_name: str, *, year: int=None, r_type: str=None
             ) -> list:
         """

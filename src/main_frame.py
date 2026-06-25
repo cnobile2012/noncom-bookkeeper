@@ -92,17 +92,18 @@ class MainFrame(wx.Frame, MenuBar):
         Check that the db has the Organization Information. If not start
         the 'Organization Information' panel.
         """
+        # Read panel config file and create panels.
+        self.create_menu()
+        await self.db.create_db()
+
         if not self.db.cache.has_cache:
             await self.db.cache.load()
 
-        # Read panel config file and create panels.
         self.load_panels()
-        self.create_menu()
-        await self.db.create_db()
         await self.db.populate_panels()
+
         # *** TODO *** Display a panel that offers the user the ability
         #              to add or change fields.
-
         if not self.db.has_org_info_data:
             self._log.info("The Organization data needs to be entered.")
             self.edit_config(None)

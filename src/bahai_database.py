@@ -432,8 +432,9 @@ class Database(BaseDatabase):
             where = " AND fy.month = :month;"
             data.update({'month': month})
 
-        query = ("SELECT m.*, fy.year, mo.month, mo.ord FROM "
-                 f"{self._T_MONTHLY} AS m "
+        query = ("SELECT m.pk, m.cal_year, mo.month, fy.pk, m.participation, "
+                 "m.outstanding, m.coh, m.membership, m.treasurer, "
+                 f"m.locality, m.ctime, m.mtime FROM {self._T_MONTHLY} AS m "
                  f"JOIN {self._T_MONTHLY_PIVOT} AS mp ON mp.mlfk = m.pk "
                  f"JOIN {self._T_MONTH} AS mo ON mo.pk = mp.mfk "
                  f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
@@ -457,10 +458,10 @@ class Database(BaseDatabase):
         """
         Insert values in the monthly table.
 
-        :param int year: A Baha'i year of the transaction.
+        :param int year: The Badi year of the transaction.
         :param dict data: The data from any panel in the form of:
                           {'participation': <value>, ...}.
-        :returns: The row count caused by the update.
+        :returns: The rowcount caused by the update.
         :rtype: int
         """
         now = badidatetime.datetime.now(self.utc_tzinfo)
@@ -583,14 +584,14 @@ class Database(BaseDatabase):
             fy1 = self.cache.get(self._T_FISCAL_YEAR, year=year+1)
 
             if fy0 and fy1:
-                year_month = self._fiscal_year_months(fy0[0], fy1[0])
+                year_month = self.fiscal_year_months(fy0[0], fy1[0])
 
         return year_month
 
-    def _fiscal_year_months(self, start_rec: tuple, end_rec: tuple) -> list:
+    def fiscal_year_months(self, start_rec: tuple, end_rec: tuple) -> list:
         """
-        Create a list of tuples that are in sequential order of the Badi year
-        and month for the entire fiscal year.
+        Create a list of tuples that are in sequential order of the Badi
+        calendar year and month for the entire fiscal year.
 
         :param tuple start_rec: A tuple of the fiscal year data.
         :param tuple end_rec: A tuple of the fiscal year data.
@@ -628,7 +629,7 @@ class Database(BaseDatabase):
         result = []
 
         for i, (y, o) in enumerate(badi_ym_sequence(start_rec[1],
-                                                    start_rec[2]), start=1):
+                                                    start_rec[2])):
             if (y, rank[o]) > end_key:
                 break
 
@@ -636,19 +637,18 @@ class Database(BaseDatabase):
 
         return result
 
-    def populate_monthly_data(self, month_idx: int,  items: tuple,
+    def populate_monthly_data(self, month_idx: int,  item: tuple,
                               data: dict={}):
         # month_idx sets the dropdown to the current month.
         data['month_of_year'] = month_idx
 
-        if items:
-            values = items[0]
-            data['participation'] = values[1]
-            data['outstanding_bills'] = values[2]
-            data['end_of_month_cash_on_hand'] = values[3]
-            data['total_membership_this_month'] = values[4]
-            data['treasurer_this_month'] = values[5]
-            data['locality_prefix_month'] = values[6]
+        if item:
+            data['participation'] = item[1]
+            data['outstanding_bills'] = item[2]
+            data['end_of_month_cash_on_hand'] = item[3]
+            data['total_membership_this_month'] = item[4]
+            data['treasurer_this_month'] = item[5]
+            data['locality_prefix_month'] = item[6]
 
         if data['treasurer_this_month'] == "" and self._dp.organization_data:
             data['treasurer_this_month'] = self._dp.organization_data[

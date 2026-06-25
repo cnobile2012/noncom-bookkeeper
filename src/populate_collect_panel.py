@@ -233,7 +233,7 @@ class PopulateCollect:
         Find the children in the panel that hold data.
 
         :param wx.Panel panel: The panel to collect data from.
-        :returns: A list of child sets.
+        :returns: A list of child tuples.
         :rtype: list
 
         .. note::
@@ -278,7 +278,14 @@ class PopulateCollect:
         return [children[i:i+2] for i in range(0, len(children), 2)]
 
     def _add_fiscal_year_choices(self, panel_name: str=None,
-                                 panel: wx.Panel=None, *, w0=None):
+                                 panel: wx.Panel=None, *, w0=None) -> None:
+        """
+        Add the fiscal years to the ComboBox choices.
+
+        :param str panel_name: The name of the panel.
+        :param wx.Panel panel: The panel object.
+        :param tuple w0: Widget information.
+        """
         assert (panel_name and panel) or w0, (
             "Can only pass 'panel_name' and 'panel' or just 'w_set' alone.")
 
@@ -289,7 +296,7 @@ class PopulateCollect:
         else:
             widget0 = w0[2]
 
-        years = sorted([item[1] for item in self._fiscal_data])
+        years = sorted([item[1] for item in self.cache.get_all_fiscal_years()])
         data = [(year, year+1) for year in years[:-1]]
         # Just get the title, overwrite the rest.
         choices = [widget0.GetItems()[0]]
@@ -444,7 +451,7 @@ class PopulateCollect:
     def _get_fiscal_year_value(self, year: int, *, pk: bool=False,
                                date: bool=False, current: bool=False,
                                work_on: bool=False, audit: bool=False,
-                               time: bool=False):
+                               time: bool=False) -> int | tuple:
         """
         Return a specific value from the `fiscal_year` table.
 
@@ -462,7 +469,7 @@ class PopulateCollect:
                 work_on, time).count(True) == 1, (
                     f"Only one argument can be `True`, found ({date}, "
                     f"{current}, {audit}, {work_on}, {time}).")
-        data = {item[1]: item for item in self._fiscal_data}
+        data = {item[1]: item for item in self.cache.get_all_fiscal_years()}
         items = data.get(year)
         assert items, f"Invalid year {year}, options are {list(data)}."
 

@@ -78,6 +78,7 @@ class BaseDatabase(PopulateCollect, Settings):
             'mtime DATETIME NOT NULL'),
         _T_MONTHLY: (
             'pk INTEGER NOT NULL PRIMARY KEY',  # mlfk in monthly_pivot
+            'cal_year INTEGER',
             'participation INTEGER',
             'outstanding INTEGER',
             'coh INTEGER',
@@ -181,9 +182,12 @@ class BaseDatabase(PopulateCollect, Settings):
                 for table, params in self._SCHEMA_TABLES.items():
                     fields = ', '.join([field for field in params])
                     query = f"CREATE TABLE IF NOT EXISTS {table} ({fields});"
-                    # extra = self._SCHEMA_EXTRA.get(table)
-                    # Remove ; from query above if extra is used.
-                    # query += f' {extra};' if extra else ';'
+
+                    # if hasattr(self, '_SCHEMA_EXTRA'):
+                    #     extra = self._SCHEMA_EXTRA.get(table)
+                    #     query = (f'{query.rstrip(");")} {extra};'
+                    #              if extra else ');')
+
                     self._log.info("Created table: %s", query)
                     await db.execute(query)
                     await db.commit()
@@ -194,16 +198,15 @@ class BaseDatabase(PopulateCollect, Settings):
                     await db.execute(query)
                     await db.commit()
 
-                # The for loop below and a few lines above would be used
-                # if there are views in the schema.
-                # for view, params in self._SCHEMA_VIEWS.items():
-                #     fields = ', '.join([field for field in params])
-                #     query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
-                #     extra = self._SCHEMA_EXTRA.get(view)
-                #     query += f' {extra};' if extra else ';'
-                #     self._log.info("Created view: %s", query)
-                #     await db.execute(query)
-                #     await db.commit()
+                # if hasattr(self, '_SCHEMA_EXTRA'):
+                #     for view, params in self._SCHEMA_VIEWS.items():
+                #         fields = ', '.join([field for field in params])
+                #         query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
+                #         extra = self._SCHEMA_EXTRA.get(view)
+                #         query += f' {extra};' if extra else ';'
+                #         self._log.info("Created view: %s", query)
+                #         await db.execute(query)
+                #         await db.commit()
 
     @property
     async def has_schema(self) -> bool:
@@ -245,21 +248,28 @@ class BaseDatabase(PopulateCollect, Settings):
     async def populate_panels(self) -> tuple:
         """
         Populate all panels that have data in the database.
-        """
-        fiscal_years = self.cache.get(self._T_FISCAL_YEAR)
 
-        if len(fiscal_years):  # Find the start year
-            year, month = min([(item[1], item[2]) for item in fiscal_years])
+        :returns: The year and month of the fiscal year being worked on.
+        :rtype: tuple
+        """
+        fiscal_years = self.cache.get_all_fiscal_years()
+
+        if len(fiscal_years):  # Find the fiscal year being worked on.
+            for fy in fiscal_years:
+                if fy[5]:  # work_on
+                    year, month = fy[1:3]
+                    break
+                else:  # This should never happen.
+                    year = month = None
         else:  # Only for first time use.
             year = month = None
 
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
             await self._populate_config_data_panels(year, self._mf.panels)
+            await self._populate_month(fy)
+            self._populate_fiscal()
 
-        today = self.today()
-        monthly = self._mf.panels.get('monthly')
-        await self._populate_month(today.year, today.month, monthly)
         return year, month
 
     async def _populate_config_data_panels(self, year: int, panels: dict
@@ -282,37 +292,44 @@ class BaseDatabase(PopulateCollect, Settings):
                 self.populate_panel_values(panel_name, panel, values)
                 panel.initializing = False
 
-    async def _populate_month(self, year: int, month: int, panel: wx.Panel
-                              ) -> None:
+    async def _populate_month(self, fy: tuple) -> None:
         """
         Populate the currently chosen month with that month's data.
 
-        :param int year: The chosen year.
-        :param int month: The ordinal for the chosen month in the current
-                          fiscal year.
-        :param wx.Panel panel: The panel object.
+        :params tuple fy: The fiscal year being worked on.
         """
-        fy0 = self.cache.get(self._T_FISCAL_YEAR, year=year)
-        fy1 = self.cache.get(self._T_FISCAL_YEAR, year=year+1)
+        fy1 = self.cache.get(self._T_FISCAL_YEAR, year=fy[1]+1)
 
-        if fy0 and fy1:
-            year_month = self._fiscal_year_months(fy0[0], fy1[0])
+        if fy1:
+            fy1 = fy1[0]
+            panel = self._mf.panels.get('monthly')
+            data = self.collect_panel_values(panel)
+            date = data['month_of_year']
+            date = tuple([int(d) for d in date.split(' ')[0].split('-')])
+            item = ()  # Used before any monthly date is generated.
+            today = self.today()
 
-            for mon_idx, yr, ord, name in year_month:
-                if year == yr and month == ord:
+            for mon_idx, yr, ord, name in self.fiscal_year_months(fy, fy1):
+                if (yr, ord) == (today.year, today.month):
                     break
 
-            data = self.collect_panel_values(panel)
-            items = self.cache.get(self._T_MONTHLY, year=fy0[0][1])
+            for item in self.cache.get(self._T_MONTHLY, year=fy[1]):
+                if (item[1], item[2]) == date and fy[0] == item[3]:
+                    break
 
-            for months in items:
-                pass
-
-            data = self.populate_monthly_data(mon_idx, items, data)
+            data = self.populate_monthly_data(mon_idx, item, data)
             panel.initializing = True
-            panel.date = (year, month)
             self.populate_panel_values('monthly', panel, data)
             panel.initializing = False
+
+    def _populate_fiscal(self) -> None:
+        """
+        Populate the fiscal panel.
+        """
+        panel = self._mf.panels.get('fiscal')
+        panel.initializing = True
+        self.populate_panel_values('fiscal', panel, {})
+        panel.initializing = False
 
     async def save_to_database(self, name: str, panel: wx.Panel) -> None:
         """

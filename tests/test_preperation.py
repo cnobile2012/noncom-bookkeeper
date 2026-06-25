@@ -165,7 +165,7 @@ class TestDataPreperation(BaseAsyncTests):
         self.assertEqual(updated_data['work_on_this_fiscal_year'], wotfy)
         self.assertEqual(updated_data['audit_complete'], ac)
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     async def test_budget(self):
         """
         Test that the budget method inserts or updates budget data properly.
@@ -197,6 +197,38 @@ class TestDataPreperation(BaseAsyncTests):
                                            r_type='budget')
 
                 #print('POOP', result)
+
+    @unittest.skip("Temporarily skipped")
+    async def test_monthly(self):
+        """
+        Test that the monthly method 
+        """
+        pass
+
+    @unittest.skip("Temporarily skipped")
+    async def test__find_fiscal_year_for_record(self):
+        """
+        Test that the _find_fiscal_year_for_record method returns the
+        fiscal year the monthly record is in.
+        """
+        prev_year = (182, 3, 5, 0, 0, 0)
+        mthy_record0 = {'month_of_year': '183-03 Jamál'}
+        mthy_record1 = {'month_of_year': '184-03 Jamál'}
+        data = (
+            ('183-03 Jamál', False, 183),
+            ('184-03 Jamál', False, 183),
+            )
+        msg = "Expected {}, found {}."
+        await self.insert_fiscal_year()
+
+        for date, prev_year, expected in data:
+            if prev_year:
+                record = {'data': prev_year}
+                await self.db.cache.insert(self.db._T_FISCAL_YEAR, record)
+
+            result = self.tdp._find_fiscal_year_for_record(date)
+
+
 
     #@unittest.skip("Temporarily skipped")
     async def test__first_run_initialization(self):

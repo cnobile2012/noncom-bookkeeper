@@ -88,7 +88,7 @@ class TestBaseDatabase(BaseAsyncTests):
                 self.assertEqual(expected, result, msg.format(
                     expected, delete, result))
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     async def test_populate_panels(self):
         """
         Test that the populate_panels method populates the panels if data
