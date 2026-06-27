@@ -9,17 +9,11 @@ import wx
 import sqlite3
 import aiosqlite
 
-from geopy.geocoders import Nominatim
-from geopy import exc
-from timezonefinder import TimezoneFinder
-
 from .config import Settings
 from .utilities import StoreObjects
 from .populate_collect_panel import PopulateCollect
 from .preperation import DataPreperation
 from .cache import Cache
-import tracemalloc
-tracemalloc.start()
 
 
 class BaseDatabase(PopulateCollect, Settings):
@@ -164,6 +158,10 @@ class BaseDatabase(PopulateCollect, Settings):
         self._dp = DataPreperation(self)
         self._cache = Cache(self)
 
+    def set_local_coordinates(self, lat: float=None, lon: float=None) -> None:
+        raise NotImplementedError(
+            "The 'set_local_coordinates' must be implemented.")
+
     @property
     def cache(self):
         return self._cache
@@ -183,10 +181,10 @@ class BaseDatabase(PopulateCollect, Settings):
                     fields = ', '.join([field for field in params])
                     query = f"CREATE TABLE IF NOT EXISTS {table} ({fields});"
 
-                    # if hasattr(self, '_SCHEMA_EXTRA'):
-                    #     extra = self._SCHEMA_EXTRA.get(table)
-                    #     query = (f'{query.rstrip(");")} {extra};'
-                    #              if extra else ');')
+                    if self._SCHEMA_EXTRA:
+                        extra = self._SCHEMA_EXTRA.get(table)
+                        query = query.rstrip(");")
+                        query = f', {extra});'
 
                     self._log.info("Created table: %s", query)
                     await db.execute(query)
@@ -198,15 +196,15 @@ class BaseDatabase(PopulateCollect, Settings):
                     await db.execute(query)
                     await db.commit()
 
-                # if hasattr(self, '_SCHEMA_EXTRA'):
-                #     for view, params in self._SCHEMA_VIEWS.items():
-                #         fields = ', '.join([field for field in params])
-                #         query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
-                #         extra = self._SCHEMA_EXTRA.get(view)
-                #         query += f' {extra};' if extra else ';'
-                #         self._log.info("Created view: %s", query)
-                #         await db.execute(query)
-                #         await db.commit()
+                if self._SCHEMA_EXTRA:
+                    for view, params in self._SCHEMA_VIEWS.items():
+                        fields = ', '.join([field for field in params])
+                        query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
+                        extra = self._SCHEMA_EXTRA.get(view)
+                        query += f' {extra};' if extra else ';'
+                        self._log.info("Created view: %s", query)
+                        await db.execute(query)
+                        await db.commit()
 
     @property
     async def has_schema(self) -> bool:
@@ -270,6 +268,7 @@ class BaseDatabase(PopulateCollect, Settings):
             await self._populate_month(fy)
             self._populate_fiscal()
 
+        self.set_local_coordinates()
         return year, month
 
     async def _populate_config_data_panels(self, year: int, panels: dict
@@ -304,9 +303,9 @@ class BaseDatabase(PopulateCollect, Settings):
             fy1 = fy1[0]
             panel = self._mf.panels.get('monthly')
             data = self.collect_panel_values(panel)
-            date = data['month_of_year']
-            date = tuple([int(d) for d in date.split(' ')[0].split('-')])
-            item = ()  # Used before any monthly date is generated.
+            date_str = data['month_of_year']
+            date = tuple([int(d) for d in date_str.split(' ')[0].split('-')])
+            item = ()  # Used before any monthly data is generated.
             today = self.today()
 
             for mon_idx, yr, ord, name in self.fiscal_year_months(fy, fy1):
@@ -482,7 +481,7 @@ class BaseDatabase(PopulateCollect, Settings):
                     if not stmt:  # pragma: no cover
                         continue
 
-                    # Put the ; back on the quert.
+                    # Put the ; back on the query.
                     cursor = await db.executemany(stmt + ';', data)
                     rowcount += cursor.rowcount
 

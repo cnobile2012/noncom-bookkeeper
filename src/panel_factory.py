@@ -545,21 +545,6 @@ class PanelFactory(TomlMetaData):
         klass.write("            db.set_fiscal_panel(False, False, False)\n")
         klass.write("            self.selected = False\n")
 
-    def _add_on_arrows(self, klass):
-        klass.write("\n    def on_arrow(self, event) -> None:\n")
-        klass.write("        db = self._so.get_object('Database')\n")
-        klass.write("        direction = event.GetDirection().upper()\n")
-        klass.write("        new_key = db.get_prev_and_next(direction, "
-                    "*self.date)\n\n")
-        klass.write("        def callback(data):\n")
-        klass.write("            success = bool(data)\n\n")
-        klass.write("            if not success:\n")
-        klass.write("                return\n\n")
-        klass.write("            self.date = new_key\n")
-        klass.write("            db.populate_monthly(data)\n\n")
-        klass.write("        db._adn.get(new_key, callback)\n")
-        klass.write("        event.Skip()\n")
-
     def _set_colors(self, klass, widget, value):
         """
         Sets the background and/or foreground color. Also raise an

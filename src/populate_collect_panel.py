@@ -508,13 +508,3 @@ class PopulateCollect:
                 year -= 1
 
         return (year, self.MONTHS[idx])
-
-    def populate_monthly(self, data):
-        if data:
-            from .utilities import StoreObjects
-            self._mf = StoreObjects().get_object('MainFrame')
-            monthly_panel = self._mf.panels.get('monthly')
-            items = self.populate_monthly_data(data) # *** TODO *** Broken
-            monthly_panel.initializing = True
-            self.populate_panel_values('monthly', monthly_panel, items)
-            monthly_panel.initializing = False

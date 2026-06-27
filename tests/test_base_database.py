@@ -30,15 +30,14 @@ class TestBaseDatabase(BaseAsyncTests):
         patchers(self)
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
+        self.fmf = StoreObjects().get_object('MainFrame')
 
     async def asyncSetUp(self):
-        with patch.object(self.db, '_mf',
-                          StoreObjects().get_object('MainFrame')):
-            await self.db.create_db()
-
+        await self.db.create_db()
         self.db.cache._flush_cache()
         await self.insert_data()
         await self.db.cache.load()
+        self.frame.create_panels()
 
     async def asyncTearDown(self):
         self.db.cache._flush_cache()
@@ -105,8 +104,7 @@ class TestBaseDatabase(BaseAsyncTests):
             if not load:
                 await self.asyncTearDown()
 
-            with patch.object(self.db, '_mf',
-                              StoreObjects().get_object('MainFrame')):
+            with patch.object(self.db, '_mf', self.fmf):
                 result = await self.db.populate_panels()
 
             self.assertEqual(expected, result, msg.format(expected, result))
@@ -125,8 +123,7 @@ class TestBaseDatabase(BaseAsyncTests):
         data = {4: 'New York', 6: '20', 8: 'Joe Schmo',
                 10: badidatetime.date(183, 3, 5), 14: 'New York'}
 
-        with patch.object(self.db, '_mf',
-                          StoreObjects().get_object('MainFrame')):
+        with patch.object(self.db, '_mf', self.fmf):
             await self.db._populate_config_data_panels(183, self.db._mf.panels)
             # Test that fields have be repopulated.
             self.assertTrue(self.db.cache.fields)
@@ -144,13 +141,33 @@ class TestBaseDatabase(BaseAsyncTests):
                         self.assertEqual(expected, result, msg.format(
                             expected, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test__populate_month(self):
         """
         Test that the _populate_month method populates the currently
         chosen month with that months data.
         """
-        pass
+        fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
+        data = (
+            (fy, ()),
+            )
+        msg = "Expexted {}, found {}."
+
+        for fy, expected in data:
+            with patch.object(self.db, '_mf', self.fmf):
+                await self.db._populate_month(fy)
+
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__populate_fiscal(self):
+        """
+        Test that the _populate_fiscal method sets the choices in the
+        ComboBox widget in the fical panel.
+        """
+        with patch.object(self.db, '_mf', self.fmf):
+            self.db._populate_fiscal()
+            panel = self.db._mf.panels.get('fiscal')
+            self.assertEqual('183-184', panel.GetChildren()[3].GetString(1))
 
     @unittest.skip("Temporarily skipped")
     async def test_save_to_database(self):
@@ -177,13 +194,12 @@ class TestBaseDatabase(BaseAsyncTests):
         for panel_name, valid, expected in data:
             panel = self.get_panel(panel_name)
 
-            with patch.object(self.db, '_mf',
-                              StoreObjects().get_object('MainFrame')):
+            with patch.object(self.db, '_mf', self.fmf):
                 error = await self.db.save_to_database(panel_name, panel)
 
             if valid:
                 panels = {panel_name: panel}
-                #await self.insert_field_data(panel_name)
+                #await self.insert_field_data(self.frame.panel['organization'])
                 await self.db._populate_config_data_panels(sofy.year, panels)
                 result = self.db.cache.get(self.db._T_DATA, year=sofy.year,
                                            r_type=panel_name)

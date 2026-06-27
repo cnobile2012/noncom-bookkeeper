@@ -30,6 +30,9 @@ class FakeMainFrame(wx.Frame):
     def __init__(self, parent=None, id=wx.ID_ANY,
                  style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL,
                  options=None, *args, **kwargs):
+        self.options = options
+        self.args = args
+        self.kwargs = kwargs
         settings = Settings()
         settings.testing = True
         settings.create_dirs()
@@ -39,30 +42,31 @@ class FakeMainFrame(wx.Frame):
         self.tac.is_valid
         super().__init__(parent, id=id, style=style, *args, **kwargs)
         StoreObjects().set_object('MainFrame', self)
-        db = Database()
-        StoreObjects().set_object(db.__class__.__name__, db)
 
-        sf = PanelFactory()
-        sf.parse()
+    def create_panels(self):
+        if not self.panels:
+            sf = PanelFactory()
+            sf.parse()
 
-        for panel in sf.class_name_keys:
-            code = sf.get_panel_code(panel)
+            for panel in sf.class_name_keys:
+                code = sf.get_panel_code(panel)
 
-            if code:
-                # Only used for debugging.
-                if options.file_dump:  # Write the code files to the cache.
-                    filename = f"{panel}.py"
-                    dir = self.tac.cached_factory_dir
-                    pathname = os.path.join(dir, filename)
+                if code:
+                    # Only used for debugging.
+                    # Write the code files to the cache.
+                    if self.options.file_dump:
+                        filename = f"{panel}.py"
+                        dir = self.tac.cached_factory_dir
+                        pathname = os.path.join(dir, filename)
 
-                    with open(pathname, 'w') as f:
-                        f.write(code)
+                        with open(pathname, 'w') as f:
+                            f.write(code)
 
-                # Create the panels.
-                exec(code, globals())
-                class_name = sf.get_class_name(panel)
-                self.__panel_classes[panel] = globals(
-                    )[class_name](self, *args, **kwargs)
+                    # Create the panels.
+                    exec(code, globals())
+                    class_name = sf.get_class_name(panel)
+                    self.__panel_classes[panel] = globals(
+                        )[class_name](self, *self.args, **self.kwargs)
 
     @property
     def panels(self):

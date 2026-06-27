@@ -301,6 +301,8 @@ class DataPreperation:
                 data['iana_name'] = iana
                 data['latitude'] = lat
                 data['longitude'] = lon
+                # This makes badidatetime happy.
+                self.db.set_local_coordinates(lat, lon)
             else:
                 data = None
         else:

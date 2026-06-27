@@ -7,6 +7,7 @@ __docformat__ = "restructuredtext en"
 import os
 import unittest
 import badidatetime
+from unittest.mock import patch
 
 from src.config import TomlPanelConfig
 from src.preperation import DataPreperation
@@ -29,6 +30,7 @@ class TestDataPreperation(BaseAsyncTests):
     async def asyncSetUp(self):
         await self.db.create_db()
         self.tdp = DataPreperation(self.db)
+        self.frame.create_panels()
 
     async def asyncTearDown(self):
         self.db.cache._flush_cache()
@@ -182,7 +184,7 @@ class TestDataPreperation(BaseAsyncTests):
                 # Should not have data
                 self.assertEqual([], items, msg.format([], items))
                 await self.insert_fiscal_year()
-                await self.insert_field_data('budget')
+                await self.insert_field_data(self.frame.panel['budget'])
                 error = await self.tdp.budget(bgt_data, year, month)
                 items = self.db.cache.get(self.db._T_DATA, year=year,
                                           r_type='budget')

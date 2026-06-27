@@ -6,6 +6,17 @@ __docformat__ = "restructuredtext en"
 
 import os
 from src.config import Settings
+import time
+import tracemalloc
+tracemalloc.start()
+
+start = time.perf_counter()
+
+
+def pytest_sessionfinish(session, exitstatus):
+    total = time.perf_counter() - start
+    print(f"\n[PROFILE] Total test duration: {total:.2f} seconds.")
+
 
 s = Settings()
 s.testing = True

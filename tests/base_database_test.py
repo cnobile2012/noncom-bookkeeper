@@ -9,13 +9,11 @@ import unittest
 import aiosqlite
 import wx
 
-from unittest.mock import patch
-
 from src.bahai_database import Database
 from src.utilities import StoreObjects
 
-from .fixtures import FakeMainFrame, Options
 from .sample_data import TEST_DATA
+from .fixtures import FakeMainFrame, Options
 
 __all__ = ('BaseAsyncTests',)
 
@@ -95,6 +93,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         cls._db = Database()
+        StoreObjects().set_object(cls._db.__class__.__name__, cls._db)
         cls._db.testing = True
         cls._db.create_dirs()
         cls.app = wx.GetApp()
@@ -102,7 +101,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         if cls.app is None:
             cls.app = wx.App(False)
 
-        cls._frame = FakeMainFrame(options=Options())
+        cls.frame = FakeMainFrame(options=Options())
 
     @classmethod
     def tearDownClass(cls):
@@ -112,10 +111,6 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     @property
     def db(self):
         return self._db
-
-    @property
-    def frame(self):
-        return self._frame
 
     async def insert_data(self):
         rowcount = 0
@@ -186,11 +181,10 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(fy_data['data']), rowcount)
         return rowcount
 
-    async def insert_field_data(self, panel_name: str) -> int:
+    async def insert_field_data(self, panel: wx.Panel) -> int:
         """
         Insert field data in the DB.
         """
-        panel = self.get_panel(panel_name)
         data = {'data': self.db.collect_panel_values(panel)}
         return await self.db._add_fields_to_field_type_table(data)
 
@@ -202,11 +196,3 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         rowcount = await self.db.cache.insert(self.db._T_MONTH, data)
         self.assertEqual(len(data['data']), rowcount)
         return rowcount
-
-    def get_panel(self, panel_name: str) -> wx.Panel:
-        """
-        Get the panel.
-        """
-        with patch.object(self.db, '_mf',
-                          StoreObjects().get_object('MainFrame')):
-            return self.db._mf.panels[panel_name]

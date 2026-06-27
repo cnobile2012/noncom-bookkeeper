@@ -52,12 +52,6 @@ class Settings(AppDirs, Borg):
         self.__config_type = os.environ.get('NCB_TYPE', 'bahai')
         self.__user_toml = self._CONFIG_FILES['user'][self.__config_type]
         self.__local_toml = self._CONFIG_FILES['local'][self.__config_type]
-
-        if self.__config_type == 'bahai':
-            from badidatetime import enable_geocoder
-            # This must be set so the local coordinates are set correctly.
-            enable_geocoder()
-
         # Setup the logger for this monule.
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)

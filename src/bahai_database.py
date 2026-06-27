@@ -12,7 +12,6 @@ from .base_database import BaseDatabase
 from .custom_widgits import ordered_month
 
 import badidatetime
-badidatetime.enable_geocoder()
 
 
 def adapt_datetime(dt):
@@ -50,6 +49,16 @@ class Database(BaseDatabase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    def set_local_coordinates(self, lat: float=None, lon: float=None) -> None:
+        if None in (lat, lon):
+            for rec in self.cache.get(self._T_DATA, r_type='organization'):
+                if rec[1] == 'latitude':
+                    lat = rec[2]
+                elif rec[1] == 'longitude':
+                    lon = rec[2]
+
+        badidatetime.set_local_coordinates(lat, lon)
 
     #
     # Fiscal year SELECT, INSERT and UPDATE methods.
@@ -506,7 +515,7 @@ class Database(BaseDatabase):
     # Miscellaneous methods and properties
     #
 
-    def ordered_month(self):
+    def ordered_month(self) -> list:
         """
         Provides the order of the Badi months from the custom_widgets module.
         """
@@ -554,6 +563,13 @@ class Database(BaseDatabase):
         return badidatetime.TZWithCoords(lat, lon, offset/3600)
 
     def _get_standard_offset(self, iana_key: str) -> datetime.timedelta:
+        """
+        Get the UTC offset.
+
+        :param str iana_key: The IANA key for the desired area.
+        :returns: The UTC offset.
+        :rtype: datetime.timedelta
+        """
         assert iana_key, "The IANA key has not been set."
         tz = ZoneInfo(iana_key)
         now = datetime.datetime.now(tz)
@@ -569,7 +585,7 @@ class Database(BaseDatabase):
         # Zone has no DST at all — any offset is the standard offset
         return datetime.datetime(now.year, 1, 15, tzinfo=tz).utcoffset()
 
-    def full_fiscal_year_data(self):
+    def full_fiscal_year_data(self) -> list:
         """
         Get all months in the current fiscal year.
 
@@ -601,13 +617,13 @@ class Database(BaseDatabase):
         .. note::
 
            Result assuming the fiscal year starts 183-03-05:
-           [(1, 183, 3, 'Jamál'),
-            (2, 183, 4, "'Aẓamat"),
-            (3, 183, 5, 'Núr'),
+           [(0, 183, 3, 'Jamál'),
+            (1, 183, 4, "'Aẓamat"),
+            (2, 183, 5, 'Núr'),
             ...
-            (19, 184, 1, 'Bahá'),
-            (20, 184, 2, 'Jalál'),
-            (21, 184, 3, 'Jamál')]
+            (18, 184, 1, 'Bahá'),
+            (19, 184, 2, 'Jalál'),
+            (20, 184, 3, 'Jamál')]
         """
         months = self.ordered_month()
         order = [o for m, o in months]
@@ -638,7 +654,7 @@ class Database(BaseDatabase):
         return result
 
     def populate_monthly_data(self, month_idx: int,  item: tuple,
-                              data: dict={}):
+                              data: dict={}) -> dict:
         # month_idx sets the dropdown to the current month.
         data['month_of_year'] = month_idx
 
