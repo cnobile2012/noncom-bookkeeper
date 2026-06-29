@@ -6,22 +6,22 @@ __docformat__ = "restructuredtext en"
 
 import sqlite3
 import datetime
+import badidatetime
+
 from zoneinfo import ZoneInfo
 
 from .base_database import BaseDatabase
 from .custom_widgits import ordered_month
 
-import badidatetime
 
-
-def adapt_datetime(dt):
+def adapt_datetime(dt: badidatetime.datetime) -> str:
     """
     Adapter: datetime → ISO string
     """
     return dt.isoformat()
 
 
-def custom_converter(value):
+def convert_datetime(value: str) -> badidatetime.datetime:
     """
     Converter: ISO string → datetime
     """
@@ -32,7 +32,7 @@ def custom_converter(value):
 
 
 sqlite3.register_adapter(badidatetime.datetime, adapt_datetime)
-sqlite3.register_converter('DATETIME', custom_converter)
+sqlite3.register_converter('DATETIME', convert_datetime)
 
 
 class Database(BaseDatabase):
@@ -347,15 +347,15 @@ class Database(BaseDatabase):
         return await self._do_insert_query(query, data)
 
     async def insert_into_config_data_table(self, year: int, month: int,
-                                            data: list) -> int:
+                                            data: dict) -> int:
         """
         Insert values into the config data table.
 
         :param int year: A Baha'i year of the transaction.
         :param int month: A Baha'i month of the transaction. This is the order
                           of the Baha'i month not the name.
-        :param list data: The data from the any panel in the form of:
-                          [(<field_name>, <value>), ...].
+        :param dict data: The data from the any panel in the form of:
+                          {<field_name>: <value>, ...}.
         :returns: The row count caused by the insert.
         :rtype: int
         """
@@ -416,38 +416,36 @@ class Database(BaseDatabase):
     # Monthly SELECT, INSERT, and UPDATE methods.
     #
 
-    async def select_from_monthly_table(self, year: int=None, month: int=None
+    async def select_from_monthly_table(self, year: int, year_month: tuple=None
                                         ) -> list:
         """
         Select values from the monthly table.
 
         :param int year: The fiscal year of the month needed.
-        :param int month: The ordinal value of the month needed.
+        :param tuple year_month: The year and month of the calendar year.
         :returns: The data for the given month.
         :rtype: list
 
         .. note::
 
            The result is:
-           [(pk, participation, outstanding, coh, membership, '<treasurer>',
-             locality, <ctime>, <mtime>, <year>, '<month name>',
+           [(pk, cal_year_month, participation, outstanding, coh, membership,
+            '<treasurer>', locality, <ctime>, <mtime>, <year>, '<month name>',
              <month ordinal>), ...]
         """
         data = {'year': year}
 
-        if month is None:
+        if year_month is None:
             where = ";"
         else:
-            where = " AND fy.month = :month;"
-            data.update({'month': month})
+            where = ", AND m.cal_year_month = :cal_year_month;"
+            data.update({'cal_year_month': year_month})
 
-        query = ("SELECT m.pk, m.cal_year, mo.month, fy.pk, m.participation, "
+        query = ("SELECT m.pk, fy.pk, m.cal_year_month, m.participation, "
                  "m.outstanding, m.coh, m.membership, m.treasurer, "
                  f"m.locality, m.ctime, m.mtime FROM {self._T_MONTHLY} AS m "
-                 f"JOIN {self._T_MONTHLY_PIVOT} AS mp ON mp.mlfk = m.pk "
-                 f"JOIN {self._T_MONTH} AS mo ON mo.pk = mp.mfk "
-                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
-                 "WHERE  fy.year = :year")
+                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = m.fyfk "
+                 "WHERE fy.year = :year")
         return await self._do_select_query(query + where, data)
 
     async def insert_all_into_monthly_table(self, data: list) -> int:
@@ -455,12 +453,14 @@ class Database(BaseDatabase):
         Insert all data into the monthly table.
 
         :param list data: The data from the any panel  in the form of:
-                          [(pk, participation, outstanding, coh, membership,
-                            treasurer, locality, ctime, mtime), ...].
+                          [(pk, fyfk, participation, outstanding, coh,
+                            membership, treasurer, locality, ctime,
+                            mtime), ...].
         """
-        query = (f"INSERT INTO {self._T_MONTHLY} (pk, participation, "
-                 "outstanding, coh, membership, treasurer, locality, ctime, "
-                 "mtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
+        query = (f"INSERT INTO {self._T_MONTHLY} (pk, fyfk, cal_year_month, "
+                 "participation, outstanding, coh, membership, treasurer, "
+                 "locality, ctime, mtime) "
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
         return await self._do_insert_query(query, data)
 
     async def insert_into_monthly_table(self, year: int, data: dict) -> int:
@@ -475,24 +475,20 @@ class Database(BaseDatabase):
         """
         now = badidatetime.datetime.now(self.utc_tzinfo)
         data['ctime'] = data['mtime'] = now
-        # Data for the monthly_pivot table.
-        month = data.pop('month')
-        data['mfk'] = (await self.select_from_month_table(order=month))[0]
         fiscal = await self.select_from_fiscal_year_table(year=year)
         data['fyfk'] = fiscal[0]
-        query = (f"INSERT INTO {self._T_MONTHLY} (participation, outstanding, "
-                 "coh, membership, treasurer, locality, ctime, mtime) VALUES ("
+        query = (f"INSERT INTO {self._T_MONTHLY} (fyfk, cal_year_month, "
+                 "participation, outstanding, coh, membership, treasurer, "
+                 "locality, ctime, mtime) VALUES (:fyfk, :cal_year_month, "
                  ":participation, :outstanding, :coh, :membership, "
                  ":treasurer, :locality, :ctime, :mtime);")
-        query += (f"INSERT INTO {self._T_MONTHLY_PIVOT} (mfk, fyfk, mlfk) "
-                  "VALUES (:mfk, :fyfk, last_insert_rowid());")
         return await self._do_insert_query(query, data)
 
     async def update_monthly_table(self, year: int, data: dict) -> int:
         """
         Update values in the monthly table.
 
-        :param int year: A Baha'i year of the transaction.
+        :param int year: A fiscal year of the transaction.
         :param dict data: The data from the any panel  in the form of:
                           [(pk, <value>), ...}.
         :returns: The row count caused by the update.
@@ -504,11 +500,10 @@ class Database(BaseDatabase):
                  "participation = :participation, outstanding = :outstanding, "
                  "coh = :coh, membership = :membership, "
                  "treasurer = :treasurer, locality = :locality, "
-                 f"mtime = :mtime FROM {self._T_MONTHLY_PIVOT} AS mp "
-                 f"JOIN {self._T_MONTH} AS mo ON mo.pk = mp.mfk "
-                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = mp.fyfk "
-                 "WHERE mp.mlfk = m.pk AND mo.ord = :month "
-                 "AND fy.year = :year;")
+                 "mtime = :mtime "
+                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = m.fyfk "
+                 "WHERE fy.year = :year AND "
+                 "m.cal_year_month = :cal_year_month;")
         return await self._do_update_query(query, data)
 
     #
@@ -585,7 +580,23 @@ class Database(BaseDatabase):
         # Zone has no DST at all — any offset is the standard offset
         return datetime.datetime(now.year, 1, 15, tzinfo=tz).utcoffset()
 
-    def full_fiscal_year_data(self) -> list:
+    def index_of_calendar_year(self, date: tuple, year: int=None) -> int:
+        """
+        Get the index of the calendar year.
+
+        :param tuple date: The calendar date of the monthly record.
+        :returns: The index of the calendar year in the fiscal year.
+        :rtype: int
+        """
+        index = 0
+
+        for idx, year, month, name in self.full_fiscal_year_data(year):
+            if (year, month) == date:
+                index = idx
+
+        return index
+
+    def full_fiscal_year_data(self, year: int=None) -> list:
         """
         Get all months in the current fiscal year.
 
@@ -593,7 +604,7 @@ class Database(BaseDatabase):
         :rtype: list
         """
         year_month = []
-        year = self.cache.year
+        year = self.cache.year if not year else year
 
         if year:
             fy0 = self.cache.get(self._T_FISCAL_YEAR, year=year)
@@ -659,12 +670,17 @@ class Database(BaseDatabase):
         data['month_of_year'] = month_idx
 
         if item:
-            data['participation'] = item[1]
-            data['outstanding_bills'] = item[2]
-            data['end_of_month_cash_on_hand'] = item[3]
-            data['total_membership_this_month'] = item[4]
-            data['treasurer_this_month'] = item[5]
-            data['locality_prefix_month'] = item[6]
+            data['participation'] = item[3]
+            data['outstanding_bills'] = item[4]
+            data['end_of_month_cash_on_hand'] = item[5]
+            data['total_membership_this_month'] = item[6]
+            data['treasurer_this_month'] = item[7]
+            data['locality_prefix_month'] = item[8]
+        else:
+            data['participation'] = 0
+            data['outstanding_bills'] = 0.0
+            data['end_of_month_cash_on_hand'] = 0.0
+            data['locality_prefix_month'] = 0
 
         if data['treasurer_this_month'] == "" and self._dp.organization_data:
             data['treasurer_this_month'] = self._dp.organization_data[
@@ -673,3 +689,6 @@ class Database(BaseDatabase):
                 'total_membership']
 
         return data
+
+    def convert_str_date(self, date_str: str) -> tuple:
+        return tuple([int(d) for d in date_str.split(' ')[0].split('-')])

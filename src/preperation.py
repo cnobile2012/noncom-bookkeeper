@@ -139,22 +139,24 @@ class DataPreperation:
         Converts panel data to data appropreate for updating a monthly record.
 
         :param dict data: Panel data.
-        :param int f_year: The current fiscal year.
+        :param int year: The current fiscal year.
         :returns: Any errors or None.
         :rtype: str or None
         """
         error = None
         empty_fields = []
+        mapping = {field: self.db._MONTHLY_FIELD_MAP.get(
+            field, ('unknown', True)) for field in data}
 
-        for field, value in data.items():
-            name, manditory = self.db._MONTHLY_FIELD_MAP.get(
-                field, ('unknown', True))
-
+        for field, (name, manditory) in mapping.items():
             if name == 'unknown':
-                error = (f"An unknown field '{name}' was found in the "
+                error = (f"An unknown field '{field}' was found in the "
                          "monthly panel.")
                 self._log.critical(error)
                 assert name != 'unknown', error
+
+        for field, value in data.items():
+            column, manditory = mapping[field]
 
             if manditory and value in self.db._EMPTY_FIELDS:
                 empty_fields.append(field)
@@ -163,45 +165,30 @@ class DataPreperation:
                 ef = ', '.join([f for f in empty_fields])
                 error = f"The '{ef}' field(s) must not be empty."
                 self._log.warning(error)
-            else:
-                self._find_fiscal_year_for_record(data['month_of_year'])
-                values = self.db.cache.get(self.db._T_MONTHLY, year=year)
-                print('POOP', data, values)
 
-                # *** TODO *** Need to find the month currently being woked on.
+        items = {mapping[field][0]: value for field, value in data.items()}
+        date = self.db.convert_str_date(data['month_of_year'])
+        items['cal_year_month'] = date
+        value = ()
 
-                # if values:
-                #     items = {'year': year, 'data': data}
-                #     rowcount = await self.db.cache.update(
-                #         self.db._T_MONTHLY, items)
-                #     self._log.info("Updated %s table data: %s.",
-                #                    self.db._T_MONTHLY, items)
-                # else:
-                #     items = {'year': year, 'data': data}
-                #     rowcount = await self.db.cache.insert(
-                #         self.db._T_MONTHLY, items)
-                #     self._log.info("Inserted %s table data: %s.",
-                #                    self.db._T_MONTHLY, items)
+        for value in self.db.cache.get(self.db._T_MONTHLY, year=year):
+            if value[1] == date:
+                break
+
+        if value:
+            values = {'year': year, 'data': items}
+            rowcount = await self.db.cache.update(
+                self.db._T_MONTHLY, values)
+            self._log.info("Updated %s table data: %s.",
+                           self.db._T_MONTHLY, values)
+        else:
+            values = {'year': year, 'data': items}
+            rowcount = await self.db.cache.insert(
+                self.db._T_MONTHLY, values)
+            self._log.info("Inserted %s table data: %s.",
+                           self.db._T_MONTHLY, values)
 
         return error
-
-    def _find_fiscal_year_for_record(self, date: str | tuple) -> int:
-        """
-        Determine which fiscal year this record belongs in.
-
-        :param str ot tuple date: The date.
-        :returns: The fiscal year the date belongs in.
-        :rtype: int
-        """
-        # Find the calendar year, month, and/or day.
-        if isinstance(date, str):
-            date = tuple([int(d) for d in date.split(' ')[0].split('-')])
-
-        year = self.db.cache.year
-        fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year-1)
-        fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year)
-        fy2 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year+1)
-        print([date < (fy[1], fy[2], fy[3]) for fy in (fy0 + fy1 + fy2)])
 
     async def _first_run_initialization(self, year: int, month: int, day: int):
         """

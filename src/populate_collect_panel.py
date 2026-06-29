@@ -346,15 +346,21 @@ class PopulateCollect:
         :returns: A string representation of a currency value.
         :rtype: str
         """
-        try:
+        if isinstance(value, int):
+            value = f"{value/100:.2f}"
+        elif isinstance(value, float):
+            value = f"{value:.2f}"
+        elif value.isdecimal():
             value = f"{int(value)/100:.2f}"
-        except ValueError:
-            try:
-                value = f"{float(value):.2f}"
-            except ValueError:
-                value = ''
+        elif self.isfloat(value):
+            value = f"{float(value):.2f}"
+        else:
+            value = ''
 
         return value
+
+    def isfloat(self, value: str) -> bool:
+        return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True
 
     def _panel_to_financial_panel(self, value: str) -> str:
         """
@@ -365,13 +371,16 @@ class PopulateCollect:
         :returns: A string representation of a currency value.
         :rtype: str
         """
-        try:
+        if isinstance(value, int):
+            value = f"{value:.2f}"
+        elif isinstance(value, float):
+            value = f"{value:.2f}"
+        elif value.isdecimal():
             value = f"{int(value):.2f}"
-        except ValueError:
-            try:
-                value = f"{float(value):.2f}"
-            except ValueError:
-                value = ''
+        elif self.isfloat(value):
+            value = f"{float(value):.2f}"
+        else:
+            value = ''
 
         return value
 
@@ -508,3 +517,22 @@ class PopulateCollect:
                 year -= 1
 
         return (year, self.MONTHS[idx])
+
+    def update_monthly_panel(self, date_str):
+        panel = self._mf.panels.get('monthly')
+        date = self.convert_str_date(date_str)
+        mon_idx = self.index_of_calendar_year(date)
+        values = ()  # Used when no monthly data has been generated.
+
+        for item in self.cache.get(self._T_MONTHLY):
+            if item[2] == date:
+                values = item
+                break
+
+        data = {'treasurer_this_month': ""}
+        data = self.populate_monthly_data(mon_idx, values, data)
+        #print('POOP', values, data)
+        panel.initializing = True
+        # *** TODO *** The method below is not resetting the panel.
+        self.populate_panel_values('monthly', panel, data)
+        panel.initializing = False

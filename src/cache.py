@@ -351,7 +351,7 @@ class Cache:
                 rowcount = await self.db.update_config_data_table(data)
                 await self._load_config_data()
             case self.db._T_MONTHLY:
-                year = changes.get('year')
+                year = changes['year']
                 rowcount = await self.db.update_monthly_table(year, data)
                 await self._load_monthly()
             case _:

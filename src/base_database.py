@@ -6,6 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import os
 import wx
+import ast
 import sqlite3
 import aiosqlite
 
@@ -14,6 +15,30 @@ from .utilities import StoreObjects
 from .populate_collect_panel import PopulateCollect
 from .preperation import DataPreperation
 from .cache import Cache
+
+
+def adapt_tuple(value: tuple) -> str:
+    """
+    Adapt a tuple.
+    """
+    return repr(value)
+
+
+def convert_tuple(value: bytes) -> tuple:
+    """
+    Converter: value → tuple
+    """
+    value = value.decode("utf-8")
+    result = ast.literal_eval(value)
+
+    if not isinstance(result, tuple):
+        raise ValueError(f"Expected tuple, got {type(result).__name__}.")
+
+    return result
+
+
+sqlite3.register_adapter(tuple, adapt_tuple)
+sqlite3.register_converter('TUPLE', convert_tuple)
 
 
 class BaseDatabase(PopulateCollect, Settings):
@@ -29,7 +54,6 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_MONTH = 'month'
     _T_FIELD_TYPE = 'field_type'
     _T_DATA = 'config_data'
-    _T_MONTHLY_PIVOT = 'monthly_pivot'
     _T_MONTHLY = 'monthly'
     _T_REPORT_PIVOT = 'report_pivot'
     _T_REPORT_TYPE = 'report_type'
@@ -71,8 +95,9 @@ class BaseDatabase(PopulateCollect, Settings):
             'ctime DATETIME NOT NULL',
             'mtime DATETIME NOT NULL'),
         _T_MONTHLY: (
-            'pk INTEGER NOT NULL PRIMARY KEY',  # mlfk in monthly_pivot
-            'cal_year INTEGER',
+            'pk INTEGER NOT NULL PRIMARY KEY',
+            'fyfk INTEGER NOT NULL',
+            'cal_year_month TUPLE',
             'participation INTEGER',
             'outstanding INTEGER',
             'coh INTEGER',
@@ -81,14 +106,6 @@ class BaseDatabase(PopulateCollect, Settings):
             'locality INTEGER NOT NULL',
             'ctime DATETIME NOT NULL',
             'mtime DATETIME NOT NULL'),
-        _T_MONTHLY_PIVOT: (
-            'mfk INTEGER NOT NULL',
-            'fyfk INTEGER NOT NULL',
-            'mlfk INTEGER NOT NULL',
-            'UNIQUE(mfk, fyfk)',
-            f'FOREIGN KEY (mfk) REFERENCES {_T_MONTH} (pk)',
-            f'FOREIGN KEY (fyfk) REFERENCES {_T_FISCAL_YEAR} (pk)',
-            f'FOREIGN KEY (mlfk) REFERENCES {_T_MONTHLY} (pk)'),
         _T_REPORT_TYPE: (
             'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
             'report TEXT UNIQUE NOT NULL',
@@ -140,9 +157,6 @@ class BaseDatabase(PopulateCollect, Settings):
         ('idx_month_month ON month(month);'),
         ('idx_month_ord ON month(ord);'),
         ('idx_fiscal_year_year ON fiscal_year(year);'),
-        ('idx_monthly_pivot_month ON monthly_pivot(mfk);'),
-        ('idx_monthly_pivot_fy ON monthly_pivot(fyfk);'),
-        ('idx_monthly_pivot_month_fy ON monthly_pivot(mfk, fyfk);')
         )
     _TABLES = list(_SCHEMA_TABLES.keys())
     _TABLES.sort()
@@ -181,7 +195,7 @@ class BaseDatabase(PopulateCollect, Settings):
                     fields = ', '.join([field for field in params])
                     query = f"CREATE TABLE IF NOT EXISTS {table} ({fields});"
 
-                    if self._SCHEMA_EXTRA:
+                    if self._SCHEMA_EXTRA:  # pragma: no cover
                         extra = self._SCHEMA_EXTRA.get(table)
                         query = query.rstrip(");")
                         query = f', {extra});'
@@ -196,7 +210,7 @@ class BaseDatabase(PopulateCollect, Settings):
                     await db.execute(query)
                     await db.commit()
 
-                if self._SCHEMA_EXTRA:
+                if self._SCHEMA_EXTRA:  # pragma: no cover
                     for view, params in self._SCHEMA_VIEWS.items():
                         fields = ', '.join([field for field in params])
                         query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
@@ -297,29 +311,23 @@ class BaseDatabase(PopulateCollect, Settings):
 
         :params tuple fy: The fiscal year being worked on.
         """
-        fy1 = self.cache.get(self._T_FISCAL_YEAR, year=fy[1]+1)
+        year = fy[1]
+        today = self.today()
+        date = (today.year, today.month)
+        mon_idx = self.index_of_calendar_year(date, year)
+        panel = self._mf.panels.get('monthly')
+        data = self.collect_panel_values(panel)
+        values = ()  # Used when no monthly data has been generated.
 
-        if fy1:
-            fy1 = fy1[0]
-            panel = self._mf.panels.get('monthly')
-            data = self.collect_panel_values(panel)
-            date_str = data['month_of_year']
-            date = tuple([int(d) for d in date_str.split(' ')[0].split('-')])
-            item = ()  # Used before any monthly data is generated.
-            today = self.today()
+        for item in self.cache.get(self._T_MONTHLY, year=year):
+            if item[2] == date and fy[0] == item[1]:
+                values = item
+                break
 
-            for mon_idx, yr, ord, name in self.fiscal_year_months(fy, fy1):
-                if (yr, ord) == (today.year, today.month):
-                    break
-
-            for item in self.cache.get(self._T_MONTHLY, year=fy[1]):
-                if (item[1], item[2]) == date and fy[0] == item[3]:
-                    break
-
-            data = self.populate_monthly_data(mon_idx, item, data)
-            panel.initializing = True
-            self.populate_panel_values('monthly', panel, data)
-            panel.initializing = False
+        data = self.populate_monthly_data(mon_idx, values, data)
+        panel.initializing = True
+        self.populate_panel_values('monthly', panel, data)
+        panel.initializing = False
 
     def _populate_fiscal(self) -> None:
         """

@@ -148,7 +148,9 @@ class PanelFactory(TomlMetaData):
         if panel in ('organization', ):
             self._create_save_cancel_events(klass)
         elif panel == 'fiscal':
-            self._create_combobox_select_event(klass)
+            self._create_fiscal_combobox_select_event(klass)
+        elif panel == 'monthly':
+            self._create_monthly_combobox_select_event(klass)
 
         self.__panels[panel] = klass.getvalue()
         klass.close()
@@ -341,12 +343,11 @@ class PanelFactory(TomlMetaData):
         klass.write(f"        {widget}.SetLabel('{name}')\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
-        dirty_flag = dict_.get('dirty_event', True)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        if dirty_flag:
+        if dict_.get('dirty_event', True):
             klass.write(f"        {widget}.Bind(wx.EVT_COMBOBOX, "
                         "self.set_dirty_flag)\n")
         else:
@@ -382,13 +383,12 @@ class PanelFactory(TomlMetaData):
                     f"label='{label}', name='{name}')\n")
         self._set_colors(klass, widget, value)
         min_size = dict_.get('min')
-        dirty_flag = dict_.get('dirty_event', True)
         enabled = dict_.get('enabled', True)
 
         if min_size:
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        if dirty_flag:
+        if dict_.get('dirty_event', True):
             klass.write(f"        {widget}.Bind(EVT_COLOR_CHECKBOX, "
                         "self.set_dirty_flag)\n")
 
@@ -533,7 +533,7 @@ class PanelFactory(TomlMetaData):
                     "statusbar_message = 'Restoring data.'\n")
         klass.write("        self._cancel = value\n")
 
-    def _create_combobox_select_event(self, klass):
+    def _create_fiscal_combobox_select_event(self, klass):
         klass.write("\n    def get_selection(self, event):\n")
         klass.write("        value = event.GetString()\n")
         klass.write("        year, _, nyear = value.partition('-')\n")
@@ -544,6 +544,12 @@ class PanelFactory(TomlMetaData):
         klass.write("        else:\n")
         klass.write("            db.set_fiscal_panel(False, False, False)\n")
         klass.write("            self.selected = False\n")
+
+    def _create_monthly_combobox_select_event(self, klass):
+        klass.write("\n    def get_selection(self, event):\n")
+        klass.write("        value = event.GetString()\n")
+        klass.write("        db = self._so.get_object('Database')\n")
+        klass.write("        db.update_monthly_panel(value)\n")
 
     def _set_colors(self, klass, widget, value):
         """

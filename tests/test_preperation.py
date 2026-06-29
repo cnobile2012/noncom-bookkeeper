@@ -205,7 +205,15 @@ class TestDataPreperation(BaseAsyncTests):
         """
         Test that the monthly method 
         """
+        # data = (
+        #     (),
+        #     )
+        # msg = "Expected {}, found {}."
+
+        # for in data:
+        #     pass
         pass
+
 
     @unittest.skip("Temporarily skipped")
     async def test__find_fiscal_year_for_record(self):

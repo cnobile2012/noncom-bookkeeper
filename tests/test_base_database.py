@@ -33,7 +33,9 @@ class TestBaseDatabase(BaseAsyncTests):
         self.fmf = StoreObjects().get_object('MainFrame')
 
     async def asyncSetUp(self):
-        await self.db.create_db()
+        with patch.object(self.db, '_mf', self.fmf):
+            await self.db.create_db()
+
         self.db.cache._flush_cache()
         await self.insert_data()
         await self.db.cache.load()
@@ -87,7 +89,7 @@ class TestBaseDatabase(BaseAsyncTests):
                 self.assertEqual(expected, result, msg.format(
                     expected, delete, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test_populate_panels(self):
         """
         Test that the populate_panels method populates the panels if data
@@ -147,16 +149,36 @@ class TestBaseDatabase(BaseAsyncTests):
         Test that the _populate_month method populates the currently
         chosen month with that months data.
         """
-        fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
         data = (
-            (fy, ()),
+            (False, False, ''),  # This must be 1st
+            (True, False, 'Joe Schmo'),
+            #(True, True, ),
             )
         msg = "Expexted {}, found {}."
 
-        for fy, expected in data:
+        for valid, insert, expected in data:
+            if insert:
+                # Insert a row of monthly data
+                pass
+
+            if valid:
+                await self.asyncTearDown()
+                await self.insert_data()
+                await self.db.cache.load()
+            else:
+                await self.asyncTearDown()
+                data = {'data': [(183, 3, 5, 1, 1, 0)]}
+                await self.db.cache.insert(self.db._T_FISCAL_YEAR, data)
+                await self.db.cache._load_fiscal_year()
+
+            fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
+
             with patch.object(self.db, '_mf', self.fmf):
                 await self.db._populate_month(fy)
-
+                panel = self.db._mf.panels.get('monthly')
+                result = panel.GetChildren()[15].GetValue()
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test__populate_fiscal(self):
@@ -185,25 +207,33 @@ class TestBaseDatabase(BaseAsyncTests):
 
         data = (
             ('organization', False, err_msg0),
-            ('organization', True, None),
+            # Creates field, fiscal year, and config data.
+            #('organization', True, None),
             )
         msg = "Expexted {}, found {}."
         await self.asyncTearDown()
-        #await self.insert_fiscal_year()
 
         for panel_name, valid, expected in data:
-            panel = self.get_panel(panel_name)
-
             with patch.object(self.db, '_mf', self.fmf):
+                # if valid and panel_name in ('organization', 'budget'):
+                #     await self.insert_fiscal_year()
+                #     await self.insert_months()
+                #     fy = self.db.cache.get(self.db._T_FISCAL_YEAR,
+                #                            r_type=panel_name)
+                #     items = {'year': fy[0][1], 'month': fy[0][2],
+                #              'data': full_data}
+                #     rc = await self.db.cache.insert(self.db._T_DATA, items)
+                #     self.assertEqual(len(full_data), rc)
+
+                panel = self.db._mf.panels.get(panel_name)
                 error = await self.db.save_to_database(panel_name, panel)
 
             if valid:
                 panels = {panel_name: panel}
-                #await self.insert_field_data(self.frame.panel['organization'])
                 await self.db._populate_config_data_panels(sofy.year, panels)
                 result = self.db.cache.get(self.db._T_DATA, year=sofy.year,
                                            r_type=panel_name)
-                #print('POOP', self.db.cache._store)
+                #print('POOP', result, self.db.cache._store)
             else:
                 self.assertEqual(expected, error, msg.format(expected, error))
 
