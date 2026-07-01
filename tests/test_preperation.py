@@ -146,27 +146,6 @@ class TestDataPreperation(BaseAsyncTests):
             else:
                 self.assertEqual(expected, error, msg.format(expected, error))
 
-    #@unittest.skip("Temporarily skipped")
-    async def test_fiscal(self):
-        """
-        Test that the fiscal method updates the cache and DB.
-        """
-        data = {'data': [(183, 3, 5, 1, 1, 0)]}
-        year = data['data'][0][0]
-        month = data['data'][0][1]
-        rowcount = await self.tdp.db.cache.insert(
-            self.tdp.db._T_FISCAL_YEAR, data)
-        self.assertEqual(1, rowcount)
-        updated_data = {'current_fiscal_year': 0,
-                        'work_on_this_fiscal_year': 0, 'audit_complete': 1}
-        result = await self.tdp.fiscal(updated_data, year, month)
-        cfy = result[0][3]
-        wotfy = result[0][4]
-        ac = result[0][5]
-        self.assertEqual(updated_data['current_fiscal_year'], cfy)
-        self.assertEqual(updated_data['work_on_this_fiscal_year'], wotfy)
-        self.assertEqual(updated_data['audit_complete'], ac)
-
     @unittest.skip("Temporarily skipped")
     async def test_budget(self):
         """
@@ -214,6 +193,27 @@ class TestDataPreperation(BaseAsyncTests):
         #     pass
         pass
 
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_fiscal(self):
+        """
+        Test that the fiscal method updates the cache and DB.
+        """
+        data = {'data': [(183, 3, 5, 1, 1, 0)]}
+        year = data['data'][0][0]
+        month = data['data'][0][1]
+        rowcount = await self.tdp.db.cache.insert(
+            self.tdp.db._T_FISCAL_YEAR, data)
+        self.assertEqual(1, rowcount)
+        updated_data = {'current_fiscal_year': 0,
+                        'work_on_this_fiscal_year': 0, 'audit_complete': 1}
+        result = await self.tdp.fiscal(updated_data, year, month)
+        cfy = result[0][3]
+        wotfy = result[0][4]
+        ac = result[0][5]
+        self.assertEqual(updated_data['current_fiscal_year'], cfy)
+        self.assertEqual(updated_data['work_on_this_fiscal_year'], wotfy)
+        self.assertEqual(updated_data['audit_complete'], ac)
 
     @unittest.skip("Temporarily skipped")
     async def test__find_fiscal_year_for_record(self):

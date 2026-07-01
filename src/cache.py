@@ -323,7 +323,6 @@ class Cache:
                 self._log.error("Invalid table name %s.", table_name)
                 rowcount = 0
 
-        #print('POOP2', rowcount, table_name, self._log)
         self._log.info("Inserted %s row(s) into the %s table.",
                        rowcount, table_name)
         return rowcount

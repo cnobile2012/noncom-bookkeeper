@@ -97,25 +97,6 @@ class DataPreperation:
         self._log.warning(error)
         return error
 
-    async def fiscal(self, data: dict, f_year: int, f_month: int) -> list:
-        """
-        Converts panel data to data appropreate for updating the fiscal year
-        table in the database, then update it.
-
-        :param dict data: Panel data.
-        :param int f_year: The current fiscal year.
-        :param int f_month: The current fiscal year month.
-        :returns: The updated fiscal year data.
-        :rtype: list
-        """
-        items = [(f_year, f_month, 1, data['current_fiscal_year'],
-                  data['work_on_this_fiscal_year'], data['audit_complete'])]
-        values = {'year': f_year, 'data': items}
-        rowcount = await self.db.cache.update(
-            self.db._T_FISCAL_YEAR, {'data': items})
-        self._log.debug("Inserted %s row(s) of fiscal year data.", rowcount)
-        return items
-
     async def budget(self, data: dict, f_year: int, f_month: int
                      ) -> str | None:
         """
@@ -189,6 +170,25 @@ class DataPreperation:
                            self.db._T_MONTHLY, values)
 
         return error
+
+    async def fiscal(self, data: dict, f_year: int, f_month: int) -> list:
+        """
+        Converts panel data to data appropreate for updating the fiscal year
+        table in the database, then update it.
+
+        :param dict data: Panel data.
+        :param int f_year: The current fiscal year.
+        :param int f_month: The current fiscal year month.
+        :returns: The updated fiscal year data.
+        :rtype: list
+        """
+        items = [(f_year, f_month, 1, data['current_fiscal_year'],
+                  data['work_on_this_fiscal_year'], data['audit_complete'])]
+        values = {'year': f_year, 'data': items}
+        rowcount = await self.db.cache.update(
+            self.db._T_FISCAL_YEAR, {'data': items})
+        self._log.debug("Inserted %s row(s) of fiscal year data.", rowcount)
+        return items
 
     async def _first_run_initialization(self, year: int, month: int, day: int):
         """
@@ -349,19 +349,19 @@ class DataPreperation:
         """
         error = None
         values = self.db.cache.get(self.db._T_DATA, year=year, r_type=r_type)
+        rc = 0  # Row count
 
         if not values:  # Do insert
             items = {'year': year, 'month': month, 'data': data}
-            rowcount = await self.db.cache.insert(self.db._T_DATA, items)
+            rc = await self.db.cache.insert(self.db._T_DATA, items)
             self._log.info("Inserted %s table data: %s.",
                            self.db._T_DATA, data)
         else:
             insert_data = {'year': year, 'month': month}
             update_data = {}
             # See select_from_config_data_table() for the mapping.
-            #        field,    pk,      y1
+            #        value,    pk,      fy2fk
             items = {item[1]: (item[0], item[3]) for item in values}
-            rowcount = 0
 
             for field, value in data.items():  # Loop through incoming data
                 pk, y1 = items.get(field, (None, None))  # pk, y1
@@ -380,14 +380,12 @@ class DataPreperation:
                     values.append((pk, str(value)))
 
             if insert_data:                    # Do insert
-                rowcount = await self.db.cache.insert(
-                    self.db._T_DATA, insert_data)
+                rc = await self.db.cache.insert(self.db._T_DATA, insert_data)
 
             if update_data:                    # Do update
-                rowcount = await self.db.cache.update(
-                    self.db._T_DATA, update_data)
+                rc = await self.db.cache.update(self.db._T_DATA, update_data)
 
-        return error, rowcount
+        return error, rc
 
     @property
     def _earliest_fiscal_year(self) -> tuple:

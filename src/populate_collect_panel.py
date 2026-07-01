@@ -93,16 +93,11 @@ class PopulateCollect:
         data = {}
         panel_name = panel.__class__.__name__
 
-        for widgets in self._find_child_sets(panel):
-            w0 = widgets[0]
-            w1 = widgets[1] if len(widgets) >= 2 else None
-            name0 = w0[0]
-            field_name = w0[1]
-            widget0 = w0[2]
+        for w0, w1 in self._find_child_sets(panel):
+            name0, field_name, widget0 = w0
+            if name0 in self._EXCLUDE_WIDGETS: continue
 
-            if name0 in self._EXCLUDE_WIDGETS:
-                continue
-            elif name0 in ('RadioBox', 'ComboBox'):
+            if name0 in ('RadioBox', 'ComboBox'):
                 if field_name == 'month_of_year':
                     data[field_name] = widget0.GetStringSelection()
                 else:
@@ -110,8 +105,7 @@ class PopulateCollect:
             elif name0 in ('ColorCheckBox',):
                 data[field_name] = widget0.GetValue()
             elif name0 == 'StaticText':
-                name1 = w1[0]
-                widget1 = w1[2]
+                name1, _, widget1 = w1
                 value = widget1.GetValue()
 
                 if name1 == 'TextCtrl':
@@ -126,8 +120,8 @@ class PopulateCollect:
                     self._mf.statusbar_error = msg
             else:
                 msg = f"Invalid widget type '{name0}'."
-                log_msg = msg.rstrip('.') + ", panel %s, widgets: %s"
-                self._log.error(log_msg, panel_name, widgets)
+                log_msg = msg.rstrip('.') + ", panel %s, widgets: %s and %s"
+                self._log.error(log_msg, panel_name, w0, w1)
                 self._mf.statusbar_error = msg
 
         # Add fields that are not in the GUI.
@@ -145,9 +139,7 @@ class PopulateCollect:
 
         .. note::
 
-           1. Used when cancel is pressed--data is from db.organization_data.
-           2. Used in BaseDatabase.populate_panels() which is used in
-              BaseDatabase.save_to_database() and in MainFrame.start().
+           Used when cancel is pressed and data is from db.organization_data.
 
         :param str name: The name of the panel.
         :param wx.Panel panel: The panel object.
@@ -156,22 +148,17 @@ class PopulateCollect:
         """
         if data:  # When run after first time.
             for w0, w1 in self._find_child_sets(panel):
-                name0 = w0[0]  # Widget name
+                name0, field_name, widget0 = w0
                 if name0 in self._EXCLUDE_WIDGETS: continue
-                field_name = w0[1]  # DB name
-                widget0 = w0[2]
                 value = data[field_name]
 
-                if name0 == 'RadioBox':
-                    value = self._process_value(widget0, field_name, value)
-                elif name0 == 'ComboBox':
+                if name0 in ('RadioBox', 'ComboBox'):
                     if panel_name == 'fiscal':
                         self._add_fiscal_year_choices(w0=w0)
 
                     value = self._process_value(widget0, field_name, value)
                 elif name0 == 'StaticText':
-                    name1 = w1[0]
-                    widget1 = w1[2]
+                    name1, _, widget1 = w1
 
                     if name1 == 'TextCtrl':
                         if widget1.financial:
@@ -182,11 +169,12 @@ class PopulateCollect:
                                     panel_value)
                                 value = (panel_value if panel_value != value
                                          else value)
-                            else:
-                                value = self._db_financial_to_panel(value)
+
+                            value = self._db_financial_to_panel(value)
+                            #print(f"POOP--'{panel_value}', '{value}'")
                         elif not widget1.financial:
                             panel_value = widget1.GetValue()
-                            value = (panel_value if panel_value != ''
+                            value = (panel_value if panel_value == value
                                      else str(value))
                         else:
                             msg = (f"Invalid widget type, found {name0} "
@@ -204,7 +192,7 @@ class PopulateCollect:
                         else:
                             value = panel_value
 
-                    self._set_value(widget1, value)
+                    widget1.SetValue(value)
                 else:
                     msg = f"Invalid widget type, found {name0}"
                     self._log.error(msg)
@@ -275,7 +263,10 @@ class PopulateCollect:
             children.append((name, make_name(label), child))
             if add: children.append(None)
 
-        return [children[i:i+2] for i in range(0, len(children), 2)]
+        result = [children[i:i+2] for i in range(0, len(children), 2)]
+        assert [len(item) == 2 for item in result], (
+            "Warning more than two children in the tuple.")
+        return result
 
     def _add_fiscal_year_choices(self, panel_name: str=None,
                                  panel: wx.Panel=None, *, w0=None) -> None:
@@ -314,26 +305,43 @@ class PopulateCollect:
 
         :param value: A currency value from a field.
         :type value: str or badidatetime.date or datetime.date
-        :returns: An integer value suttable for putting in the database.
+        :returns: An integer value suitable for putting in the database.
         :rtype: str
         """
-        neg = False
-
-        if isinstance(value, int):
+        if isinstance(value, (int, float)):
             value = str(value)
 
         if financial and value != '':
-            if value[0] == '-':
-                neg = True
-                value = value[1:]
-            elif value[0] == '+':
+            if value[0] in ('+', '$'):
                 value = value[1:]
 
             value = value.replace('.', '')
-        elif self.is_badi_date_object(value) or isinstance(value, wx.DateTime):
+        elif isinstance(value, (badidatetime.datetime, wx.DateTime)):
             value = str(value)
         else:
             value = value.strip()
+
+        return value
+
+    def _panel_to_financial_panel(self, value: str) -> str:
+        """
+        Convert a financial value from the panel into a value sutable for
+        displaying in a panel widget.
+
+        :param str value: A financial value from a panel.
+        :returns: A string representation of a currency value.
+        :rtype: str
+        """
+        if isinstance(value, int):
+            value = f"{value:.2f}"
+        elif isinstance(value, float):
+            value = f"{value:.2f}"
+        elif value.isdecimal():
+            value = f"{int(value):.2f}"
+        elif self.isfloat(value):
+            value = f"{float(value):.2f}"
+        else:
+            value = ''
 
         return value
 
@@ -362,28 +370,6 @@ class PopulateCollect:
     def isfloat(self, value: str) -> bool:
         return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True
 
-    def _panel_to_financial_panel(self, value: str) -> str:
-        """
-        Convert a financial value from the panel into a value sutable for
-        displaying in a panel widget.
-
-        :param str value: A financial value from a panel.
-        :returns: A string representation of a currency value.
-        :rtype: str
-        """
-        if isinstance(value, int):
-            value = f"{value:.2f}"
-        elif isinstance(value, float):
-            value = f"{value:.2f}"
-        elif value.isdecimal():
-            value = f"{int(value):.2f}"
-        elif self.isfloat(value):
-            value = f"{float(value):.2f}"
-        else:
-            value = ''
-
-        return value
-
     def _str_to_int(self, value: str) -> int:
         """
         Convert a string to an integer.
@@ -411,14 +397,6 @@ class PopulateCollect:
             error = None
 
         return value, error
-
-    def _set_value(self, obj, value):
-        if obj.GetValue() != value:
-            obj.SetValue(value)
-
-    def is_badi_date_object(self, obj):
-        return (obj.__class__.__name__ == 'date' and
-                obj.__class__.__module__.endswith("badidatetime.datetime"))
 
     def _get_field_name(self, panel_name):
         items = self._tmd.panel_config.get(panel_name, {}).get('widgets', {})
@@ -531,8 +509,6 @@ class PopulateCollect:
 
         data = {'treasurer_this_month': ""}
         data = self.populate_monthly_data(mon_idx, values, data)
-        #print('POOP', values, data)
         panel.initializing = True
-        # *** TODO *** The method below is not resetting the panel.
         self.populate_panel_values('monthly', panel, data)
         panel.initializing = False

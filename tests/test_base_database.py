@@ -95,10 +95,11 @@ class TestBaseDatabase(BaseAsyncTests):
         Test that the populate_panels method populates the panels if data
         is available.
         """
-        fy = self.db.cache.get(self.db._T_FISCAL_YEAR)
+        log_msg0 = "Populating all panels in {:04d}-{:02d}."
+        fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
         data = (
-            (True, (fy[0][1], fy[0][2])),
-            (False, (None, None)),
+            (True, log_msg0.format(fy[1], fy[2])),
+            (False, None),
             )
         msg = "Expected {}, found {}."
 
@@ -109,7 +110,14 @@ class TestBaseDatabase(BaseAsyncTests):
             with patch.object(self.db, '_mf', self.fmf):
                 result = await self.db.populate_panels()
 
-            self.assertEqual(expected, result, msg.format(expected, result))
+            if load:
+                file_data = self.read_text_file(self.log_path)
+                result = self.find_text(file_data, "Populating all", 1,
+                                        expected)
+                self.assertIn(expected, result)
+            else:
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test__populate_config_data_panels(self):

@@ -151,6 +151,7 @@ class MainFrame(wx.Frame, MenuBar):
                             self.statusbar_message = (
                                 f"Finished restoring {c_name} data.")
                     else:
+                        self.statusbar_message = f"Saving {name} data."
                         do_save(name, panel)
 
         return on_timer

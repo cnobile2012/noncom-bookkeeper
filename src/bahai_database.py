@@ -677,9 +677,9 @@ class Database(BaseDatabase):
             data['treasurer_this_month'] = item[7]
             data['locality_prefix_month'] = item[8]
         else:
-            data['participation'] = 0
-            data['outstanding_bills'] = 0.0
-            data['end_of_month_cash_on_hand'] = 0.0
+            data['participation'] = ''
+            data['outstanding_bills'] = ''
+            data['end_of_month_cash_on_hand'] = ''
             data['locality_prefix_month'] = 0
 
         if data['treasurer_this_month'] == "" and self._dp.organization_data:

@@ -257,33 +257,18 @@ class BaseDatabase(PopulateCollect, Settings):
     # Initialization methods
     #
 
-    async def populate_panels(self) -> tuple:
+    async def populate_panels(self) -> None:
         """
         Populate all panels that have data in the database.
-
-        :returns: The year and month of the fiscal year being worked on.
-        :rtype: tuple
         """
-        fiscal_years = self.cache.get_all_fiscal_years()
-
-        if len(fiscal_years):  # Find the fiscal year being worked on.
-            for fy in fiscal_years:
-                if fy[5]:  # work_on
-                    year, month = fy[1:3]
-                    break
-                else:  # This should never happen.
-                    year = month = None
-        else:  # Only for first time use.
-            year = month = None
+        fy = self.get_work_on_fiscal_year()
+        year, month = (None, None) if fy is None else fy[1:3]
 
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
             await self._populate_config_data_panels(year, self._mf.panels)
             await self._populate_month(fy)
             self._populate_fiscal()
-
-        self.set_local_coordinates()
-        return year, month
 
     async def _populate_config_data_panels(self, year: int, panels: dict
                                            ) -> None:
@@ -304,6 +289,10 @@ class BaseDatabase(PopulateCollect, Settings):
                 values = {item[1]: item[2] for item in items}
                 self.populate_panel_values(panel_name, panel, values)
                 panel.initializing = False
+
+            if panel_name == 'organization':
+                # Set the lat and lon for the badidatetime package is used.
+                self.set_local_coordinates()
 
     async def _populate_month(self, fy: tuple) -> None:
         """
@@ -338,11 +327,11 @@ class BaseDatabase(PopulateCollect, Settings):
         self.populate_panel_values('fiscal', panel, {})
         panel.initializing = False
 
-    async def save_to_database(self, name: str, panel: wx.Panel) -> None:
+    async def save_to_database(self, panel_name: str, panel: wx.Panel) -> None:
         """
         Save the given panel data to the database.
 
-        :param str name: The internal name of the current panel.
+        :param str panel_name: The internal name of the current panel.
         :param wx.Panel panel: Any of the panels that have collected data.
         :returns: None if no errors, otherwise the error message.
         :rtype: None or str
@@ -355,24 +344,46 @@ class BaseDatabase(PopulateCollect, Settings):
                'location_city_name': ''}
         """
         error = None
-        f_year, f_month = await self.populate_panels()
+        fy = self.get_work_on_fiscal_year()
+        f_year, f_month = (None, None) if fy is None else fy[1:3]
         data = self.collect_panel_values(panel)
 
-        if name == 'organization':
+        if panel_name == 'organization':
             error = await self._dp.organization(data, f_year, f_month)
-        elif name == 'fiscal':
-            data = await self._dp.fiscal(data, f_year, f_month)
-            f_year = f_month = None
-        elif name == 'fiscal_settings':
-            f_year = f_month = None
-        elif name == 'budget':
+        elif panel_name == 'budget':
             if f_year and f_month:
                 error = await self._dp.budget(data, f_year, f_month)
-        elif name == 'monthly':
+        elif panel_name == 'monthly':
             if data:
                 error = await self._dp.monthly(data, f_year)
+        elif panel_name == 'fiscal':
+            data = await self._dp.fiscal(data, f_year, f_month)
+            f_year = f_month = None
+        elif panel_name == 'fiscal_settings':
+            f_year = f_month = None
 
+        await self.populate_panels()
         return error
+
+    def get_work_on_fiscal_year(self) -> tuple:
+        """
+        Get the fical year that is being worked on.
+
+        :returns: The fical year data.
+        :rtype: tuple
+        """
+        fiscal_years = self.cache.get_all_fiscal_years()
+
+        if len(fiscal_years):  # Find the fiscal year being worked on.
+            for fy in fiscal_years:
+                if fy[5]:  # work_on
+                    break
+                else:  # This should never happen.
+                    fy = None
+        else:  # Only for first time use.
+            fy = None
+
+        return fy
 
     #
     # Database access methods.
