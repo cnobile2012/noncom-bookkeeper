@@ -6,6 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import re
 import wx
+from string import ascii_letters, punctuation, whitespace
 
 import datetime
 import badidatetime
@@ -20,11 +21,13 @@ class PopulateCollect:
     _EXCLUDE_WIDGETS = ('FlatArrowButton',)
     _tmd = TomlMetaData()
     _tcp = TomlCreatePanel()
+    _BAD_CHRS = [c for c in ascii_letters + punctuation + whitespace
+                 if c != '-']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._adn = AsyncDataNavigator(self.select_from_monthly_table,
-                                       self.get_prev_and_next, AsyncRunner())
+        # self._adn = AsyncDataNavigator(self.select_from_monthly_table,
+        #                                self.get_prev_and_next, AsyncRunner())
 
     @property
     def has_org_info_data(self) -> bool:
@@ -169,9 +172,8 @@ class PopulateCollect:
                                     panel_value)
                                 value = (panel_value if panel_value != value
                                          else value)
-
-                            value = self._db_financial_to_panel(value)
-                            #print(f"POOP--'{panel_value}', '{value}'")
+                            else:
+                                value = self._panel_to_financial_panel(value)
                         elif not widget1.financial:
                             panel_value = widget1.GetValue()
                             value = (panel_value if panel_value == value
@@ -296,7 +298,7 @@ class PopulateCollect:
 
     def _value_to_db(self, value, financial: bool=False) -> str:
         """
-        Convert the text currency value to an integer.
+        Convert a currency value to an integer.
 
         .. note::
 
@@ -304,19 +306,20 @@ class PopulateCollect:
            Example $1952.14 in the db is 195214.
 
         :param value: A currency value from a field.
-        :type value: str or badidatetime.date or datetime.date
-        :returns: An integer value suitable for putting in the database.
+        :type value: str, int or badidatetime.date or wx.DateTime.
+        :returns: A string value suitable for inserting in the database.
         :rtype: str
         """
         if isinstance(value, (int, float)):
             value = str(value)
 
         if financial and value != '':
-            if value[0] in ('+', '$'):
+            if value[0] in self._BAD_CHRS:
                 value = value[1:]
 
-            value = value.replace('.', '')
-        elif isinstance(value, (badidatetime.datetime, wx.DateTime)):
+            value = value.replace('.', '').replace(',', '')
+        elif isinstance(value, (badidatetime.datetime, datetime.datetime,
+                                wx.DateTime)):
             value = str(value)
         else:
             value = value.strip()
@@ -328,29 +331,7 @@ class PopulateCollect:
         Convert a financial value from the panel into a value sutable for
         displaying in a panel widget.
 
-        :param str value: A financial value from a panel.
-        :returns: A string representation of a currency value.
-        :rtype: str
-        """
-        if isinstance(value, int):
-            value = f"{value:.2f}"
-        elif isinstance(value, float):
-            value = f"{value:.2f}"
-        elif value.isdecimal():
-            value = f"{int(value):.2f}"
-        elif self.isfloat(value):
-            value = f"{float(value):.2f}"
-        else:
-            value = ''
-
-        return value
-
-    def _db_financial_to_panel(self, value: str) -> str:
-        """
-        Convert a fiancial value from the database into a value sutable for
-        displaying in a widget.
-
-        :param int value: A currency value from the database.
+        :param str value: An unformatted financial value from a panel.
         :returns: A string representation of a currency value.
         :rtype: str
         """
@@ -367,16 +348,14 @@ class PopulateCollect:
 
         return value
 
-    def isfloat(self, value: str) -> bool:
-        return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True
-
-    def _str_to_int(self, value: str) -> int:
+    def _str_to_int(self, value: str | int) -> tuple:
         """
-        Convert a string to an integer.
+        Convert a numeric string to an integer.
 
-        :param str value: Value to convert.
-        :returns: Converted value or zero if value was not numeric.
-        :rtype: int
+        :param str or int value: Value to convert.
+        :returns: Converted value or to 0 (zero) if value was not numeric and
+                  an error or None.
+        :rtype: tuple
         """
         error = f"Expected a numeric value in field '{{}}' found {value}."
 
@@ -384,119 +363,82 @@ class PopulateCollect:
             if value.isdigit():
                 value = int(value)
                 error = None
-            elif value.count('.'):
-                try:
-                    value = int(re.sub(r'\.', '', value))
-                    error = None
-                except ValueError as e:
-                    error = error[:-1] + str(e)
-                    value = None
+            elif self.isfloat(value):
+                value = int(re.sub(r'\.', '', value))
+                error = None
             else:
-                value = None
+                value = 0
         else:
             error = None
 
         return value, error
 
-    def _get_field_name(self, panel_name):
-        items = self._tmd.panel_config.get(panel_name, {}).get('widgets', {})
-        self._tcp.current_panel = items
-        return [make_name(field) for field in self._tcp.field_names]
+    def isfloat(self, value: str) -> bool:
+        return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True
+
+    # MONTHS = list(ordered_month().keys())
+    # MONTH_INDEX = {m: i for i, m in enumerate(MONTHS)}
+
+    # def get_prev_and_next(self, direction, year, month):
+    #     """
+    #     Get the previous and next year and month.
+    #     """
+    #     idx = self.MONTH_INDEX[month]
+
+    #     if direction == 'RIGHT':  # Next month
+    #         idx += 1
+
+    #         if idx > 19:
+    #             idx = 0
+    #             year += 1
+    #     else:  # LEFT -- previous month
+    #         idx -= 1
+
+    #         if idx < 0:
+    #             idx = 19
+    #             year -= 1
+
+    #     return year, self.MONTHS[idx]
 
     #
     # Methods called from panels
     #
 
-    def populate_fiscal_panel(self, year: int=None):
+    def populate_fiscal_panel(self, year: int=None) -> None:
         """
         Populate the fiscal panel. This is called by an event from the
         ComboBox widget.
 
-        :param str panel_name: The internal panel name.
+        :param int year: The fiscal year required.
         """
-        current = self._get_fiscal_year_value(year, current=True)
-        work_on = self._get_fiscal_year_value(year, work_on=True)
-        audit = self._get_fiscal_year_value(year, audit=True)
-        self.set_fiscal_panel(current, work_on, audit)
+        fy = self.cache.get(self._T_FISCAL_YEAR, year=year)
+        fy = fy[0] if fy else None
+        self.set_fiscal_panel(fy[4], fy[5], fy[6])
 
-    def set_fiscal_panel(self, current, work_on, audit):
-        for c_set in self._find_child_sets(self._mf.panels['fiscal']):
-            if c_set[1] is None:  # Only on a ComboBox
+    def set_fiscal_panel(self, current: bool, work_on: bool, audit: bool
+                         ) -> None:
+        for w0, w1 in self._find_child_sets(self._mf.panels['fiscal']):
+            if w1 is None:  # Only on a ComboBox
                 continue
 
-            w_label = c_set[0][1]
-            name1 = c_set[1].__class__.__name__
+            w_label = w0[1]
+            name1 = w1[0]
+            obj = w1[2]
 
             if w_label == 'current_fiscal_year' and name1 == 'ColorCheckBox':
-                self._set_value(c_set[1], current)
+                obj.SetValue(current)
             elif (w_label == 'work_on_this_fiscal_year'
                   and name1 == 'ColorCheckBox'):
-                self._set_value(c_set[1], work_on)
+                obj.SetValue(work_on)
             elif w_label == 'audit_complete' and name1 == 'ColorCheckBox':
-                self._set_value(c_set[1], audit)
+                obj.SetValue(audit)
 
-    def _get_fiscal_year_value(self, year: int, *, pk: bool=False,
-                               date: bool=False, current: bool=False,
-                               work_on: bool=False, audit: bool=False,
-                               time: bool=False) -> int | tuple:
+    def update_monthly_panel(self, date_str: str) -> None:
         """
-        Return a specific value from the `fiscal_year` table.
+        Update the 'monthly' panel data.
 
-        :param bool pk: Get the Primary Key.
-        :param bool date: Get the date, (year, month, day).
-        :param bool current: Get the current fiscal year.
-        :param bool work_on: Get which fiscal year is being worked on.
-        :param bool audit: Get the audit status for the gived year.
-        :param bool time: Get the create and modified dates and times.
-        :returns: The value asked for.
-        :rtype: int or tuple
+        :param str date_str: The string value from the ComboBox.
         """
-        # Create dict from list of raw fiscal data.
-        assert (pk, date, current, audit,
-                work_on, time).count(True) == 1, (
-                    f"Only one argument can be `True`, found ({date}, "
-                    f"{current}, {audit}, {work_on}, {time}).")
-        data = {item[1]: item for item in self.cache.get_all_fiscal_years()}
-        items = data.get(year)
-        assert items, f"Invalid year {year}, options are {list(data)}."
-
-        if pk:
-            result = items[0]
-        elif date:
-            result = (items[1], items[2], items[3])
-        elif current:
-            result = items[4]
-        elif work_on:
-            result = items[5]
-        elif audit:
-            result = items[6]
-        elif time:
-            result = (items[7], items[8])
-
-        return result
-
-    MONTHS = list(ordered_month().keys())
-    MONTH_INDEX = {m: i for i, m in enumerate(MONTHS)}
-
-    def get_prev_and_next(self, direction, year, month):
-        idx = self.MONTH_INDEX[month]
-
-        if direction == 'RIGHT':  # Next month
-            idx += 1
-
-            if idx > 19:
-                idx = 0
-                year += 1
-        else:  # LEFT -- previous month
-            idx -= 1
-
-            if idx < 0:
-                idx = 19
-                year -= 1
-
-        return (year, self.MONTHS[idx])
-
-    def update_monthly_panel(self, date_str):
         panel = self._mf.panels.get('monthly')
         date = self.convert_str_date(date_str)
         mon_idx = self.index_of_calendar_year(date)

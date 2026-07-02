@@ -373,15 +373,12 @@ class BaseDatabase(PopulateCollect, Settings):
         :rtype: tuple
         """
         fiscal_years = self.cache.get_all_fiscal_years()
+        fy = None
 
         if len(fiscal_years):  # Find the fiscal year being worked on.
             for fy in fiscal_years:
                 if fy[5]:  # work_on
                     break
-                else:  # This should never happen.
-                    fy = None
-        else:  # Only for first time use.
-            fy = None
 
         return fy
 
