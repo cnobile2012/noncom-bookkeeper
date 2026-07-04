@@ -168,8 +168,8 @@ class BaseDatabase(PopulateCollect, Settings):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.dp = DataPreperation(self)
         self._mf = StoreObjects().get_object('MainFrame')
-        self._dp = DataPreperation(self)
         self._cache = Cache(self)
 
     def set_local_coordinates(self, lat: float=None, lon: float=None) -> None:
@@ -300,15 +300,15 @@ class BaseDatabase(PopulateCollect, Settings):
 
         :params tuple fy: The fiscal year being worked on.
         """
-        year = fy[1]
+        fy_year = fy[1]
         today = self.today()
         date = (today.year, today.month)
-        mon_idx = self.index_of_calendar_year(date, year)
+        mon_idx = self.index_of_calendar_year(date, fy_year)
         panel = self._mf.panels.get('monthly')
         data = self.collect_panel_values(panel)
-        values = ()  # Used when no monthly data has been generated.
+        values = ()  # Used when all monthly panels are empty.
 
-        for item in self.cache.get(self._T_MONTHLY, year=year):
+        for item in self.cache.get(self._T_MONTHLY, year=fy_year):
             if item[2] == date and fy[0] == item[1]:
                 values = item
                 break
@@ -349,15 +349,15 @@ class BaseDatabase(PopulateCollect, Settings):
         data = self.collect_panel_values(panel)
 
         if panel_name == 'organization':
-            error = await self._dp.organization(data, f_year, f_month)
+            error = await self.dp.organization(data, f_year, f_month)
         elif panel_name == 'budget':
             if f_year and f_month:
-                error = await self._dp.budget(data, f_year, f_month)
+                error = await self.dp.budget(data, f_year, f_month)
         elif panel_name == 'monthly':
             if data:
-                error = await self._dp.monthly(data, f_year)
+                error = await self.dp.monthly(data, f_year)
         elif panel_name == 'fiscal':
-            data = await self._dp.fiscal(data, f_year, f_month)
+            data = await self.dp.fiscal(data, f_year, f_month)
             f_year = f_month = None
         elif panel_name == 'fiscal_settings':
             f_year = f_month = None
@@ -372,13 +372,11 @@ class BaseDatabase(PopulateCollect, Settings):
         :returns: The fical year data.
         :rtype: tuple
         """
-        fiscal_years = self.cache.get_all_fiscal_years()
         fy = None
 
-        if len(fiscal_years):  # Find the fiscal year being worked on.
-            for fy in fiscal_years:
-                if fy[5]:  # work_on
-                    break
+        for fy in self.cache.get_all_fiscal_years():
+            if fy[5]:  # work_on
+                break
 
         return fy
 

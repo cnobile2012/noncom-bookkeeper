@@ -70,7 +70,7 @@ class PanelFactory(TomlMetaData):
         klass.write("    def __init__(self, parent, *args, **kwargs):\n")
         klass.write("        super().__init__(parent, *args, **kwargs)\n")
 
-        if panel in ('organization', 'fiscal', 'monthly'):
+        if panel in ('organization', 'budget', 'fiscal', 'monthly'):
             klass.write("        self._so = StoreObjects()\n")
 
         self._bg_color = panel_kwargs.get('bg_color')
@@ -145,11 +145,12 @@ class PanelFactory(TomlMetaData):
         klass.write("        self.Hide()\n")
 
         # Add methods to specific panels.
-        if panel in ('organization', ):
+        if panel in ('organization', 'budget'):
             self._create_save_cancel_events(klass)
         elif panel == 'fiscal':
             self._create_fiscal_combobox_select_event(klass)
         elif panel == 'monthly':
+            self._create_save_cancel_events(klass)
             self._create_monthly_combobox_select_event(klass)
 
         self.__panels[panel] = klass.getvalue()

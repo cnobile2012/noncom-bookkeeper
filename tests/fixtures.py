@@ -42,6 +42,9 @@ class FakeMainFrame(wx.Frame):
         self.tac.is_valid
         super().__init__(parent, id=id, style=style, *args, **kwargs)
         StoreObjects().set_object('MainFrame', self)
+        self._warning = None
+        self._error = None
+        self._message = None
 
     def create_panels(self):
         if not self.panels:
@@ -79,17 +82,29 @@ class FakeMainFrame(wx.Frame):
         #                    panel name   panel object
         self.__panel_classes[values[0]] = values[1]
 
+    @property
+    def statusbar_warning(self):
+        return self._warning
+
+    @statusbar_warning.setter
     def statusbar_warning(self, value):
-        pass
-    statusbar_warning = property(None, statusbar_warning)
+        self._warning = value
 
+    @property
+    def statusbar_error(self):
+        return self._error
+
+    @statusbar_error.setter
     def statusbar_error(self, value):
-        pass
-    statusbar_error = property(None, statusbar_error)
+        self._error = value
 
+    @property
+    def statusbar_message(self):
+        return self_message
+
+    @statusbar_message.setter
     def statusbar_message(self, value):
-        pass
-    statusbar_message = property(None, statusbar_message)
+        self._message = value
 
 
 class FakeFrame(wx.Frame):

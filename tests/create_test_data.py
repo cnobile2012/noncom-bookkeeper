@@ -46,7 +46,7 @@ class CreateTestData:
         org_data = self._format_data(self._cache.ORG_FIELDS, prefix, width=70)
         buff.write(f"{org_data}\n")
         prefix = "BDG_FIELDS = "
-        bdg_data = self._format_data(self._cache.get_bgt_fields, prefix,
+        bdg_data = self._format_data(self._cache.budget_fields, prefix,
                                      width=67)
         buff.write(f"{bdg_data}\n")
         buff.write(f"{await self._format_table_data()}")

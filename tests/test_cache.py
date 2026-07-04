@@ -209,12 +209,12 @@ class TestCache(BaseAsyncTests):
             self.assertIn(field, result, msg.format(field, result))
 
     #@unittest.skip("Temporarily skipped")
-    def test_get_bgt_fields(self):
+    def test_budget_fields(self):
         """
-        Test that the get_bgt_fields property teturns just the budget fields.
+        Test that the budget_fields property teturns just the budget fields.
         """
         msg = "Field {} found in {}"
-        result = self.db.cache.get_bgt_fields
+        result = self.db.cache.budget_fields
 
         for field in self.db.cache.ORG_FIELDS:
             self.assertNotIn(field, result, msg.format(field, result))

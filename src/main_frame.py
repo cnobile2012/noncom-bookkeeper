@@ -116,7 +116,7 @@ class MainFrame(wx.Frame, MenuBar):
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(), self._timer)
-        seconds = 1000*10  # = 10 seconds
+        seconds = 1000*5  # = 5 seconds
         self._log.info("Checking panel dirty flag every %s seconds.",
                        seconds/1000)
         self._timer.Start(seconds)
@@ -137,15 +137,26 @@ class MainFrame(wx.Frame, MenuBar):
 
         def on_timer(event):
             for name, panel in self.panels.items():
+                print('POOP', name, panel.dirty)
+
                 if panel.dirty:
-                    if name in ('organization',):
+                    if name in ('organization', 'budget', 'monthly'):
+                        match name:
+                            case 'organization':
+                                data = self.db.dp.organization_data
+                            case 'budget':
+                                data = self.db.dp.budget_data
+                            case 'monthly':
+                                data = self.db.dp.monthly_data(
+                                    data['cal_year_month'])
+
                         if panel.save:
                             panel.save = False
                             do_save(name, panel)
+                            panel.dirty = False
                         elif panel.cancel:
                             panel.cancel = False
-                            self.db.populate_panel_values(
-                                name, panel, self.db.organization_data)
+                            self.db.populate_panel_values(name, panel, data)
                             panel.dirty = False
                             c_name = name.capitalize()
                             self.statusbar_message = (

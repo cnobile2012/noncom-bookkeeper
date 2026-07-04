@@ -203,7 +203,7 @@ class Cache:
         return [itm[1] for itm in self._store.get(self.db._T_FIELD_TYPE, ())]
 
     @property
-    def get_bgt_fields(self):
+    def budget_fields(self):
         fields = self.fields
         bgt_fields = list(set(fields) - set(self.ORG_FIELDS)) if fields else []
         bgt_fields.sort()
@@ -229,7 +229,7 @@ class Cache:
 
         return data
 
-    def get(self, table_name: str, *, year: int=None, r_type: str=None
+    def get(self, table_name: str, *, year: int=None, r_type: str | tuple=None
             ) -> list:
         """
         Get records of the `table_name`. If a `r_type` is provided return
@@ -237,7 +237,8 @@ class Cache:
 
         :param int year: The fiscal year.
         :param str table_name: The DB table to query.
-        :param str r_type: This determines a specific record in the entity.
+        :param str or tuple r_type: This determines a specific record in
+                                    the entity.
         :returns: Records based on the `table_name`.
         :rtype: list
 
@@ -268,7 +269,7 @@ class Cache:
                     case 'organization':
                         fields = self.ORG_FIELDS
                     case 'budget':
-                        fields = self.get_bgt_fields
+                        fields = self.budget_fields
                     case None:
                         # This will return all config_data for the given year.
                         fields = self.fields
@@ -281,6 +282,11 @@ class Cache:
                 data = self._store.get(self.db._T_MONTH, [])
             case self.db._T_MONTHLY:
                 data = self._store.get(year, {}).get(self.db._T_MONTHLY, [])
+
+                if r_type:
+                    for month in data:
+                        if month[2] == r_type:
+                            data = [month]
 
         self._log.info("Retrived '%s' data.", table_name)
         return data

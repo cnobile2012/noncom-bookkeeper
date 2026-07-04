@@ -424,3 +424,27 @@ class DataPreperation:
         """
         items = self.db.cache.get(self.db._T_DATA, r_type='organization')
         return {item[1]: item[2] for item in items}
+
+    @property
+    def budget_data(self) -> dict:
+        """
+        This property gets the budget data that are used throughout the
+        application.
+
+        :returns: The budget data as defined by {<field name>: <value>}.
+        :rtype: dict
+        """
+        items = self.db.cache.get(self.db._T_DATA, r_type='budget')
+        return {item[1]: item[2] for item in items}
+
+    def monthly_data(self, cal_ym) -> dict:
+        """
+        This property gets the monthly data that are used throughout the
+        application.
+
+        :param tuple cal_ym: The calendar year and month from the ComboBox.
+        :returns: The monthly data as defined by {<field name>: <value>}.
+        :rtype: dict
+        """
+        items = self.db.cache.get(self.db._T_MONTHLY, r_type=cal_ym)
+        return {item[1]: item[2] for item in items}

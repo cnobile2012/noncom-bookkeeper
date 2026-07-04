@@ -164,26 +164,26 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted {}, found {}."
 
-        for valid, insert, expected in data:
-            if insert:
-                # Insert a row of monthly data
-                pass
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.db._mf.panels.get('monthly')
 
-            if valid:
-                await self.asyncTearDown()
-                await self.insert_data()
-                await self.db.cache.load()
-            else:
-                await self.asyncTearDown()
-                data = {'data': [(183, 3, 5, 1, 1, 0)]}
-                await self.db.cache.insert(self.db._T_FISCAL_YEAR, data)
-                await self.db.cache._load_fiscal_year()
+            for valid, insert, expected in data:
+                if insert:
+                    # Insert a row of monthly data
+                    pass
 
-            fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
+                if valid:
+                    await self.asyncTearDown()
+                    await self.insert_data()
+                    await self.db.cache.load()
+                else:
+                    await self.asyncTearDown()
+                    data = {'data': [(183, 3, 5, 1, 1, 0)]}
+                    await self.db.cache.insert(self.db._T_FISCAL_YEAR, data)
+                    await self.db.cache._load_fiscal_year()
 
-            with patch.object(self.db, '_mf', self.fmf):
+                fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
                 await self.db._populate_month(fy)
-                panel = self.db._mf.panels.get('monthly')
                 result = panel.GetChildren()[15].GetValue()
                 self.assertEqual(expected, result, msg.format(
                     expected, result))

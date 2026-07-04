@@ -80,15 +80,12 @@ class PopulateCollect:
 
         return all([item not in self._EMPTY_FIELDS for item in items])
 
-    def collect_panel_values(self, panel: wx.Panel, convert_tz: bool=False
-                             ) -> dict:
+    def collect_panel_values(self, panel: wx.Panel) -> dict:
         """
         Collects the data from the panel widgets and convert if necessary to
         DB appropriate values.
 
         :param wx.Panel panel: The panel to collect data from.
-        :param bool convert_tz: If `True` convert to the local timezone and
-                                if `False` (default) do not convert.
         :returns: A dictonary of db field names and values as in
                   {<field name>: <value>}.
         :rtype: dict
@@ -117,21 +114,17 @@ class PopulateCollect:
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl',
                                'ColorCheckBox', 'CheckBox'):
                     data[field_name] = value
-                else:
-                    msg = f"Invalid widget type '{name1}'."
-                    self._log.error(msg)
-                    self._mf.statusbar_error = msg
-            else:
-                msg = f"Invalid widget type '{name0}'."
-                log_msg = msg.rstrip('.') + ", panel %s, widgets: %s and %s"
-                self._log.error(log_msg, panel_name, w0, w1)
-                self._mf.statusbar_error = msg
+                else:  # pragma: no cover
+                    self._set_statusbar(name1)
+            else:  # pragma: no cover
+                msg = f", panel '{panel_name}', widgets: {w0} and {w1}."
+                self._set_statusbar(name0, add_msg=msg)
 
-        # Add fields that are not in the GUI.
+        # Add fields that are not in the UI.
         if panel_name == 'OrganizationPanel':
-            data['iana_name'] = data.get('iana_name', None)
-            data['latitude'] = data.get('latitude', None)
-            data['longitude'] = data.get('longitude', None)
+            data['iana_name'] = None
+            data['latitude'] = None
+            data['longitude'] = None
 
         return data
 
@@ -139,10 +132,6 @@ class PopulateCollect:
                               data: dict) -> None:
         """
         Poplulate the named panel with the database values.
-
-        .. note::
-
-           Used when cancel is pressed and data is from db.organization_data.
 
         :param str name: The name of the panel.
         :param wx.Panel panel: The panel object.
@@ -153,74 +142,83 @@ class PopulateCollect:
             for w0, w1 in self._find_child_sets(panel):
                 name0, field_name, widget0 = w0
                 if name0 in self._EXCLUDE_WIDGETS: continue
-                value = data[field_name]
+                value = data.get(field_name)
+                if value is None: continue
 
                 if name0 in ('RadioBox', 'ComboBox'):
                     if panel_name == 'fiscal':
                         self._add_fiscal_year_choices(w0=w0)
 
-                    value = self._process_value(widget0, field_name, value)
+                    value = self._process_box_value(widget0, field_name, value)
                 elif name0 == 'StaticText':
                     name1, _, widget1 = w1
 
                     if name1 == 'TextCtrl':
                         if widget1.financial:
-                            panel_value = widget1.GetValue()
-
-                            if panel_value != '':
-                                panel_value = self._panel_to_financial_panel(
-                                    panel_value)
-                                value = (panel_value if panel_value != value
-                                         else value)
-                            else:
-                                value = self._panel_to_financial_panel(value)
+                            value = self._panel_to_financial_panel(value)
                         elif not widget1.financial:
-                            panel_value = widget1.GetValue()
-                            value = (panel_value if panel_value == value
-                                     else str(value))
-                        else:
-                            msg = (f"Invalid widget type, found {name0} "
-                                   f"with value {value}.")
-                            self._log.error(msg)
-                            self._mf.statusbar_error = msg
+                            p_value = widget1.GetValue()
+                            value = value if p_value == value else str(value)
+                        else:  # pragma: no cover
+                            self._set_statusbar(name1, f" with value {value}.")
                             continue
                     elif value and name1 in ('BadiDatePickerCtrl',
                                              'DatePickerCtrl'):
-                        iso_today = self.today().isoformat()
-                        panel_value = widget1.GetValue()
-
-                        if iso_today == panel_value.isoformat():
-                            value = self._convert_date_to_yymmdd(value)
-                        else:
-                            value = panel_value
+                        value = self.convert_date_to_yymmdd(value)
 
                     widget1.SetValue(value)
-                else:
-                    msg = f"Invalid widget type, found {name0}"
-                    self._log.error(msg)
-                    self._mf.statusbar_error = msg
+                else:  # pragma: no cover
+                    self._set_statusbar(name0, f" with value {value}.")
         elif panel_name == 'fiscal':  # First time run only.
-            self._add_fiscal_year_choices(panel_name, panel)
+            self._add_fiscal_year_choices(panel=panel)
 
-    def _process_value(self, widget, field_name, value):
+    def _set_statusbar(self, name: str, add_msg: str='.') -> None:
         """
-        Scrup values for RadioBox and ComboBox widgets.
+        Log and send an error message to the panel status bar.
+
+        :param str, name: Invalid widgit name.
+        "param str add_msg: An additional message to add to the out
+                            going messgage.
+        """
+        msg = f"Invalid widget type, found '{name}'"
+
+        if '(' in add_msg:
+            lg_msg = msg + add_msg
+            sb_msg = msg + '.'
+        else:
+            lg_msg = msg + add_msg
+            sb_msg = lg_msg
+
+        self._log.error(lg_msg)
+        self._mf.statusbar_error = sb_msg
+
+    def _process_box_value(self, widget, field_name: str, value: str | int
+                           ) -> str:
+        """
+        Process values from the RadioBox and ComboBox widgets.
+
+        :param widget: Either a RadioBox or ComboBox widget.
+        :param str field_name: The name of the widget.
+        :param str or int value: The value to convert to an integer if
+                                 not already an integer.
+        :returns: An integer value of the incoming string.
+        :rtype: int
         """
         if value != '':
             value, error = self._str_to_int(value)
 
-            if value is not None:
-                widget.SetSelection(value)
-            else:
+            if value is None:
                 error = error.format(field_name)
                 self._log.warning(error)
                 self._mf.statusbar_warning = error
+            else:
+                widget.SetSelection(value)
 
         return value
 
     def _find_child_sets(self, panel: wx.Panel) -> list:
         """
-        Find the children in the panel that hold data.
+        Find the children in the panel that have data.
 
         :param wx.Panel panel: The panel to collect data from.
         :returns: A list of child tuples.
@@ -270,31 +268,29 @@ class PopulateCollect:
             "Warning more than two children in the tuple.")
         return result
 
-    def _add_fiscal_year_choices(self, panel_name: str=None,
-                                 panel: wx.Panel=None, *, w0=None) -> None:
+    def _add_fiscal_year_choices(self, *, panel: wx.Panel=None, w0=None
+                                 ) -> None:
         """
         Add the fiscal years to the ComboBox choices.
 
-        :param str panel_name: The name of the panel.
         :param wx.Panel panel: The panel object.
         :param tuple w0: Widget information.
         """
-        assert (panel_name and panel) or w0, (
-            "Can only pass 'panel_name' and 'panel' or just 'w_set' alone.")
+        assert (panel, w0).count(None) == 1, (
+            "Can only pass the 'panel' or the 'w0' arguments.")
 
         if not w0:  # First time run.
-            widgets = [w0[2] for w0, w1 in self._find_child_sets(panel)
-                       if w0[0] == 'ComboBox']
-            widget0 = widgets[0]
+            widget = [w0[2] for w0, w1 in self._find_child_sets(panel)
+                      if w0[0] == 'ComboBox'][0]
         else:
-            widget0 = w0[2]
+            widget = w0[2]
 
         years = sorted([item[1] for item in self.cache.get_all_fiscal_years()])
         data = [(year, year+1) for year in years[:-1]]
         # Just get the title, overwrite the rest.
-        choices = [widget0.GetItems()[0]]
-        widget0.SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
-        widget0.SetSelection(0)
+        choices = [widget.GetItems()[0]]
+        widget.SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
+        widget.SetSelection(0)
 
     def _value_to_db(self, value, financial: bool=False) -> str:
         """
@@ -367,7 +363,7 @@ class PopulateCollect:
                 value = int(re.sub(r'\.', '', value))
                 error = None
             else:
-                value = 0
+                value = None
         else:
             error = None
 

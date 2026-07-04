@@ -516,15 +516,19 @@ class Database(BaseDatabase):
         """
         return [(name, ord) for ord, name in ordered_month().items()]
 
-    def _convert_date_to_yymmdd(self, value: str) -> badidatetime.date:
+    def convert_date_to_yymmdd(self, value: str | badidatetime.date
+                               ) -> badidatetime.date:
         """
-        Converts the ISO date string to an instance of 'badidatetime.date'.
+        Converts the ISO date string to an instance of 'badidatetime.date'
+        or if a date object just pass it through.
 
-        :param str value: A ISO formatting date string.
+        :param str or badidatetime.date value: A ISO formatting date string or
+                                               a date object.
         :returns: An instance of 'badidatetime.date'.
         :rtype: badidatetime.date
         """
-        return badidatetime.date.fromisoformat(value)
+        return (value if isinstance(value, badidatetime.date)
+                else badidatetime.date.fromisoformat(value))
 
     def _ymd_from_iso(self, iso: str) -> tuple:
         """
@@ -682,10 +686,10 @@ class Database(BaseDatabase):
             data['end_of_month_cash_on_hand'] = ''
             data['locality_prefix_month'] = 0
 
-        if data['treasurer_this_month'] == "" and self._dp.organization_data:
-            data['treasurer_this_month'] = self._dp.organization_data[
+        if data['treasurer_this_month'] == "" and self.dp.organization_data:
+            data['treasurer_this_month'] = self.dp.organization_data[
                 'treasurer']
-            data['total_membership_this_month'] = self._dp.organization_data[
+            data['total_membership_this_month'] = self.dp.organization_data[
                 'total_membership']
 
         return data
