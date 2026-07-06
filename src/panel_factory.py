@@ -128,7 +128,7 @@ class PanelFactory(TomlMetaData):
             elif value == 'sizer_span':
                 self.sizer_span(klass)
 
-        # Create all the buttons.
+        # Create all buttons.
         values = []
 
         for item, value in self.panel_config.get(
@@ -326,7 +326,7 @@ class PanelFactory(TomlMetaData):
                 fy_data = self._db.full_fiscal_year_data()
                 choices = [f"{year}-{ord:>02} {month}"
                            for idx, year, ord, month in fy_data]
-                first = choices[0]
+                first = choices[0] if choices else "Months in Fiscal Year"
                 label = f"value='''{first}''',"
             elif panel == 'fiscal':
                 choices = []

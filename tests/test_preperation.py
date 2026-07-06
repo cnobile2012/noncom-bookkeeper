@@ -222,8 +222,8 @@ class TestDataPreperation(BaseAsyncTests):
         fiscal year the monthly record is in.
         """
         prev_year = (182, 3, 5, 0, 0, 0)
-        mthy_record0 = {'month_of_year': '183-03 Jamál'}
-        mthy_record1 = {'month_of_year': '184-03 Jamál'}
+        mthy_record0 = {'month_index': '183-03 Jamál'}
+        mthy_record1 = {'month_index': '184-03 Jamál'}
         data = (
             ('183-03 Jamál', False, 183),
             ('184-03 Jamál', False, 183),

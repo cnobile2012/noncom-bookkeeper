@@ -83,12 +83,12 @@ class TestPopulateCollect(BaseAsyncTests):
                     'total_outstanding_bills_previous_year': '000',
                     'total_membership_beginning_of_year': '20',
                     'monetary_contributions': '200000'}
-        mth_data = {'month_of_year': '183-03 Jamál', 'participation': '',
+        mth_data = {'month_index': '183-03 Jamál', 'participation': '',
                     'outstanding_bills': '', 'end_of_month_cash_on_hand': '',
                     'total_membership_this_month': '',
                     'treasurer_this_month': '', 'locality_prefix_month': 0}
         mth_values = dict(mth_data)
-        mth_values['month_of_year'] = 0
+        mth_values['month_index'] = 0
         fy_data = {'fiscal_year_choice': 0, 'current_fiscal_year': False,
                    'work_on_this_fiscal_year': False, 'audit_complete': False}
         data = (
@@ -428,18 +428,18 @@ class TestPopulateCollect(BaseAsyncTests):
         """
         Test that the update_monthly_panel method updates the monthly panel.
         """
-        insert_data = {'treasurer': 'Joe Schmo', 'month_of_year': 0,
+        insert_data = {'treasurer': 'Joe Schmo', 'month_index': 0,
                        'cal_year_month': (183, 3), 'participation': 5,
                        'outstanding': '1000', 'coh': '000', 'locality': 0,
                        'membership': 20}
         await self.db.cache.insert(self.db._T_MONTHLY, {'year': 183,
                                                         'data': insert_data})
-        widget_data = {'treasurer_this_month': 'Joe Schmo', 'month_of_year': 0,
+        widget_data = {'treasurer_this_month': 'Joe Schmo', 'month_index': 0,
                        'participation': '5', 'outstanding_bills': '10.00',
                        'end_of_month_cash_on_hand': '0.00',
                        'locality_prefix_month': 0,
                        'total_membership_this_month': '20'}
-        min_widget_data = {'treasurer_this_month': '', 'month_of_year': 1,
+        min_widget_data = {'treasurer_this_month': '', 'month_index': 1,
                            'participation': '', 'outstanding_bills': '',
                            'end_of_month_cash_on_hand': '',
                            'locality_prefix_month': 0,

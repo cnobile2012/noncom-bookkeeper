@@ -98,7 +98,7 @@ class PopulateCollect:
             if name0 in self._EXCLUDE_WIDGETS: continue
 
             if name0 in ('RadioBox', 'ComboBox'):
-                if field_name == 'month_of_year':
+                if field_name == 'month_index':
                     data[field_name] = widget0.GetStringSelection()
                 else:
                     data[field_name] = widget0.GetSelection()

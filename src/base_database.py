@@ -105,7 +105,8 @@ class BaseDatabase(PopulateCollect, Settings):
             'treasurer TEXT NOT NULL',
             'locality INTEGER NOT NULL',
             'ctime DATETIME NOT NULL',
-            'mtime DATETIME NOT NULL'),
+            'mtime DATETIME NOT NULL',
+            'CONSTRAINT unq UNIQUE (fyfk, cal_year_month)'),
         _T_REPORT_TYPE: (
             'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
             'report TEXT UNIQUE NOT NULL',
@@ -179,6 +180,25 @@ class BaseDatabase(PopulateCollect, Settings):
     @property
     def cache(self):
         return self._cache
+
+    def get_db_columns(self, table: str) -> list:
+        """
+        Get the column names for the specified table.
+
+        :param str table: The table name.
+        :returns: a list of column names.
+        :rtype: list
+        """
+        columns = []
+        rows = self._SCHEMA_TABLES.get(table)
+
+        if rows:
+            for row in rows:
+                column = row.split(' ')[0]
+                if column in ('CONSTRAINT',): continue
+                columns.append(column)
+
+        return columns
 
     #
     # Schema methods

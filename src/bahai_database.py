@@ -39,13 +39,14 @@ class Database(BaseDatabase):
     """
     Create, and update the database for the Bahá'í Bookkeeping application.
     """
-    _MONTHLY_FIELD_MAP = {'month_of_year': ('month', True),
-                          'participation': ('participation', False),
-                          'outstanding_bills': ('outstanding', False),
-                          'end_of_month_cash_on_hand': ('coh', False),
-                          'total_membership_this_month': ('membership', False),
-                          'treasurer_this_month': ('treasurer', True),
-                          'locality_prefix_month': ('locality', True)}
+    # Map the panel field names to DB column names.
+    MONTHLY_FIELD_MAP = {'month_index': ('cal_year_month', True),
+                         'participation': ('participation', False),
+                         'outstanding_bills': ('outstanding', False),
+                         'end_of_month_cash_on_hand': ('coh', False),
+                         'total_membership_this_month': ('membership', False),
+                         'treasurer_this_month': ('treasurer', True),
+                         'locality_prefix_month': ('locality', True)}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -438,7 +439,7 @@ class Database(BaseDatabase):
         if year_month is None:
             where = ";"
         else:
-            where = ", AND m.cal_year_month = :cal_year_month;"
+            where = " AND m.cal_year_month = :cal_year_month;"
             data.update({'cal_year_month': year_month})
 
         query = ("SELECT m.pk, fy.pk, m.cal_year_month, m.participation, "
@@ -500,10 +501,9 @@ class Database(BaseDatabase):
                  "participation = :participation, outstanding = :outstanding, "
                  "coh = :coh, membership = :membership, "
                  "treasurer = :treasurer, locality = :locality, "
-                 "mtime = :mtime "
-                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = m.fyfk "
-                 "WHERE fy.year = :year AND "
-                 "m.cal_year_month = :cal_year_month;")
+                 f"mtime = :mtime FROM {self._T_FISCAL_YEAR} AS fy "
+                 "WHERE fy.pk = m.fyfk AND fy.year = :year "
+                 "AND cal_year_month = :cal_year_month;")
         return await self._do_update_query(query, data)
 
     #
@@ -671,7 +671,7 @@ class Database(BaseDatabase):
     def populate_monthly_data(self, month_idx: int,  item: tuple,
                               data: dict={}) -> dict:
         # month_idx sets the dropdown to the current month.
-        data['month_of_year'] = month_idx
+        data['month_index'] = month_idx
 
         if item:
             data['participation'] = item[3]

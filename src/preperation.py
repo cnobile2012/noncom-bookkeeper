@@ -126,7 +126,7 @@ class DataPreperation:
         """
         error = None
         empty_fields = []
-        mapping = {field: self.db._MONTHLY_FIELD_MAP.get(
+        mapping = {field: self.db.MONTHLY_FIELD_MAP.get(
             field, ('unknown', True)) for field in data}
 
         for field, (name, manditory) in mapping.items():
@@ -148,15 +148,16 @@ class DataPreperation:
                 self._log.warning(error)
 
         items = {mapping[field][0]: value for field, value in data.items()}
-        date = self.db.convert_str_date(data['month_of_year'])
+        date = self.db.convert_str_date(data['month_index'])
         items['cal_year_month'] = date
-        value = ()
+        record = ()
 
         for value in self.db.cache.get(self.db._T_MONTHLY, year=year):
-            if value[1] == date:
+            if value[2] == date:
+                record = value
                 break
 
-        if value:
+        if record:
             values = {'year': year, 'data': items}
             rowcount = await self.db.cache.update(
                 self.db._T_MONTHLY, values)
@@ -437,14 +438,32 @@ class DataPreperation:
         items = self.db.cache.get(self.db._T_DATA, r_type='budget')
         return {item[1]: item[2] for item in items}
 
-    def monthly_data(self, cal_ym) -> dict:
+    @property
+    def monthly_data(self) -> dict:
         """
         This property gets the monthly data that are used throughout the
         application.
 
-        :param tuple cal_ym: The calendar year and month from the ComboBox.
         :returns: The monthly data as defined by {<field name>: <value>}.
         :rtype: dict
         """
-        items = self.db.cache.get(self.db._T_MONTHLY, r_type=cal_ym)
-        return {item[1]: item[2] for item in items}
+        panel = self._mf.panels['monthly']
+        data = self.db.collect_panel_values(panel)
+        date = self.db.convert_str_date(data['month_index'])
+        items = self.db.cache.get(self.db._T_MONTHLY, r_type=date)
+        values = {}
+
+        if items:
+            items = items[0]
+            columns = self.db.get_db_columns(self.db._T_MONTHLY)
+
+            for idx, key in enumerate(columns):
+                if key in ('pk', 'fyfk', 'cal_year_month', 'ctime', 'mtime'):
+                    continue
+
+                if key == 'outstanding':
+                    pass
+
+                values[key] = items[idx]
+
+        return values

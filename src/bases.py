@@ -73,7 +73,10 @@ class BasePanel:
         Set a dirty flag when any editable widget is modified except when
         initializing widgets.
         """
-        if hasattr(self, 'get_selection'):
+        wgt = event.GetEventObject()
+
+        if (hasattr(self, 'get_selection')
+            and getattr(wgt, 'dirty_event', False)):
             sel = self.selected
         else:
             sel = True

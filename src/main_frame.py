@@ -137,8 +137,6 @@ class MainFrame(wx.Frame, MenuBar):
 
         def on_timer(event):
             for name, panel in self.panels.items():
-                print('POOP', name, panel.dirty)
-
                 if panel.dirty:
                     if name in ('organization', 'budget', 'monthly'):
                         match name:
@@ -147,8 +145,7 @@ class MainFrame(wx.Frame, MenuBar):
                             case 'budget':
                                 data = self.db.dp.budget_data
                             case 'monthly':
-                                data = self.db.dp.monthly_data(
-                                    data['cal_year_month'])
+                                data = self.db.dp.monthly_data
 
                         if panel.save:
                             panel.save = False

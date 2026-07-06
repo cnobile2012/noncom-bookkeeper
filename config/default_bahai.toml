@@ -132,7 +132,7 @@ widget_10 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 
 # Skip position
 
-widget_11 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Income'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[8, 0], span=[1, 2]}]
+widget_11 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Budgeted Income'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[8, 0], span=[1, 2]}]
 
 widget_12 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[9, 0], span=[1, 2]}]
 
@@ -281,7 +281,7 @@ sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
 [monthly.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monthly Specific Settings'], font='font_16_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6], pos=[0, 0], span=[1, 2]}]
 
-widget_01 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Month of Year:'], style='CB_READONLY', min=[228, 26], add=[0, 'ALIGN_BOTTOM | ALL', 10], pos=[1, 0], span=[1, 1], dirty_event=false, mandatory=true}]
+widget_01 = ['ComboBox', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Month Index:'], style='CB_READONLY', min=[228, 26], add=[0, 'ALIGN_BOTTOM | ALL', 10], pos=[1, 0], span=[1, 1], dirty_event=false, mandatory=true}]
 
 widget_02 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'The following fields should be updated at the end of each month.'], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER | ALL', 2], pos=[2, 0], span=[1, 2]}]
 
