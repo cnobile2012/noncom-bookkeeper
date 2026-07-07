@@ -600,6 +600,22 @@ class Database(BaseDatabase):
 
         return index
 
+    def year_month_by_index(self, idx: int, year: int) -> str:
+        """
+        Get the text used in the monthly drop down.
+
+        :param int idx: The index used in the dropdown widget.
+        :param int year: The fiscal year.
+        :returns: The text used in the monthly drop down.
+        :rtype: str
+        """
+        items = self.full_fiscal_year_data(year)
+        assert -1 < idx < len(items), (
+            f"The index value is out of range, found '{idx}', it must "
+            f"be between 0 and {len(items) - 1}.")
+        return [f"{item[1]:04d}-{item[2]:02d} {item[3]}" for item in items
+                if item[0] == idx][0]
+
     def full_fiscal_year_data(self, year: int=None) -> list:
         """
         Get all months in the current fiscal year.

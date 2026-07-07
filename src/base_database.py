@@ -413,7 +413,7 @@ class BaseDatabase(PopulateCollect, Settings):
         :returns: The insertion rowcount.
         :rtype: int
         """
-        long = [field for field in data.keys()  # Test new key length.
+        long = [field for field in data  # Test new key length.
                 if len(field) > self._MAX_FIELD_LEN]
 
         if long:

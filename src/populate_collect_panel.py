@@ -52,7 +52,7 @@ class PopulateCollect:
     @property
     def open_ledger_entry(self) -> bool:
         """
-        Check that the db has the Monthly Information.
+        Check that the db has the ledger Information.
 
         :returns: True if data has been saved in the DB and False if not saved.
         :rtype: bool

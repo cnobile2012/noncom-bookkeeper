@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from src.config import TomlPanelConfig
 from src.preperation import DataPreperation
+from src.utilities import StoreObjects
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
@@ -26,6 +27,7 @@ class TestDataPreperation(BaseAsyncTests):
         patchers(self)
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
+        self.fmf = StoreObjects().get_object('MainFrame')
 
     async def asyncSetUp(self):
         await self.db.create_db()
@@ -146,53 +148,71 @@ class TestDataPreperation(BaseAsyncTests):
             else:
                 self.assertEqual(expected, error, msg.format(expected, error))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test_budget(self):
         """
         Test that the budget method inserts or updates budget data properly.
         """
+        year = 183
+        month = 3
+        msg = "Expected {}, found {}."
+        items = self.db.cache.get(self.db._T_DATA, year=year, r_type='budget')
+        # Should not have data
+        self.assertEqual([], items, msg.format([], items))
+        await self.insert_fiscal_year()
+        await self.insert_field_data(self._BGT_DATA)
+        await self.insert_months()
+        error = await self.tdp.budget(self._BGT_DATA, year, month)
+        self.assertEqual(None, error, msg.format(None, error))
+        items = self.db.cache.get(self.db._T_DATA, year=year, r_type='budget')
+
+        for item in items:
+            expected = self._BGT_DATA[item[1]]
+            result = item[2]
+            self.assertEqual(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_monthly(self):
+        """
+        Test that the monthly method inserts and updates records properly.
+        """
+        err_msg0 = "An unknown field '{}' was found in the monthly panel."
+        err_msg1 = "The '{}' field(s) must not be empty."
+        expect0 = (1, 1, (183, 3), 2, 1000, 0, 20, 'Joe Schmo', 0)
+        bad_mth_data = dict(self._MTH_DATA)
+        bad_mth_data['bad_field'] = 9999
+        mis_mth_data = dict(self._MTH_DATA)
+        mis_mth_data['treasurer_this_month'] = ''
         data = (
-            ({'administration': 100}, 183, 3, True),
+            (183, self._MTH_DATA, True, (expect0, None)),
+            (183, bad_mth_data, False, (None, err_msg0.format('bad_field'))),
+            (183, mis_mth_data, False,
+             (None, err_msg1.format('treasurer_this_month'))),
             )
         msg = "Expected {}, found {}."
 
-        for bgt_data, year, month, insert in data:
-            if insert:
-                items = self.db.cache.get(self.db._T_DATA, year=year,
-                                          r_type='budget')
-                # Should not have data
-                self.assertEqual([], items, msg.format([], items))
+        for year, mth_data, valid, expected in data:
+            if valid:
                 await self.insert_fiscal_year()
-                await self.insert_field_data(self.frame.panel['budget'])
-                error = await self.tdp.budget(bgt_data, year, month)
-                items = self.db.cache.get(self.db._T_DATA, year=year,
-                                          r_type='budget')
-                value = bgt_data['administration']
-                #print('POOP1', bgt_data, items)
-                #self.assertEqual(value, items[0][1], msg.format(
-                #    value, items[0][1]))
+                error = await self.tdp.monthly(mth_data, year)
+                self.assertEqual(expected[1], error, msg.format(
+                    expected[1], error))
+                items = self.db.cache.get(self.db._T_MONTHLY)
+                item = items[0]
+                self.assertEqual(expected[0], item[:9], msg.format(
+                    expected[0], item[:9]))
             else:
-                await self.insert_data()
-                await self.tdp.db.cache.load()
-                result = self.db.cache.get(self.db._T_DATA, year=183,
-                                           r_type='budget')
+                if mth_data.get('bad_field'):
+                    with self.assertRaises(AssertionError) as cm:
+                        error = await self.tdp.monthly(mth_data, year)
 
-                #print('POOP', result)
-
-    @unittest.skip("Temporarily skipped")
-    async def test_monthly(self):
-        """
-        Test that the monthly method 
-        """
-        # data = (
-        #     (),
-        #     )
-        # msg = "Expected {}, found {}."
-
-        # for in data:
-        #     pass
-        pass
-
+                    ex = str(cm.exception)
+                    self.assertEqual(expected[1], ex, msg.format(
+                        expected[1], ex))
+                else:
+                    error = await self.tdp.monthly(mth_data, year)
+                    self.assertEqual(expected[1], error, msg.format(
+                        expected[1], error))
 
     #@unittest.skip("Temporarily skipped")
     async def test_fiscal(self):
@@ -214,31 +234,6 @@ class TestDataPreperation(BaseAsyncTests):
         self.assertEqual(updated_data['current_fiscal_year'], cfy)
         self.assertEqual(updated_data['work_on_this_fiscal_year'], wotfy)
         self.assertEqual(updated_data['audit_complete'], ac)
-
-    @unittest.skip("Temporarily skipped")
-    async def test__find_fiscal_year_for_record(self):
-        """
-        Test that the _find_fiscal_year_for_record method returns the
-        fiscal year the monthly record is in.
-        """
-        prev_year = (182, 3, 5, 0, 0, 0)
-        mthy_record0 = {'month_index': '183-03 Jamál'}
-        mthy_record1 = {'month_index': '184-03 Jamál'}
-        data = (
-            ('183-03 Jamál', False, 183),
-            ('184-03 Jamál', False, 183),
-            )
-        msg = "Expected {}, found {}."
-        await self.insert_fiscal_year()
-
-        for date, prev_year, expected in data:
-            if prev_year:
-                record = {'data': prev_year}
-                await self.db.cache.insert(self.db._T_FISCAL_YEAR, record)
-
-            result = self.tdp._find_fiscal_year_for_record(date)
-
-
 
     #@unittest.skip("Temporarily skipped")
     async def test__first_run_initialization(self):
@@ -386,10 +381,11 @@ class TestDataPreperation(BaseAsyncTests):
         await self.asyncTearDown()
         data = {field: 0 for field in self.db.cache.ORG_FIELDS}
         rowcount = await self.db._add_fields_to_field_type_table(data)
-        org_data = {'locale_name': 'New York', 'locality_prefix': '0',
-                    'location_city_name': 'New York', 'treasurer': 'Joe Schmo',
+        org_data = {'locality_prefix': 0, 'locale_name': 'New York',
+                    'total_membership': '20', 'treasurer': 'Joe Schmo',
                     'start_of_fiscal_year': '0183-03-05',
-                    'total_membership': '19'}
+                    'location_city_name': 'New York'
+                    }
         update_org_data = dict(org_data)
         update_org_data['total_membership'] = '25'
         next_year_data = dict(org_data)
@@ -397,11 +393,11 @@ class TestDataPreperation(BaseAsyncTests):
         invalid_field = dict(org_data)
         invalid_field['INVALID_FIELD'] = 'JUNK'
         data = (
-            (183, 3, 'organization', org_data, None),
-            (183, 3, 'organization', update_org_data, None),
-            (183, 3, 'organization', next_year_data, None),
+            (183, 3, 'organization', org_data, None),           # Insert
+            (183, 3, 'organization', update_org_data, None),    # Update
+            (183, 3, 'organization', next_year_data, None),     # Next Year
             (183, 3, 'organization', invalid_field,
-             err_msg0.format('INVALID_FIELD', invalid_field)),
+             err_msg0.format('INVALID_FIELD', invalid_field)),  # Invalid
             )
         msg = "Expected {}, found {}."
         await self.insert_fiscal_year()
@@ -458,3 +454,32 @@ class TestDataPreperation(BaseAsyncTests):
 
         for field in self.tdp.db.cache.ORG_FIELDS:
             self.assertIn(field, fields)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_budget_data(self):
+        """
+        Test that the budget_data property returns the budget data.
+        """
+        await self.insert_data()
+        await self.tdp.db.cache.load()
+        result = self.tdp.budget_data
+        fields = result.keys()
+
+        for field in self.tdp.db.cache.budget_fields:
+            self.assertIn(field, fields)
+
+    @unittest.skip("Temporarily skipped")
+    async def test_monthly_data(self):
+        """
+        Test that the monthly_data property returns the monthly data.
+        """
+        await self.insert_data()
+        await self.tdp.db.cache.load()
+
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.fmf.panels['monthly']
+            self.db.populate_panel_values('monthly', panel, self._MTH_DATA)
+            result = self.tdp.monthly_data
+            fields = result.keys()
+
+            print(fields)

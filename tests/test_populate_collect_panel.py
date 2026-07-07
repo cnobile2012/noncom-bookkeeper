@@ -15,7 +15,6 @@ from unittest.mock import patch
 from src.bases import BaseGenerated
 from src.config import TomlPanelConfig
 from src.utilities import StoreObjects
-#from src.bahai_database import Database
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
@@ -44,29 +43,103 @@ class TestPopulateCollect(BaseAsyncTests):
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test_has_org_info_data(self):
         """
+        Test that the has_org_info_data property returns True or False
+        depending on the existance of manditory data in the panel.
         """
-        pass
+        data = (
+            ({}, False),
+            (self._ORG_DATA, True),
+            )
+        msg = "Expected {}, found {}."
 
-    @unittest.skip("Temporarily skipped")
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.fmf.panels['organization']
+            self.db.populate_panel_values('organization', panel,
+                                          self._ORG_EMPTY)
+
+            for values, expected in data:
+                self.db.populate_panel_values('organization', panel, values)
+                result = self.db.has_org_info_data
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
+
+    #@unittest.skip("Temporarily skipped")
     async def test_has_budget_data(self):
         """
+        Test that the has_budget_data property returns True or False
+        depending on the existance of manditory data in the panel.
         """
-        pass
+        data = (
+            ({}, False),
+            (self._BGT_DATA, True),
+            )
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.fmf.panels['budget']
+            self.db.populate_panel_values('budget', panel, self._BGT_EMPTY)
+
+            for values, expected in data:
+                self.db.populate_panel_values('budget', panel, values)
+                result = self.db.has_budget_data
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
 
     @unittest.skip("Temporarily skipped")
     async def test_open_ledger_entry(self):
         """
+        Test that the open_ledger_entry property returns True or False
+        depending on the existance of manditory data in the panel.
         """
-        pass
+        data = (
+            ({}, False),
+            (self._LGD_DATA, True),
+            )
+        msg = "Expected {}, found {}."
 
-    @unittest.skip("Temporarily skipped")
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.fmf.panels['ledger']
+            self.db.populate_panel_values('ledger', panel, {})
+
+            for values, expected in data:
+                self.db.populate_panel_values('ledger', panel, values)
+                result = self.db.open_ledger_entry
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
+
+    #@unittest.skip("Temporarily skipped")
     async def test__check_panels_for_entries(self):
         """
+        Test that the _check_panels_for_entries method correctly check
+        if a given panel has entries.
         """
-        pass
+        data = (
+            ('organization', {}, False),
+            ('budget', {}, False),
+            # ('ledger',  {}, False),
+            ('organization', self._ORG_DATA, True),
+            ('budget', self._BGT_DATA, True),
+            # ('ledger', self._LGD_DATA, True),
+            )
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for panel_name, values, expected in data:
+                panel = self.fmf.panels[panel_name]
+
+                if panel_name == 'organization':
+                    empty_data = self._ORG_EMPTY
+                elif panel_name == 'budget':
+                    empty_data = self._BGT_EMPTY
+
+                self.db.populate_panel_values(panel_name, panel, empty_data)
+                self.db.populate_panel_values(panel_name, panel, values)
+                result = self.db._check_panels_for_entries(panel_name)
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test_collect_panel_values(self):
@@ -74,30 +147,15 @@ class TestPopulateCollect(BaseAsyncTests):
         Test that the collect_panel_values method collects data from
         panels and converts it to appropreate values for the database.
         """
-        org_data = {'locality_prefix': 0, 'locale_name': 'New York',
-                    'total_membership': '20', 'treasurer': 'Joe Schmo',
-                    'start_of_fiscal_year': badidatetime.date(183, 3, 5),
-                    'location_city_name': 'New York', 'iana_name': None,
-                    'latitude': None, 'longitude': None}
-        bgt_data = {'cash_in_bank': '200000', 'ocs_holdings': '10000',
-                    'total_outstanding_bills_previous_year': '000',
-                    'total_membership_beginning_of_year': '20',
-                    'monetary_contributions': '200000'}
-        mth_data = {'month_index': '183-03 Jamál', 'participation': '',
-                    'outstanding_bills': '', 'end_of_month_cash_on_hand': '',
-                    'total_membership_this_month': '',
-                    'treasurer_this_month': '', 'locality_prefix_month': 0}
-        mth_values = dict(mth_data)
+        mth_values = dict(self._MTH_DATA)
         mth_values['month_index'] = 0
-        fy_data = {'fiscal_year_choice': 0, 'current_fiscal_year': False,
-                   'work_on_this_fiscal_year': False, 'audit_complete': False}
         data = (
-            ('organization', 9, org_data, org_data),
-            ('budget', 36, bgt_data, bgt_data),
-            ('monthly', 7, mth_values, mth_data),
-            ('fiscal', 4, fy_data, fy_data),
+            ('organization', 9, self._ORG_DATA, self._ORG_DATA),
+            ('budget', 36, self._BGT_DATA, self._BGT_DATA),
+            ('monthly', 7, mth_values, self._MTH_DATA),
+            ('fiscal', 4, self._FY_DATA, self._FY_DATA),
             )
-        msg = "Expected {}, found {}."
+        msg = "Expected '{}', found '{}'."
 
         with patch.object(self.db, '_mf', self.fmf):
             for panel_name, count, values, expected in data:
@@ -116,20 +174,13 @@ class TestPopulateCollect(BaseAsyncTests):
         Test that the populate_panel_values method populates the panel
         with the database values.
         """
-        org_data = {'locale_name': 'New York', 'locality_prefix': 0,
-                    'location_city_name': 'New York',
-                    'start_of_fiscal_year': '0183-03-05',
-                    'total_membership': '20', 'treasurer': 'Joe Schmo'}
-        bgt_data = {'cash_in_bank': '200000', 'ocs_holdings': '10000',
-                    'total_outstanding_bills_previous_year': '000',
-                    'total_membership_beginning_of_year': '20',
-                    'monetary_contributions': '200000'}
-        fy_data = {'fiscal_year_choice': 0, 'current_fiscal_year': False,
-                   'work_on_this_fiscal_year': False, 'audit_complete': False}
+        org_data = dict(self._ORG_DATA)
+        org_data['start_of_fiscal_year'] = org_data[
+            'start_of_fiscal_year'].isoformat()
         data = (
             ('organization', org_data, False, True),
-            ('budget', bgt_data, False, True),
-            ('fiscal', fy_data, False, True),
+            ('budget', self._BGT_DATA, False, True),
+            ('fiscal', self._FY_DATA, False, True),
             ('fiscal', {}, True, True),
             )
         msg = "Expected {}, field_name '{}', found {}."
@@ -432,10 +483,10 @@ class TestPopulateCollect(BaseAsyncTests):
                        'cal_year_month': (183, 3), 'participation': 5,
                        'outstanding': '1000', 'coh': '000', 'locality': 0,
                        'membership': 20}
-        await self.db.cache.insert(self.db._T_MONTHLY, {'year': 183,
-                                                        'data': insert_data})
+        await self.db.cache.insert(self.db._T_MONTHLY,
+                                   {'year': 183, 'data': insert_data})
         widget_data = {'treasurer_this_month': 'Joe Schmo', 'month_index': 0,
-                       'participation': '5', 'outstanding_bills': '10.00',
+                       'participation': '2', 'outstanding_bills': '10.00',
                        'end_of_month_cash_on_hand': '0.00',
                        'locality_prefix_month': 0,
                        'total_membership_this_month': '20'}

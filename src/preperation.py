@@ -117,11 +117,11 @@ class DataPreperation:
 
     async def monthly(self, data: dict, year: int) -> str | None:
         """
-        Converts panel data to data appropreate for updating a monthly record.
+        Inserts or updates panel data.
 
         :param dict data: Panel data.
         :param int year: The current fiscal year.
-        :returns: Any errors or None.
+        :returns: Any errors or None with no errors.
         :rtype: str or None
         """
         error = None
@@ -355,33 +355,24 @@ class DataPreperation:
         if not values:  # Do insert
             items = {'year': year, 'month': month, 'data': data}
             rc = await self.db.cache.insert(self.db._T_DATA, items)
-            self._log.info("Inserted %s table data: %s.",
-                           self.db._T_DATA, data)
+            self._log.info("Inserted %s table data: %s, rowcount %s.",
+                           self.db._T_DATA, data, rc)
         else:
-            insert_data = {'year': year, 'month': month}
             update_data = {}
             # See select_from_config_data_table() for the mapping.
-            #        value,    pk,      fy2fk
-            items = {item[1]: (item[0], item[3]) for item in values}
+            #        value,    pk,      fy1.year
+            items = {item[1]: item[0] for item in values}
 
             for field, value in data.items():  # Loop through incoming data
-                pk, y1 = items.get(field, (None, None))  # pk, y1
+                pk = items.get(field, None)  # pk
 
-                if None in (pk, y1):           # Error condition
+                if pk is None:      # Error condition
                     error = f"Could not find field {field} in {data}."
                     self._mf.statusbar_error = error
                     self._log.error(error)
                     break
 
-                if year != y1:                 # Insert
-                    values = insert_data.setdefault('data', [])
-                    values.append((field, str(value)))
-                else:                          # Update
-                    values = update_data.setdefault('data', [])
-                    values.append((pk, str(value)))
-
-            if insert_data:                    # Do insert
-                rc = await self.db.cache.insert(self.db._T_DATA, insert_data)
+                update_data.setdefault('data', []).append((pk, str(value)))
 
             if update_data:                    # Do update
                 rc = await self.db.cache.update(self.db._T_DATA, update_data)
@@ -417,8 +408,7 @@ class DataPreperation:
     @property
     def organization_data(self) -> dict:
         """
-        This property gets the organization data that are used throughout
-        the application.
+        This property gets the organization data.
 
         :returns: The organization data as defined by {<field name>: <value>}.
         :rtype: dict
@@ -429,8 +419,7 @@ class DataPreperation:
     @property
     def budget_data(self) -> dict:
         """
-        This property gets the budget data that are used throughout the
-        application.
+        This property gets the budget data.
 
         :returns: The budget data as defined by {<field name>: <value>}.
         :rtype: dict
@@ -441,15 +430,20 @@ class DataPreperation:
     @property
     def monthly_data(self) -> dict:
         """
-        This property gets the monthly data that are used throughout the
-        application.
+        This property gets the monthly data.
 
         :returns: The monthly data as defined by {<field name>: <value>}.
         :rtype: dict
         """
         panel = self._mf.panels['monthly']
         data = self.db.collect_panel_values(panel)
-        date = self.db.convert_str_date(data['month_index'])
+        value = data['month_index']
+        print('POOP', data, value)
+
+        if isinstance(value, int):
+            value = self.db.year_month_by_index(value, self.db.cache.year)
+
+        date = self.db.convert_str_date(value)
         items = self.db.cache.get(self.db._T_MONTHLY, r_type=date)
         values = {}
 

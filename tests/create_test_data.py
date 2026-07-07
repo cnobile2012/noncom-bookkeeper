@@ -56,9 +56,9 @@ class CreateTestData:
             buff.close()
 
     async def _format_table_data(self):
-        def _fix_value(value):
+        def _fix_value(value, idx):
             r = list(record)
-            r[1] = value
+            r[idx] = value
             return tuple(r)
 
         query = "SELECT * from {};"
@@ -68,34 +68,52 @@ class CreateTestData:
             values = await self.db._do_select_query(query.format(table))
             data.setdefault(table, values)
 
-        # Take out personal info.
+        # Anatomize info.
         config_data = data.get(self.db._T_DATA)
+        idx = 1
 
         if config_data:
             new_cd = []
 
-            for idx, record in enumerate(config_data):
-                value = record[1]
+            for record in config_data:
+                value = record[idx]
 
                 if '/' in value:
-                    record = _fix_value('America/New_York')
+                    record = _fix_value('America/New_York', idx)
                 elif re.match(r'^-?\d+(?:\.\d+)$', value) is not None:
                     v = float(value)
 
                     if v > 0:
-                        record = _fix_value('40.7127281')
+                        record = _fix_value('40.7127281', idx)
                     else:
-                        record = _fix_value('-74.0060152')
+                        record = _fix_value('-74.0060152', idx)
                 elif 'County' in value:
-                    record = _fix_value('New York')
+                    record = _fix_value('New York', idx)
                 elif 'Var' in value:
-                    record = _fix_value('New York')
+                    record = _fix_value('New York', idx)
                 elif 'J.' in value:
-                    record = _fix_value('Joe Schmo')
+                    record = _fix_value('Joe Schmo', idx)
 
                 new_cd.append(record)
 
             data[self.db._T_DATA] = new_cd
+
+        monthly_data = data.get(self.db._T_MONTHLY)
+        idx = 7
+
+        if monthly_data:
+            new_mth = []
+
+            for record in monthly_data:
+                value = record[idx]
+                if not isinstance(value, str): continue
+
+                if 'J.' in value:
+                    record = _fix_value('Joe Schmo', idx)
+
+                new_mth.append(record)
+
+            data[self.db._T_MONTHLY] = new_mth
 
         prefix = "TEST_DATA = "
         return self._format_data(data, prefix, width=70)

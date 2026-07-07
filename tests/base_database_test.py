@@ -8,6 +8,7 @@ import re
 import unittest
 import aiosqlite
 import wx
+import badidatetime
 
 from src.bahai_database import Database
 from src.utilities import StoreObjects
@@ -86,6 +87,33 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     The one caveat is that self.bd = BaseDatabase() must be defined in the
     async def asyncSetUp(self): methods.
     """
+    # Below are test data needed by some tests.
+    _ORG_DATA = {'locality_prefix': 0, 'locale_name': 'New York',
+                 'total_membership': '20', 'treasurer': 'Joe Schmo',
+                 'start_of_fiscal_year': badidatetime.date(183, 3, 5),
+                 'location_city_name': 'New York', 'iana_name': None,
+                 'latitude': None, 'longitude': None}
+    _ORG_EMPTY = {'locality_prefix': 0, 'locale_name': '',
+                  'total_membership': '', 'treasurer': '',
+                  'start_of_fiscal_year': badidatetime.date(183, 3, 5),
+                  'location_city_name': '', 'iana_name': None,
+                  'latitude': None, 'longitude': None}
+    _BGT_DATA = {'cash_in_bank': '200000', 'ocs_holdings': '10000',
+                 'total_outstanding_bills_previous_year': '000',
+                 'total_membership_beginning_of_year': '20',
+                 'monetary_contributions': '200000'}
+    _BGT_EMPTY = {'cash_in_bank': '', 'ocs_holdings': '',
+                  'total_outstanding_bills_previous_year': '',
+                  'total_membership_beginning_of_year': '',
+                  'monetary_contributions': ''}
+    _MTH_DATA = {'month_index': '183-03 Jamál', 'participation': '2',
+                 'outstanding_bills': '1000',
+                 'end_of_month_cash_on_hand': '000',
+                 'total_membership_this_month': '20',
+                 'treasurer_this_month': 'Joe Schmo',
+                 'locality_prefix_month': 0}
+    _FY_DATA = {'fiscal_year_choice': 0, 'current_fiscal_year': False,
+                'work_on_this_fiscal_year': False, 'audit_complete': False}
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -181,12 +209,12 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(fy_data['data']), rowcount)
         return rowcount
 
-    async def insert_field_data(self, panel: wx.Panel) -> int:
+    async def insert_field_data(self, data: dict) -> int:
         """
         Insert field data in the DB.
         """
-        data = {'data': self.db.collect_panel_values(panel)}
-        return await self.db._add_fields_to_field_type_table(data)
+        return await self.db.cache.insert(self.db._T_FIELD_TYPE,
+                                          {'data': list(data)})
 
     async def insert_months(self) -> int:
         """
