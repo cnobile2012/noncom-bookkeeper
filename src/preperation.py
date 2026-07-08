@@ -47,7 +47,7 @@ class DataPreperation:
             empty_fields = [field for field, value in data.items()
                             if value == '']
 
-            if len(empty_fields) != 0:  # This should do a partial insert
+            if len(empty_fields) != 0:
                 ef = ', '.join([f for f in empty_fields])
                 error = f"The '{ef}' field(s) must not be empty."
             else:
@@ -256,9 +256,8 @@ class DataPreperation:
         :returns: The number of DB rows affected.
         :rtype: int
         """
-        rowcount = await self.db.cache.insert(
+        return await self.db.cache.insert(
             self.db._T_FISCAL_YEAR, {'data': [(year, month, day, 0, 0, 0)]})
-        return rowcount
 
     def _add_location_data(self, data: dict) -> tuple:
         """
@@ -438,7 +437,6 @@ class DataPreperation:
         panel = self._mf.panels['monthly']
         data = self.db.collect_panel_values(panel)
         value = data['month_index']
-        print('POOP', data, value)
 
         if isinstance(value, int):
             value = self.db.year_month_by_index(value, self.db.cache.year)

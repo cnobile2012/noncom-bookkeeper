@@ -133,6 +133,28 @@ class Cache:
         self._store[self.year][self.db._T_MONTHLY] = items
 
     @property
+    def has_fiscal_cache_data(self) -> bool:
+        """
+        Check that the cache has fiscal year data.
+
+        :returns: True if data has been saved in the cache and False if not
+                  saved.
+        :rtype: bool
+        """
+        return len(self.get(self.db._T_FISCAL_YEAR)) > 0
+
+    @property
+    def has_month_cache_data(self) -> bool:
+        """
+        Check that the cache has month data.
+
+        :returns: True if data has been saved in the cache and False if not
+                  saved.
+        :rtype: bool
+        """
+        return len(self.get(self.db._T_MONTH)) > 0
+
+    @property
     def has_fields_data(self) -> bool:
         """
         Check that the cache has fields data.
@@ -164,28 +186,6 @@ class Cache:
         :rtype: bool
         """
         return len(self.get(self.db._T_DATA, r_type='budget')) > 0
-
-    @property
-    def has_fiscal_cache_data(self) -> bool:
-        """
-        Check that the cache has fiscal year data.
-
-        :returns: True if data has been saved in the cache and False if not
-                  saved.
-        :rtype: bool
-        """
-        return len(self.get(self.db._T_FISCAL_YEAR)) > 0
-
-    @property
-    def has_month_cache_data(self) -> bool:
-        """
-        Check that the cache has month data.
-
-        :returns: True if data has been saved in the cache and False if not
-                  saved.
-        :rtype: bool
-        """
-        return len(self.get(self.db._T_MONTH)) > 0
 
     @property
     def has_monthly_cache_data(self) -> bool:

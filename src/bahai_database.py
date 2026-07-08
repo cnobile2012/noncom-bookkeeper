@@ -270,7 +270,7 @@ class Database(BaseDatabase):
     # Config data SELECT, INSERT and, UPDATE methods.
     #
 
-    async def select_from_config_data_table(self, data: list, year: int=None
+    async def select_from_config_data_table(self, data: list, year: int
                                             ) -> list:
         """
         Reads a row or rows from the config data table.
@@ -305,30 +305,18 @@ class Database(BaseDatabase):
            ]
         """
         fields = '", "'.join(data)
-
-        if year:
-            params = (year, year+1)
-            query = (
-                "SELECT d.pk, f.field, d.value, y1.year, y2.year, "
-                "       d.ctime, d.mtime "
-                f"FROM {self._T_DATA} AS d "
-                f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
-                f"     AND f.field IN (\"{fields}\") "
-                f"JOIN {self._T_FISCAL_YEAR} AS y1 ON y1.pk = d.fy1fk "
-                "      AND y1.year = ? "
-                f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.pk = d.fy2fk "
-                "      AND y2.year = ? "
-                )
-        else:  # *** TODO *** May not be used anymore.
-            print(f"IMPORTANT--fields: {fields}")
-            params = ()
-            query = (
-                "SELECT d.pk, f.field, d.value, d.ctime, d.mtime "
-                f"FROM {self._T_DATA} AS d "
-                f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
-                f"     AND f.field IN (\"{fields}\");"
-                )
-
+        params = (year, year+1)
+        query = (
+            "SELECT d.pk, f.field, d.value, y1.year, y2.year, "
+            "       d.ctime, d.mtime "
+            f"FROM {self._T_DATA} AS d "
+            f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
+            f"     AND f.field IN (\"{fields}\") "
+            f"JOIN {self._T_FISCAL_YEAR} AS y1 ON y1.pk = d.fy1fk "
+            "      AND y1.year = ? "
+            f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.pk = d.fy2fk "
+            "      AND y2.year = ? "
+            )
         return await self._do_select_query(query, params)
 
     async def insert_all_into_config_data_table(self, data: list) -> int:
@@ -365,8 +353,11 @@ class Database(BaseDatabase):
         if fy1:
             now = badidatetime.datetime.now(self.utc_tzinfo)
             f_items = await self.select_from_field_type_table(data)
+            assert f_items, "Programming error, no field data."
             f_month = await self.select_from_month_table(order=month)
+            assert f_month, "Programming error, no month data."
             fy2 = await self.select_from_fiscal_year_table(year=fy1[1]+1)
+            assert fy2, "Programming error, no 2nd year fiscal year data."
 
             query = (
                 f"INSERT INTO {self._T_DATA} (value, fy1fk, fy2fk, mfk, ffk, "
@@ -620,6 +611,8 @@ class Database(BaseDatabase):
         """
         Get all months in the current fiscal year.
 
+        :param int or None year: Use the given year or if None use the
+                                 default year.
         :returns: A list of data for the months in the fiscal year.
         :rtype: list
         """

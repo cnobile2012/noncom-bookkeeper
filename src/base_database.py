@@ -19,7 +19,7 @@ from .cache import Cache
 
 def adapt_tuple(value: tuple) -> str:
     """
-    Adapt a tuple.
+    Adapt a tuple → value.
     """
     return repr(value)
 

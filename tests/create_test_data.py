@@ -64,7 +64,7 @@ class CreateTestData:
         query = "SELECT * from {};"
         data = {}
 
-        for table in self.db._SCHEMA_TABLES.keys():
+        for table in self.db._SCHEMA_TABLES:
             values = await self.db._do_select_query(query.format(table))
             data.setdefault(table, values)
 
@@ -121,7 +121,7 @@ class CreateTestData:
     def _format_data(self, data: dict, prefix: str, indent: int=1,
                      width: int=80):
         formatted = pprint.pformat(data, indent=indent, width=width,
-                                   compact=True, sort_dicts=True)
+                                   compact=True, sort_dicts=False)
         split_fmt = formatted.split('\n')
         indent = ' ' * len(prefix)
         new_format = ''

@@ -11,10 +11,9 @@ import badidatetime
 
 from unittest.mock import patch
 
-from src.bases import BaseGenerated
 from src.config import TomlPanelConfig
 from src.utilities import StoreObjects
-from src.bahai_database import Database
+from src.base_database import BaseDatabase, adapt_tuple, convert_tuple
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
@@ -36,7 +35,6 @@ class TestBaseDatabase(BaseAsyncTests):
         with patch.object(self.db, '_mf', self.fmf):
             await self.db.create_db()
 
-        self.db.cache._flush_cache()
         await self.insert_data()
         await self.db.cache.load()
         self.frame.create_panels()
@@ -44,6 +42,60 @@ class TestBaseDatabase(BaseAsyncTests):
     async def asyncTearDown(self):
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_adapt_tuple(self):
+        """
+        Test that the adapt_tuple function correctly converts a tuple
+        to a string.
+        """
+        year_month = (183, 3)
+        result = adapt_tuple(year_month)
+        self.assertIsInstance(result, str)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_convert_tuple(self):
+        """
+        Test that the convert_tuple function correctly converts bytes to
+        a tuple.
+        """
+        err_msg0 = "Expected tuple, got {}."
+        year_month = b'(183, 3)'
+        result = convert_tuple(year_month)
+        self.assertIsInstance(result, tuple)
+        bad_year_month = b'[183, 3]'
+
+        with self.assertRaises(ValueError) as cm:
+            convert_tuple(bad_year_month)
+
+        ex = str(cm.exception)
+        self.assertEqual(ex, err_msg0.format('list'))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_set_local_coordinates(self):
+        """
+        Test that the set_local_coordinates method raises an exception
+        if not overridden.
+        """
+        err_msg0 = "The 'set_local_coordinates' must be implemented."
+
+        with self.assertRaises(NotImplementedError) as cm:
+            bd = BaseDatabase()
+            bd.set_local_coordinates()
+
+        ex = str(cm.exception)
+        self.assertEqual(ex, err_msg0)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_get_db_columns(self):
+        """
+        Test that the get_db_columns method returns the column names
+        for the specified table.
+        """
+        expected = ['pk', 'year', 'month', 'day', 'current', 'work_on',
+                    'audit', 'ctime', 'mtime']
+        result = self.db.get_db_columns(self.db._T_FISCAL_YEAR)
+        self.assertEqual(expected, result)
 
     #@unittest.skip("Temporarily skipped")
     async def test_has_schema(self):
@@ -205,45 +257,57 @@ class TestBaseDatabase(BaseAsyncTests):
         Test that the save_to_database method inserts or updates panel
         data in the database.
         """
+        await self.asyncTearDown()
         err_msg0 = ("The 'locale_name, total_membership, treasurer, "
                     "location_city_name' field(s) must not be empty.")
         sofy = badidatetime.date(183, 3, 5)
         full_data = {'locale_name': 'New York', 'locality_prefix': '0',
                      'location_city_name': 'New York',
-                     'start_of_fiscal_year': sofy,
+                     'start_of_fiscal_year': str(sofy),
                      'total_membership': '19', 'treasurer': 'Joe Schmo'}
 
         data = (
             ('organization', False, err_msg0),
             # Creates field, fiscal year, and config data.
-            #('organization', True, None),
+            ('organization', True, None),
             )
         msg = "Expexted {}, found {}."
-        await self.asyncTearDown()
 
-        for panel_name, valid, expected in data:
-            with patch.object(self.db, '_mf', self.fmf):
-                # if valid and panel_name in ('organization', 'budget'):
-                #     await self.insert_fiscal_year()
-                #     await self.insert_months()
-                #     fy = self.db.cache.get(self.db._T_FISCAL_YEAR,
-                #                            r_type=panel_name)
-                #     items = {'year': fy[0][1], 'month': fy[0][2],
-                #              'data': full_data}
-                #     rc = await self.db.cache.insert(self.db._T_DATA, items)
-                #     self.assertEqual(len(full_data), rc)
-
+        with patch.object(self.db, '_mf', self.fmf):
+            for panel_name, valid, expected in data:
                 panel = self.db._mf.panels.get(panel_name)
+
+                if valid and panel_name in ('organization', 'budget'):
+                    await self.insert_fiscal_year()
+                    items = self.db.collect_panel_values(panel)
+                    await self.insert_field_data(items)
+                    await self.insert_months()
+                    fy = self.db.cache.get(self.db._T_FISCAL_YEAR,
+                                           r_type=panel_name)
+                    items = {'year': fy[0][1], 'month': fy[0][2],
+                             'data': full_data}
+                    rc = await self.db.cache.insert(self.db._T_DATA, items)
+                    self.assertEqual(len(full_data), rc)
+
                 error = await self.db.save_to_database(panel_name, panel)
 
-            if valid:
-                panels = {panel_name: panel}
-                await self.db._populate_config_data_panels(sofy.year, panels)
-                result = self.db.cache.get(self.db._T_DATA, year=sofy.year,
-                                           r_type=panel_name)
-                #print('POOP', result, self.db.cache._store)
-            else:
-                self.assertEqual(expected, error, msg.format(expected, error))
+                if valid:
+                    panels = {panel_name: panel}
+                    await self.db._populate_config_data_panels(sofy.year,
+                                                               panels)
+                    result = self.db.cache.get(self.db._T_DATA, year=sofy.year,
+                                               r_type=panel_name)
+                    #print('POOP', result)
+                else:
+                    self.assertEqual(expected, error, msg.format(
+                        expected, error))
+
+    @unittest.skip("Temporarily skipped")
+    async def test_get_work_on_fiscal_year(self):
+        """
+        Test that the get_work_on_fiscal_year method 
+        """
+        pass
 
     #@unittest.skip("Temporarily skipped")
     async def test__add_fields_to_field_type_table(self):

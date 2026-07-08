@@ -31,8 +31,10 @@ class TestDataPreperation(BaseAsyncTests):
 
     async def asyncSetUp(self):
         await self.db.create_db()
-        self.tdp = DataPreperation(self.db)
+        await self.insert_data()
+        await self.db.cache.load()
         self.frame.create_panels()
+        self.tdp = DataPreperation(self.db)
 
     async def asyncTearDown(self):
         self.db.cache._flush_cache()
@@ -66,7 +68,6 @@ class TestDataPreperation(BaseAsyncTests):
             (update_data, 183, 3, True, False, None),    # Updated data
             )
         msg = "Expexted {}, found {}."
-        await self.insert_fiscal_year()
 
         for items, year, month, valid, partial, expected in data:
             error = await self.tdp.organization(items, year, month)
@@ -153,15 +154,21 @@ class TestDataPreperation(BaseAsyncTests):
         """
         Test that the budget method inserts or updates budget data properly.
         """
+        await self.asyncTearDown()
+        await self.insert_fiscal_year()
+
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.fmf.panels['budget']
+            items = self.db.collect_panel_values(panel)
+
+        await self.insert_field_data(items)
+        await self.insert_months()
         year = 183
         month = 3
         msg = "Expected {}, found {}."
         items = self.db.cache.get(self.db._T_DATA, year=year, r_type='budget')
         # Should not have data
         self.assertEqual([], items, msg.format([], items))
-        await self.insert_fiscal_year()
-        await self.insert_field_data(self._BGT_DATA)
-        await self.insert_months()
         error = await self.tdp.budget(self._BGT_DATA, year, month)
         self.assertEqual(None, error, msg.format(None, error))
         items = self.db.cache.get(self.db._T_DATA, year=year, r_type='budget')
@@ -176,6 +183,8 @@ class TestDataPreperation(BaseAsyncTests):
         """
         Test that the monthly method inserts and updates records properly.
         """
+        await self.asyncTearDown()
+        await self.insert_fiscal_year()
         err_msg0 = "An unknown field '{}' was found in the monthly panel."
         err_msg1 = "The '{}' field(s) must not be empty."
         expect0 = (1, 1, (183, 3), 2, 1000, 0, 20, 'Joe Schmo', 0)
@@ -193,7 +202,6 @@ class TestDataPreperation(BaseAsyncTests):
 
         for year, mth_data, valid, expected in data:
             if valid:
-                await self.insert_fiscal_year()
                 error = await self.tdp.monthly(mth_data, year)
                 self.assertEqual(expected[1], error, msg.format(
                     expected[1], error))
@@ -219,6 +227,7 @@ class TestDataPreperation(BaseAsyncTests):
         """
         Test that the fiscal method updates the cache and DB.
         """
+        await self.asyncTearDown()
         data = {'data': [(183, 3, 5, 1, 1, 0)]}
         year = data['data'][0][0]
         month = data['data'][0][1]
@@ -241,6 +250,7 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the _first_run_initialization method initializes the database
         with all current panel data.
         """
+        await self.asyncTearDown()
         # First day of fiscal year.
         year = 183
         month = 3
@@ -271,6 +281,7 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the _enter_next_year method updates the previous fiscal
         year, updates this fiscal year, and inserts the next fiscal year.
         """
+        await self.asyncTearDown()
         items = {'data': [(182, 3, 5, 1, 1, 0), (183, 3, 5, 0, 0, 0)]}
         rowcount = await self.tdp.db.cache.insert(
             self.tdp.db._T_FISCAL_YEAR, items)
@@ -297,6 +308,7 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the _enter_previous_year method inserts the next
         fiscal year.
         """
+        await self.asyncTearDown()
         expected = (183, 3, 5, 0, 0, 0)
         rowcount = await self.tdp._enter_previous_year(183, 3, 5)
         self.assertEqual(1, rowcount)
@@ -377,8 +389,10 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the _insert_update_config_data_table method inserts or
         updates the config_date table.
         """
-        err_msg0 = "Could not find field {} in {}."
         await self.asyncTearDown()
+        await self.insert_fiscal_year()
+        await self.insert_months()
+        err_msg0 = "Could not find field {} in {}."
         data = {field: 0 for field in self.db.cache.ORG_FIELDS}
         rowcount = await self.db._add_fields_to_field_type_table(data)
         org_data = {'locality_prefix': 0, 'locale_name': 'New York',
@@ -400,8 +414,6 @@ class TestDataPreperation(BaseAsyncTests):
              err_msg0.format('INVALID_FIELD', invalid_field)),  # Invalid
             )
         msg = "Expected {}, found {}."
-        await self.insert_fiscal_year()
-        await self.insert_months()
 
         for year, month, r_type, items, expected in data:
             error, rowcount = await self.tdp._insert_update_config_data_table(
@@ -419,6 +431,7 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the _earliest_fiscal_year property returns the 1st fiscal
         year in the DB.
         """
+        await self.asyncTearDown()
         data = [(182, 3, 5, 0, 0, 0), (183, 3, 5, 1, 1, 0),
                 (184, 3, 5, 0, 0, 0)]
         rowcount = await self.tdp.db.cache.insert(
@@ -433,6 +446,7 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the _latest_fiscal_year property returns the 1st fiscal
         year in the DB.
         """
+        await self.asyncTearDown()
         data = [(182, 3, 5, 0, 0, 0), (183, 3, 5, 1, 1, 0),
                 (184, 3, 5, 0, 0, 0)]
         rowcount = await self.tdp.db.cache.insert(
@@ -447,8 +461,6 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the organization_data property returns the current year's
         organization data.
         """
-        await self.insert_data()
-        await self.tdp.db.cache.load()
         result = self.tdp.organization_data
         fields = result.keys()
 
@@ -460,26 +472,27 @@ class TestDataPreperation(BaseAsyncTests):
         """
         Test that the budget_data property returns the budget data.
         """
-        await self.insert_data()
-        await self.tdp.db.cache.load()
         result = self.tdp.budget_data
         fields = result.keys()
 
         for field in self.tdp.db.cache.budget_fields:
             self.assertIn(field, fields)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test_monthly_data(self):
         """
         Test that the monthly_data property returns the monthly data.
         """
-        await self.insert_data()
-        await self.tdp.db.cache.load()
+        mth_data = dict(self._MTH_DATA)
+        mth_data['month_index'] = 0
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels['monthly']
-            self.db.populate_panel_values('monthly', panel, self._MTH_DATA)
+            self.db.populate_panel_values('monthly', panel, mth_data)
             result = self.tdp.monthly_data
             fields = result.keys()
+            test_fields = [f for f, m in self.db.MONTHLY_FIELD_MAP.values()
+                           if f != 'cal_year_month']
 
-            print(fields)
+            for field in test_fields:
+                self.assertIn(field, fields)

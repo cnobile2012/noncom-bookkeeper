@@ -144,11 +144,11 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         rowcount = 0
 
         for table, data in TEST_DATA.items():
-            rowcount += await self.insert_all(table, data)
+            rowcount += await self.insert_table(table, data)
 
         return rowcount
 
-    async def insert_all(self, table_name: str, data: list) -> None:
+    async def insert_table(self, table_name: str, data: list) -> None:
         """
         Insert all date in a table.
 
@@ -158,12 +158,12 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         :rtype: int
         """
         match table_name:
-            case self.db._T_FIELD_TYPE:
-                rowcount = await self.db.insert_into_field_type_table(data)
-            case self.db._T_MONTH:
-                rowcount = await self.db.insert_into_month_table(data)
             case self.db._T_FISCAL_YEAR:
                 rowcount = await self.db.insert_into_fiscal_year_table(data)
+            case self.db._T_MONTH:
+                rowcount = await self.db.insert_into_month_table(data)
+            case self.db._T_FIELD_TYPE:
+                rowcount = await self.db.insert_into_field_type_table(data)
             case self.db._T_DATA:
                 rowcount = await self.db.insert_all_into_config_data_table(
                     data)
@@ -204,9 +204,14 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         """
         Insert fiscal year data in the DB.
         """
-        fy_data = {'data': TEST_DATA[self.db._T_FISCAL_YEAR]}
-        rowcount = await self.db.cache.insert(self.db._T_FISCAL_YEAR, fy_data)
-        self.assertEqual(len(fy_data['data']), rowcount)
+        rowcount = 0
+
+        if not self.db.cache.has_fiscal_cache_data:
+            fy_data = {'data': TEST_DATA[self.db._T_FISCAL_YEAR]}
+            rowcount = await self.db.cache.insert(self.db._T_FISCAL_YEAR,
+                                                  fy_data)
+            self.assertEqual(len(fy_data['data']), rowcount)
+
         return rowcount
 
     async def insert_field_data(self, data: dict) -> int:
