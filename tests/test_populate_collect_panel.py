@@ -155,18 +155,19 @@ class TestPopulateCollect(BaseAsyncTests):
             ('monthly', 7, mth_values, self._MTH_DATA),
             ('fiscal', 4, self._FY_DATA, self._FY_DATA),
             )
-        msg = "Expected '{}', found '{}'."
+        msg = "Expected '{}', panel_name '{}', found '{}'."
 
         with patch.object(self.db, '_mf', self.fmf):
             for panel_name, count, values, expected in data:
                 panel = self.fmf.panels[panel_name]
                 self.db.populate_panel_values(panel_name, panel, values)
                 result = self.db.collect_panel_values(panel)
-                self.assertEqual(count, len(result))
+                self.assertEqual(count, len(result), msg.format(
+                    count, panel_name, len(result)))
 
                 for field_name, value in expected.items():
                     self.assertEqual(value, result[field_name], msg.format(
-                        value, result[field_name]))
+                        value, panel_name, result[field_name]))
 
     #@unittest.skip("Temporarily skipped")
     async def test_populate_panel_values(self):
@@ -275,9 +276,9 @@ class TestPopulateCollect(BaseAsyncTests):
                         expected, result))
 
     #@unittest.skip("Temporarily skipped")
-    def test__find_child_sets(self):
+    def test_find_child_sets(self):
         """
-        Test that the _find_child_sets method correctly finds the children
+        Test that the find_child_sets method correctly finds the children
         in the panel that have data.
         """
         data = (
@@ -294,7 +295,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 widget_sets = 0
                 none_count = 0
 
-                for w0, w1 in self.db._find_child_sets(panel):
+                for w0, w1 in self.db.find_child_sets(panel):
                     self.assertIsNotNone(w0)
                     widget_sets += 1
 
@@ -443,7 +444,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 fiscal = self.fmf.panels['fiscal']
                 index = -1
 
-                for w0, w1 in self.db._find_child_sets(fiscal):
+                for w0, w1 in self.db.find_child_sets(fiscal):
                     if w1 is not None and w1[0] == 'ColorCheckBox':
                         index += 1
                         result = w1[2].GetValue()
@@ -468,7 +469,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 self.db.set_fiscal_panel(current, work_on, audit)
                 fiscal = self.fmf.panels['fiscal']
 
-                for w0, w1 in self.db._find_child_sets(fiscal):
+                for w0, w1 in self.db.find_child_sets(fiscal):
                     if w0[1] == expected[0]:
                         result = w1[2].GetValue()
                         self.assertEqual(expected[1], result, msg.format(
@@ -506,7 +507,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 self.db.update_monthly_panel(date_str)
                 monthly = self.fmf.panels['monthly']
 
-                for w0, w1 in self.db._find_child_sets(monthly):
+                for w0, w1 in self.db.find_child_sets(monthly):
                     if w1 is not None:
                         for field_name, value in expected.items():
                             if w0[1] == field_name:

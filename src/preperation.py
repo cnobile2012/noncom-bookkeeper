@@ -11,7 +11,6 @@ from geopy import exc
 from timezonefinder import TimezoneFinder
 
 from .config import TomlAppConfig
-from .utilities import StoreObjects
 
 
 class DataPreperation:
@@ -26,8 +25,6 @@ class DataPreperation:
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         self.db = db
-        so = StoreObjects()
-        self._mf = so.get_object('MainFrame')
 
     async def organization(self, data: dict, f_year: int, f_month: int
                            ) -> str | None:
@@ -43,14 +40,9 @@ class DataPreperation:
         error = None
 
         if data:
-            # Make sure all fields were entered.
-            empty_fields = [field for field, value in data.items()
-                            if value == '']
+            error = self._empty_fields('organization', data)
 
-            if len(empty_fields) != 0:
-                ef = ', '.join([f for f in empty_fields])
-                error = f"The '{ef}' field(s) must not be empty."
-            else:
+            if not error:
                 data, error = self._add_location_data(data)
 
                 if data:  # Adding location can have errors.
@@ -87,14 +79,12 @@ class DataPreperation:
                             await self._insert_update_config_data_table(
                                 f_year, month=f_month, r_type='organization',
                                 data=data))
+        else:
+            # If no organization data was entered.
+            error = ("Organization Information data must be entered before "
+                    "any other data can be entered.")
 
-            error and self._log.warning(error)
-            return error
-
-        # If no organization data was entered.
-        error = ("Organization Information data must be entered before "
-                 "any other data can be entered.")
-        self._log.warning(error)
+        error and self._log.warning(error)
         return error
 
     async def budget(self, data: dict, f_year: int, f_month: int
@@ -109,10 +99,15 @@ class DataPreperation:
         :returns: Any errors or None.
         :rtype: str or None
         """
-        error, rowcount = await self._insert_update_config_data_table(
-            f_year, month=f_month, r_type='budget', data=data)
-        self._log.debug("Inserted or updated %s row(s) of budget data.",
-                        rowcount)
+        error = self._empty_fields('budget', data)
+
+        if not error:
+            error, rowcount = await self._insert_update_config_data_table(
+                f_year, month=f_month, r_type='budget', data=data)
+            self._log.debug("Inserted or updated %s row(s) of budget data.",
+                            rowcount)
+
+        error and self._log.warning(error)
         return error
 
     async def monthly(self, data: dict, year: int) -> str | None:
@@ -124,51 +119,34 @@ class DataPreperation:
         :returns: Any errors or None with no errors.
         :rtype: str or None
         """
-        error = None
-        empty_fields = []
-        mapping = {field: self.db.MONTHLY_FIELD_MAP.get(
-            field, ('unknown', True)) for field in data}
+        error = self._empty_fields('monthly', data)
 
-        for field, (name, manditory) in mapping.items():
-            if name == 'unknown':
-                error = (f"An unknown field '{field}' was found in the "
-                         "monthly panel.")
-                self._log.critical(error)
-                assert name != 'unknown', error
+        if not error:
+            # empty_fields = []
+            mapping = {field: self.db.MONTHLY_FIELD_MAP.get(
+                field, 'unknown') for field in data}
+            items = {mapping[field]: value for field, value in data.items()}
+            date = self.db.convert_str_date(data['month_index'])
+            items['cal_year_month'] = date
+            record = ()
 
-        for field, value in data.items():
-            column, manditory = mapping[field]
+            for value in self.db.cache.get(self.db._T_MONTHLY, year=year):
+                if value[2] == date:
+                    record = value
+                    break
 
-            if manditory and value in self.db._EMPTY_FIELDS:
-                empty_fields.append(field)
-
-            if len(empty_fields) != 0:
-                ef = ', '.join([f for f in empty_fields])
-                error = f"The '{ef}' field(s) must not be empty."
-                self._log.warning(error)
-
-        items = {mapping[field][0]: value for field, value in data.items()}
-        date = self.db.convert_str_date(data['month_index'])
-        items['cal_year_month'] = date
-        record = ()
-
-        for value in self.db.cache.get(self.db._T_MONTHLY, year=year):
-            if value[2] == date:
-                record = value
-                break
-
-        if record:
-            values = {'year': year, 'data': items}
-            rowcount = await self.db.cache.update(
-                self.db._T_MONTHLY, values)
-            self._log.info("Updated %s table data: %s.",
-                           self.db._T_MONTHLY, values)
-        else:
-            values = {'year': year, 'data': items}
-            rowcount = await self.db.cache.insert(
-                self.db._T_MONTHLY, values)
-            self._log.info("Inserted %s table data: %s.",
-                           self.db._T_MONTHLY, values)
+            if record:
+                values = {'year': year, 'data': items}
+                rowcount = await self.db.cache.update(
+                    self.db._T_MONTHLY, values)
+                self._log.info("Updated %s table data: %s.",
+                               self.db._T_MONTHLY, values)
+            else:
+                values = {'year': year, 'data': items}
+                rowcount = await self.db.cache.insert(
+                    self.db._T_MONTHLY, values)
+                self._log.info("Inserted %s table data: %s.",
+                               self.db._T_MONTHLY, values)
 
         return error
 
@@ -190,6 +168,33 @@ class DataPreperation:
             self.db._T_FISCAL_YEAR, {'data': items})
         self._log.debug("Inserted %s row(s) of fiscal year data.", rowcount)
         return items
+
+    def _empty_fields(self, panel_name: str, data: dict) -> str | None:
+        """
+        Find the fields that are mandatory then create an error report.
+
+        :param str: panel_name: The name of the panel.
+        :param dict data: The date to check.
+        :returns: The error report.
+        :rtype: str or None
+        """
+        error = None
+        mandatory = []
+
+        for w0, w1 in self.db.find_child_sets(self.db._mf.panels[panel_name]):
+            if hasattr(w0[2], 'mandatory') and w0[2].mandatory:
+                mandatory.append(w0[1])
+            elif w1 and hasattr(w1[2], 'mandatory') and w1[2].mandatory:
+                mandatory.append(w0[1])
+
+        empty_fields = [field for field, value in data.items()
+                        if value == '' and field in mandatory]
+
+        if len(empty_fields) != 0:
+            ef = ', '.join([f for f in empty_fields])
+            error = f"The '{ef}' field(s) must not be empty."
+
+        return error
 
     async def _first_run_initialization(self, year: int, month: int, day: int):
         """
@@ -215,7 +220,7 @@ class DataPreperation:
         await self.db.cache.insert(self.db._T_MONTH, data)
 
         # Populate all panel fields in the database.
-        for name, panel in self._mf.panels.items():
+        for name, panel in self.db._mf.panels.items():
             if name in self._EXCLUDE_PANELS: continue
             panel_data = self.db.collect_panel_values(panel)
             await self.db._add_fields_to_field_type_table(panel_data)
@@ -367,7 +372,7 @@ class DataPreperation:
 
                 if pk is None:      # Error condition
                     error = f"Could not find field {field} in {data}."
-                    self._mf.statusbar_error = error
+                    self.db._mf.statusbar_error = error
                     self._log.error(error)
                     break
 
@@ -434,7 +439,7 @@ class DataPreperation:
         :returns: The monthly data as defined by {<field name>: <value>}.
         :rtype: dict
         """
-        panel = self._mf.panels['monthly']
+        panel = self.db._mf.panels['monthly']
         data = self.db.collect_panel_values(panel)
         value = data['month_index']
 

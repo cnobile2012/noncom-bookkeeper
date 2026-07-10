@@ -71,7 +71,7 @@ class PopulateCollect:
         data = self.collect_panel_values(panel)
         items = []
 
-        for w0, w1 in self._find_child_sets(panel):
+        for w0, w1 in self.find_child_sets(panel):
             if (w1 is None or not hasattr(w1[2], 'mandatory')
                 or not w1[2].mandatory):
                 continue
@@ -93,7 +93,7 @@ class PopulateCollect:
         data = {}
         panel_name = panel.__class__.__name__
 
-        for w0, w1 in self._find_child_sets(panel):
+        for w0, w1 in self.find_child_sets(panel):
             name0, field_name, widget0 = w0
             if name0 in self._EXCLUDE_WIDGETS: continue
 
@@ -139,7 +139,7 @@ class PopulateCollect:
                           the panel.
         """
         if data:  # When run after first time.
-            for w0, w1 in self._find_child_sets(panel):
+            for w0, w1 in self.find_child_sets(panel):
                 name0, field_name, widget0 = w0
                 if name0 in self._EXCLUDE_WIDGETS: continue
                 value = data.get(field_name)
@@ -216,7 +216,7 @@ class PopulateCollect:
 
         return value
 
-    def _find_child_sets(self, panel: wx.Panel) -> list:
+    def find_child_sets(self, panel: wx.Panel) -> list:
         """
         Find the children in the panel that have data.
 
@@ -280,7 +280,7 @@ class PopulateCollect:
             "Can only pass the 'panel' or the 'w0' arguments.")
 
         if not w0:  # First time run.
-            widget = [w0[2] for w0, w1 in self._find_child_sets(panel)
+            widget = [w0[2] for w0, w1 in self.find_child_sets(panel)
                       if w0[0] == 'ComboBox'][0]
         else:
             widget = w0[2]
@@ -413,7 +413,7 @@ class PopulateCollect:
 
     def set_fiscal_panel(self, current: bool, work_on: bool, audit: bool
                          ) -> None:
-        for w0, w1 in self._find_child_sets(self._mf.panels['fiscal']):
+        for w0, w1 in self.find_child_sets(self._mf.panels['fiscal']):
             if w1 is None:  # Only on a ComboBox
                 continue
 

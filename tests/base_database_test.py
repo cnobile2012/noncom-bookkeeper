@@ -112,6 +112,12 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                  'total_membership_this_month': '20',
                  'treasurer_this_month': 'Joe Schmo',
                  'locality_prefix_month': 0}
+    _MTH_EMPTY = {'month_index': '183-03 Jamál', 'participation': '',
+                  'outstanding_bills': '',
+                  'end_of_month_cash_on_hand': '',
+                  'total_membership_this_month': '',
+                  'treasurer_this_month': '',
+                  'locality_prefix_month': 0}
     _FY_DATA = {'fiscal_year_choice': 0, 'current_fiscal_year': False,
                 'work_on_this_fiscal_year': False, 'audit_complete': False}
 

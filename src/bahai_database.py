@@ -40,13 +40,13 @@ class Database(BaseDatabase):
     Create, and update the database for the Bahá'í Bookkeeping application.
     """
     # Map the panel field names to DB column names.
-    MONTHLY_FIELD_MAP = {'month_index': ('cal_year_month', True),
-                         'participation': ('participation', False),
-                         'outstanding_bills': ('outstanding', False),
-                         'end_of_month_cash_on_hand': ('coh', False),
-                         'total_membership_this_month': ('membership', False),
-                         'treasurer_this_month': ('treasurer', True),
-                         'locality_prefix_month': ('locality', True)}
+    MONTHLY_FIELD_MAP = {'month_index': 'cal_year_month',
+                         'participation': 'participation',
+                         'outstanding_bills': 'outstanding',
+                         'end_of_month_cash_on_hand': 'coh',
+                         'total_membership_this_month': 'membership',
+                         'treasurer_this_month': 'treasurer',
+                         'locality_prefix_month': 'locality'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
