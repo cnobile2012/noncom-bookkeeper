@@ -99,15 +99,19 @@ class DataPreperation:
         :returns: Any errors or None.
         :rtype: str or None
         """
-        error = self._empty_fields('budget', data)
+        error = None
 
-        if not error:
-            error, rowcount = await self._insert_update_config_data_table(
-                f_year, month=f_month, r_type='budget', data=data)
-            self._log.debug("Inserted or updated %s row(s) of budget data.",
-                            rowcount)
+        if f_year and f_month:
+            error = self._empty_fields('budget', data)
 
-        error and self._log.warning(error)
+            if not error:
+                error, rowcount = await self._insert_update_config_data_table(
+                    f_year, month=f_month, r_type='budget', data=data)
+                self._log.debug("Inserted or updated %s row(s) of "
+                                "budget data.", rowcount)
+
+            error and self._log.warning(error)
+
         return error
 
     async def monthly(self, data: dict, year: int) -> str | None:
@@ -119,55 +123,66 @@ class DataPreperation:
         :returns: Any errors or None with no errors.
         :rtype: str or None
         """
-        error = self._empty_fields('monthly', data)
+        if data:
+            error = self._empty_fields('monthly', data)
 
-        if not error:
-            # empty_fields = []
-            mapping = {field: self.db.MONTHLY_FIELD_MAP.get(
-                field, 'unknown') for field in data}
-            items = {mapping[field]: value for field, value in data.items()}
-            date = self.db.convert_str_date(data['month_index'])
-            items['cal_year_month'] = date
-            record = ()
+            if not error:
+                # empty_fields = []
+                mapping = {field: self.db.MONTHLY_FIELD_MAP.get(
+                    field, 'unknown') for field in data}
+                items = {mapping[field]: val for field, val in data.items()}
+                date = self.db.convert_str_date(data['month_index'])
+                items['cal_year_month'] = date
+                record = ()
 
-            for value in self.db.cache.get(self.db._T_MONTHLY, year=year):
-                if value[2] == date:
-                    record = value
-                    break
+                for value in self.db.cache.get(self.db._T_MONTHLY, year=year):
+                    if value[2] == date:
+                        record = value
+                        break
 
-            if record:
-                values = {'year': year, 'data': items}
-                rowcount = await self.db.cache.update(
-                    self.db._T_MONTHLY, values)
-                self._log.info("Updated %s table data: %s.",
-                               self.db._T_MONTHLY, values)
-            else:
-                values = {'year': year, 'data': items}
-                rowcount = await self.db.cache.insert(
-                    self.db._T_MONTHLY, values)
-                self._log.info("Inserted %s table data: %s.",
-                               self.db._T_MONTHLY, values)
+                if record:
+                    values = {'year': year, 'data': items}
+                    rowcount = await self.db.cache.update(
+                        self.db._T_MONTHLY, values)
+                    self._log.info("Updated %s table data: %s.",
+                                self.db._T_MONTHLY, values)
+                else:
+                    values = {'year': year, 'data': items}
+                    rowcount = await self.db.cache.insert(
+                        self.db._T_MONTHLY, values)
+                    self._log.info("Inserted %s table data: %s.",
+                                self.db._T_MONTHLY, values)
 
         return error
 
-    async def fiscal(self, data: dict, f_year: int, f_month: int) -> list:
+    async def fiscal(self, data: dict, date: tuple) -> list:
         """
         Converts panel data to data appropreate for updating the fiscal year
         table in the database, then update it.
 
         :param dict data: Panel data.
-        :param int f_year: The current fiscal year.
-        :param int f_month: The current fiscal year month.
-        :returns: The updated fiscal year data.
-        :rtype: list
+        :param tuple date: The current fiscal year date.
+        :returns: Any errors or None with no errors.
+        :rtype: str or None
         """
-        items = [(f_year, f_month, 1, data['current_fiscal_year'],
-                  data['work_on_this_fiscal_year'], data['audit_complete'])]
-        values = {'year': f_year, 'data': items}
-        rowcount = await self.db.cache.update(
-            self.db._T_FISCAL_YEAR, {'data': items})
-        self._log.debug("Inserted %s row(s) of fiscal year data.", rowcount)
-        return items
+        error = None
+
+        if data:
+            items = [(*date, data['current_fiscal_year'],
+                      data['work_on_this_fiscal_year'],
+                      data['audit_complete'])]
+            values = {'year': date[0], 'data': items}
+            rowcount = await self.db.cache.update(self.db._T_FISCAL_YEAR,
+                                                  {'data': items})
+            self._log.debug("Updated %s row(s) of fiscal year data.", rowcount)
+
+            if rowcount != 1:
+                error = "Failed to update any fiscal year data."
+        else:
+            error = "No data submitted."
+
+        error and self._log.error(error)
+        return error
 
     def _empty_fields(self, panel_name: str, data: dict) -> str | None:
         """
@@ -441,12 +456,7 @@ class DataPreperation:
         """
         panel = self.db._mf.panels['monthly']
         data = self.db.collect_panel_values(panel)
-        value = data['month_index']
-
-        if isinstance(value, int):
-            value = self.db.year_month_by_index(value, self.db.cache.year)
-
-        date = self.db.convert_str_date(value)
+        date = self.db.convert_str_date(data['month_index'])
         items = self.db.cache.get(self.db._T_MONTHLY, r_type=date)
         values = {}
 

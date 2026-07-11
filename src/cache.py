@@ -283,7 +283,7 @@ class Cache:
             case self.db._T_MONTHLY:
                 data = self._store.get(year, {}).get(self.db._T_MONTHLY, [])
 
-                if r_type:
+                if r_type:  # This is the cal_year_month cloumn.
                     for month in data:
                         if month[2] == r_type:
                             data = [month]
@@ -363,5 +363,6 @@ class Cache:
                 self._log.error("Invalid table name %s.", table_name)
                 rowcount = 0
 
-        self._log.info("Updated data in the %s table.", table_name)
+        self._log.info("Updated '%s' row(s) of data in the %s table.",
+                       rowcount, table_name)
         return rowcount

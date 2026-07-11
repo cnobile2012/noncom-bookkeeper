@@ -61,43 +61,33 @@ class TestDataPreperation(BaseAsyncTests):
         update_data = dict(full_data)
         update_data['total_membership'] = '25'
         data = (
-            ({}, None, None, False, False, err_msg0),    # No data
-            (part_data, 183, 3, False, True, err_msg1.format(
-                "locale_name, treasurer")),              # Partial data
-            (full_data, None, None, True, False, None),  # Full data
-            (update_data, 183, 3, True, False, None),    # Updated data
+            ({}, None, None, False, err_msg0),    # No data
+            (part_data, 183, 3, False, err_msg1.format(
+                "locale_name, treasurer")),       # Partial data
+            (full_data, None, None, True, None),  # Full data
+            (update_data, 183, 3, True, None),    # Updated data
             )
         msg = "Expexted {}, found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
-            for items, year, month, valid, partial, expected in data:
+            for items, year, month, valid, expected in data:
                 error = await self.tdp.organization(items, year, month)
 
-                if valid:
-                    if partial:
-                        self.assertEqual(expected, error)
-                        file_data = self.read_text_file(self.log_path)
-                        result = self.find_text(
-                            file_data, 'testing preperation organization',
-                            2, expected)
-                        self.assertIn(expected, result, msg.format(
-                            expected, result))
-                    else:  # Current Year (full_data)
-                        self.assertEqual(expected, error)
-                        fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR,
-                                                year=183)
-                        self.assertEqual(1, len(fy0), msg.format(
-                            expected, len(fy0)))
-                        fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR,
-                                                year=184)
-                        self.assertEqual(1, len(fy0), msg.format(
-                            expected, len(fy0)))
-                        months = self.db.cache.get(self.db._T_MONTH)
-                        self.assertEqual(20, len(months), msg.format(
-                            20, len(months)))
-                        fields = self.db.cache.get(self.db._T_FIELD_TYPE)
-                        self.assertEqual(45, len(fields), msg.format(
-                            45, len(fields)))
+                if valid and not error:
+                    # Current Year (full_data)
+                    self.assertEqual(expected, error)
+                    fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=183)
+                    self.assertEqual(1, len(fy0), msg.format(
+                        expected, len(fy0)))
+                    fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR, year=184)
+                    self.assertEqual(1, len(fy0), msg.format(
+                        expected, len(fy0)))
+                    months = self.db.cache.get(self.db._T_MONTH)
+                    self.assertEqual(20, len(months), msg.format(
+                        20, len(months)))
+                    fields = self.db.cache.get(self.db._T_FIELD_TYPE)
+                    self.assertEqual(45, len(fields), msg.format(
+                        45, len(fields)))
                 else:
                     self.assertEqual(expected, error)
                     file_data = self.read_text_file(self.log_path)
@@ -131,29 +121,25 @@ class TestDataPreperation(BaseAsyncTests):
             (next_sofy, 183, 3, (183, 184, 185), None),  # Next year
             )
         msg = "Expexted {}, found {}."
-        fys = [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]
-        rowcount = await self.tdp.db.cache.insert(
-            self.tdp.db._T_FISCAL_YEAR, {'data': fys})
 
         with patch.object(self.db, '_mf', self.fmf):
             for date, year, month, years, expected in data:
                 org_data['start_of_fiscal_year'] = date
                 error = await self.tdp.organization(org_data, year, month)
 
-                if expected is None:
-                    self.assertEqual(expected, error)
+                if not error:
                     # Current field previous year
                     fy0 = self.db.cache.get(self.db._T_FISCAL_YEAR,
-                                            year=years[0])
-                    self.assertEqual(0, fy0[0][4], msg.format(0, fy0[0][4]))
+                                            year=years[0])[0]
+                    self.assertEqual(0, fy0[4], msg.format(0, fy0[4]))
                     # Current field current year
                     fy1 = self.db.cache.get(self.db._T_FISCAL_YEAR,
-                                            year=years[1])
-                    self.assertEqual(1, fy1[0][4], msg.format(1, fy1[0][4]))
+                                            year=years[1])[0]
+                    self.assertEqual(1, fy1[4], msg.format(1, fy1[4]))
                     # Current field next year
                     fy2 = self.db.cache.get(self.db._T_FISCAL_YEAR,
-                                            year=years[2])
-                    self.assertEqual(0, fy2[0][4], msg.format(0, fy2[0][4]))
+                                            year=years[2])[0]
+                    self.assertEqual(0, fy2[4], msg.format(0, fy2[4]))
                 else:
                     self.assertEqual(expected, error, msg.format(
                         expected, error))
@@ -205,12 +191,14 @@ class TestDataPreperation(BaseAsyncTests):
         err_msg0 = "An unknown field '{}' was found in the monthly panel."
         err_msg1 = "The '{}' field(s) must not be empty."
         expect0 = (1, 1, (183, 3), 2, 1000, 0, 20, 'Joe Schmo', 0)
-        bad_mth_data = dict(self._MTH_DATA)
-        bad_mth_data['bad_field'] = 9999
+        expect1 = (1, 1, (183, 3), 5, 1000, 0, 20, 'Joe Schmo', 0)
+        updated_data = dict(self._MTH_DATA)
+        updated_data['participation'] = '5'
         mis_mth_data = dict(self._MTH_DATA)
         mis_mth_data['treasurer_this_month'] = ''
         data = (
             (183, self._MTH_DATA, True, (expect0, None)),
+            (183, updated_data, True, (expect1, None)),
             (183, mis_mth_data, False,
              (None, err_msg1.format('treasurer_this_month'))),
             )
@@ -245,21 +233,41 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the fiscal method updates the cache and DB.
         """
         await self.asyncTearDown()
-        data = {'data': [(183, 3, 5, 1, 1, 0)]}
-        year = data['data'][0][0]
-        month = data['data'][0][1]
+        err_msg0 = "No data submitted."
+        err_msg1 = "Failed to update any fiscal year data."
+        fy_data = {'data': [(183, 3, 5, 1, 1, 0)]}
+        fy_date = fy_data['data'][0][:3]
         rowcount = await self.tdp.db.cache.insert(
-            self.tdp.db._T_FISCAL_YEAR, data)
+            self.tdp.db._T_FISCAL_YEAR, fy_data)
         self.assertEqual(1, rowcount)
-        updated_data = {'current_fiscal_year': 0,
-                        'work_on_this_fiscal_year': 0, 'audit_complete': 1}
-        result = await self.tdp.fiscal(updated_data, year, month)
-        cfy = result[0][3]
-        wotfy = result[0][4]
-        ac = result[0][5]
-        self.assertEqual(updated_data['current_fiscal_year'], cfy)
-        self.assertEqual(updated_data['work_on_this_fiscal_year'], wotfy)
-        self.assertEqual(updated_data['audit_complete'], ac)
+        updated = {'current_fiscal_year': 0, 'work_on_this_fiscal_year': 0,
+                   'audit_complete': 1}
+        field_name_idx = zip(list(updated.keys()), [4, 5, 6])
+        data = (
+            (updated, fy_date, True, 1),
+            ({}, fy_date, False, err_msg0),
+            (updated, (184, 3, 5), False, err_msg1),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        for updated_data, date, valid, expected in data:
+            if valid:
+                error = await self.tdp.fiscal(updated_data, date)
+                self.assertIsNone(error, f"Expected 'None', found '{error}'.")
+                result = self.db.cache.get(self.db._T_FISCAL_YEAR,
+                                           year=date[0])
+                self.assertEqual(expected, len(result), msg.format(
+                    expected, len(result)))
+
+                for fn, idx in field_name_idx:
+                    value0 = updated_data[fn]
+                    value1 = result[0][idx]
+                    self.assertEqual(value0, value1, msg.format(
+                        value0, fn, value1))
+            else:
+                error = await self.tdp.fiscal(updated_data, date)
+                self.assertEqual(expected, error,
+                    f"Expected '{expected}', found '{error}'.")
 
     #@unittest.skip("Temporarily skipped")
     async def test__empty_fields(self):

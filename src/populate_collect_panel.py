@@ -102,8 +102,8 @@ class PopulateCollect:
                     data[field_name] = widget0.GetStringSelection()
                 else:
                     data[field_name] = widget0.GetSelection()
-            elif name0 in ('ColorCheckBox',):
-                data[field_name] = widget0.GetValue()
+            # elif name0 in ('ColorCheckBox',):
+            #     data[field_name] = widget0.GetValue()
             elif name0 == 'StaticText':
                 name1, _, widget1 = w1
                 value = widget1.GetValue()

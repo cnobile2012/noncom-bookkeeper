@@ -252,28 +252,24 @@ class TestBaseDatabase(BaseAsyncTests):
             self.assertEqual('183-184', panel.GetChildren()[3].GetString(1))
 
     #@unittest.skip("Temporarily skipped")
-    async def test_save_to_database(self):
+    async def test_save_to_database_config_data(self):
         """
-        Test that the save_to_database method inserts or updates panel
-        data in the database.
+        Test that the save_to_database method inserts or updates organization
+         and budget panel data in the database.
         """
         await self.asyncTearDown()
         await self.insert_months()
+        await self.insert_fiscal_year()
+        fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
+        year, month = fy[1:3]
         err_msg0 = "The '{}' field(s) must not be empty."
-        err_msg1 = ""
         org_data = dict(self._ORG_DATA)
         org_data['locality_prefix'] = str(org_data['locality_prefix'])
-        org_data['start_of_fiscal_year'] = str(org_data['start_of_fiscal_year'])
-        org_data.pop('iana_name')
-        org_data.pop('latitude')
-        org_data.pop('longitude')
-        mth_data = {}
-
-        for p_fld, db_fld in self.db.MONTHLY_FIELD_MAP.items():
-            mth_data[db_fld] = self._MTH_DATA.get(p_fld)
-
-        mth_data['month_index'] = 1
-        mth_data['cal_year_month'] = (183, 3)
+        org_data['start_of_fiscal_year'] = str(
+            org_data['start_of_fiscal_year'])
+        org_data['iana_name'] = 'America/New_York'
+        org_data['latitude'] = '40.7127281'
+        org_data['longitude'] = '-74.0060152'
         data = (
             ('organization', self._ORG_EMPTY, {}, False,
              err_msg0.format("locale_name, total_membership, treasurer, "
@@ -285,57 +281,118 @@ class TestBaseDatabase(BaseAsyncTests):
                              "total_membership_beginning_of_year, "
                              "monetary_contributions")),
             ('budget', {}, self._BGT_DATA, True, len(self._BGT_DATA)),
-            ('monthly', self._MTH_EMPTY, {}, False, err_msg0.format(
-                "total_membership_this_month, treasurer_this_month")),
-            ('monthly', {}, mth_data, True, 1),
-            #('fiscal', ),
             )
-        msg = "Expexted '{}', field name '{}', found '{}'."
+        msg = "Expexted '{}', found '{}'."
 
         with patch.object(self.db, '_mf', self.fmf):
-            await self.insert_fiscal_year()
-            fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
-
-            for panel_name, pre_pop, values, valid, expected in data:
+            for panel_name, pre_poplt, values, valid, expected in data:
                 panel = self.db._mf.panels.get(panel_name)
 
-                if pre_pop:
-                    self.db.populate_panel_values(panel_name, panel, pre_pop)
-
-                if valid and panel_name in ('organization', 'budget'):
-                    items = self.db.collect_panel_values(panel)
-                    await self.insert_field_data(items)
-                    items = {'year': fy[1], 'month': fy[2], 'data': values}
-                    rc = await self.db.cache.insert(self.db._T_DATA, items)
-                    self.assertEqual(expected, rc, msg.format(
-                        expected, 'Not Needed', rc))
-                elif valid and panel_name == 'monthly':
-                    items = {'year': fy[1], 'data': values}
-                    rc = await self.db.cache.insert(self.db._T_MONTHLY, items)
-                    self.assertEqual(expected, rc, msg.format(
-                        expected, 'Not Needed', rc))
-
-                error = await self.db.save_to_database(panel_name, panel)
-
                 if valid:
-                    panels = {panel_name: panel}
-                    await self.db._populate_config_data_panels(fy[1], panels)
+                    self.db.populate_panel_values(panel_name, panel, values)
+                    items = self.db.collect_panel_values(panel)
+                    error = await self.db.save_to_database(panel_name, panel)
+                    self.assertIsNone(error, f"Expected 'none', found {error}")
+                    result = self.db.cache.get(self.db._T_DATA, year=year,
+                                               r_type=panel_name)
 
-                    if panel_name in ('organization', 'budget'):
-                        result = self.db.cache.get(self.db._T_DATA, year=fy[1],
-                                                   r_type=panel_name)
-                    elif panel_name == 'monthly':
-                        result = self.db.cache.get(self.db._T_MONTHLY,
-                                                   year=fy[1])
-
-                    for field, value in org_data.items():
+                    for field, value in values.items():
                         for record in result:
                             if field == record[1]:
                                 self.assertEqual(value, record[2], msg.format(
                                     value, field, record[2]))
                 else:
+                    self.db.populate_panel_values(panel_name, panel, pre_poplt)
+                    error = await self.db.save_to_database(panel_name, panel)
                     self.assertEqual(expected, error, msg.format(
-                        expected, 'Not Needed', error))
+                        expected, error))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_save_to_database_monthly(self):
+        """
+        Test that the save_to_database method inserts or updates the monthly
+        panel data in the database.
+        """
+        await self.asyncTearDown()
+        await self.insert_months()
+        await self.insert_fiscal_year()
+        fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
+        year, month = fy[1:3]
+        err_msg0 = "The '{}' field(s) must not be empty."
+        mth_data = dict(self._MTH_DATA)
+        mth_data['month_index'] = 1
+        data = (
+            ('monthly', self._MTH_EMPTY, {}, False, err_msg0.format(
+                "total_membership_this_month, treasurer_this_month")),
+            ('monthly', {}, mth_data, True, 1),
+            )
+        msg = "Expexted '{}', found '{}'."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for panel_name, pre_poplt, values, valid, expected in data:
+                panel = self.db._mf.panels.get(panel_name)
+
+                if valid:
+                    self.db.populate_panel_values(panel_name, panel, values)
+                    items = self.db.collect_panel_values(panel)
+                    error = await self.db.save_to_database(panel_name, panel)
+                    self.assertIsNone(error, f"Expected 'none', found {error}")
+                    result = self.db.cache.get(self.db._T_MONTHLY, year=year)
+                    self.assertEqual(expected, len(result), msg.format(
+                        expected, len(result)))
+                else:
+                    self.db.populate_panel_values(panel_name, panel, pre_poplt)
+                    error = await self.db.save_to_database(panel_name, panel)
+                    self.assertEqual(expected, error, msg.format(
+                        expected, error))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_save_to_database_fiscal(self):
+        """
+        Test that the save_to_database method inserts or updates panel
+        data in the database.
+        """
+        await self.asyncTearDown()
+        await self.insert_months()
+        err_msg0 = "Failed to update any fiscal year data."
+        fy_data = dict(self._FY_DATA)
+        fy_data['work_on_this_fiscal_year'] = True
+        fy_data['audit_complete'] = True
+        field_names = [name for name in fy_data if not name.startswith('fisc')]
+        field_name_idx = zip(field_names, [4, 5, 6])
+        data = (
+            ('fiscal', fy_data, False, err_msg0),
+            ('fiscal', fy_data, True, 1),
+            )
+        msg = "Expexted '{}', field_name '{}', found '{}'."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for panel_name, values, valid, expected in data:
+                panel = self.db._mf.panels.get(panel_name)
+
+                if valid:
+                    await self.insert_fiscal_year()
+                    fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
+                    year, month = fy[1:3]
+                    self.db.populate_panel_values(panel_name, panel, values)
+                    items = self.db.collect_panel_values(panel)
+                    error = await self.db.save_to_database(panel_name, panel)
+                    self.assertIsNone(error, f"Expected 'none', found {error}")
+                    result = self.db.cache.get(self.db._T_FISCAL_YEAR,
+                                               year=year)
+                    size = len(result)
+                    self.assertEqual(expected, size,
+                                     f"Expected {expected}, found {size}.")
+
+                    for fn, idx in field_name_idx:
+                        value0 = values[fn]
+                        value1 = result[0][idx]
+                        self.assertEqual(value0, value1, msg.format(
+                            value0, fn, value1))
+                else:
+                    error = await self.db.save_to_database(panel_name, panel)
+                    self.assertEqual(expected, error,
+                                     f"Expected '{expected}, found '{error}'.")
 
     @unittest.skip("Temporarily skipped")
     async def test_get_work_on_fiscal_year(self):

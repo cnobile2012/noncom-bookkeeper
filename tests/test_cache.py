@@ -229,6 +229,15 @@ class TestCache(BaseAsyncTests):
         self.assertEqual(expected, result)
 
     #@unittest.skip("Temporarily skipped")
+    def test_get_all_fiscal_years(self):
+        """
+        Test that the get_all_fiscal_years method returns all fiscal year
+        records in the cache.
+        """
+        result = self.db.cache.get_all_fiscal_years()
+        self.assertEqual(2, len(result))
+
+    #@unittest.skip("Temporarily skipped")
     def test_get(self):
         """
         Test that the get method returns the correct data depending on the
@@ -242,7 +251,8 @@ class TestCache(BaseAsyncTests):
             (183, self.db._T_DATA, None, True, ('iana_name', 'cash_in_bank')),
             (184, self.db._T_FISCAL_YEAR, None, True, 184),
             (183, self.db._T_MONTH, None, True, 'Ayyám-i-Há'),
-            #(183, self.db._T_MONTHLY, None, True, 'Joe Shmo'),
+            (183, self.db._T_MONTHLY, None, True, 'Joe Schmo'),
+            (183, self.db._T_MONTHLY, (183, 6), True, 'Joe Schmo'),
             (183, self.db._T_DATA, 'invalid', False,
              err_msg0.format('invalid')),
             )
@@ -263,7 +273,7 @@ class TestCache(BaseAsyncTests):
                     case self.db._T_MONTH:
                         test_fields = [item[1] for item in result]  # month
                     case self.db._T_MONTHLY:
-                        test_fields = [item[5] for item in result]  # treasurer
+                        test_fields = [item[7] for item in result]  # treasurer
 
                 if isinstance(expected, tuple):
                     self.assertIn(expected[0], test_fields, msg.format(
@@ -298,12 +308,20 @@ class TestCache(BaseAsyncTests):
             'location_city_name': 'New York', 'longitude': -74.0060152,
             'start_of_fiscal_year': '183-03-05', 'total_membership': '20',
             'treasurer': '<your treasurer>'}}
+        mth_data = {'year': 183}
+
+        for key, field in self.db.MONTHLY_FIELD_MAP.items():
+            mth_data.setdefault('data', {})[field] = self._MTH_DATA[key]
+
+        mth_data['data']['cal_year_month'] = self.db.convert_str_date(
+            mth_data['data']['cal_year_month'])
+
         data = (
             (self.db._T_FIELD_TYPE, {'data': self.db.cache.ORG_FIELDS}, 9),
             (self.db._T_MONTH, t_month, 20),
             (self.db._T_FISCAL_YEAR, t_fs, 2),
             (self.db._T_DATA, t_data, 9),
-            #(self.db._T_MONTHLY, None, 20),
+            (self.db._T_MONTHLY, mth_data, 1),
             ('InvalidTable', {}, 0)
             )
         msg = "Expected {}, found {}"
@@ -322,18 +340,28 @@ class TestCache(BaseAsyncTests):
         t_fs = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
         data = self.db.cache.get(self.db._T_DATA, year=183,
                                  r_type='organization')
-        t_data = {'data': []}
+        t_data = {}
 
         for item in data:
             if item[1] == 'total_membership':
-                t_data['data'].append((item[0], '25'))
+                t_data.setdefault('data', []).append((item[0], '25'))
             elif item[1] == 'treasurer':
-                t_data['data'].append((item[0], '<a different treasurer>'))
+                t_data.setdefault('data', []).append(
+                    (item[0], '<a different treasurer>'))
+
+        mth_data = {'year': 183}
+
+        for key, field in self.db.MONTHLY_FIELD_MAP.items():
+            mth_data.setdefault('data', {})[field] = self._MTH_DATA[key]
+
+        mth_data['data']['cal_year_month'] = self.db.convert_str_date(
+            mth_data['data']['cal_year_month'])
+        mth_data['participation'] = '4'
 
         data = (
             (self.db._T_FISCAL_YEAR, t_fs, 2),
             (self.db._T_DATA, t_data, 2),
-            #(self.db._T_MONTHLY, None, 20),
+            (self.db._T_MONTHLY, mth_data, 1),
             ('InvalidTable', {}, 0)
             )
         msg = "Expected {}, found {}"

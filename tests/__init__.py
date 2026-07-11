@@ -21,6 +21,7 @@ PATH = os.path.join(BASE_DIR, 'logs')
 
 
 def setup_logging():
+    # *** TODO *** Make the file a cache not on disk.
     from src import Logger
 
     log_path = os.path.abspath(os.path.join(BASE_DIR, 'logs'))

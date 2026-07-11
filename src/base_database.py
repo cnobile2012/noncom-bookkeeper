@@ -365,22 +365,19 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         error = None
         fy = self.get_work_on_fiscal_year()
-        f_year, f_month = (None, None) if fy is None else fy[1:3]
+        f_year, f_month, f_day = (None, None, None) if fy is None else fy[1:4]
         data = self.collect_panel_values(panel)
 
         if panel_name == 'organization':
             error = await self.dp.organization(data, f_year, f_month)
         elif panel_name == 'budget':
-            if f_year and f_month:
-                error = await self.dp.budget(data, f_year, f_month)
+            error = await self.dp.budget(data, f_year, f_month)
         elif panel_name == 'monthly':
-            if data:
-                error = await self.dp.monthly(data, f_year)
+            error = await self.dp.monthly(data, f_year)
         elif panel_name == 'fiscal':
-            data = await self.dp.fiscal(data, f_year, f_month)
-            f_year = f_month = None
-        elif panel_name == 'fiscal_settings':
-            f_year = f_month = None
+            error = await self.dp.fiscal(data, (f_year, f_month, f_day))
+        # elif panel_name == 'fiscal_settings':
+        #     f_year = f_month = None
 
         await self.populate_panels()
         return error
