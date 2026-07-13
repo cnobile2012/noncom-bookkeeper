@@ -102,12 +102,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         pos += 2
 
         while title_data is not None and labels is not None:
-            title = title_data[0]
-            num_cb = title_data[1]
-            num_txt = title_data[2]
-            cb_pos = title_data[3]
-            span = title_data[4]
-            btn = title_data[5]
+            title, num_cb, num_txt, cb_pos, span, btn = title_data[:6]
             button, pos = self._make_heading(title, pos, span=span, btn=btn)
             pos = self.create_widgets(num_cb, num_txt, cb_pos, labels, pos)
 
@@ -122,8 +117,60 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
             title_data, labels = self._next_title_and_labels(title_gen,
                                                              label_gen)
 
+        line = wx.StaticLine(self, wx.ID_ANY)
+        line.SetBackgroundColour(self.w_fg_color)
+        self.gbs.Add(line, (pos, 0), (1, 2), wx.EXPAND | wx.TOP | wx.BOTTOM, 4)
+        pos += 1
+        panel_0 = wx.Panel(self)
+        sizer_1 = wx.StdDialogButtonSizer()
+        save_wgt = wx.Button(panel_0, wx.ID_FORWARD, label='&Save')
+        save_wgt.SetMinSize([-1, -1])
+        save_wgt.SetBackgroundColour(wx.Colour(*(50, 50, 204)))
+        save_wgt.Bind(wx.EVT_BUTTON, self.button_save)
+        cancel_wgt = wx.Button(panel_0, wx.ID_CANCEL, label='')
+        cancel_wgt.SetMinSize([-1, -1])
+        cancel_wgt.SetBackgroundColour(wx.Colour(*(50, 50, 204)))
+        sizer_1.AddButton(save_wgt)
+        cancel_wgt.Bind(wx.EVT_BUTTON, self.button_cancel)
+        sizer_1.AddButton(cancel_wgt)
+        sizer_1.Realize()
+        panel_0.SetSizer(sizer_1)
+        self.gbs.Add(panel_0, (pos, 0), (1, 1), wx.EXPAND | wx.ALL, 10)
+
         self.SetupScrolling(rate_x=20, rate_y=40)
         self.Hide()
+
+    def button_save(self, event):
+        self.save = True
+        event.Skip()
+
+    @property
+    def save(self):
+        return self._save
+
+    @save.setter
+    def save(self, value):
+        if self.dirty:
+            mf = self._so.get_object('MainFrame')
+            mf.statusbar_message = 'Saving data.'
+
+        self._save = value
+
+    def button_cancel(self, event):
+        self.cancel = True
+        event.Skip()
+
+    @property
+    def cancel(self):
+        return self._cancel
+
+    @cancel.setter
+    def cancel(self, value):
+        if self.dirty:
+            mf = self._so.get_object('MainFrame')
+            mf.statusbar_message = 'Restoring data.'
+
+        self._cancel = value
 
     def _title_generator(self):
         return (title_data for title_data in self._tmd.data_entry_title_data)

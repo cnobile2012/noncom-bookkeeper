@@ -435,7 +435,7 @@ class PopulateCollect:
 
         :param str date_str: The string value from the ComboBox.
         """
-        panel = self._mf.panels.get('monthly')
+        panel = self._mf.panels['monthly']
         date = self.convert_str_date(date_str)
         mon_idx = self.index_of_calendar_year(date)
         values = ()  # Used when no monthly data has been generated.

@@ -155,7 +155,7 @@ class DataPreperation:
 
         return error
 
-    async def fiscal(self, data: dict, date: tuple) -> list:
+    async def fiscal(self, data: dict, date: tuple) -> str | None:
         """
         Converts panel data to data appropreate for updating the fiscal year
         table in the database, then update it.
@@ -183,6 +183,17 @@ class DataPreperation:
 
         error and self._log.error(error)
         return error
+
+    async def ledger(self, data: dict, date: tuple) -> str | None:
+        """
+        Inserts and updates ledget data.
+
+        :param dict data: Panel data.
+        ::param tuple date: The current fiscal year date.
+        :returns: Any errors or None with no errors.
+        :rtype: str or None
+        """
+        pass
 
     def _empty_fields(self, panel_name: str, data: dict) -> str | None:
         """

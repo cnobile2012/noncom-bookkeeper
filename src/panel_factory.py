@@ -518,8 +518,8 @@ class PanelFactory(TomlMetaData):
         klass.write("    @save.setter\n")
         klass.write("    def save(self, value):\n")
         klass.write("        if self.dirty:\n")
-        klass.write("            self._so.get_object('MainFrame')."
-                    "statusbar_message = 'Saving data.'\n")
+        klass.write("            mf = self._so.get_object('MainFrame')\n")
+        klass.write("            mf.statusbar_message = 'Saving data.'\n\n")
         klass.write("        self._save = value\n\n")
         klass.write("    def button_cancel(self, event):\n")
         klass.write("        self.cancel = True\n")
@@ -530,8 +530,8 @@ class PanelFactory(TomlMetaData):
         klass.write("    @cancel.setter\n")
         klass.write("    def cancel(self, value):\n")
         klass.write("        if self.dirty:\n")
-        klass.write("            self._so.get_object('MainFrame')."
-                    "statusbar_message = 'Restoring data.'\n")
+        klass.write("            mf = self._so.get_object('MainFrame')\n")
+        klass.write("            mf.statusbar_message = 'Restoring data.'\n\n")
         klass.write("        self._cancel = value\n")
 
     def _create_fiscal_combobox_select_event(self, klass):

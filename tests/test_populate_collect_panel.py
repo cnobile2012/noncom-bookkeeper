@@ -484,21 +484,15 @@ class TestPopulateCollect(BaseAsyncTests):
                        'cal_year_month': (183, 3), 'participation': 5,
                        'outstanding': '1000', 'coh': '000', 'locality': 0,
                        'membership': 20}
-        await self.db.cache.insert(self.db._T_MONTHLY,
+        await self.db.cache.update(self.db._T_MONTHLY,
                                    {'year': 183, 'data': insert_data})
         widget_data = {'treasurer_this_month': 'Joe Schmo', 'month_index': 0,
-                       'participation': '2', 'outstanding_bills': '10.00',
+                       'participation': '5', 'outstanding_bills': '10.00',
                        'end_of_month_cash_on_hand': '0.00',
                        'locality_prefix_month': 0,
                        'total_membership_this_month': '20'}
-        min_widget_data = {'treasurer_this_month': '', 'month_index': 1,
-                           'participation': '', 'outstanding_bills': '',
-                           'end_of_month_cash_on_hand': '',
-                           'locality_prefix_month': 0,
-                           'total_membership_this_month': ''}
         data = (
             ('183-03 Jamál', widget_data),
-            #("183-04 ‘Aẓamat", min_widget_data)
             )
         msg = "Expected '{}', field_name '{}', found '{}'."
 

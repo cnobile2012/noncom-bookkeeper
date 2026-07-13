@@ -58,9 +58,10 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_REPORT_PIVOT = 'report_pivot'
     _T_REPORT_TYPE = 'report_type'
     _T_LEDGER_DATA = 'ledget_data'
-    _T_LEDGER_ENTRY_TYPE = 'ledger_entry_type'
-    _T_LEDGER_DESC = 'ledger_desc'
+    _T_LEDGER_TRANS_TYPE = 'ledger_trans_type'
+    _T_LEDGER_REFERENCE = 'ledger_reference'
     _T_LEDGER_BANK = 'ledger_bank'
+    _T_LEDGER_COH = 'ledger_coh'
     _T_LEDGER_INCOME = 'ledger_income'
     _T_LEDGER_EXPENSE_PIVOT = 'ledger_expense_pivot'
     _T_LEDGER_EXPENSE = 'ledger_expense'
@@ -70,9 +71,9 @@ class BaseDatabase(PopulateCollect, Settings):
             'year INTEGER UNIQUE NOT NULL',
             'month INTEGER NOT NULL',
             'day INTEGER NOT NULL',
-            'current INTEGER NOT NULL',
-            'work_on INTEGER NOT NULL',
-            'audit INTEGER NOT NULL',
+            'current INTEGER NOT NULL DEFAULT 0 CHECK (current IN (0, 1))',
+            'work_on INTEGER NOT NULL DEFAULT 0 CHECK (work_on IN (0, 1))',
+            'audit INTEGER NOT NULL DEFAULT 0 CHECK (audit IN (0, 1))',
             'ctime DATETIME NOT NULL',
             'mtime DATETIME NOT NULL'),
         _T_MONTH: (
@@ -119,38 +120,52 @@ class BaseDatabase(PopulateCollect, Settings):
             f'FOREIGN KEY (cfk) REFERENCES {_T_DATA} (pk)'),
         _T_LEDGER_DATA: (
             'pk INTEGER NOT NULL PRIMARY KEY',
+            'fyfk INTEGER NOT NULL',
+            'lttfk INTEGER NOT NULL',
+            'lrfk INTEGER NOT NULL',
             'date DATETIME NOT NULL',
+            'memo TEXT NULL',
             'purged INTEGER default 0',
             'ctime DATETIME NOT NULL',
             'mtime DATETIME NOT NULL'),
-        _T_LEDGER_DESC: (
+        _T_LEDGER_TRANS_TYPE: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'type INTEGER NOT NULL',
             'other TEXT NULL'),
-        _T_LEDGER_ENTRY_TYPE: (
+        _T_LEDGER_REFERENCE: (
             'pk INTEGER NOT NULL PRIMARY KEY',
-            'ck_num INTEGER NULL',
-            'rcpt_num INTEGER NULL',
-            'value INTEGER'),
+            'ck_num TEXT NULL',
+            'rcpt_num TEXT NULL',
+            'type INTEGER'),
         _T_LEDGER_BANK: (
             'pk INTEGER NOT NULL PRIMARY KEY',
+            'ldfk INTEGER NOT NULL UNIQUE',
             'type INTEGER NOT NULL',
-            'value INTEGER'),
+            'value INTEGER',
+            'balance INTEGER'),
+        _T_LEDGER_COH: (
+            'pk INTEGER NOT NULL PRIMARY KEY',
+            'ldfk INTEGER NOT NULL UNIQUE',
+            'type INTEGER NOT NULL',
+            'value INTEGER',
+            'balance INTEGER'),
         _T_LEDGER_INCOME: (
             'pk INTEGER NOT NULL PRIMARY KEY',
+            'ldfk INTEGER NOT NULL UNIQUE',
             'type INTEGER NOT NULL',
-            'value INTEGER'),
+            'value INTEGER',
+            'balance INTEGER'),
         _T_LEDGER_EXPENSE_PIVOT: (
-            'lfk INTEGER NOT NULL',
-            'efk INTEGER NOT NULL',
-            f'FOREIGN KEY (lfk) REFERENCES {_T_LEDGER_DATA} (pk)',
-            f'FOREIGN KEY (efk) REFERENCES {_T_LEDGER_EXPENSE} (pk)'),
+            'ldfk INTEGER NOT NULL',
+            'lefk INTEGER NOT NULL',
+            'ftfk INTEGER NOT NULL',
+            f'FOREIGN KEY (ldfk) REFERENCES {_T_LEDGER_DATA} (pk)',
+            f'FOREIGN KEY (lefk) REFERENCES {_T_LEDGER_EXPENSE} (pk)',
+            f'FOREIGN KEY (ftfk) REFERENCES {_T_FIELD_TYPE} (pk)'),
         _T_LEDGER_EXPENSE: (
             'pk INTEGER NOT NULL PRIMARY KEY',
-            'ffk INTEGER NOT NULL',
             'type INTEGER NOT NULL',
-            'expense INTEGER NOT NULL',
-            f'FOREIGN KEY (ffk) REFERENCES {_T_FIELD_TYPE} (pk)'),
+            'expense INTEGER NOT NULL')
         }
     _SCHEMA_EXTRA = {
         }
@@ -158,6 +173,8 @@ class BaseDatabase(PopulateCollect, Settings):
         ('idx_month_month ON month(month);'),
         ('idx_month_ord ON month(ord);'),
         ('idx_fiscal_year_year ON fiscal_year(year);'),
+        ('one_current_fiscal_year ON fiscal_year(current) WHERE current = 1'),
+        ('one_work_on_fiscal_year ON fiscal_year(work_on) WHERE work_on = 1'),
         )
     _TABLES = list(_SCHEMA_TABLES.keys())
     _TABLES.sort()
@@ -376,6 +393,8 @@ class BaseDatabase(PopulateCollect, Settings):
             error = await self.dp.monthly(data, f_year)
         elif panel_name == 'fiscal':
             error = await self.dp.fiscal(data, (f_year, f_month, f_day))
+        elif panel_name == 'ledger':
+            error = await self.dp.ledger(data, (f_year, f_month, f_day))
         # elif panel_name == 'fiscal_settings':
         #     f_year = f_month = None
 
