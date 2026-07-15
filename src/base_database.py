@@ -57,7 +57,7 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_MONTHLY = 'monthly'
     _T_REPORT_PIVOT = 'report_pivot'
     _T_REPORT_TYPE = 'report_type'
-    _T_LEDGER_DATA = 'ledget_data'
+    _T_LEDGER_DATA = 'ledger_data'
     _T_LEDGER_TRANS_TYPE = 'ledger_trans_type'
     _T_LEDGER_REFERENCE = 'ledger_reference'
     _T_LEDGER_BANK = 'ledger_bank'
@@ -65,6 +65,11 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_LEDGER_INCOME = 'ledger_income'
     _T_LEDGER_EXPENSE_PIVOT = 'ledger_expense_pivot'
     _T_LEDGER_EXPENSE = 'ledger_expense'
+    _V_LEDGER_DATA = 'vw_ledger_data'
+    _V_LEDGER_BANK = 'vw_ledger_bank'
+    _V_LEDGER_COH = 'vw_ledger_coh'
+    _V_LEDGER_INCOME = 'vw_ledger_income'
+    _V_LEDGER_EXPENSE = 'vw_ledger_expense'
     _SCHEMA_TABLES = {
         _T_FISCAL_YEAR: (
             'pk INTEGER NOT NULL PRIMARY KEY',  # fy1fk or fy2fk in data
@@ -120,7 +125,8 @@ class BaseDatabase(PopulateCollect, Settings):
             f'FOREIGN KEY (cfk) REFERENCES {_T_DATA} (pk)'),
         _T_LEDGER_DATA: (
             'pk INTEGER NOT NULL PRIMARY KEY',
-            'fyfk INTEGER NOT NULL',
+            'fy1fk INTEGER NOT NULL',
+            'fy2fk INTEGER NOT NULL',
             'lttfk INTEGER NOT NULL',
             'lrfk INTEGER NOT NULL',
             'date DATETIME NOT NULL',
@@ -165,9 +171,29 @@ class BaseDatabase(PopulateCollect, Settings):
         _T_LEDGER_EXPENSE: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'type INTEGER NOT NULL',
-            'expense INTEGER NOT NULL')
+            'value INTEGER NOT NULL')
         }
-    _SCHEMA_EXTRA = {
+    _SCHEMA_VIEWS = {
+        _V_LEDGER_DATA: (
+            'date', 'fy1_year', 'fy1_month', 'fy1_day',
+            'fy2_year', 'fy2_month', 'fy2_day',
+            'trans_type', 'trans_other', 'ref_ck_num', 'ref_rcpt_num',
+            'ref_type', 'purged', 'ctime', 'mtime'),
+        # _V_LEDGER_BANK: (),
+        # _V_LEDGER_COH: (),
+        # _V_LEDGER_INCOME: (),
+        # _V_LEDGER_EXPENSE: (),
+        }
+    _SCHEMA_VIEW_QUERY = {
+        _V_LEDGER_DATA: (
+            'SELECT ld.date, fy1.year, fy1.month, fy1.day, fy2.year, '
+            'fy2.month, fy2.day, t.type, t.other, r.ck_num, r.rcpt_num, '
+            'r.type, ld.purged, ld.ctime, ld.mtime '
+            f'FROM {_T_LEDGER_DATA} AS ld '
+            f'JOIN {_T_FISCAL_YEAR} AS fy1 ON ld.fy1fk = fy1.pk '
+            f'JOIN {_T_FISCAL_YEAR} AS fy2 ON ld.fy2fk = fy2.pk '
+            f'JOIN {_T_LEDGER_TRANS_TYPE} AS t ON ld.lttfk = t.pk '
+            f'JOIN {_T_LEDGER_REFERENCE} AS r ON ld.lrfk = r.pk;'),
         }
     _SCHEMA_INDICES = (
         ('idx_month_month ON month(month);'),
@@ -178,6 +204,8 @@ class BaseDatabase(PopulateCollect, Settings):
         )
     _TABLES = list(_SCHEMA_TABLES.keys())
     _TABLES.sort()
+    _VIEWS = list(_SCHEMA_VIEWS.keys())
+    _VIEWS.sort()
     _INDICES = [name.split()[0] for name in _SCHEMA_INDICES]
     _INDICES.sort()
     _EXCLUDE_PANELS = ('fiscal', 'monthly')
@@ -231,12 +259,6 @@ class BaseDatabase(PopulateCollect, Settings):
                 for table, params in self._SCHEMA_TABLES.items():
                     fields = ', '.join([field for field in params])
                     query = f"CREATE TABLE IF NOT EXISTS {table} ({fields});"
-
-                    if self._SCHEMA_EXTRA:  # pragma: no cover
-                        extra = self._SCHEMA_EXTRA.get(table)
-                        query = query.rstrip(");")
-                        query = f', {extra});'
-
                     self._log.info("Created table: %s", query)
                     await db.execute(query)
                     await db.commit()
@@ -247,15 +269,13 @@ class BaseDatabase(PopulateCollect, Settings):
                     await db.execute(query)
                     await db.commit()
 
-                if self._SCHEMA_EXTRA:  # pragma: no cover
-                    for view, params in self._SCHEMA_VIEWS.items():
-                        fields = ', '.join([field for field in params])
-                        query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
-                        extra = self._SCHEMA_EXTRA.get(view)
-                        query += f' {extra};' if extra else ';'
-                        self._log.info("Created view: %s", query)
-                        await db.execute(query)
-                        await db.commit()
+                for view, params in self._SCHEMA_VIEWS.items():
+                    fields = ', '.join([field for field in params])
+                    query = f"CREATE VIEW IF NOT EXISTS {view} ({fields}) AS "
+                    query += self._SCHEMA_VIEW_QUERY.get(view)
+                    self._log.info("Created view: %s", query)
+                    await db.execute(query)
+                    await db.commit()
 
     @property
     async def has_schema(self) -> bool:
@@ -275,6 +295,9 @@ class BaseDatabase(PopulateCollect, Settings):
                        if type == 'index' and not name.startswith('sqlite_')]
         index_names.sort()
         i_check = index_names == self._INDICES
+        view_names = [name for type, name in data if type == 'view']
+        view_names.sort()
+        v_check = view_names == self._VIEWS
 
         if not t_check:
             msg = ("Database table count is wrong it should be "
@@ -285,6 +308,12 @@ class BaseDatabase(PopulateCollect, Settings):
         if not i_check:
             msg = ("Database index count is wrong it should be "
                    f"'{self._INDICES}' found '{index_names}'")
+            self._log.error(msg)
+            self._mf.statusbar_error = msg
+
+        if not v_check:
+            msg = ("Database view count is wrong it should be "
+                   f"'{self._VIEWS}' found '{view_names}'")
             self._log.error(msg)
             self._mf.statusbar_error = msg
 

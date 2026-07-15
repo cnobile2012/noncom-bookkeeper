@@ -284,31 +284,30 @@ class Database(BaseDatabase):
         .. note::
 
            Produces output as follows for the `organization` panel:
-           [(1, 'locale_name', 'Some Community', 182, 183,
-             '0182-02-12T05:26:40.963200+00:00',
-             '0182-02-12T05:26:40.963200+00:00'),
-            (2, 'locality_prefix', 0, 182, 183,
-             '0182-02-12T05:26:40.963200+00:00',
-             '0182-02-12T05:26:40.963200+00:00'),
-            (3, 'location_city_name', 'Some City', 182, 183,
-             '0182-02-12T05:27:17.251199+00:00',
-             '0182-02-12T05:27:17.251199+00:00'),
-            (4, 'start_of_fiscal_year', '0182-02-19', 182, 183,
-             '0182-02-12T05:27:17.251199+00:00',
-             '0182-02-12T05:27:17.251199+00:00'),
-            (5, 'total_membership', '35', 182, 183,
-             '0182-02-12T05:27:17.251199+00:00',
-             '0182-02-12T05:27:17.251199+00:00'),
-            (6, 'treasurer', 'Joe Shmow', 182, 183,
-             '0182-02-12T05:27:17.251199+00:00',
-             '0182-02-12T05:27:17.251199+00:00')
-           ]
+           [(1, 'iana_name', 'America/New_York', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>),
+            (2, 'latitude', '40.7127281', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>),
+            (3, 'locale_name', 'Harnett County', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>),
+            (4, 'locality_prefix', '0', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>),
+            (5, 'location_city_name', 'Harnett County', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>),
+            (6, 'longitude', '-74.0060152', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>),
+            (7, 'start_of_fiscal_year', '0183-03-05', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>),
+            (8, 'total_membership', '20', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>),
+            (9, 'treasurer', 'Joe Schmo'', 183, 3, 5, 184, 3, 5,
+             <badidatetime object>, <badidatetime object>)]
         """
         fields = '", "'.join(data)
         params = (year, year+1)
         query = (
-            "SELECT d.pk, f.field, d.value, y1.year, y2.year, "
-            "       d.ctime, d.mtime "
+            "SELECT d.pk, f.field, d.value, y1.year, y1.month, y1.day, "
+            "       y2.year, y2.month, y2.day, d.ctime, d.mtime "
             f"FROM {self._T_DATA} AS d "
             f"JOIN {self._T_FIELD_TYPE} AS f ON f.pk = d.ffk "
             f"     AND f.field IN (\"{fields}\") "
@@ -496,6 +495,19 @@ class Database(BaseDatabase):
                  "WHERE fy.pk = m.fyfk AND fy.year = :year "
                  "AND cal_year_month = :cal_year_month;")
         return await self._do_update_query(query, data)
+
+    #
+    # Ledger SELECT, INSERT, and UPDATE methods.
+    #
+
+    async def ledger_fetch_bank(self):
+        """
+        Select from the bank information from the view.
+
+        
+        """
+        pass
+
 
     #
     # Miscellaneous methods and properties

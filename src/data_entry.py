@@ -51,7 +51,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         # Search for specific date of item.
         srch_text = wx.StaticText(self, wx.ID_ANY, "Search:")
         srch_text.SetForegroundColour(self.w_fg_color)
-        srch_widget = BadiDatePickerCtrl(self, wx.ID_ANY)
+        srch_widget = BadiDatePickerCtrl(self, wx.ID_ANY,
+                                         bgcolor=self.w_bg_color)
         srch_widget.SetBackgroundColour(self.w_bg_color)
         srch_widget.SetForegroundColour(self.w_fg_color)
         srch_widget.SetMinSize((130, 28))
@@ -86,14 +87,28 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_01.SetMinSize((-1, -1))
         self.gbs.Add(widget_01, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
-        widget_02 = BadiDatePickerCtrl(self, wx.ID_ANY)
+        widget_02 = BadiDatePickerCtrl(self, wx.ID_ANY,
+                                       bgcolor=self.w_bg_color)
         widget_02.SetBackgroundColour(self.w_bg_color)
         widget_02.SetForegroundColour(self.w_fg_color)
         widget_02.SetMinSize((130, 28))
         widget_02.SetFocus()
         #widget_02.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
-        self.gbs.Add(widget_02, (0, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.ALL, 6)
+        self.gbs.Add(widget_02, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT, 12)
+        pos += 1
+
+        sizer_1 = wx.BoxSizer(wx.HORIZONTAL)
+        widget_03 = wx.StaticText(self, wx.ID_ANY, "Memo:")
+        widget_03.SetForegroundColour(self.w_fg_color)
+        widget_03.SetMinSize((-1, -1))
+        sizer_1.Add(widget_03, 0, wx.RIGHT | wx.TOP, 8)
+        widget_04 = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        widget_04.SetBackgroundColour(self.w_bg_color)
+        widget_04.SetForegroundColour(self.w_fg_color)
+        widget_04.SetMinSize((452, 26))
+        sizer_1.Add(widget_04, 0, wx.EXPAND | wx.ALL, 6)
+        self.gbs.Add(sizer_1, (pos, 0), (1, 2), wx.EXPAND | wx.TOP, 6)
 
         title_gen = self._title_generator()
         # The first label is the category name the rest are StaticText labels.
@@ -114,8 +129,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
             # Next
             pos += 1
-            title_data, labels = self._next_title_and_labels(title_gen,
-                                                             label_gen)
+            title_data, labels = self._next_title_and_labels(
+                title_gen, label_gen)
 
         line = wx.StaticLine(self, wx.ID_ANY)
         line.SetBackgroundColour(self.w_fg_color)

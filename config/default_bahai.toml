@@ -35,7 +35,7 @@ data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
     ['Entry Reference', 2, 2, 'bottom', 2, true],
     ['Cash in Bank', 4, 2, 'top', 2, true],
     ['Cash on Hand', 3, 2, 'top', 2, true],
-    ['Income', 3, 1, 'top', 2, true],
+    ['Income', 3, 2, 'top', 2, true],
     ['Expenses', 0, 0, '', 2, false],
     ["Local Bahá'í Expenses", 0, 5, 'bottom', 1, false],
     ["National Bahá'í Funds", 0, 11, 'bottom', 1, false],
@@ -50,7 +50,8 @@ data_entry_labels = [
      'OCS Amount:', '@Value:', '%Balance:'],
     ['$coh', 'Cash Amount:', 'Check Amount:', 'Debit Amount:', '@Value:',
      '%Balance:'],
-    ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', '@Value:']
+    ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', '@Value:',
+     '%Balance:']
     ]
 
 [organization]

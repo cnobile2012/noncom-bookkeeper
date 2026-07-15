@@ -1,5 +1,6 @@
 # %load ipython_start.py
 # %load_ext autoreload
+import wx
 import badidatetime
 from src.bahai_database import Database
 from src.config import (TomlMetaData, TomlPanelConfig, TomlAppConfig,

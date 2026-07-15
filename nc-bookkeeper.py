@@ -41,12 +41,12 @@ if __name__ == "__main__":
         tac = TomlAppConfig()
 
         if not tpc.is_valid:
-            print(tpc.get_err_msg, file=sys.stderr)
+            print(tpc.err_msg, file=sys.stderr)
             print(f"See {tpc.user_log_fullpath}, for more information.",
                   file=sys.stderr)
             status = 1
         elif not tac.is_valid:
-            print(tac.get_err_msg, file=sys.stderr)
+            print(tac.err_msg, file=sys.stderr)
             print(f"See {tac.user_log_fullpath}, for more information.",
                   file=sys.stderr)
             status = 2

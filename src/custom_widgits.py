@@ -28,15 +28,16 @@ def ordered_month():
 
 
 class CustomTextCtrl(wx.Control):
-    def __init__(self, parent, value="", style=0, **kwargs):
-        super().__init__(parent, style=wx.BORDER_NONE, **kwargs)
+    def __init__(self, parent, value="", style=0, bgcolor=None, **kwargs):
+        super().__init__(parent, style=style, **kwargs)
         self.text = value
         self.style = style
+        self.bgcolor = bgcolor  # wx.Colour() object.
         self.has_focus = False
         self.cursor_pos = len(self.text)
 
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        self.SetMinSize((100, 28))
+        self.SetMinSize((130, 36))
         self.SetWindowStyle(self.GetWindowStyle() | wx.TE_PROCESS_ENTER)
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -48,22 +49,16 @@ class CustomTextCtrl(wx.Control):
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         rect = self.GetClientRect()
-        dc.SetBackground(wx.Brush(wx.Colour(255, 255, 255, 128),
-                                  wx.BRUSHSTYLE_TRANSPARENT))
+        color = self.bgcolor if self.bgcolor else wx.Colour(255, 255, 255, 128)
+        dc.SetBackground(wx.Brush(color, wx.BRUSHSTYLE_TRANSPARENT))
         dc.Clear()
-
-        # Border
-        if (self.style & wx.BORDER_NONE) != wx.BORDER_NONE:
-            border_color = (wx.Colour(30, 144, 255) if self.has_focus
-                            else wx.Colour(200, 200, 200))
-            dc.SetPen(wx.Pen(border_color, 2))
-            dc.DrawRectangle(rect)
-
         # Text
-        dc.SetTextForeground(wx.BLACK)
+        dc.SetFont(self.GetFont())
+        dc.SetTextForeground(self.GetForegroundColour())
         text_width, text_height = dc.GetTextExtent(self.text)
         # Calculate the vertical position to center the text
         y = (rect.height - text_height) // 2
+        y += 1  # Fix height of text.
         # Calculate the horizontal position to center the text
         x = (rect.width - text_width) // 2
         # Draw the text
@@ -145,7 +140,7 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
     """
     def __init__(self, parent: wx.Window, flags=wx.BORDER_NONE,
                  bdate: badidatetime.date=None, name: str=""):
-        super().__init__(parent, wx.BORDER_SIMPLE)
+        super().__init__(parent, flags)
         self.bdate = bdate
         self.SetName(name)
         self.panel = wx.Panel(self)
@@ -299,18 +294,19 @@ class BadiDatePickerCtrl(wx.Panel):
 
     def __init__(self, parent: wx.Window, w_id: int=wx.ID_ANY,
                  bdate: badidatetime.date=None, pos=wx.DefaultPosition,
-                 style=wx.adv.DP_DEFAULT | wx.adv.DP_SHOWCENTURY,
+                 style=wx.adv.DP_DEFAULT | wx.adv.DP_SHOWCENTURY, bgcolor=None,
                  validator=wx.DefaultValidator, name: str="") -> None:
         super().__init__(parent)
         self.SetName(name)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         w_bg_color = wx.Colour(222, 237, 230)  # Gray
         self._updating = False
         # Default date
         self.bdate = bdate or badidatetime.date.today()
-        self.text_ctrl = CustomTextCtrl(self, style=wx.BORDER_NONE)
+        self.text_ctrl = CustomTextCtrl(
+            self, style=wx.TE_PROCESS_ENTER | wx.BORDER_NONE, bgcolor=bgcolor)
         self.text_ctrl.SetValue(self.bdate.isoformat())
         self.text_ctrl.SetBackgroundColour(w_bg_color)
-        self.text_ctrl.SetForegroundColour(wx.BLACK)
         self.text_ctrl.Bind(wx.EVT_TEXT, self.on_change)
         self.text_ctrl.Bind(wx.EVT_KILL_FOCUS, self.on_change)
         self.text_ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_change)
@@ -319,14 +315,27 @@ class BadiDatePickerCtrl(wx.Panel):
         self.calendar_btn = wx.BitmapButton(self, bitmap=bmp,
                                             style=wx.BU_AUTODRAW)
         self.calendar_btn.Bind(wx.EVT_BUTTON, self.show_popup_calendar)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(self.text_ctrl, 1, wx.EXPAND | wx.ALL, 2)
+        sizer.Add(self.text_ctrl, 1, wx.EXPAND)
         self.text_ctrl.SetMinSize((90, -1))  # Set the minimum size
         self.SetMinSize((1, 28))
         sizer.AddStretchSpacer()
         sizer.Add(self.calendar_btn, 1, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(sizer)
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        gc = wx.GraphicsContext.Create(dc)
+
+        if gc:
+            rect = self.GetClientRect()
+            rect.Deflate(1, 1)
+            # Fill the background.
+            gc.SetBrush(wx.Brush(self.GetBackgroundColour()))
+            gc.SetPen(wx.Pen(wx.Colour(90, 90, 90), 1))
+            gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 4)
 
     def _max_days_in_month(self, year, month):
         return 4 + self.bdate._is_leap_year(year) if month == 0 else 19

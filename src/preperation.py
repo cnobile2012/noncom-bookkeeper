@@ -186,10 +186,10 @@ class DataPreperation:
 
     async def ledger(self, data: dict, date: tuple) -> str | None:
         """
-        Inserts and updates ledget data.
+        Inserts and updates ledger data.
 
         :param dict data: Panel data.
-        ::param tuple date: The current fiscal year date.
+        :param tuple date: The current fiscal year date.
         :returns: Any errors or None with no errors.
         :rtype: str or None
         """
