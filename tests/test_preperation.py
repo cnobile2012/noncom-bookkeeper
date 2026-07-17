@@ -61,17 +61,17 @@ class TestDataPreperation(BaseAsyncTests):
         update_data = dict(full_data)
         update_data['total_membership'] = '25'
         data = (
-            ({}, None, None, False, err_msg0),    # No data
-            (part_data, 183, 3, False, err_msg1.format(
+            ({}, (None, None, None), False, err_msg0),    # No data
+            (part_data, (183, 3, 5), False, err_msg1.format(
                 "locale_name, treasurer")),       # Partial data
-            (full_data, None, None, True, None),  # Full data
-            (update_data, 183, 3, True, None),    # Updated data
+            (full_data, (None, None, None), True, None),  # Full data
+            (update_data, (183, 3, 5), True, None),    # Updated data
             )
         msg = "Expexted {}, found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
-            for items, year, month, valid, expected in data:
-                error = await self.tdp.organization(items, year, month)
+            for items, date, valid, expected in data:
+                error = await self.tdp.organization(items, *date)
 
                 if valid and not error:
                     # Current Year (full_data)
@@ -115,17 +115,17 @@ class TestDataPreperation(BaseAsyncTests):
                     'start_of_fiscal_year': None,
                     'total_membership': '18', 'treasurer': 'Joe Schmo'}
         data = (
-            (prev_2_sofy, 183, 3, (), err_msg0.format(181, 183, 184)),
-            (next_2_sofy, 183, 3, (), err_msg0.format(185, 183, 184)),
-            (prev_sofy, 183, 3, (182, 183, 184), None),  # Previous year
-            (next_sofy, 183, 3, (183, 184, 185), None),  # Next year
+            (prev_2_sofy, (183, 3, 5), (), err_msg0.format(181, 183, 184)),
+            (next_2_sofy, (183, 3, 5), (), err_msg0.format(185, 183, 184)),
+            (prev_sofy, (183, 3, 5), (182, 183, 184), None),  # Previous year
+            (next_sofy, (183, 3, 5), (183, 184, 185), None),  # Next year
             )
         msg = "Expexted {}, found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
-            for date, year, month, years, expected in data:
+            for date, fy_date, years, expected in data:
                 org_data['start_of_fiscal_year'] = date
-                error = await self.tdp.organization(org_data, year, month)
+                error = await self.tdp.organization(org_data, *fy_date)
 
                 if not error:
                     # Current field previous year
@@ -267,7 +267,7 @@ class TestDataPreperation(BaseAsyncTests):
             else:
                 error = await self.tdp.fiscal(updated_data, date)
                 self.assertEqual(expected, error,
-                    f"Expected '{expected}', found '{error}'.")
+                                 f"Expected '{expected}', found '{error}'.")
 
     #@unittest.skip("Temporarily skipped")
     async def test__empty_fields(self):
@@ -369,6 +369,42 @@ class TestDataPreperation(BaseAsyncTests):
         record = result[0][1:-2]
         msg = f"Expected {expected}, found {record}."
         self.assertEqual(expected, record, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__fix_fiscal_years(self):
+        """
+        Test that the _fix_fiscal_years method updates the given fiscal year
+        and the next fiscal year if it exists.
+
+        .. note::
+
+           This test depends on specific fiscal years in the test DB. If the
+           years are different that expected this test will fail.
+        """
+        data = (
+            (183, (183, 3, 5), (183, 1, 1), (184, 1, 1), 2),
+            (184, (184, 1, 1), (184, 3, 5), (185, 3, 5), 1)
+            )
+        msg = "Expected {}, found {}."
+
+        for year, wrong, correct0, correct1, expected in data:
+            fy0 = self.tdp.db.cache.get(self.db._T_FISCAL_YEAR, year=year)[0]
+            self.assertEqual(fy0[1], wrong[0], msg.format(fy0[1], wrong[0]))
+            self.assertEqual(fy0[2], wrong[1], msg.format(fy0[2], wrong[1]))
+            self.assertEqual(fy0[3], wrong[2], msg.format(fy0[3], wrong[2]))
+            rowcount = await self.tdp._fix_fiscal_years(wrong, correct0)
+            self.assertEqual(expected, rowcount, msg.format(
+                expected, rowcount))
+            fy1 = self.tdp.db.cache.get(self.db._T_FISCAL_YEAR, year=year)[0]
+            fy2 = self.tdp.db.cache.get(self.db._T_FISCAL_YEAR, year=year+1)
+            fy2 = fy2[0] if fy2 else []
+
+            for idx, v in enumerate(correct0, start=1):
+                self.assertEqual(v, fy1[idx])
+
+            if fy2:
+                for idx, v in enumerate(correct1, start=1):
+                    self.assertEqual(v, fy2[idx])
 
     #@unittest.skip("Temporarily skipped")
     def test__add_location_data(self):

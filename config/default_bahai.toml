@@ -44,13 +44,13 @@ data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
     ['Area Funds', 0, 1, 'bottom', 1, false],
     ]
 data_entry_labels = [
-    ['description', 'Contribution:', 'Distribution:', 'Expense:', 'Other:'],
-    ['entry_type', 'Check Number:', 'Receipt Number:', 'Debit:', 'OCS:'],
+    ['transaction', 'Contribution:', 'Distribution:', 'Expense:', 'Other:'],
+    ['entry_ref', 'Check Number:', 'Receipt Number:', 'Debit:', 'OCS:'],
     ['$bank', 'Deposit Amount:', 'Check Amount:', 'Dedit Amount:',
-     'OCS Amount:', '@Value:', '%Balance:'],
-    ['$coh', 'Cash Amount:', 'Check Amount:', 'Debit Amount:', '@Value:',
+     'OCS Amount:', '@Amount:', '%Balance:'],
+    ['$coh', 'Cash Amount:', 'Check Amount:', 'Debit Amount:', '@Amount:',
      '%Balance:'],
-    ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', '@Value:',
+    ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', '@Amount:',
      '%Balance:']
     ]
 

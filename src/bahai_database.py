@@ -166,10 +166,12 @@ class Database(BaseDatabase):
         """
         now = badidatetime.datetime.now(self.utc_tzinfo)
         query = (f"UPDATE {self._T_FISCAL_YEAR} "
-                 "SET current = :current, work_on = :work_on, audit = :audit, "
-                 "mtime = :mtime WHERE year = :year;")
-        items = [{'year': item[0], 'current': item[3], 'work_on': item[4],
-                  'audit': item[5], 'mtime': now} for item in data]
+                 "SET month = :month, day = :day, current = :current, "
+                 "work_on = :work_on, audit = :audit, mtime = :mtime "
+                 "WHERE year = :year;")
+        items = [{'year': item[0], 'month': item[1], 'day': item[2],
+                  'current': item[3], 'work_on': item[4], 'audit': item[5],
+                  'mtime': now} for item in data]
         return await self._do_update_query(query, items)
 
     #
@@ -461,13 +463,13 @@ class Database(BaseDatabase):
         :param int year: The Badi year of the transaction.
         :param dict data: The data from any panel in the form of:
                           {'participation': <value>, ...}.
-        :returns: The rowcount caused by the update.
+        :returns: The rowcount caused by the insert.
         :rtype: int
         """
         now = badidatetime.datetime.now(self.utc_tzinfo)
         data['ctime'] = data['mtime'] = now
-        fiscal = await self.select_from_fiscal_year_table(year=year)
-        data['fyfk'] = fiscal[0]
+        fy = await self.select_from_fiscal_year_table(year=year)
+        data['fyfk'] = fy[0]
         query = (f"INSERT INTO {self._T_MONTHLY} (fyfk, cal_year_month, "
                  "participation, outstanding, coh, membership, treasurer, "
                  "locality, ctime, mtime) VALUES (:fyfk, :cal_year_month, "
@@ -495,19 +497,6 @@ class Database(BaseDatabase):
                  "WHERE fy.pk = m.fyfk AND fy.year = :year "
                  "AND cal_year_month = :cal_year_month;")
         return await self._do_update_query(query, data)
-
-    #
-    # Ledger SELECT, INSERT, and UPDATE methods.
-    #
-
-    async def ledger_fetch_bank(self):
-        """
-        Select from the bank information from the view.
-
-        
-        """
-        pass
-
 
     #
     # Miscellaneous methods and properties

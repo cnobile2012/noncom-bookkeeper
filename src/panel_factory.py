@@ -326,7 +326,11 @@ class PanelFactory(TomlMetaData):
                 fy_data = self._db.full_fiscal_year_data()
                 choices = [f"{year}-{ord:>02} {month}"
                            for idx, year, ord, month in fy_data]
-                first = choices[0] if choices else "Months in Fiscal Year"
+
+                if not choices:
+                    choices.insert(0, "For Fiscal Years--Restart")
+
+                first = choices[0]
                 label = f"value='''{first}''',"
             elif panel == 'fiscal':
                 choices = []

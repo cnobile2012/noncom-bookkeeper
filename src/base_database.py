@@ -57,18 +57,14 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_MONTHLY = 'monthly'
     _T_REPORT_PIVOT = 'report_pivot'
     _T_REPORT_TYPE = 'report_type'
-    _T_LEDGER_DATA = 'ledger_data'
-    _T_LEDGER_TRANS_TYPE = 'ledger_trans_type'
+    _T_LEDGER_HEADER = 'ledger_header'
+    _T_LEDGER_TRANSACTION = 'ledger_transaction'
     _T_LEDGER_REFERENCE = 'ledger_reference'
     _T_LEDGER_BANK = 'ledger_bank'
     _T_LEDGER_COH = 'ledger_coh'
     _T_LEDGER_INCOME = 'ledger_income'
-    _T_LEDGER_EXPENSE_PIVOT = 'ledger_expense_pivot'
     _T_LEDGER_EXPENSE = 'ledger_expense'
-    _V_LEDGER_DATA = 'vw_ledger_data'
-    _V_LEDGER_BANK = 'vw_ledger_bank'
-    _V_LEDGER_COH = 'vw_ledger_coh'
-    _V_LEDGER_INCOME = 'vw_ledger_income'
+    _V_LEDGER_HEADER = 'vw_ledger_header'
     _V_LEDGER_EXPENSE = 'vw_ledger_expense'
     _SCHEMA_TABLES = {
         _T_FISCAL_YEAR: (
@@ -99,7 +95,11 @@ class BaseDatabase(PopulateCollect, Settings):
             'mfk INTEGER NOT NULL',
             'ffk INTEGER NOT NULL',
             'ctime DATETIME NOT NULL',
-            'mtime DATETIME NOT NULL'),
+            'mtime DATETIME NOT NULL',
+            f'FOREIGN KEY (fy1fk) REFERENCES {_T_FISCAL_YEAR} (pk)',
+            f'FOREIGN KEY (fy2fk) REFERENCES {_T_FISCAL_YEAR} (pk)',
+            f'FOREIGN KEY (mfk) REFERENCES {_T_MONTH} (pk)',
+            f'FOREIGN KEY (ffk) REFERENCES {_T_FIELD_TYPE} (pk)'),
         _T_MONTHLY: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'fyfk INTEGER NOT NULL',
@@ -112,7 +112,8 @@ class BaseDatabase(PopulateCollect, Settings):
             'locality INTEGER NOT NULL',
             'ctime DATETIME NOT NULL',
             'mtime DATETIME NOT NULL',
-            'CONSTRAINT unq UNIQUE (fyfk, cal_year_month)'),
+            'CONSTRAINT unq UNIQUE (fyfk, cal_year_month)',
+            f'FOREIGN KEY (fyfk) REFERENCES {_T_FISCAL_YEAR} (pk)'),
         _T_REPORT_TYPE: (
             'pk INTEGER NOT NULL PRIMARY KEY',  # rfk in report_pivot
             'report TEXT UNIQUE NOT NULL',
@@ -123,18 +124,24 @@ class BaseDatabase(PopulateCollect, Settings):
             'cfk INTEGER NOT NULL',
             f'FOREIGN KEY (rfk) REFERENCES {_T_REPORT_TYPE} (pk)',
             f'FOREIGN KEY (cfk) REFERENCES {_T_DATA} (pk)'),
-        _T_LEDGER_DATA: (
+        _T_LEDGER_HEADER: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'fy1fk INTEGER NOT NULL',
             'fy2fk INTEGER NOT NULL',
-            'lttfk INTEGER NOT NULL',
+            'ltfk INTEGER NOT NULL',
             'lrfk INTEGER NOT NULL',
+            'trans_no INTEGER NOT NULL',
             'date DATETIME NOT NULL',
             'memo TEXT NULL',
             'purged INTEGER default 0',
             'ctime DATETIME NOT NULL',
-            'mtime DATETIME NOT NULL'),
-        _T_LEDGER_TRANS_TYPE: (
+            'mtime DATETIME NOT NULL',
+            'CONSTRAINT unq UNIQUE (fy1fk, trans_no)',
+            f'FOREIGN KEY (fy1fk) REFERENCES {_T_FISCAL_YEAR} (pk)',
+            f'FOREIGN KEY (fy2fk) REFERENCES {_T_FISCAL_YEAR} (pk)',
+            f'FOREIGN KEY (ltfk) REFERENCES {_T_LEDGER_TRANSACTION} (pk)',
+            f'FOREIGN KEY (lrfk) REFERENCES {_T_LEDGER_REFERENCE} (pk)'),
+        _T_LEDGER_TRANSACTION: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'type INTEGER NOT NULL',
             'other TEXT NULL'),
@@ -145,55 +152,55 @@ class BaseDatabase(PopulateCollect, Settings):
             'type INTEGER'),
         _T_LEDGER_BANK: (
             'pk INTEGER NOT NULL PRIMARY KEY',
-            'ldfk INTEGER NOT NULL UNIQUE',
+            'lhfk INTEGER NOT NULL UNIQUE',
             'type INTEGER NOT NULL',
-            'value INTEGER',
-            'balance INTEGER'),
+            'amount INTEGER',
+            'balance INTEGER',
+            f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_COH: (
             'pk INTEGER NOT NULL PRIMARY KEY',
-            'ldfk INTEGER NOT NULL UNIQUE',
+            'lhfk INTEGER NOT NULL UNIQUE',
             'type INTEGER NOT NULL',
-            'value INTEGER',
-            'balance INTEGER'),
+            'amount INTEGER',
+            'balance INTEGER',
+            f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_INCOME: (
             'pk INTEGER NOT NULL PRIMARY KEY',
-            'ldfk INTEGER NOT NULL UNIQUE',
+            'lhfk INTEGER NOT NULL UNIQUE',
             'type INTEGER NOT NULL',
-            'value INTEGER',
-            'balance INTEGER'),
-        _T_LEDGER_EXPENSE_PIVOT: (
-            'ldfk INTEGER NOT NULL',
-            'lefk INTEGER NOT NULL',
-            'ftfk INTEGER NOT NULL',
-            f'FOREIGN KEY (ldfk) REFERENCES {_T_LEDGER_DATA} (pk)',
-            f'FOREIGN KEY (lefk) REFERENCES {_T_LEDGER_EXPENSE} (pk)',
-            f'FOREIGN KEY (ftfk) REFERENCES {_T_FIELD_TYPE} (pk)'),
+            'amount INTEGER',
+            'balance INTEGER',
+            f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_EXPENSE: (
-            'pk INTEGER NOT NULL PRIMARY KEY',
-            'type INTEGER NOT NULL',
-            'value INTEGER NOT NULL')
+            'lhfk INTEGER NOT NULL',
+            'ftfk INTEGER NOT NULL',
+            'amount INTEGER',
+            f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)',
+            f'FOREIGN KEY (ftfk) REFERENCES {_T_FIELD_TYPE} (pk)'),
         }
     _SCHEMA_VIEWS = {
-        _V_LEDGER_DATA: (
-            'date', 'fy1_year', 'fy1_month', 'fy1_day',
-            'fy2_year', 'fy2_month', 'fy2_day',
-            'trans_type', 'trans_other', 'ref_ck_num', 'ref_rcpt_num',
-            'ref_type', 'purged', 'ctime', 'mtime'),
-        # _V_LEDGER_BANK: (),
-        # _V_LEDGER_COH: (),
-        # _V_LEDGER_INCOME: (),
-        # _V_LEDGER_EXPENSE: (),
+        _V_LEDGER_HEADER: (
+            'date', 'fy1_year', 'fy1_month', 'fy1_day', 'fy2_year',
+            'fy2_month', 'fy2_day', 'trans_type', 'trans_other', 'ref_ck_num',
+            'ref_rcpt_num', 'ref_type', 'purged', 'ctime', 'mtime'),
+        _V_LEDGER_EXPENSE: (
+            'type', 'field_name', 'amount'),
         }
     _SCHEMA_VIEW_QUERY = {
-        _V_LEDGER_DATA: (
+        _V_LEDGER_HEADER: (
             'SELECT ld.date, fy1.year, fy1.month, fy1.day, fy2.year, '
             'fy2.month, fy2.day, t.type, t.other, r.ck_num, r.rcpt_num, '
             'r.type, ld.purged, ld.ctime, ld.mtime '
-            f'FROM {_T_LEDGER_DATA} AS ld '
+            f'FROM {_T_LEDGER_HEADER} AS ld '
             f'JOIN {_T_FISCAL_YEAR} AS fy1 ON ld.fy1fk = fy1.pk '
             f'JOIN {_T_FISCAL_YEAR} AS fy2 ON ld.fy2fk = fy2.pk '
-            f'JOIN {_T_LEDGER_TRANS_TYPE} AS t ON ld.lttfk = t.pk '
+            f'JOIN {_T_LEDGER_TRANSACTION} AS t ON ld.lttfk = t.pk '
             f'JOIN {_T_LEDGER_REFERENCE} AS r ON ld.lrfk = r.pk;'),
+        _V_LEDGER_EXPENSE: (
+            'SELECT f.field, e.amount '
+            f'FROM {_T_LEDGER_HEADER} AS lh '
+            f'JOIN {_T_LEDGER_EXPENSE} AS e ON e.lhfk = lh.pk '
+            f'JOIN {_T_FIELD_TYPE} AS f ON p.ftfk = f.pk;')
         }
     _SCHEMA_INDICES = (
         ('idx_month_month ON month(month);'),
@@ -202,9 +209,9 @@ class BaseDatabase(PopulateCollect, Settings):
         ('one_current_fiscal_year ON fiscal_year(current) WHERE current = 1'),
         ('one_work_on_fiscal_year ON fiscal_year(work_on) WHERE work_on = 1'),
         )
-    _TABLES = list(_SCHEMA_TABLES.keys())
+    _TABLES = list(_SCHEMA_TABLES)
     _TABLES.sort()
-    _VIEWS = list(_SCHEMA_VIEWS.keys())
+    _VIEWS = list(_SCHEMA_VIEWS)
     _VIEWS.sort()
     _INDICES = [name.split()[0] for name in _SCHEMA_INDICES]
     _INDICES.sort()
@@ -240,7 +247,7 @@ class BaseDatabase(PopulateCollect, Settings):
         if rows:
             for row in rows:
                 column = row.split(' ')[0]
-                if column in ('CONSTRAINT',): continue
+                if column in ('CONSTRAINT', 'FOREIGN'): continue
                 columns.append(column)
 
         return columns
@@ -415,7 +422,7 @@ class BaseDatabase(PopulateCollect, Settings):
         data = self.collect_panel_values(panel)
 
         if panel_name == 'organization':
-            error = await self.dp.organization(data, f_year, f_month)
+            error = await self.dp.organization(data, f_year, f_month, f_day)
         elif panel_name == 'budget':
             error = await self.dp.budget(data, f_year, f_month)
         elif panel_name == 'monthly':
@@ -440,7 +447,7 @@ class BaseDatabase(PopulateCollect, Settings):
         fy = None
 
         for fy in self.cache.get_all_fiscal_years():
-            if fy[5]:  # work_on
+            if fy[5]:  # work_on field
                 break
 
         return fy
@@ -549,7 +556,9 @@ class BaseDatabase(PopulateCollect, Settings):
 
         async with aiosqlite.connect(self.user_data_fullpath,
                                      detect_types=self._DETECT_TYPES) as db:
-            queries = [q.strip() for q in query.split(";") if q.strip()]
+            await db.execute('PRAGMA foreign_keys=ON;')
+            queries = [q.strip() for q in query.split(';') if q.strip()
+                       if q.strip()]
             rowcount = 0
 
             try:
@@ -557,9 +566,6 @@ class BaseDatabase(PopulateCollect, Settings):
                     await db.execute("BEGIN;")
 
                 for stmt in queries:
-                    if not stmt:  # pragma: no cover
-                        continue
-
                     # Put the ; back on the query.
                     cursor = await db.executemany(stmt + ';', data)
                     rowcount += cursor.rowcount
@@ -567,7 +573,7 @@ class BaseDatabase(PopulateCollect, Settings):
                 await db.commit()
             except Exception as e:
                 await db.rollback()
-                self._log.error("Error with data %s, %s", data, e,
-                                exc_info=True)
+                self._log.error("Error with queries %s and data %s, %s",
+                                queries, data, e, exc_info=True)
 
         return rowcount

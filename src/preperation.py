@@ -26,14 +26,15 @@ class DataPreperation:
         self._log = logging.getLogger(self._tac.logger_name)
         self.db = db
 
-    async def organization(self, data: dict, f_year: int, f_month: int
-                           ) -> str | None:
+    async def organization(self, data: dict, f_year: int, f_month: int,
+                           f_day: int) -> str | None:
         """
         Insert or update the organization data.
 
         :param dict data: The data to insert or update.
         :param int f_year: The fiscal year.
         :param int f_month: The month that the fiscal year starts.
+        :param int f_day: The 1st day of the fiscal year.
         :returns: An error message or None.
         :rtype: str or None
         """
@@ -66,7 +67,11 @@ class DataPreperation:
                     elif latest_fy and latest_fy == p_year:
                         await self._enter_next_year(p_year, p_month, p_day)
                     elif f_year == p_year:  # This is an update
-                        pass
+                        # Update the fiscal both years.
+                        if f_month != p_month or f_day != p_day:
+                            wrong_fy = (f_year, f_month, f_day)
+                            correct_fy = (p_year, p_month, p_day)
+                            await self._fix_fiscal_years(wrong_fy, correct_fy)
                     else:
                         error = ("Cannot enter a year that is not immediately "
                                  "before or after the earliest or latest "
@@ -222,7 +227,8 @@ class DataPreperation:
 
         return error
 
-    async def _first_run_initialization(self, year: int, month: int, day: int):
+    async def _first_run_initialization(self, year: int, month: int, day: int
+                                        ) -> None:
         """
         The first run of the application.
 
@@ -289,6 +295,34 @@ class DataPreperation:
         """
         return await self.db.cache.insert(
             self.db._T_FISCAL_YEAR, {'data': [(year, month, day, 0, 0, 0)]})
+
+    async def _fix_fiscal_years(self, wrong_fy: tuple, correct_fy: tuple
+                                ) -> int:
+        """
+        We need to fix the fiscal years if the month and/or day were
+        entered wrong.
+
+        :param tuple wrong_fy: A tuple indicating the year, mont, and day.
+        :param tuple correct_fy: A tuple indicating the year, mont, and day.
+        :returns: The number of DB rows affected.
+        :rtype: int
+        """
+        rowcount = 0
+        db_fy = self.db._T_FISCAL_YEAR
+        w_year, w_month, w_day = wrong_fy
+        c_year, c_month, c_day = correct_fy
+        fy1 = self.db.cache.get(db_fy, year=w_year)
+        fy2 = self.db.cache.get(db_fy, year=w_year + 1)
+
+        if fy1:
+            fy_years = [(c_year, c_month, c_day, *fy1[0][4:7])]
+
+            if fy2:
+                fy_years.append((c_year + 1, c_month, c_day, *fy2[0][4:7]))
+
+            rowcount += await self.db.cache.update(db_fy, {'data': fy_years})
+
+        return rowcount
 
     def _add_location_data(self, data: dict) -> tuple:
         """
