@@ -13,7 +13,7 @@ import badidatetime
 from unittest.mock import patch
 
 from src.bases import BaseGenerated
-from src.config import TomlPanelConfig
+from src.config import Settings
 from src.utilities import StoreObjects
 
 from . import LOGFILE_NAME, check_flag, patchers
@@ -28,8 +28,8 @@ class TestPopulateCollect(BaseAsyncTests):
     def setUp(self):
         check_flag(self.__class__.__name__)
         patchers(self)
-        self._tpc = TomlPanelConfig()
-        self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
+        self._set = Settings()
+        self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
         self.fmf = StoreObjects().get_object('MainFrame')
 
     async def asyncSetUp(self):
@@ -142,6 +142,73 @@ class TestPopulateCollect(BaseAsyncTests):
                     expected, result))
 
     #@unittest.skip("Temporarily skipped")
+    async def test__lde_push(self):
+        """
+        Test that the lde_push method correctly pushes data onto a
+        dictionary object.
+        """
+        ldg_values0 = {'transaction': {'contribution': True},
+                       'entry_ref': {'OCS': True},
+                       'income': {'local_fund': True, 'amount': '50.00'}}
+        expect0 = {'transaction': {'contribution': True}}
+        expect1 = {'entry_ref': {'ocs': True}}
+        expect2 = {'income': {'local_fund': True}}
+        expect3 = {'income': {'amount': '50.00'}}
+
+        ldg_values1 = {'transaction': {'distribution': True},
+                       'entry_ref': {'OCS': True},
+                       'bank': {'amount': '150.00'}}
+        expect4 = {'transaction': {'distribution': True}}
+        expect5 = {'entry_ref': {'ocs': True}}
+        expect6 = {'bank': {'amount': '150.00'}}
+
+        ldg_values2 = {'transaction': {'expense': True},
+                       'entry_ref': {'OCS': True},
+                       'national_baháí_funds':
+                       {'national_baháí_fund': '150.00'}}
+        expect7 = {'transaction': {'expense': True}}
+        expect8 = {'entry_ref': {'ocs': True}}
+        expect9 = {'expenses': {'national_baháí_funds':
+                                {'national_baháí_fund': '150.00'}}}
+        data = (
+            ('transaction.contribution', True, ldg_values0, expect0),
+            ('entry_ref.ocs', True, ldg_values0, expect1),
+            ('income.local_fund', True, ldg_values0, expect2),
+            ('income.amount', '50.00', ldg_values0, expect3),
+            ('transaction.distribution', True, ldg_values1, expect4),
+            ('entry_ref.ocs', True, ldg_values1, expect5),
+            ('bank.amount', '150.00', ldg_values1, expect6),
+            ('transaction.expense', True, ldg_values2, expect7),
+            ('entry_ref.ocs', True, ldg_values2, expect8),
+            ('national_baháí_funds.national_baháí_fund', '150.00',
+             ldg_values2, expect9),
+            )
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.fmf.panels['ledger']
+
+            for key, value, items, expected in data:
+                values = {}
+                self.db._lde_push(key, value, panel, values)
+                self.assertEqual(expected, values)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__lde_pop(self):
+        """
+        Test that the lde_pop method correctly pops values off a
+        dictionary object.
+        """
+        data = (
+            (),
+            )
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            pass
+
+
+    #@unittest.skip("Temporarily skipped")
     async def test_collect_panel_values(self):
         """
         Test that the collect_panel_values method collects data from
@@ -149,11 +216,17 @@ class TestPopulateCollect(BaseAsyncTests):
         """
         mth_values = dict(self._MTH_DATA)
         mth_values['month_index'] = 0
+        ldg_values0 = {'transaction': {
+            'contribution': True, 'distribution': False, 'expense': False,
+            'other': ''},
+                       'entry_ref': {'OCS': True},
+                       'income': {'local_func': True, 'amount': '50.00'}}
         data = (
             ('organization', 9, self._ORG_DATA, self._ORG_DATA),
             ('budget', 36, self._BGT_DATA, self._BGT_DATA),
             ('monthly', 7, mth_values, self._MTH_DATA),
             ('fiscal', 4, self._FY_DATA, self._FY_DATA),
+            #('ledger', 6, ldg_values0, ldg_values0)
             )
         msg = "Expected '{}', panel_name '{}', found '{}'."
 
@@ -178,11 +251,17 @@ class TestPopulateCollect(BaseAsyncTests):
         org_data = dict(self._ORG_DATA)
         org_data['start_of_fiscal_year'] = org_data[
             'start_of_fiscal_year'].isoformat()
+        ldg_values0 = {'transaction': {
+            'contribution': True, 'distribution': False, 'expense': False,
+            'other': ''},
+                       'entry_ref': {'OCS': True},
+                       'income': {'local_func': True, 'amount': '50.00'}}
         data = (
             ('organization', org_data, False, True),
             ('budget', self._BGT_DATA, False, True),
             ('fiscal', self._FY_DATA, False, True),
             ('fiscal', {}, True, True),
+            #('ledger', ldg_values0, False, True),
             )
         msg = "Expected {}, field_name '{}', found {}."
 

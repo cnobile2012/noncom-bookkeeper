@@ -18,7 +18,6 @@ class DataPreperation:
     All data in the data and fiscal_year tables need to prepared before
     cached or saved to the database.
     """
-    _EXCLUDE_PANELS = ('fiscal', 'monthly')
 
     def __init__(self, db, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -26,19 +25,17 @@ class DataPreperation:
         self._log = logging.getLogger(self._tac.logger_name)
         self.db = db
 
-    async def organization(self, data: dict, f_year: int, f_month: int,
-                           f_day: int) -> str | None:
+    async def organization(self, data: dict, date: tuple) -> str | None:
         """
         Insert or update the organization data.
 
         :param dict data: The data to insert or update.
-        :param int f_year: The fiscal year.
-        :param int f_month: The month that the fiscal year starts.
-        :param int f_day: The 1st day of the fiscal year.
+        :param tuple date: The current fiscal year date.
         :returns: An error message or None.
         :rtype: str or None
         """
         error = None
+        f_year, f_month, f_day = date
 
         if data:
             error = self._empty_fields('organization', data)
@@ -198,7 +195,7 @@ class DataPreperation:
         :returns: Any errors or None with no errors.
         :rtype: str or None
         """
-        pass
+        print('POOP', data, date)
 
     def _empty_fields(self, panel_name: str, data: dict) -> str | None:
         """
@@ -253,7 +250,7 @@ class DataPreperation:
 
         # Populate all panel fields in the database.
         for name, panel in self.db._mf.panels.items():
-            if name in self._EXCLUDE_PANELS: continue
+            if name in self.db._EXCLUDE_PANELS: continue
             panel_data = self.db.collect_panel_values(panel)
             await self.db._add_fields_to_field_type_table(panel_data)
 
@@ -519,3 +516,16 @@ class DataPreperation:
                 values[key] = items[idx]
 
         return values
+
+    @property
+    def ledger_data(self) -> dict:
+        """
+        This property get the ledger data.
+
+        :returns: The ledger data as defined by {<field name>: <value>}.
+        :rtype: dict
+        """
+        panel = self.db._mf.panels['ledger']
+        data = self.db.collect_panel_values(panel)
+        # *** TODO *** Make DB call to get the refreash data.
+        return {}

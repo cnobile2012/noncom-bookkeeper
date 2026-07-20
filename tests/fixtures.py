@@ -14,6 +14,7 @@ from src.config import Settings, TomlPanelConfig, TomlAppConfig
 from src.bahai_database import Database
 from src.panel_factory import PanelFactory
 from src.utilities import StoreObjects
+from src.data_entry import LedgerDataEntry
 
 __all__ = ('FakeFrame', 'FakeMainFrame', 'Options', 'FakeWidget', 'FakeEvent',
            'FakePanel')
@@ -70,6 +71,9 @@ class FakeMainFrame(wx.Frame):
                     class_name = sf.get_class_name(panel)
                     self.__panel_classes[panel] = globals(
                         )[class_name](self, *self.args, **self.kwargs)
+
+        self.__panel_classes['ledger'] = LedgerDataEntry(self, *self.args,
+                                                         **self.kwargs)
 
     @property
     def panels(self):

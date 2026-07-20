@@ -32,9 +32,9 @@ font_10_bold = [10, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
                 'FONTWEIGHT_BOLD', 0, '']
 data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
     ['Transaction Type', 3, 1, 'top', 2, true],
-    ['Entry Reference', 2, 2, 'bottom', 2, true],
-    ['Cash in Bank', 4, 2, 'top', 2, true],
-    ['Cash on Hand', 3, 2, 'top', 2, true],
+    ['Entry Reference', 1, 2, 'bottom', 2, true],
+    ['Cash in Bank', 2, 2, 'top', 2, true],
+    ['Cash on Hand', 2, 2, 'top', 2, true],
     ['Income', 3, 2, 'top', 2, true],
     ['Expenses', 0, 0, '', 2, false],
     ["Local Bahá'í Expenses", 0, 5, 'bottom', 1, false],
@@ -45,11 +45,9 @@ data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
     ]
 data_entry_labels = [
     ['transaction', 'Contribution:', 'Distribution:', 'Expense:', 'Other:'],
-    ['entry_ref', 'Check Number:', 'Receipt Number:', 'Debit:', 'OCS:'],
-    ['$bank', 'Deposit Amount:', 'Check Amount:', 'Dedit Amount:',
-     'OCS Amount:', '@Amount:', '%Balance:'],
-    ['$coh', 'Cash Amount:', 'Check Amount:', 'Debit Amount:', '@Amount:',
-     '%Balance:'],
+    ['entry_ref', 'Check Number:', 'Receipt Number:', 'OCS:'],
+    ['$bank', 'Deposit:', 'Withdrawal:', '@Amount:', '%Balance:'],
+    ['$coh', 'Replenishment:', 'Disbursement:', '@Amount:', '%Balance:'],
     ['$income', 'Local Fund:', 'Contributed Expense:', 'Misc:', '@Amount:',
      '%Balance:']
     ]

@@ -14,8 +14,8 @@ from collections import OrderedDict
 from .custom_widgits import ColorCheckBox, EVT_COLOR_CHECKBOX
 
 
-def make_name(name: str):
-    name = re.sub(r"[&*\(\):\"'/\\]+", '', name)
+def make_name(name: str) -> str:
+    name = re.sub(r"[!$&*@%\(\):\"'/\\]+", '', name)
     name = re.sub(r"[- \s]+", '_', name).strip('_')
     return re.sub(r"_+", "_", name).lower()
 
@@ -375,40 +375,44 @@ class MutuallyExclusiveWidgets:
         assert (len(labels) - 1) == (num_cb + num_txt), (
             f"The number of labels '{len(labels) - 1}' are not equal to the "
             f"number of ColorCheckBoxes and TextCtrls '{num_cb + num_txt}'.")
+        label = labels[0]
         assert self.is_valid_label(
-            labels[0], self._CAT_LABEL_1ST, self._CAT_LABEL_ALOW), (
-                f"Invalid category label {labels[0]}.")
+            label, self._CAT_LABEL_1ST, self._CAT_LABEL_ALOW), (
+                f"Invalid category label {label}.")
         assert all(self.is_valid_label(
             lb, self._WGT_LABEL_1ST, self._WGT_LABEL_ALOW)
                    for lb in labels[1:]), f"Invalid label(s) in {labels[1:]}."
 
         start_pos = pos_idx
-        label = labels[0]
         cb_list = self._CHECKBOXES.setdefault(label, [])
         tc_list = self._TEXTCTRLES.setdefault(label, [])
 
         if cb_pos == 'top':  # CheckBoxs are on the top
-            pos_idx = self._create_ccbs(cb_list, num_cb, labels[1:], pos_idx)
-            self._create_ctrls(tc_list, num_txt, labels[1+num_cb:], pos_idx)
+            pos_idx = self._create_ccbs(cb_list, num_cb, labels, pos_idx)
+            ctrl_labels = [label] + labels[1+num_cb:]
+            self._create_ctrls(tc_list, num_txt, ctrl_labels, pos_idx)
         else:  # CheckBoxs are on the bottom
-            pos_idx = self._create_ctrls(tc_list, num_txt, labels[1:], pos_idx)
-            self._create_ccbs(cb_list, num_cb, labels[1+num_txt:], pos_idx)
+            pos_idx = self._create_ctrls(tc_list, num_txt, labels, pos_idx)
+            ccb_labels = [label] + labels[1+num_txt:]
+            self._create_ccbs(cb_list, num_cb, ccb_labels, pos_idx)
 
         if label[0] not in ('!', '&'):
             for cb in cb_list:
                 cb.Bind(EVT_COLOR_CHECKBOX,
-                        self.on_checkbox_selected_wrapper(labels[0]))
+                        self.on_checkbox_selected_wrapper(label))
 
         if label[0] not in ('$', '&'):
             for tc in tc_list:
                 tc.Bind(wx.EVT_SET_FOCUS,
-                        self.on_text_focus_wrapper(labels[0]))
+                        self.on_text_focus_wrapper(label))
 
         return start_pos + num_cb + num_txt
 
     def _create_ccbs(self, cb_list, num_cb, labels, pos_idx):
+        category = make_name(labels[0])
+
         for num in range(num_cb):
-            label = labels[num]
+            label = labels[1:][num]
 
             # An asterisk as the 1st char indicates non-editable.
             if label[0] == '*':
@@ -425,6 +429,7 @@ class MutuallyExclusiveWidgets:
                                cb_color=self.w_bg_color, name=make_name(label))
             cb.SetForegroundColour(self.w_fg_color)  # Dark Blue
             cb.SetMinSize((16, 16))
+            cb.category = category
             if read_only: cb.SetReadOnly()
             self.gbs.Add(cb, (pos_idx, 1), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
@@ -434,16 +439,18 @@ class MutuallyExclusiveWidgets:
         return pos_idx
 
     def _create_ctrls(self, tc_list, num_txt, labels, pos_idx):
-        for num in range(num_txt):
-            label = labels[num]
+        category = make_name(labels[0])
 
-            if label[0] == '*':  # An asterisk indicates non-editable
+        for num in range(num_txt):
+            label = labels[1:][num]
+
+            if label[0] == '*':    # Read only
                 label = label[1:]
                 style = wx.TE_READONLY
-            elif label[0] == '@':  # In the MEG and Right aligned
+            elif label[0] == '@':  # Right aligned, editable, and financial
                 label = label[1:]
                 style = wx.TE_RIGHT
-            elif label[0] == '%':  # Not in MEG and right aligned
+            elif label[0] == '%':  # Right aligned and read only
                 label = label[1:]
                 style = wx.TE_READONLY | wx.TE_RIGHT
             else:
@@ -460,11 +467,16 @@ class MutuallyExclusiveWidgets:
                 tc.Enable(False)
                 tc.SetBackgroundColour(self.w1_bg_color)  # Gray
             else:
-                tc.SetBackgroundColour(self.w_bg_color)  # Cream
+                tc.SetBackgroundColour(self.w_bg_color)   # Cream
 
             tc.SetForegroundColour(self.w_fg_color)
             tc.SetMinSize([self.tc_width, 26])
             tc.financial = False if style == 0 else True
+            tc.category = category
+
+            if tc.financial:
+                tc.Bind(wx.EVT_TEXT, self.set_dirty_flag)
+
             self.gbs.Add(tc, (pos_idx, 1), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
             tc_list.append(tc)

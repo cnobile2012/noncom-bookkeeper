@@ -80,6 +80,52 @@ class PopulateCollect:
 
         return all([item not in self._EMPTY_FIELDS for item in items])
 
+    def _lde_push(self, key: str, value: str, panel: wx.Panel, data: dict
+                  ) -> None:
+        """
+        Push LedgerDataEntry panel data to a dictionary object.
+
+        :param str key: The panel field name.
+        :param str value: The pane value for the field name.
+        :param wx.Panel panel: The LedgerDataEntry panel object.
+        :param dict data: The dictionary object to push the value into.
+        """
+        category, field_name = key.split('.')
+
+        for cat, labels in panel.ledger_labels.items():
+            if isinstance(labels, list) and category == cat:
+                if field_name in labels:
+                    data.setdefault(cat, {})[field_name] = value
+            elif isinstance(labels, dict):
+                for sub_cat, sub_labels in labels.items():
+                    if field_name in sub_labels and category == sub_cat:
+                        tmp = data.setdefault(cat, {})
+                        tmp.setdefault(sub_cat, {})[field_name] = value
+
+    def _lde_pop(key: str, panel: wx.Panel, data: dict) -> str:
+        """
+        Pop values off the dictionary object.
+
+        :param str key: The panel field name.
+        :param wx.Panel panel: The LedgerDataEntry panel object.
+        :param dict data: The dictionary object to push the value into.
+        :returns: The value of the panel's field name.
+        :rtype: str
+        """
+        result = None
+
+        for cat, labels in panel.ledger_labels.items():
+            if isinstance(labels, list):
+                if key in labels:
+                    result = data[cat][key]
+            else:
+                for sub_cat, sub_labels in labels.items():
+                    if key in sub_labels:
+                        result = data[cat][sub_cat][key]
+
+        return result
+
+
     def collect_panel_values(self, panel: wx.Panel) -> dict:
         """
         Collects the data from the panel widgets and convert if necessary to
@@ -93,27 +139,33 @@ class PopulateCollect:
         data = {}
         panel_name = panel.__class__.__name__
 
+        if panel_name == 'LedgerDataEntry':
+            def push(key, value): self._lde_push(key, value, panel, data)
+        else:
+            def push(key, value): data[key] = value
+
         for w0, w1 in self.find_child_sets(panel):
             name0, field_name, widget0 = w0
             if name0 in self._EXCLUDE_WIDGETS: continue
 
             if name0 in ('RadioBox', 'ComboBox'):
                 if field_name == 'month_index':
-                    data[field_name] = widget0.GetStringSelection()
+                    push(field_name, widget0.GetStringSelection())
                 else:
-                    data[field_name] = widget0.GetSelection()
-            # elif name0 in ('ColorCheckBox',):
-            #     data[field_name] = widget0.GetValue()
+                    push(field_name, widget0.GetSelection())
             elif name0 == 'StaticText':
                 name1, _, widget1 = w1
                 value = widget1.GetValue()
 
+                if hasattr(widget1, 'category'):
+                    field_name = f"{widget1.category}.{field_name}"
+
                 if name1 == 'TextCtrl':
-                    data[field_name] = self._value_to_db(
-                        value, financial=widget1.financial)
+                    push(field_name, self._value_to_db(
+                        value, financial=widget1.financial))
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl',
                                'ColorCheckBox', 'CheckBox'):
-                    data[field_name] = value
+                    push(field_name, value)
                 else:  # pragma: no cover
                     self._set_statusbar(name1)
             else:  # pragma: no cover
@@ -122,9 +174,9 @@ class PopulateCollect:
 
         # Add fields that are not in the UI.
         if panel_name == 'OrganizationPanel':
-            data['iana_name'] = None
-            data['latitude'] = None
-            data['longitude'] = None
+            push('iana_name', None)
+            push('latitude', None)
+            push('longitude', None)
 
         return data
 
@@ -138,6 +190,11 @@ class PopulateCollect:
         :param dict data: The database values to be used to poplulate
                           the panel.
         """
+        if panel_name == 'ledger':
+            def pop(key): return self._lde_pop(key, panel, data)
+        else:
+            def pop(key): return data.get(key)
+
         if data:  # When run after first time.
             for w0, w1 in self.find_child_sets(panel):
                 name0, field_name, widget0 = w0
@@ -252,8 +309,9 @@ class PopulateCollect:
             name = child.__class__.__name__
             label = child.GetLabel()
 
-            if (name in ('StaticLine', 'StaticText', 'Panel')
-                and not label.endswith(':')):
+            if name in ('StaticLine', 'Panel', 'Button', 'FlatArrowButton'):
+                continue
+            if name in ('StaticText',) and not label.endswith(':'):
                 continue
             elif name in ('ComboBox',):
                 add = True
@@ -264,8 +322,8 @@ class PopulateCollect:
             if add: children.append(None)
 
         result = [children[i:i+2] for i in range(0, len(children), 2)]
-        assert [len(item) == 2 for item in result], (
-            "Warning more than two children in the tuple.")
+        assert all([len(item) == 2 for item in result]), (
+            "Warning must be two children in all tuples.")
         return result
 
     def _add_fiscal_year_choices(self, *, panel: wx.Panel=None, w0=None

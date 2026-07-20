@@ -11,7 +11,7 @@ import badidatetime
 
 from unittest.mock import patch
 
-from src.config import TomlPanelConfig
+from src.config import Settings
 from src.utilities import StoreObjects
 from src.base_database import BaseDatabase, adapt_tuple, convert_tuple
 
@@ -27,8 +27,8 @@ class TestBaseDatabase(BaseAsyncTests):
     def setUp(self):
         check_flag(self.__class__.__name__)
         patchers(self)
-        self._tpc = TomlPanelConfig()
-        self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
+        self._set = Settings()
+        self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
         self.fmf = StoreObjects().get_object('MainFrame')
 
     async def asyncSetUp(self):

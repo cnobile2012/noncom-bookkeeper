@@ -9,7 +9,7 @@ import unittest
 import badidatetime
 from unittest.mock import patch
 
-from src.config import TomlPanelConfig
+from src.config import Settings
 from src.preperation import DataPreperation
 from src.utilities import StoreObjects
 
@@ -25,8 +25,8 @@ class TestDataPreperation(BaseAsyncTests):
     def setUp(self):
         check_flag(self.__class__.__name__)
         patchers(self)
-        self._tpc = TomlPanelConfig()
-        self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
+        self._set = Settings()
+        self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
         self.fmf = StoreObjects().get_object('MainFrame')
 
     async def asyncSetUp(self):
@@ -63,15 +63,15 @@ class TestDataPreperation(BaseAsyncTests):
         data = (
             ({}, (None, None, None), False, err_msg0),    # No data
             (part_data, (183, 3, 5), False, err_msg1.format(
-                "locale_name, treasurer")),       # Partial data
+                "locale_name, treasurer")),               # Partial data
             (full_data, (None, None, None), True, None),  # Full data
-            (update_data, (183, 3, 5), True, None),    # Updated data
+            (update_data, (183, 3, 5), True, None),       # Updated data
             )
         msg = "Expexted {}, found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
             for items, date, valid, expected in data:
-                error = await self.tdp.organization(items, *date)
+                error = await self.tdp.organization(items, date)
 
                 if valid and not error:
                     # Current Year (full_data)
@@ -125,7 +125,7 @@ class TestDataPreperation(BaseAsyncTests):
         with patch.object(self.db, '_mf', self.fmf):
             for date, fy_date, years, expected in data:
                 org_data['start_of_fiscal_year'] = date
-                error = await self.tdp.organization(org_data, *fy_date)
+                error = await self.tdp.organization(org_data, fy_date)
 
                 if not error:
                     # Current field previous year

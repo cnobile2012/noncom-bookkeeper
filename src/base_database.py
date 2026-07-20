@@ -215,7 +215,7 @@ class BaseDatabase(PopulateCollect, Settings):
     _VIEWS.sort()
     _INDICES = [name.split()[0] for name in _SCHEMA_INDICES]
     _INDICES.sort()
-    _EXCLUDE_PANELS = ('fiscal', 'monthly')
+    _EXCLUDE_PANELS = ('fiscal', 'monthly', 'ledger')
     _MAX_FIELD_LEN = 50  # Max length of fields allowed in the field_table.
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
 
@@ -422,7 +422,7 @@ class BaseDatabase(PopulateCollect, Settings):
         data = self.collect_panel_values(panel)
 
         if panel_name == 'organization':
-            error = await self.dp.organization(data, f_year, f_month, f_day)
+            error = await self.dp.organization(data, (f_year, f_month, f_day))
         elif panel_name == 'budget':
             error = await self.dp.budget(data, f_year, f_month)
         elif panel_name == 'monthly':

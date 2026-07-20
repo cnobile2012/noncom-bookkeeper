@@ -9,7 +9,7 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData, TomlCreatePanel
-from .utilities import MutuallyExclusiveWidgets, make_name
+from .utilities import StoreObjects, MutuallyExclusiveWidgets, make_name
 from .bases import BasePanel
 from .custom_widgits import (
     BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED, FlatArrowButton, EVT_FLAT_ARROW)
@@ -24,9 +24,11 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
     def __init__(self, parent, id=wx.ID_ANY, *args, **kwargs):
         super().__init__(parent, id=id, *args, **kwargs)
+        BasePanel.__init__(self, *args, **kwargs)
+        self._so = StoreObjects()
         self.frame = parent.GetParent()
-        self.create_display()
         self.dirty = False
+        self.create_display()
 
     def create_display(self):
         self.title = "Ledger Data Entry"
@@ -93,7 +95,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_02.SetForegroundColour(self.w_fg_color)
         widget_02.SetMinSize((130, 28))
         widget_02.SetFocus()
-        #widget_02.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
+        widget_02.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
         self.gbs.Add(widget_02, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 12)
         pos += 1
@@ -107,6 +109,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_04.SetBackgroundColour(self.w_bg_color)
         widget_04.SetForegroundColour(self.w_fg_color)
         widget_04.SetMinSize((452, 26))
+        widget_04.financial = False
         sizer_1.Add(widget_04, 0, wx.EXPAND | wx.ALL, 6)
         self.gbs.Add(sizer_1, (pos, 0), (1, 2), wx.EXPAND | wx.TOP, 6)
 
@@ -115,17 +118,20 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         label_gen = self._label_generator()
         title_data, labels = self._next_title_and_labels(title_gen, label_gen)
         pos += 2
+        self._de_labels = {}
 
         while title_data is not None and labels is not None:
             title, num_cb, num_txt, cb_pos, span, btn = title_data[:6]
             button, pos = self._make_heading(title, pos, span=span, btn=btn)
             pos = self.create_widgets(num_cb, num_txt, cb_pos, labels, pos)
+            label = labels[0]
+            self._de_labels[make_name(label)] = [make_name(l)
+                                                 for l in labels[1:]]
 
             if button:
                 # We need to bind after the method call above, because the
                 # two dicts above are not updated until the method is called.
-                button.Bind(wx.EVT_BUTTON,
-                            self.reset_inputs_wrapper(labels[0]))
+                button.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(label))
 
             # Next
             pos += 1
@@ -154,6 +160,22 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
         self.SetupScrolling(rate_x=20, rate_y=40)
         self.Hide()
+
+    @property
+    def ledger_labels(self) -> dict:
+        skip = []
+
+        for key, value in self._de_labels.items():
+            if not value:
+                skip.append(key)
+                break
+
+            skip.append(key)
+
+        tmp = {key: self._de_labels[key] for key in skip}
+        tmp[skip[-1]] = {k: v for k, v in self._de_labels.items()
+                         if k not in skip}
+        return tmp
 
     def button_save(self, event):
         self.save = True

@@ -133,28 +133,20 @@ class MainFrame(wx.Frame, MenuBar):
                 self.statusbar_message = f"Finished saving {c_name} data."
             else:
                 self.statusbar_warning = error
-                # *** TODO *** Reset to default all values in panel.
+                data = self._reset_panel(name)
+                self.db.populate_panel_values(name, panel, data)
 
         def on_timer(event):
             for name, panel in self.panels.items():
                 if panel.dirty:
                     if name in ('organization', 'budget', 'monthly', 'ledger'):
-                        match name:
-                            case 'organization':
-                                data = self.db.dp.organization_data
-                            case 'budget':
-                                data = self.db.dp.budget_data
-                            case 'monthly':
-                                data = self.db.dp.monthly_data
-                            case 'ledger':
-                                data = {}  # *** TODO *** Figure this out
-
                         if panel.save:
                             panel.save = False
                             do_save(name, panel)
                             panel.dirty = False
                         elif panel.cancel:
                             panel.cancel = False
+                            data = self._reset_panel(name)
                             self.db.populate_panel_values(name, panel, data)
                             panel.dirty = False
                             c_name = name.capitalize()
@@ -165,6 +157,19 @@ class MainFrame(wx.Frame, MenuBar):
                         do_save(name, panel)
 
         return on_timer
+
+    def _reset_panel(self, name) -> dict:
+        match name:
+            case 'organization':
+                data = self.db.dp.organization_data
+            case 'budget':
+                data = self.db.dp.budget_data
+            case 'monthly':
+                data = self.db.dp.monthly_data
+            case 'ledger':
+                data = self.db.dp.ledger_data
+
+        return data
 
     def load_panels(self):
         sf = PanelFactory()
