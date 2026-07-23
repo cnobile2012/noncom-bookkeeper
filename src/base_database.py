@@ -130,48 +130,49 @@ class BaseDatabase(PopulateCollect, Settings):
             'fy2fk INTEGER NOT NULL',
             'ltfk INTEGER NOT NULL',
             'lrfk INTEGER NOT NULL',
-            'trans_no INTEGER NOT NULL',
-            'date DATETIME NOT NULL',
+            'trans_num INTEGER NOT NULL',
+            'date DATE NOT NULL',
             'memo TEXT NULL',
             'purged INTEGER default 0',
             'ctime DATETIME NOT NULL',
             'mtime DATETIME NOT NULL',
-            'CONSTRAINT unq UNIQUE (fy1fk, trans_no)',
+            'CONSTRAINT unq UNIQUE (fy1fk, trans_num)',
             f'FOREIGN KEY (fy1fk) REFERENCES {_T_FISCAL_YEAR} (pk)',
             f'FOREIGN KEY (fy2fk) REFERENCES {_T_FISCAL_YEAR} (pk)',
             f'FOREIGN KEY (ltfk) REFERENCES {_T_LEDGER_TRANSACTION} (pk)',
             f'FOREIGN KEY (lrfk) REFERENCES {_T_LEDGER_REFERENCE} (pk)'),
         _T_LEDGER_TRANSACTION: (
             'pk INTEGER NOT NULL PRIMARY KEY',
-            'type INTEGER NOT NULL',
+            't_type INTEGER NOT NULL',
             'other TEXT NULL'),
         _T_LEDGER_REFERENCE: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'ck_num TEXT NULL',
             'rcpt_num TEXT NULL',
-            'type INTEGER'),
+            'r_type INTEGER'),
         _T_LEDGER_BANK: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'lhfk INTEGER NOT NULL UNIQUE',
-            'type INTEGER NOT NULL',
+            't_type INTEGER NOT NULL',
             'amount INTEGER',
             'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_COH: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'lhfk INTEGER NOT NULL UNIQUE',
-            'type INTEGER NOT NULL',
+            't_type INTEGER NOT NULL',
             'amount INTEGER',
             'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_INCOME: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'lhfk INTEGER NOT NULL UNIQUE',
-            'type INTEGER NOT NULL',
+            't_type INTEGER NOT NULL',
             'amount INTEGER',
             'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_EXPENSE: (
+            'pk INTEGER NOT NULL PRIMARY KEY',
             'lhfk INTEGER NOT NULL',
             'ftfk INTEGER NOT NULL',
             'amount INTEGER',
@@ -180,27 +181,28 @@ class BaseDatabase(PopulateCollect, Settings):
         }
     _SCHEMA_VIEWS = {
         _V_LEDGER_HEADER: (
-            'date', 'fy1_year', 'fy1_month', 'fy1_day', 'fy2_year',
-            'fy2_month', 'fy2_day', 'trans_type', 'trans_other', 'ref_ck_num',
-            'ref_rcpt_num', 'ref_type', 'purged', 'ctime', 'mtime'),
-        _V_LEDGER_EXPENSE: (
-            'type', 'field_name', 'amount'),
+            'pk', 'trans_num', 'date', 'memo', 'fy1_year', 'fy1_month',
+            'fy1_day', 'fy2_year', 'fy2_month', 'fy2_day', 't_type',
+            'trans_other', 'ref_ck_num', 'ref_rcpt_num', 'r_type', 'purged',
+            'ctime', 'mtime'),
+        _V_LEDGER_EXPENSE: ('lhfk', 'field', 'amount'),
         }
     _SCHEMA_VIEW_QUERY = {
         _V_LEDGER_HEADER: (
-            'SELECT ld.date, fy1.year, fy1.month, fy1.day, fy2.year, '
-            'fy2.month, fy2.day, t.type, t.other, r.ck_num, r.rcpt_num, '
-            'r.type, ld.purged, ld.ctime, ld.mtime '
+            'SELECT ld.pk, ld.trans_num, ld.date, ld.memo, fy1.year, '
+            'fy1.month, fy1.day, fy2.year, fy2.month, fy2.day, lt.t_type, '
+            'lt.other, lr.ck_num, lr.rcpt_num, lr.r_type, ld.purged, '
+            'ld.ctime, ld.mtime '
             f'FROM {_T_LEDGER_HEADER} AS ld '
             f'JOIN {_T_FISCAL_YEAR} AS fy1 ON ld.fy1fk = fy1.pk '
             f'JOIN {_T_FISCAL_YEAR} AS fy2 ON ld.fy2fk = fy2.pk '
-            f'JOIN {_T_LEDGER_TRANSACTION} AS t ON ld.lttfk = t.pk '
-            f'JOIN {_T_LEDGER_REFERENCE} AS r ON ld.lrfk = r.pk;'),
+            f'JOIN {_T_LEDGER_TRANSACTION} AS lt ON ld.ltfk = lt.pk '
+            f'JOIN {_T_LEDGER_REFERENCE} AS lr ON ld.lrfk = lr.pk;'),
         _V_LEDGER_EXPENSE: (
-            'SELECT f.field, e.amount '
+            'SELECT le.lhfk, ft.field, le.amount '
             f'FROM {_T_LEDGER_HEADER} AS lh '
-            f'JOIN {_T_LEDGER_EXPENSE} AS e ON e.lhfk = lh.pk '
-            f'JOIN {_T_FIELD_TYPE} AS f ON p.ftfk = f.pk;')
+            f'JOIN {_T_LEDGER_EXPENSE} AS le ON le.lhfk = lh.pk '
+            f'JOIN {_T_FIELD_TYPE} AS ft ON le.ftfk = ft.pk;')
         }
     _SCHEMA_INDICES = (
         ('idx_month_month ON month(month);'),
@@ -488,7 +490,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
         :param str query: The SQL query to do.
         :params tuple params: Parameters to query.
-        :returns: A list of the data.
+        :returns: One or more rows of data.
         :rtype: list
         """
         async with aiosqlite.connect(self.user_data_fullpath,

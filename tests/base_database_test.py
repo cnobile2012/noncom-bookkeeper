@@ -120,6 +120,52 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                   'locality_prefix_month': 0}
     _FY_DATA = {'fiscal_year_choice': 0, 'current_fiscal_year': False,
                 'work_on_this_fiscal_year': False, 'audit_complete': False}
+    _LDG_DATA = {
+        'panel': {'date': '', 'memo': ''},
+        'transaction': {'contribution': False, 'distribution': False,
+                        'expense': False, 'other': ''},
+        'reference': {'check_number': '', 'receipt_number': '', 'ocs': False},
+        'bank': {'deposit': False, 'withdrawal': False, 'amount': '',
+                 'balance': ''},
+        'coh': {'replenishment': False, 'disbursement': False, 'amount': '',
+                'balance': ''},
+        'income': {'local_fund': False, 'contributed_expense': False,
+                   'misc': False, 'amount': '', 'balance': ''},
+        'expenses': {'local_baháí_expenses':
+                     {'administration': '', 'education': '',
+                      'proclamation': '', 'scolarships': '',
+                      'teaching': ''},
+                     'national_baháí_funds':
+                     {'national_baháí_fund': '',
+                      'baháí_chair_for_world_peace_reserved_fund': '',
+                      'persian_baháí_media_service_fund_payam_e_doost': '',
+                      'house_of_worship_campus_reserves_fund': '',
+                      'wilmette_institute_unrestricted_contribution': '',
+                      'humanitarian_relief_fund_in_usa': '',
+                      'us_baháí_archives_renovation_fund': '',
+                      'baháí_election_convention_contributions': '',
+                      'bosch_facilities_recovery_fund': '',
+                      'institute_properties_resurve_fund': '',
+                      'legal_defense_for_the_refugees_in_turkey': ''},
+                     'continental_and_international_funds':
+                     {'international_baháí_fund': '',
+                      'baháí_development_fund': '',
+                      'international_endowment_fund': '',
+                      'continental_baháí_fund': '',
+                      'national_house_of_worship_canada': '',
+                      'shrine_of_abdul_bahá': '',
+                      'humanitarian_relief_fund_world_center': '',
+                      'persian_relief_fund_world_center': '',
+                      'international_temples_fund': '',
+                      'asian_continental_board': '',
+                      'us_deputization_fund_international_pioneering': ''},
+                     'regional_funds':
+                     {'regional_baháí_council': '',
+                      'deputization_fund': '',
+                      'regional_facilities_fund': ''},
+                     'area_funds': {'area_teaching_committee': ''}
+                     }
+        }
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)

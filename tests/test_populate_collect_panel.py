@@ -147,41 +147,47 @@ class TestPopulateCollect(BaseAsyncTests):
         Test that the lde_push method correctly pushes data onto a
         dictionary object.
         """
-        ldg_values0 = {'transaction': {'contribution': True},
-                       'entry_ref': {'OCS': True},
+        ldg_values0 = {'panel': {'date': '0183-03-05', 'memo': 'Some text.'}}
+        expect00 = {'panel': {'date': '0183-03-05'}}
+        expect01 = {'panel': {'memo': 'Some text.'}}
+
+        ldg_values1 = {'transaction': {'contribution': True},
+                       'reference': {'ocs': True},
                        'income': {'local_fund': True, 'amount': '50.00'}}
-        expect0 = {'transaction': {'contribution': True}}
-        expect1 = {'entry_ref': {'ocs': True}}
-        expect2 = {'income': {'local_fund': True}}
-        expect3 = {'income': {'amount': '50.00'}}
+        expect10 = {'transaction': {'contribution': True}}
+        expect11 = {'reference': {'ocs': True}}
+        expect12 = {'income': {'local_fund': True}}
+        expect13 = {'income': {'amount': '50.00'}}
 
-        ldg_values1 = {'transaction': {'distribution': True},
-                       'entry_ref': {'OCS': True},
+        ldg_values2 = {'transaction': {'distribution': True},
+                       'reference': {'ocs': True},
                        'bank': {'amount': '150.00'}}
-        expect4 = {'transaction': {'distribution': True}}
-        expect5 = {'entry_ref': {'ocs': True}}
-        expect6 = {'bank': {'amount': '150.00'}}
+        expect20 = {'transaction': {'distribution': True}}
+        expect21 = {'reference': {'ocs': True}}
+        expect22 = {'bank': {'amount': '150.00'}}
 
-        ldg_values2 = {'transaction': {'expense': True},
-                       'entry_ref': {'OCS': True},
-                       'national_baháí_funds':
-                       {'national_baháí_fund': '150.00'}}
-        expect7 = {'transaction': {'expense': True}}
-        expect8 = {'entry_ref': {'ocs': True}}
-        expect9 = {'expenses': {'national_baháí_funds':
-                                {'national_baháí_fund': '150.00'}}}
+        ldg_values3 = {'transaction': {'expense': True},
+                       'reference': {'ocs': True},
+                       'expenses': {'national_baháí_funds':
+                                    {'national_baháí_fund': '150.00'}}}
+        expect30 = {'transaction': {'expense': True}}
+        expect31 = {'reference': {'ocs': True}}
+        expect32 = {'expenses': {'national_baháí_funds':
+                                 {'national_baháí_fund': '150.00'}}}
         data = (
-            ('transaction.contribution', True, ldg_values0, expect0),
-            ('entry_ref.ocs', True, ldg_values0, expect1),
-            ('income.local_fund', True, ldg_values0, expect2),
-            ('income.amount', '50.00', ldg_values0, expect3),
-            ('transaction.distribution', True, ldg_values1, expect4),
-            ('entry_ref.ocs', True, ldg_values1, expect5),
-            ('bank.amount', '150.00', ldg_values1, expect6),
-            ('transaction.expense', True, ldg_values2, expect7),
-            ('entry_ref.ocs', True, ldg_values2, expect8),
+            ('panel.date', '0183-03-05', ldg_values0, expect00),
+            ('panel.memo', 'Some text.', ldg_values0, expect01),
+            ('transaction.contribution', True, ldg_values1, expect10),
+            ('reference.ocs', True, ldg_values1, expect11),
+            ('income.local_fund', True, ldg_values1, expect12),
+            ('income.amount', '50.00', ldg_values1, expect13),
+            ('transaction.distribution', True, ldg_values2, expect20),
+            ('reference.ocs', True, ldg_values2, expect21),
+            ('bank.amount', '150.00', ldg_values2, expect22),
+            ('transaction.expense', True, ldg_values3, expect30),
+            ('reference.ocs', True, ldg_values3, expect31),
             ('national_baháí_funds.national_baháí_fund', '150.00',
-             ldg_values2, expect9),
+             ldg_values3, expect32),
             )
         msg = "Expected {}, found {}."
 
@@ -191,7 +197,8 @@ class TestPopulateCollect(BaseAsyncTests):
             for key, value, items, expected in data:
                 values = {}
                 self.db._lde_push(key, value, panel, values)
-                self.assertEqual(expected, values)
+                self.assertEqual(expected, values, msg.format(
+                    expected, values))
 
     #@unittest.skip("Temporarily skipped")
     async def test__lde_pop(self):
@@ -199,14 +206,41 @@ class TestPopulateCollect(BaseAsyncTests):
         Test that the lde_pop method correctly pops values off a
         dictionary object.
         """
+        ldg_values0 = {'panel': {'date': '0183-03-05', 'memo': 'Some text.'}}
+        ldg_values1 = {'transaction': {'contribution': True},
+                       'reference': {'ocs': True},
+                       'income': {'local_fund': True, 'amount': '50.00'}}
+        ldg_values2 = {'transaction': {'distribution': True},
+                       'reference': {'ocs': True},
+                       'bank': {'amount': '150.00'}}
+        ldg_values3 = {'transaction': {'expense': True},
+                       'reference': {'ocs': True},
+                       'expenses': {'national_baháí_funds':
+                                    {'national_baháí_fund': '150.00'}}}
         data = (
-            (),
+            ('panel.date', ldg_values0, '0183-03-05'),
+            ('panel.memo', ldg_values0, 'Some text.'),
+            ('transaction.contribution', ldg_values1, True),
+            ('reference.ocs', ldg_values1, True),
+            ('income.local_fund', ldg_values1, True),
+            ('income.amount', ldg_values1, '50.00'),
+            ('transaction.distribution', ldg_values2, True),
+            ('reference.ocs', ldg_values2, True),
+            ('bank.amount', ldg_values2, '150.00'),
+            ('transaction.expense', ldg_values3, True),
+            ('reference.ocs', ldg_values3, True),
+            ('national_baháí_funds.national_baháí_fund', ldg_values3,
+             '150.00'),
             )
         msg = "Expected {}, found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
-            pass
+            panel = self.fmf.panels['ledger']
 
+            for key, items, expected in data:
+                result = self.db._lde_pop(key, panel, items)
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test_collect_panel_values(self):
@@ -216,17 +250,24 @@ class TestPopulateCollect(BaseAsyncTests):
         """
         mth_values = dict(self._MTH_DATA)
         mth_values['month_index'] = 0
-        ldg_values0 = {'transaction': {
-            'contribution': True, 'distribution': False, 'expense': False,
-            'other': ''},
-                       'entry_ref': {'OCS': True},
-                       'income': {'local_func': True, 'amount': '50.00'}}
+        date = badidatetime.date(183, 3, 5)
+        ldg_values0 = dict(self._LDG_DATA)
+        ldg_values0['panel']['date'] = str(date)
+        ldg_values0['transaction']['expense'] = True
+        ldg_values0['reference']['ocs'] = True
+        ldg_values0['expenses']['national_baháí_funds'][
+            'national_baháí_fund'] = '150.00'
+        expect0 = dict(ldg_values0)
+        expect0['panel']['date'] = date
+        expect0['expenses']['national_baháí_funds'][
+            'national_baháí_fund'] = '15000'
+
         data = (
             ('organization', 9, self._ORG_DATA, self._ORG_DATA),
             ('budget', 36, self._BGT_DATA, self._BGT_DATA),
             ('monthly', 7, mth_values, self._MTH_DATA),
             ('fiscal', 4, self._FY_DATA, self._FY_DATA),
-            #('ledger', 6, ldg_values0, ldg_values0)
+            ('ledger', 7, ldg_values0, expect0),
             )
         msg = "Expected '{}', panel_name '{}', found '{}'."
 
@@ -251,40 +292,44 @@ class TestPopulateCollect(BaseAsyncTests):
         org_data = dict(self._ORG_DATA)
         org_data['start_of_fiscal_year'] = org_data[
             'start_of_fiscal_year'].isoformat()
-        ldg_values0 = {'transaction': {
-            'contribution': True, 'distribution': False, 'expense': False,
-            'other': ''},
-                       'entry_ref': {'OCS': True},
-                       'income': {'local_func': True, 'amount': '50.00'}}
+        date = badidatetime.date(183, 3, 5)
+        ldg_values0 = dict(self._LDG_DATA)
+        ldg_values0['panel']['date'] = str(date)
+        ldg_values0['transaction']['contribution'] = True
+        ldg_values0['reference']['ocs'] = True
+        ldg_values0['income']['local_fund'] = True
+        ldg_values0['income']['amount'] = '50.00'
+        expect0 = dict(ldg_values0)
+        expect0['panel']['date'] = date
+        expect0['income']['amount'] = '5000'
+
         data = (
-            ('organization', org_data, False, True),
-            ('budget', self._BGT_DATA, False, True),
-            ('fiscal', self._FY_DATA, False, True),
-            ('fiscal', {}, True, True),
-            #('ledger', ldg_values0, False, True),
+            ('organization', org_data, False, org_data),
+            ('budget', self._BGT_DATA, False, self._BGT_DATA),
+            ('fiscal', self._FY_DATA, False, self._FY_DATA),
+            ('fiscal', {}, True, {}),
+            ('ledger', ldg_values0, False, expect0),
             )
         msg = "Expected {}, field_name '{}', found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
-            for panel_name, values, first_run, valid in data:
+            for panel_name, values, first_run, expected in data:
                 panel = self.fmf.panels[panel_name]
+                self.db.populate_panel_values(panel_name, panel, values)
+                result = self.db.collect_panel_values(panel)
 
-                if valid:
-                    self.db.populate_panel_values(panel_name, panel, values)
-                    result = self.db.collect_panel_values(panel)
+                if first_run:
+                    combobox = panel.GetChildren()[3]
+                    self.assertEqual(2, combobox.Count)
+                else:
+                    for field_name, value in expected.items():
+                        if field_name == 'start_of_fiscal_year':
+                            field = str(result[field_name])
+                        else:
+                            field = result[field_name]
 
-                    if first_run:
-                        combobox = panel.GetChildren()[3]
-                        self.assertEqual(2, combobox.Count)
-                    else:
-                        for field_name, value in values.items():
-                            if field_name == 'start_of_fiscal_year':
-                                field = str(result[field_name])
-                            else:
-                                field = result[field_name]
-
-                            self.assertEqual(value, field, msg.format(
-                                value, field_name, field))
+                        self.assertEqual(value, field, msg.format(
+                            value, field_name, field))
 
     #@unittest.skip("Temporarily skipped")
     async def test__set_statusbar(self):

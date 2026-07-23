@@ -51,20 +51,21 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         sizer.Add(title_widget, 0, wx.CENTER, 0)
 
         # Search for specific date of item.
-        srch_text = wx.StaticText(self, wx.ID_ANY, "Search:")
-        srch_text.SetForegroundColour(self.w_fg_color)
-        srch_widget = BadiDatePickerCtrl(self, wx.ID_ANY,
-                                         bgcolor=self.w_bg_color)
-        srch_widget.SetBackgroundColour(self.w_bg_color)
-        srch_widget.SetForegroundColour(self.w_fg_color)
-        srch_widget.SetMinSize((130, 28))
-        srch_widget.Bind(EVT_BADI_DATE_CHANGED, self.search_event)
-        srch_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        srch_sizer.AddStretchSpacer()
-        srch_sizer.Add(srch_text, 0, wx.ALL, 6)
-        srch_sizer.Add(srch_widget, 0, wx.ALL, 6)
-        srch_sizer.AddStretchSpacer()
-        sizer.Add(srch_sizer, 0, wx.CENTER, 0)
+        # srch_text = wx.StaticText(self, wx.ID_ANY, "Search:")
+        # srch_text.SetForegroundColour(self.w_fg_color)
+        # srch_widget = BadiDatePickerCtrl(self, wx.ID_ANY,
+        #                                  bgcolor=self.w_bg_color)
+        # srch_widget.SetBackgroundColour(self.w_bg_color)
+        # srch_widget.SetForegroundColour(self.w_fg_color)
+        # srch_widget.SetMinSize((130, 28))
+        # srch_widget.Bind(EVT_BADI_DATE_CHANGED, self.search_event)
+
+        # srch_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # srch_sizer.AddStretchSpacer()
+        # srch_sizer.Add(srch_text, 0, wx.ALL, 6)
+        # srch_sizer.Add(srch_widget, 0, wx.ALL, 6)
+        # srch_sizer.AddStretchSpacer()
+        # sizer.Add(srch_sizer, 0, wx.CENTER, 0)
 
         # View previous and next item.
         left = FlatArrowButton(self, label="←", direction='left',
@@ -96,6 +97,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_02.SetMinSize((130, 28))
         widget_02.SetFocus()
         widget_02.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
+        widget_02.category = 'panel'
         self.gbs.Add(widget_02, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 12)
         pos += 1
@@ -110,6 +112,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_04.SetForegroundColour(self.w_fg_color)
         widget_04.SetMinSize((452, 26))
         widget_04.financial = False
+        widget_04.category = 'panel'
         sizer_1.Add(widget_04, 0, wx.EXPAND | wx.ALL, 6)
         self.gbs.Add(sizer_1, (pos, 0), (1, 2), wx.EXPAND | wx.TOP, 6)
 
@@ -118,15 +121,16 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         label_gen = self._label_generator()
         title_data, labels = self._next_title_and_labels(title_gen, label_gen)
         pos += 2
-        self._de_labels = {}
+        self._de_labels = {'panel': [make_name(widget_01.GetLabel()),
+                                     make_name(widget_03.GetLabel())]}
 
         while title_data is not None and labels is not None:
             title, num_cb, num_txt, cb_pos, span, btn = title_data[:6]
             button, pos = self._make_heading(title, pos, span=span, btn=btn)
             pos = self.create_widgets(num_cb, num_txt, cb_pos, labels, pos)
             label = labels[0]
-            self._de_labels[make_name(label)] = [make_name(l)
-                                                 for l in labels[1:]]
+            self._de_labels[make_name(label)] = [make_name(lbl)
+                                                 for lbl in labels[1:]]
 
             if button:
                 # We need to bind after the method call above, because the

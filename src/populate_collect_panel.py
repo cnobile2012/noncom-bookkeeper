@@ -85,7 +85,7 @@ class PopulateCollect:
         """
         Push LedgerDataEntry panel data to a dictionary object.
 
-        :param str key: The panel field name.
+        :param str key: The panel compound category.field_name.
         :param str value: The pane value for the field name.
         :param wx.Panel panel: The LedgerDataEntry panel object.
         :param dict data: The dictionary object to push the value into.
@@ -102,7 +102,7 @@ class PopulateCollect:
                         tmp = data.setdefault(cat, {})
                         tmp.setdefault(sub_cat, {})[field_name] = value
 
-    def _lde_pop(key: str, panel: wx.Panel, data: dict) -> str:
+    def _lde_pop(self, key: str, panel: wx.Panel, data: dict) -> str:
         """
         Pop values off the dictionary object.
 
@@ -112,19 +112,19 @@ class PopulateCollect:
         :returns: The value of the panel's field name.
         :rtype: str
         """
-        result = None
+        result = ""
+        category, field_name = key.split('.')
 
         for cat, labels in panel.ledger_labels.items():
-            if isinstance(labels, list):
-                if key in labels:
-                    result = data[cat][key]
-            else:
+            if isinstance(labels, list) and category == cat:
+                if field_name in labels:
+                    result = data[cat][field_name]
+            elif isinstance(labels, dict):
                 for sub_cat, sub_labels in labels.items():
-                    if key in sub_labels:
-                        result = data[cat][sub_cat][key]
+                    if field_name in sub_labels:
+                        result = data[cat][sub_cat][field_name]
 
         return result
-
 
     def collect_panel_values(self, panel: wx.Panel) -> dict:
         """
@@ -198,8 +198,15 @@ class PopulateCollect:
         if data:  # When run after first time.
             for w0, w1 in self.find_child_sets(panel):
                 name0, field_name, widget0 = w0
+
+                if w1:
+                    name1, _, widget1 = w1
+
+                    if hasattr(widget1, 'category'):
+                        field_name = f"{widget1.category}.{field_name}"
+
                 if name0 in self._EXCLUDE_WIDGETS: continue
-                value = data.get(field_name)
+                value = pop(field_name)
                 if value is None: continue
 
                 if name0 in ('RadioBox', 'ComboBox'):
@@ -208,8 +215,6 @@ class PopulateCollect:
 
                     value = self._process_box_value(widget0, field_name, value)
                 elif name0 == 'StaticText':
-                    name1, _, widget1 = w1
-
                     if name1 == 'TextCtrl':
                         if widget1.financial:
                             value = self._panel_to_financial_panel(value)

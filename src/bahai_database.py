@@ -14,16 +14,16 @@ from .base_database import BaseDatabase
 from .custom_widgits import ordered_month
 
 
-def adapt_datetime(dt: badidatetime.datetime) -> str:
+def adapt_badidatetime(dt: badidatetime.datetime) -> str:
     """
-    Adapter: datetime → ISO string
+    Adapter: badidatetime.datetime → ISO string
     """
     return dt.isoformat()
 
 
-def convert_datetime(value: str) -> badidatetime.datetime:
+def convert_badidatetime(value: str) -> badidatetime.datetime:
     """
-    Converter: ISO string → datetime
+    Converter: ISO string → badidatetime.datetime
     """
     if isinstance(value, bytes):
         value = value.decode("utf-8")
@@ -31,8 +31,27 @@ def convert_datetime(value: str) -> badidatetime.datetime:
     return badidatetime.datetime.fromisoformat(value)
 
 
-sqlite3.register_adapter(badidatetime.datetime, adapt_datetime)
-sqlite3.register_converter('DATETIME', convert_datetime)
+def adapt_badidate(dt: badidatetime.date) -> str:
+    """
+    Adapter: badidatetime.date → ISO string
+    """
+    return dt.isoformat()
+
+
+def convert_badidate(value: str) -> badidatetime.date:
+    """
+    Converter: ISO string → badidatetime.date
+    """
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+
+    return badidatetime.date.fromisoformat(value)
+
+
+sqlite3.register_adapter(badidatetime.datetime, adapt_badidatetime)
+sqlite3.register_converter('DATETIME', convert_badidatetime)
+sqlite3.register_adapter(badidatetime.date, adapt_badidate)
+sqlite3.register_converter('DATE', convert_badidate)
 
 
 class Database(BaseDatabase):
