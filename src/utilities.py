@@ -11,7 +11,8 @@ import threading
 
 from collections import OrderedDict
 
-from .custom_widgits import ColorCheckBox, EVT_COLOR_CHECKBOX
+from .custom_widgits import (ColorCheckBox, EVT_COLOR_CHECKBOX,
+                             BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED)
 
 
 def make_name(name: str) -> str:
@@ -103,6 +104,23 @@ class Borg:
                     del inst.__dict__[k]
 
             root._instances.clear()
+
+
+class AsyncEventLoop:
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Panels cannot work with async directly, so we put all async
+        # code in a separate thread.
+        self.__loop = asyncio.new_event_loop()
+        threading.Thread(target=self.__start_event_loop, daemon=True).start()
+
+    def __start_event_loop(self):
+        asyncio.set_event_loop(self.__loop)
+        self.__loop.run_forever()
+
+    def run_async(self, coro):
+        return asyncio.run_coroutine_threadsafe(coro, self.__loop).result()
 
 
 class StoreObjects(Borg):
@@ -556,110 +574,3 @@ class MutuallyExclusiveWidgets:
             return all(c not in s[1:] for c in chars)
 
         return False
-
-
-class AsyncDataNavigator:
-    def __init__(self, fetch_func, step_func, async_runner, cache_size=40,
-                 prefetch=1):
-        """
-        fetch_func(key) -> async function
-        async_runner -> your AsyncRunner instance
-        """
-        self.fetch_func = fetch_func
-        self.step_func = step_func
-        self.runner = async_runner
-        self.cache_size = cache_size
-        self.prefetch = prefetch
-        self.cache = OrderedDict()
-        self.loading = {}
-
-    def seed(self, key, data):
-        self.cache[key] = data
-        self.cache.move_to_end(key)
-
-    def get(self, key, callback, prefetch_keys=None):
-        if key in self.cache and self.cache[key]:
-            wx.CallAfter(callback, self.cache[key])
-            return
-
-        if key in self.loading:
-            self.loading[key].append(callback)
-            return
-
-        self.loading[key] = [callback]
-
-        def done(data):
-            self.cache[key] = data
-            self.cache.move_to_end(key)
-            self._trim_cache()
-            callbacks = self.loading.pop(key, [])
-
-            for cb in callbacks:
-                wx.CallAfter(cb, data)
-
-            self._auto_prefetch(key)
-
-        self.runner.run(self.fetch_func(*key), done)
-
-    def _auto_prefetch(self, key):
-        for direction in ("LEFT", "RIGHT"):
-            current = key
-
-            for _ in range(self.prefetch):
-                current = self.step_func(direction, *current)
-
-                if not current:
-                    break
-
-                self._prefetch(current)
-
-    def _prefetch(self, key):
-        if key in self.cache or key in self.loading:
-            return
-
-        self.loading[key] = []
-
-        def done(data):
-            self.loading.pop(key, None)
-            self.cache[key] = data
-            self.cache.move_to_end(key)
-            self._trim_cache()
-
-        self.runner.run(self.fetch_func(*key), done)
-
-    def _trim_cache(self):
-        while len(self.cache) > self.cache_size:
-            self.cache.popitem(last=False)
-
-
-class AsyncRunner:
-    def __init__(self):
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._run_loop, daemon=True)
-        self.thread.start()
-
-    def _run_loop(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
-
-    def run(self, coro, callback=None):
-        """
-        Schedule coroutine.
-
-        callback(result) runs in wx main thread.
-        """
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-
-        if callback:
-            def done(f):
-                try:
-                    result = f.result()
-                except Exception as e:
-                    print("ASYNC ERROR:", e)  # <-- you'll see the real problem
-                    result = []               # safe fallback
-
-                wx.CallAfter(callback, result)
-
-            future.add_done_callback(done)
-
-        return future

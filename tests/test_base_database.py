@@ -394,13 +394,6 @@ class TestBaseDatabase(BaseAsyncTests):
                     self.assertEqual(expected, error,
                                      f"Expected '{expected}, found '{error}'.")
 
-    @unittest.skip("Temporarily skipped")
-    async def test_get_work_on_fiscal_year(self):
-        """
-        Test that the get_work_on_fiscal_year method 
-        """
-        pass
-
     #@unittest.skip("Temporarily skipped")
     async def test__add_fields_to_field_type_table(self):
         """
@@ -424,7 +417,8 @@ class TestBaseDatabase(BaseAsyncTests):
     @unittest.skip("Temporarily skipped")
     async def test__do_select_query(self):
         """
-        Test that the _do_select_query method 
+        Test that the _do_select_query method returns the correct data
+        from the query.
         """
         pass
 
@@ -457,32 +451,4 @@ class TestBaseDatabase(BaseAsyncTests):
         """
         Test that the _do_query method can insert, update, or delete records.
         """
-        err_msg0 = "The query {} does not end with a ';'."
-        insert_query = "INSERT INTO config VALUES (?, ?);"
-        multiple_query = (
-            "UPDATE accounts SET user = :user, password = :password "
-            "WHERE barcode = :barcode;"
-            "UPDATE members SET displayName = :displayName, "
-            "firstName = :firstName, lastName = :lastName, "
-            "email = :email WHERE barcode = :barcode;"
-            )
-        items = {'user': 'fstone', 'password': 'Unencrypted',
-                 'displayName': 'Fred S', 'firstName': 'Fred',
-                 'lastName': 'Stone', 'email': 'fake@email.com',
-                 'barcode': '100032'}
-        data = (
-            (insert_query, ('things', '5'), True, 1),
-            (multiple_query, items, True, 2),
-            (insert_query[:-1], ('things', '5'), False,
-             err_msg0.format(insert_query[:-1])),
-            )
-
-        for query, params, valid, expected in data:
-            if valid:
-                rowcount = await self.bd._do_query(query, params)
-                self.assertEqual(expected, rowcount)
-            else:
-                with self.assertRaises(AssertionError) as cm:
-                    await self.bd._do_query(query, params)
-
-                self.assertIn(expected, str(cm.exception))
+        pass

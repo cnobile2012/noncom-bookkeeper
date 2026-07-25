@@ -253,6 +253,7 @@ class TestPopulateCollect(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         ldg_values0 = dict(self._LDG_DATA)
         ldg_values0['panel']['date'] = str(date)
+        ldg_values0['panel']['transaction_id'] = '1'
         ldg_values0['transaction']['expense'] = True
         ldg_values0['reference']['ocs'] = True
         ldg_values0['expenses']['national_baháí_funds'][
@@ -295,6 +296,7 @@ class TestPopulateCollect(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         ldg_values0 = dict(self._LDG_DATA)
         ldg_values0['panel']['date'] = str(date)
+        ldg_values0['panel']['transaction_id'] = '1'
         ldg_values0['transaction']['contribution'] = True
         ldg_values0['reference']['ocs'] = True
         ldg_values0['income']['local_fund'] = True
@@ -636,3 +638,10 @@ class TestPopulateCollect(BaseAsyncTests):
 
                                 self.assertEqual(value, result, msg.format(
                                     value, field_name, result))
+
+    @unittest.skip("Temporarily skipped")
+    async def test_ledger_search_panel(self):
+        """
+        Test that the ledger_search_panel method updates the ledger TODO.
+        """
+        pass

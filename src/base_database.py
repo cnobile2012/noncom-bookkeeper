@@ -336,8 +336,8 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         Populate all panels that have data in the database.
         """
-        fy = self.get_work_on_fiscal_year()
-        year, month = (None, None) if fy is None else fy[1:3]
+        fy = self.cache.work_on_fiscal_year
+        year, month = (None, None) if fy == () else fy[1:3]
 
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
@@ -419,8 +419,8 @@ class BaseDatabase(PopulateCollect, Settings):
                'location_city_name': ''}
         """
         error = None
-        fy = self.get_work_on_fiscal_year()
-        f_year, f_month, f_day = (None, None, None) if fy is None else fy[1:4]
+        fy = self.cache.work_on_fiscal_year
+        f_year, f_month, f_day = (None, None, None) if fy == () else fy[1:4]
         data = self.collect_panel_values(panel)
 
         if panel_name == 'organization':
@@ -438,21 +438,6 @@ class BaseDatabase(PopulateCollect, Settings):
 
         await self.populate_panels()
         return error
-
-    def get_work_on_fiscal_year(self) -> tuple:
-        """
-        Get the fical year that is being worked on.
-
-        :returns: The fical year data.
-        :rtype: tuple
-        """
-        fy = None
-
-        for fy in self.cache.get_all_fiscal_years():
-            if fy[5]:  # work_on field
-                break
-
-        return fy
 
     #
     # Database access methods.

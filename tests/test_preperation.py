@@ -269,6 +269,13 @@ class TestDataPreperation(BaseAsyncTests):
                 self.assertEqual(expected, error,
                                  f"Expected '{expected}', found '{error}'.")
 
+    @unittest.skip("Temporarily skipped")
+    async def test_ledger(self):
+        """
+        Test that the ledger method inserts and updates the DB.
+        """
+        pass
+
     #@unittest.skip("Temporarily skipped")
     async def test__empty_fields(self):
         """

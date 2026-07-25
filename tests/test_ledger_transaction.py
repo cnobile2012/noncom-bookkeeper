@@ -188,10 +188,10 @@ class TestLedgerTransaction(BaseAsyncTests):
                 }
         msg = "Expected {}, found {}."
         lt = LedgerTransaction(self.db, data)
-        rowcount = await lt.insert_ledger_transaction(183)
+        rowcount = await lt.insert_ledger_transaction(date.year)
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
-        result = await lt.select_ledger_transaction(183, date=date)
+        result = await lt.select_ledger_transaction(date.year, date=date)
         result = result[0][:-2]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
@@ -223,10 +223,10 @@ class TestLedgerTransaction(BaseAsyncTests):
                 }
         msg = "Expected {}, found {}."
         lt = LedgerTransaction(self.db, data)
-        rowcount = await lt.insert_ledger_transaction(183)
+        rowcount = await lt.insert_ledger_transaction(date.year)
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
-        result = await lt.select_ledger_transaction(183, date=date)
+        result = await lt.select_ledger_transaction(date.year, date=date)
         result = result[0][:-2]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
@@ -258,10 +258,10 @@ class TestLedgerTransaction(BaseAsyncTests):
                 }
         msg = "Expected {}, found {}."
         lt = LedgerTransaction(self.db, data)
-        rowcount = await lt.insert_ledger_transaction(183)
+        rowcount = await lt.insert_ledger_transaction(date.year)
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
-        result = await lt.select_ledger_transaction(183, date=date)
+        result = await lt.select_ledger_transaction(date.year, date=date)
         result = result[0][:-2]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
@@ -294,10 +294,10 @@ class TestLedgerTransaction(BaseAsyncTests):
                 }
         msg = "Expected {}, found {}."
         lt = LedgerTransaction(self.db, data)
-        rowcount = await lt.insert_ledger_transaction(183)
+        rowcount = await lt.insert_ledger_transaction(date.year)
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
-        result = await lt.select_ledger_transaction(183, date=date)
+        result = await lt.select_ledger_transaction(date.year, date=date)
         result = result[0][:-2]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
@@ -332,3 +332,55 @@ class TestLedgerTransaction(BaseAsyncTests):
         result = self.find_text(file_data, 'ERROR testing ledger_transaction',
                                 1, err_msg1)
         self.assertIn(err_msg1, result)
+
+    @unittest.skip("Temporarily skipped")
+    async def test_select_bank(self):
+        """
+        Test that the select_bank method returns the bank data.
+        """
+        pass
+
+    @unittest.skip("Temporarily skipped")
+    async def test_select_coh(self):
+        """
+        Test that the select_coh method returns the bank data.
+        """
+        pass
+
+    @unittest.skip("Temporarily skipped")
+    async def test_select_income(self):
+        """
+        Test that the select_income method returns the bank data.
+        """
+        pass
+
+    @unittest.skip("Temporarily skipped")
+    async def test_select_expenses(self):
+        """
+        Test that the select_expenses method returns the bank data.
+        """
+        pass
+
+    @unittest.skip("Temporarily skipped")
+    async def test_update_ledger_transaction_bank(self):
+        """
+        Test that the update_ledger_transaction method updates the bank data.
+        """
+        trans_num = 1
+        expect_rowcount = 4
+        date = badidatetime.date(183, 3, 5)
+        data = {'panel': {'date': date, 'purged': 0,
+                          'memo': "Description"},
+                'transaction': {'contribution': False, 'distribution': False,
+                                'expense': True, 'other': ''},
+                'reference': {'check_number': '', 'receipt_number': '',
+                              'ocs': True},
+                'bank': {'deposit': False, 'withdrawal': True, 'amount': 5000,
+                         'balance': None}
+                }
+        msg = "Expected {}, found {}."
+        lt = LedgerTransaction(self.db, data)
+        await lt.insert_ledger_transaction(date.year)
+        rowcount = await lt.update_ledger_transaction(trans_num)
+        self.assertEqual(expect_rowcount, rowcount, msg.format(
+            expect_rowcount, rowcount))

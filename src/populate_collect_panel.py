@@ -11,12 +11,14 @@ from string import ascii_letters, punctuation, whitespace
 import datetime
 import badidatetime
 
-from .utilities import make_name, AsyncDataNavigator, AsyncRunner
+from .utilities import make_name, AsyncEventLoop
+
 from .config import TomlMetaData, TomlCreatePanel
 from .custom_widgits import ordered_month
+from .ledger_transaction import LedgerTransaction
 
 
-class PopulateCollect:
+class PopulateCollect(AsyncEventLoop):
     _EMPTY_FIELDS = ('', '0')
     _EXCLUDE_WIDGETS = ('FlatArrowButton',)
     _tmd = TomlMetaData()
@@ -26,8 +28,6 @@ class PopulateCollect:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self._adn = AsyncDataNavigator(self.select_from_monthly_table,
-        #                                self.get_prev_and_next, AsyncRunner())
 
     @property
     def has_org_info_data(self) -> bool:
@@ -161,8 +161,9 @@ class PopulateCollect:
                     field_name = f"{widget1.category}.{field_name}"
 
                 if name1 == 'TextCtrl':
+                    financial = getattr(widget1, 'financial', False)
                     push(field_name, self._value_to_db(
-                        value, financial=widget1.financial))
+                        value, financial=financial))
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl',
                                'ColorCheckBox', 'CheckBox'):
                     push(field_name, value)
@@ -216,9 +217,11 @@ class PopulateCollect:
                     value = self._process_box_value(widget0, field_name, value)
                 elif name0 == 'StaticText':
                     if name1 == 'TextCtrl':
-                        if widget1.financial:
+                        financial = getattr(widget1, 'financial', False)
+
+                        if financial:
                             value = self._panel_to_financial_panel(value)
-                        elif not widget1.financial:
+                        elif not financial:
                             p_value = widget1.GetValue()
                             value = value if p_value == value else str(value)
                         else:  # pragma: no cover
@@ -348,7 +351,7 @@ class PopulateCollect:
         else:
             widget = w0[2]
 
-        years = sorted([item[1] for item in self.cache.get_all_fiscal_years()])
+        years = sorted([item[1] for item in self.cache.all_fiscal_years])
         data = [(year, year+1) for year in years[:-1]]
         # Just get the title, overwrite the rest.
         choices = [widget.GetItems()[0]]
@@ -513,3 +516,29 @@ class PopulateCollect:
         panel.initializing = True
         self.populate_panel_values('monthly', panel, data)
         panel.initializing = False
+
+    def ledger_search_panel(self, panel: wx.Panel):
+        """
+        Do the ledger search for the ledger panel.
+
+        :param  wx.Panel panel: The ledger panel.
+        """
+        data = self.collect_panel_values(panel)
+        valid = [v != '' for v in data.values()].count(True) == 1
+
+        if valid:
+            fy = self.cache.work_on_fiscal_year
+            lt = LedgerTransaction(self)
+            date = data['date']
+            trans_num = data['transaction_id']
+            ck_num = data['check_number']
+            rcpt_num = data['receipt_number']
+            memo = data['memo']
+            rows = self.run_async(lt.select_ledger_transaction(
+                fy[1], date=date, trans_num=trans_num, ck_num=ck_num,
+                rcpt_num=rcpt_num, memo=memo))
+            # *** TODO *** Do something with rows.
+        else:
+            rows = []
+
+        return valid

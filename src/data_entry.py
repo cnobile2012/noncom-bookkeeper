@@ -36,7 +36,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         self.w_bg_color = wx.Colour(255, 253, 208)   # Cream
         self.w_fg_color = wx.Colour(50, 50, 204)     # Dark Blue
         self.w1_bg_color = wx.Colour(222, 237, 230)  # Gray
-        self.tc_width = 120
+        self.tc_width = 130
         self.SetBackgroundColour(self.bg_color)
         self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_NORMAL, 0, ''))
@@ -49,25 +49,16 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         title_widget.SetFont(title_font)
         title_widget.SetForegroundColour(self.w_fg_color)
         sizer.Add(title_widget, 0, wx.CENTER, 0)
+        search = wx.Button(self, wx.BU_EXACTFIT, label='Search')
+        search.SetMinSize((-1, 26))
+        search.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                               wx.FONTWEIGHT_NORMAL, 0, ''))
+        search.SetBackgroundColour(self.w1_bg_color)
+        search.SetForegroundColour(self.w_fg_color)
+        search.Bind(wx.EVT_BUTTON, self.search_box)
+        sizer.Add(search, 0, wx.CENTER | wx.TOP, 6)
 
-        # Search for specific date of item.
-        # srch_text = wx.StaticText(self, wx.ID_ANY, "Search:")
-        # srch_text.SetForegroundColour(self.w_fg_color)
-        # srch_widget = BadiDatePickerCtrl(self, wx.ID_ANY,
-        #                                  bgcolor=self.w_bg_color)
-        # srch_widget.SetBackgroundColour(self.w_bg_color)
-        # srch_widget.SetForegroundColour(self.w_fg_color)
-        # srch_widget.SetMinSize((130, 28))
-        # srch_widget.Bind(EVT_BADI_DATE_CHANGED, self.search_event)
-
-        # srch_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # srch_sizer.AddStretchSpacer()
-        # srch_sizer.Add(srch_text, 0, wx.ALL, 6)
-        # srch_sizer.Add(srch_widget, 0, wx.ALL, 6)
-        # srch_sizer.AddStretchSpacer()
-        # sizer.Add(srch_sizer, 0, wx.CENTER, 0)
-
-        # View previous and next item.
+        # View previous and next item
         left = FlatArrowButton(self, label="←", direction='left',
                                tooltip="Previous Item")
         right = FlatArrowButton(self, label="→", direction='right',
@@ -85,36 +76,50 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         sizer.Add(self.gbs, 1, wx.CENTER, 10)
         pos = 0
 
-        widget_01 = wx.StaticText(self, wx.ID_ANY, "Date:")
+        widget_01 = wx.StaticText(self, wx.ID_ANY, "Transaction ID:")
         widget_01.SetForegroundColour(self.w_fg_color)
         widget_01.SetMinSize((-1, -1))
         self.gbs.Add(widget_01, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
-        widget_02 = BadiDatePickerCtrl(self, wx.ID_ANY,
-                                       bgcolor=self.w_bg_color)
-        widget_02.SetBackgroundColour(self.w_bg_color)
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        widget_02 = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY,
+                                name='')
+        widget_02.SetBackgroundColour(self.w1_bg_color)
         widget_02.SetForegroundColour(self.w_fg_color)
-        widget_02.SetMinSize((130, 28))
-        widget_02.SetFocus()
-        widget_02.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
+        widget_02.SetMinSize((self.tc_width+6, 26))
         widget_02.category = 'panel'
         self.gbs.Add(widget_02, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 12)
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        pos += 1
+
+        widget_03 = wx.StaticText(self, wx.ID_ANY, "Date:")
+        widget_03.SetForegroundColour(self.w_fg_color)
+        widget_03.SetMinSize((-1, -1))
+        self.gbs.Add(widget_03, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        widget_04 = BadiDatePickerCtrl(self, wx.ID_ANY,
+                                       bgcolor=self.w_bg_color)
+        widget_04.SetBackgroundColour(self.w_bg_color)
+        widget_04.SetForegroundColour(self.w_fg_color)
+        widget_04.SetMinSize((self.tc_width+6, 28))
+        widget_04.SetFocus()
+        widget_04.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
+        widget_04.category = 'panel'
+        self.gbs.Add(widget_04, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
         pos += 1
 
         sizer_1 = wx.BoxSizer(wx.HORIZONTAL)
-        widget_03 = wx.StaticText(self, wx.ID_ANY, "Memo:")
-        widget_03.SetForegroundColour(self.w_fg_color)
-        widget_03.SetMinSize((-1, -1))
-        sizer_1.Add(widget_03, 0, wx.RIGHT | wx.TOP, 8)
-        widget_04 = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        widget_04.SetBackgroundColour(self.w_bg_color)
-        widget_04.SetForegroundColour(self.w_fg_color)
-        widget_04.SetMinSize((452, 26))
-        widget_04.financial = False
-        widget_04.category = 'panel'
-        sizer_1.Add(widget_04, 0, wx.EXPAND | wx.ALL, 6)
-        self.gbs.Add(sizer_1, (pos, 0), (1, 2), wx.EXPAND | wx.TOP, 6)
+        widget_05 = wx.StaticText(self, wx.ID_ANY, "Memo:")
+        widget_05.SetForegroundColour(self.w_fg_color)
+        widget_05.SetMinSize((-1, -1))
+        sizer_1.Add(widget_05, 0, wx.RIGHT | wx.TOP, 6)
+        widget_06 = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        widget_06.SetBackgroundColour(self.w_bg_color)
+        widget_06.SetForegroundColour(self.w_fg_color)
+        widget_06.SetMinSize((470, 26))
+        widget_06.category = 'panel'
+        sizer_1.Add(widget_06, 0, wx.EXPAND | wx.TOP, 4)
+        self.gbs.Add(sizer_1, (pos, 0), (1, 2), wx.EXPAND, 0)
 
         title_gen = self._title_generator()
         # The first label is the category name the rest are StaticText labels.
@@ -122,7 +127,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         title_data, labels = self._next_title_and_labels(title_gen, label_gen)
         pos += 2
         self._de_labels = {'panel': [make_name(widget_01.GetLabel()),
-                                     make_name(widget_03.GetLabel())]}
+                                     make_name(widget_03.GetLabel()),
+                                     make_name(widget_05.GetLabel())]}
 
         while title_data is not None and labels is not None:
             title, num_cb, num_txt, cb_pos, span, btn = title_data[:6]
@@ -150,17 +156,17 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         sizer_1 = wx.StdDialogButtonSizer()
         save_wgt = wx.Button(panel_0, wx.ID_FORWARD, label='&Save')
         save_wgt.SetMinSize([-1, -1])
-        save_wgt.SetBackgroundColour(wx.Colour(*(50, 50, 204)))
+        save_wgt.SetBackgroundColour(wx.Colour(50, 50, 204))
         save_wgt.Bind(wx.EVT_BUTTON, self.button_save)
         cancel_wgt = wx.Button(panel_0, wx.ID_CANCEL, label='')
         cancel_wgt.SetMinSize([-1, -1])
-        cancel_wgt.SetBackgroundColour(wx.Colour(*(50, 50, 204)))
+        cancel_wgt.SetBackgroundColour(wx.Colour(50, 50, 204))
         sizer_1.AddButton(save_wgt)
         cancel_wgt.Bind(wx.EVT_BUTTON, self.button_cancel)
         sizer_1.AddButton(cancel_wgt)
         sizer_1.Realize()
         panel_0.SetSizer(sizer_1)
-        self.gbs.Add(panel_0, (pos, 0), (1, 1), wx.EXPAND | wx.ALL, 10)
+        self.gbs.Add(panel_0, (pos, 0), (1, 1), wx.EXPAND, 0)
 
         self.SetupScrolling(rate_x=20, rate_y=40)
         self.Hide()
@@ -276,8 +282,9 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
         return title, labels
 
-    def search_event(self, event) -> None:
-        print("Initiated a search event.")
+    def search_box(self, event) -> None:
+        dlg = SearchDialog(self, self.bg_color, self.w_fg_color)
+        dlg.ShowModal()
 
     def on_arrow(self, event) -> None:
         direction = event.GetDirection()
@@ -290,3 +297,134 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         This is for the ShortCuts panel.
         """
         return self.bg_color
+
+
+class SearchDialog(wx.Dialog):
+    """
+    Create a search dialog for the ledger panel.
+    """
+
+    def __init__(self, parent, bg_color, fg_color):
+        super().__init__(parent, wx.ID_ANY, "Search Ledger",
+                         style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
+        self._parent = parent
+        self._so = StoreObjects()
+        title = "Search for Ledger Records"
+        w_bg_color = wx.Colour(255, 253, 208)  # Cream
+        w_fg_color = wx.Colour(255, 0, 0)      # Red-ish
+        self.SetSize((350, 375))
+        self.SetBackgroundColour(bg_color)
+        self.SetForegroundColour(fg_color)
+        self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                             wx.FONTWEIGHT_NORMAL, 0, ''))
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(sizer)
+
+        title_font = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                             wx.FONTWEIGHT_BOLD)
+        message = wx.StaticText(self, wx.ID_ANY, title)
+        message.SetBackgroundColour(wx.Colour(bg_color))
+        message.SetForegroundColour(wx.Colour(fg_color))
+        message.SetFont(title_font)
+        sizer.Add(message, 0, wx.ALL | wx.CENTER, 10)
+
+        self.gbs = wx.GridBagSizer(2, 2)
+        sizer.Add(self.gbs, 1, wx.CENTER, 10)
+
+        # Search for specific date of item.
+        srch_text = wx.StaticText(self, wx.ID_ANY, "Date:")
+        srch_text.SetForegroundColour(fg_color)
+        self.gbs.Add(srch_text, (0, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.srch_ctrl = BadiDatePickerCtrl(self, wx.ID_ANY)
+        self.srch_ctrl.SetBackgroundColour(w_bg_color)
+        self.srch_ctrl.SetForegroundColour(fg_color)
+        self.srch_ctrl.SetMinSize((130, 28))
+        self.srch_ctrl.SetValue('')
+        self.gbs.Add(self.srch_ctrl, (0, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
+        trans_text = wx.StaticText(self, wx.ID_ANY, "Transaction ID:")
+        trans_text.SetForegroundColour(fg_color)
+        self.gbs.Add(trans_text, (1, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        trans_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        trans_ctrl.SetBackgroundColour(w_bg_color)
+        trans_ctrl.SetForegroundColour(fg_color)
+        trans_ctrl.SetMinSize((parent.tc_width, 26))
+        self.gbs.Add(trans_ctrl, (1, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
+        check_text = wx.StaticText(self, wx.ID_ANY, "Check Number:")
+        check_text.SetForegroundColour(fg_color)
+        self.gbs.Add(check_text, (2, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        check_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        check_ctrl.SetBackgroundColour(w_bg_color)
+        check_ctrl.SetForegroundColour(fg_color)
+        check_ctrl.SetMinSize((parent.tc_width, 26))
+        self.gbs.Add(check_ctrl, (2, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
+        rcpt_text = wx.StaticText(self, wx.ID_ANY, "Receipt Number:")
+        rcpt_text.SetForegroundColour(fg_color)
+        self.gbs.Add(rcpt_text, (3, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        rcpt_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        rcpt_ctrl.SetBackgroundColour(w_bg_color)
+        rcpt_ctrl.SetForegroundColour(fg_color)
+        rcpt_ctrl.SetMinSize((parent.tc_width, 26))
+        self.gbs.Add(rcpt_ctrl, (3, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
+        memo_text = wx.StaticText(self, wx.ID_ANY, "Memo:")
+        memo_text.SetForegroundColour(fg_color)
+        self.gbs.Add(memo_text, (4, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        memo_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        memo_ctrl.SetBackgroundColour(w_bg_color)
+        memo_ctrl.SetForegroundColour(fg_color)
+        memo_ctrl.SetMinSize((parent.tc_width, 26))
+        self.gbs.Add(memo_ctrl, (4, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
+        self.warn_text = wx.StaticText(self, wx.ID_ANY, label="",
+                                       style=wx.ALIGN_CENTER_HORIZONTAL)
+        self.warn_text.SetForegroundColour(w_fg_color)
+        self.warn_text.Hide()
+        self.gbs.Add(self.warn_text, (5, 0), (1, 2),
+                     wx.ALIGN_CENTER | wx.ALL, 6)
+
+        panel_0 = wx.Panel(self)
+        sizer_1 = wx.StdDialogButtonSizer()
+        search_byn = wx.Button(panel_0, wx.ID_FORWARD, label='&Search')
+        search_byn.SetMinSize([-1, -1])
+        search_byn.SetBackgroundColour(wx.Colour(50, 50, 204))
+        search_byn.Bind(wx.EVT_BUTTON, self.button_search)
+        cancel_byn = wx.Button(panel_0, wx.ID_CANCEL, label='')
+        cancel_byn.SetMinSize([-1, -1])
+        cancel_byn.SetBackgroundColour(wx.Colour(*(50, 50, 204)))
+        sizer_1.AddButton(search_byn)
+        cancel_byn.Bind(wx.EVT_BUTTON, self.button_cancel)
+        sizer_1.AddButton(cancel_byn)
+        sizer_1.Realize()
+        panel_0.SetSizer(sizer_1)
+        self.gbs.Add(panel_0, (6, 0), (1, 2), wx.EXPAND, 0)
+
+    def button_search(self, event):
+        db = self._so.get_object('Database')
+        valid = db.ledger_search_panel(self)
+
+        if valid:
+            self.Destroy()
+        else:
+            msg = ("Can only search for one item at a time. Please click "
+                   "Cancel and try again.")
+            self.warn_text.SetLabel(msg)
+            self.warn_text.Wrap(250)
+            self.warn_text.Show()
+            self.Layout()
+
+    def button_cancel(self, event):
+        self.Destroy()

@@ -210,11 +210,7 @@ class Cache:
         return bgt_fields
 
     @property
-    def available_years(self):
-        return [key for key in self._store.keys()
-                if key not in (self.db._T_FIELD_TYPE, self.db._T_MONTH, 'key')]
-
-    def get_all_fiscal_years(self):
+    def all_fiscal_years(self):
         """
         Get all fiscal year data.
 
@@ -228,6 +224,49 @@ class Cache:
             data += self.get(self.db._T_FISCAL_YEAR, year=year)
 
         return data
+
+    @property
+    def current_fiscal_year(self):
+        """
+        Get the fiscal year that is current.
+
+        :returns: The current fiscal year row.
+        :rtype: tuple
+        """
+        return self._fiscal_year_by(current=True)
+
+    @property
+    def work_on_fiscal_year(self):
+        """
+        Get the fiscal year that is being worked on.
+
+        :returns: The worked on fiscal year row.
+        :rtype: tuple
+        """
+        return self._fiscal_year_by(work_on=True)
+
+    def _fiscal_year_by(self, *, current: bool=False, work_on: bool=False
+                        ) -> tuple:
+        """
+        Get the fiscal year by one of the types,
+
+        :param bool current: Find by the current type.
+        :param bool work_on: Find by the work_on type.
+        :returns: A row of fiscal year data.
+        :rtype: tuple
+        """
+        if current:
+            idx = 4
+        elif work_on:
+            idx = 5
+
+        fy = ()
+
+        for fy in self.all_fiscal_years:
+            if fy[idx]:
+                break
+
+        return fy
 
     def get(self, table_name: str, *, year: int=None, r_type: str | tuple=None
             ) -> list:

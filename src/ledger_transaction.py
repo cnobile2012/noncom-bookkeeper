@@ -173,7 +173,8 @@ class LedgerTransaction:
         cursor = await con.execute(query, self._ref)
         return cursor.lastrowid, cursor.rowcount
 
-    async def _insert_header(self, con, year: int, trans_pk: int, ref_pk: int):
+    async def _insert_header(self, con, year: int, trans_pk: int, ref_pk: int
+                             ) -> tuple:
         """
         Insert the ledger header data.
 
@@ -204,6 +205,99 @@ class LedgerTransaction:
         cursor = await con.execute(query, self._header)
         return cursor.lastrowid, cursor.rowcount
 
+    async def update_ledger_transaction(self, trans_num: int) -> int:
+        """
+        Update the ledger_transaction table.
+
+        :param int trans_num: The transaction number of the transaction.
+        :returns: The rowcount caused by the insert.
+        :rtype: int
+        """
+        async with aiosqlite.connect(
+            self.db.user_data_fullpath,
+            detect_types=self.db._DETECT_TYPES) as con:
+            await con.execute("PRAGMA foreign_keys=ON")
+
+            try:
+                await con.execute("BEGIN;")
+                rowcount = 0
+                query = ("SELECT pk, ltfk, lrfk "
+                         f"FROM {self.db._T_LEDGER_HEADER} "
+                         "WHERE trans_num = ?;")
+                cursor = await con.execute(query, (trans_num,))
+                row = await cursor.fetchone()
+                pk, ltfk, lrfk = row
+
+                if self._trans:
+                    rowcount += await self._update_transaction(con, ltfk)
+
+                if self._ref:
+                    rowcount += await self._update_reference(con, lrfk)
+
+                if self._header:
+                    rowcount += await self._update_header(con, pk)
+
+                if self._bank:
+                    rowcount += await self._update_bank(con, pk)
+
+                if self._coh:
+                    rowcount += await self._update_coh(con, pk)
+
+                if self._income:
+                    rowcount += await self._update_income(con, pk)
+
+                if self._expenses:
+                    rowcount += await self._update_expenses(con, pk)
+
+                await con.commit()
+                return rowcount
+            except Exception as e:
+                await con.rollback()
+                self.db._log.exception("Error during ledger update.")
+                raise
+
+    async def _update_transaction(self, con, ltfk: int) -> int:
+        """
+        Update the transaction meta-data.
+
+        :param com: The database connection object.
+        :param int ltfk: The ledger_header foreigh key.
+        :returns: The last row pk and the rowcount.
+        :rtype: tuple
+        """
+        self._trans['pk'] = ltfk
+        query = (f"UPDATE {self.db._T_LEDGER_TRANSACTION} "
+                 "SET t_type = :itype, other = :other WHERE pk = :pk;")
+        cursor = await con.execute(query, self._trans)
+        return cursor.rowcount
+
+    async def _update_reference(self, con, ltfk: int) -> int:
+        """
+        Update the reference meta-data.
+
+        :param com: The database connection object.
+        :param int ltfk: The ledger_header foreigh key.
+        :returns: The last row pk and the rowcount.
+        :rtype: tuple
+        """
+        self._ref['pk'] = ltfk
+        query = (f"UPDATE {self.db._T_LEDGER_REFERENCE} "
+                 "SET ck_num = :check_number, rcpt_num = :receipt_number, "
+                 "r_type = :itype WHERE pk = :pk;")
+        cursor = await con.execute(query, self._ref)
+        return cursor.rowcount
+
+    async def _update_header(self, con, header_pk: int) -> int:
+        """
+        Update the ledger header data.
+
+        :param com: The database connection object.
+        :param int header_pk: The ledger_header pk.
+        :returns: The last row pk and the rowcount.
+        :rtype: int
+        """
+        return 0
+
     async def select_bank(self, pk: int) -> list:
         """
         Select a ledget_bank record based on the header pk.
@@ -228,6 +322,17 @@ class LedgerTransaction:
                  "amount, balance) VALUES (:lhfk, :itype, :amount, :balance);")
         cursor = await con.execute(query, self._bank)
         return cursor.rowcount
+
+    async def _update_bank(self, con, header_pk: int) -> int:
+        """
+        Update a ledger_bank record.
+
+        :param com: The database connection object.
+        :param int header_pk: The ledger_header pk.
+        :returns: The rowcount.
+        :rtype: int
+        """
+        return 0
 
     async def select_coh(self, pk: int) -> list:
         """
@@ -254,6 +359,17 @@ class LedgerTransaction:
         cursor = await con.execute(query, self._coh)
         return cursor.rowcount
 
+    async def _update_coh(self, con, header_pk: int) -> int:
+        """
+        Update a ledger_coh record.
+
+        :param com: The database connection object.
+        :param int header_pk: The ledger_header pk.
+        :returns: The rowcount.
+        :rtype: int
+        """
+        return 0
+
     async def select_income(self, pk: int) -> list:
         """
         Select the income record based on the header pk.
@@ -278,6 +394,17 @@ class LedgerTransaction:
                  "amount, balance) VALUES (:lhfk, :itype, :amount, :balance);")
         cursor = await con.execute(query, self._income)
         return cursor.rowcount
+
+    async def _update_income(self, con, header_pk: int) -> int:
+        """
+        Update a ledger_income record.
+
+        :param com: The database connection object.
+        :param int header_pk: The ledger_header pk.
+        :returns: The rowcount.
+        :rtype: int
+        """
+        return 0
 
     async def select_expenses(self, pk: int) -> list:
         """
@@ -312,3 +439,14 @@ class LedgerTransaction:
             rowcount += cursor.rowcount
 
         return rowcount
+
+    async def _update_expenses(self, con, header_pk: int) -> int:
+        """
+        Update one or more ledger_expense records.
+
+        :param com: The database connection object.
+        :param int header_pk: The ledger_header pk.
+        :returns: The rowcount.
+        :rtype: int
+        """
+        return 0

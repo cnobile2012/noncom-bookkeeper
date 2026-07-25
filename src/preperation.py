@@ -11,6 +11,7 @@ from geopy import exc
 from timezonefinder import TimezoneFinder
 
 from .config import TomlAppConfig
+from .ledger_transaction import LedgerTransaction
 
 
 class DataPreperation:
@@ -24,6 +25,7 @@ class DataPreperation:
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         self.db = db
+        self.lt = LedgerTransaction(db)
 
     async def organization(self, data: dict, date: tuple) -> str | None:
         """
@@ -194,6 +196,53 @@ class DataPreperation:
         :param tuple date: The current fiscal year date.
         :returns: Any errors or None with no errors.
         :rtype: str or None
+
+        {'panel': {'transaction_id': '',
+                   'date': badidatetime.date(183, 7, 13), 'memo': 'Test memo'},
+         'transaction': {'contribution': True, 'distribution': False,
+                         'expense': False, 'other': ''},
+         'reference': {'check_number': '', 'receipt_number': '', 'ocs': True},
+         'bank': {'deposit': False, 'withdrawal': False, 'amount': '',
+                  'balance': ''},
+         'coh': {'replenishment': False, 'disbursement': False, 'amount': '',
+                 'balance': ''},
+         'income': {'local_fund': True, 'contributed_expense': False,
+                    'misc': False, 'amount': '5000', 'balance': ''},
+         'expenses': {'local_baháí_expenses': {
+                          'administration': '', 'education': '',
+                          'proclamation': '', 'scolarships': '',
+                          'teaching': ''},
+                      'national_baháí_funds': {
+                          'national_baháí_fund': '',
+                          'baháí_chair_for_world_peace_reserved_fund': '',
+                          'persian_baháí_media_service_fund_payam_e_doost': '',
+                          'house_of_worship_campus_reserves_fund': '',
+                          'wilmette_institute_unrestricted_contribution': '',
+                          'humanitarian_relief_fund_in_usa': '',
+                          'us_baháí_archives_renovation_fund': '',
+                          'baháí_election_convention_contributions': '',
+                          'bosch_facilities_recovery_fund': '',
+                          'institute_properties_resurve_fund': '',
+                          'legal_defense_for_the_refugees_in_turkey': ''},
+                      'continental_and_international_funds': {
+                          'international_baháí_fund': '',
+                          'baháí_development_fund': '',
+                          'international_endowment_fund': '',
+                          'continental_baháí_fund': '',
+                          'national_house_of_worship_canada': '',
+                          'shrine_of_abdul_bahá': '',
+                          'humanitarian_relief_fund_world_center': '',
+                          'persian_relief_fund_world_center': '',
+                          'international_temples_fund': '',
+                          'asian_continental_board': '',
+                          'us_deputization_fund_international_pioneering': ''},
+                          'regional_funds': {
+                              'regional_baháí_council': '',
+                              'deputization_fund': '',
+                              'regional_facilities_fund': ''},
+                          'area_funds': {'area_teaching_committee': ''}
+                      }
+         }
         """
         print('POOP', data, date)
 
@@ -445,7 +494,7 @@ class DataPreperation:
         """
         Get the earliest year in the `fiscal_year` table.
         """
-        years = self.__get_all_fiscal_years()
+        years = [fy[1] for fy in self.db.cache.all_fiscal_years]
         return min(years) if years else None
 
     @property
@@ -453,18 +502,8 @@ class DataPreperation:
         """
         Get the latest year in the `fiscal_year` table.
         """
-        years = self.__get_all_fiscal_years()
+        years = [fy[1] for fy in self.db.cache.all_fiscal_years]
         return max(years) if years else None
-
-    def __get_all_fiscal_years(self) -> list:
-        years = []
-
-        for year in self.db.cache.available_years:
-            fy = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year)
-            if not fy: break
-            years.append(fy[0][1])
-
-        return years
 
     @property
     def organization_data(self) -> dict:

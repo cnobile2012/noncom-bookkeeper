@@ -9,7 +9,7 @@ import asyncio
 import logging
 
 from .config import TomlAppConfig
-from .utilities import StoreObjects, AsyncRunner
+from .utilities import StoreObjects
 from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
                              ColorCheckBox, EVT_COLOR_CHECKBOX)
 
@@ -73,9 +73,6 @@ class MainFrame(wx.Frame, MenuBar):
 
         # Store current object
         StoreObjects().set_object(self.__class__.__name__, self)
-        # Create and store async runner
-        ar = AsyncRunner()
-        StoreObjects().set_object(ar.__class__.__name__, ar)
 
         # Create and store the Database
         if self._tac.config_type == 'bahai':
@@ -112,7 +109,7 @@ class MainFrame(wx.Frame, MenuBar):
             self.edit_budget(None)
         else:
             self.edit_monthly(None)
-            #self.edit_ledger_data(None)
+            # self.edit_ledger_data(None)
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(), self._timer)

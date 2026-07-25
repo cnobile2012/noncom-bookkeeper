@@ -220,22 +220,55 @@ class TestCache(BaseAsyncTests):
             self.assertNotIn(field, result, msg.format(field, result))
 
     #@unittest.skip("Temporarily skipped")
-    def test_available_years(self):
+    def test_all_fiscal_years(self):
         """
-        Test that the available_years property a list of years in the cache.
-        """
-        expected = [183, 184]
-        result = self.db.cache.available_years
-        self.assertEqual(expected, result)
-
-    #@unittest.skip("Temporarily skipped")
-    def test_get_all_fiscal_years(self):
-        """
-        Test that the get_all_fiscal_years method returns all fiscal year
+        Test that the all_fiscal_years property returns all fiscal year
         records in the cache.
         """
-        result = self.db.cache.get_all_fiscal_years()
+        result = self.db.cache.all_fiscal_years
         self.assertEqual(2, len(result))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_current_fiscal_year(self):
+        """
+        Test that the current_fiscal_year property returns the current
+        fiacal year.
+        """
+        msg = "Expected {} found {}"
+        expected = (1, 183, 3, 5, 1, 1, 0)
+        result = self.db.cache.current_fiscal_year
+        self.assertEqual(expected, result[:-2], msg.format(
+            expected, result[:-2]))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_work_on_fiscal_year(self):
+        """
+        Test that the work_on_fiscal_year property returns the work_on
+        fiscal year.
+        """
+        msg = "Expected {} found {}"
+        expected = (1, 183, 3, 5, 1, 1, 0)
+        result = self.db.cache.work_on_fiscal_year
+        self.assertEqual(expected, result[:-2], msg.format(
+            expected, result[:-2]))
+
+    #@unittest.skip("Temporarily skipped")
+    def test__fiscal_year_by(self):
+        """
+        Test that the _fiscal_year_by method the correct fiscal year
+        depending on the arguments.
+        """
+        data = (
+            (True, False, (1, 183, 3, 5, 1, 1, 0)),
+            (False, True, (1, 183, 3, 5, 1, 1, 0)),
+            )
+        msg = "Expected {} found {}"
+
+        for current, work_on, expected in data:
+            result = self.db.cache._fiscal_year_by(current=current,
+                                                   work_on=work_on)
+            self.assertEqual(expected, result[:-2], msg.format(
+                expected, result[:-2]))
 
     #@unittest.skip("Temporarily skipped")
     def test_get(self):

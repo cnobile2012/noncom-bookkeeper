@@ -302,6 +302,7 @@ class BadiDatePickerCtrl(wx.Panel):
         w_bg_color = wx.Colour(222, 237, 230)  # Gray
         self._updating = False
         # Default date
+        self._empty_ctrl = 'Not Set'
         self.bdate = bdate or badidatetime.date.today()
         self.text_ctrl = CustomTextCtrl(
             self, style=wx.TE_PROCESS_ENTER | wx.BORDER_NONE, bgcolor=bgcolor)
@@ -369,11 +370,22 @@ class BadiDatePickerCtrl(wx.Panel):
         wx.PostEvent(self, BadiDateChangedEvent(new_bdate))
 
     def GetValue(self):
-        return self.bdate
+        if self.text_ctrl.GetValue() == self._empty_ctrl:
+            bdate = ''
+        else:
+            bdate = self.bdate
 
-    def SetValue(self, bdate: badidatetime.date):
-        self.bdate = bdate
-        self.text_ctrl.SetValue(bdate.isoformat())
+        return bdate
+
+    def SetValue(self, bdate: badidatetime.date | str):
+        if isinstance(bdate, str):
+            bdate = self._empty_ctrl
+        else:
+            self.bdate = bdate
+            bdate = bdate.isoformat()
+
+        self.text_ctrl.SetValue(bdate)
+        return bdate
 
 
 # Custom event
