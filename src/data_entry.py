@@ -103,6 +103,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         widget_04.SetMinSize((self.tc_width+6, 28))
         widget_04.SetFocus()
         widget_04.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
+        widget_04.mandatory = True
         widget_04.category = 'panel'
         self.gbs.Add(widget_04, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT | wx.BOTTOM, 6)
@@ -150,16 +151,37 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
         line = wx.StaticLine(self, wx.ID_ANY)
         line.SetBackgroundColour(self.w_fg_color)
+        self.gbs.Add(line, (pos, 0), (1, 1), wx.EXPAND | wx.TOP | wx.BOTTOM, 4)
+        pos += 1
+
+        balance_text = wx.StaticText(self, wx.ID_ANY, "Total Expenses:")
+        balance_text.SetForegroundColour(self.w_fg_color)
+        balance_text.SetMinSize((-1, -1))
+        self.gbs.Add(balance_text, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT, 6)
+        balance_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY,
+                                   name='')
+        balance_ctrl.SetBackgroundColour(self.w1_bg_color)
+        balance_ctrl.SetForegroundColour(self.w_fg_color)
+        balance_ctrl.SetMinSize((self.tc_width, 26))
+        balance_ctrl.category = 'expenses'
+        self.gbs.Add(balance_ctrl, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.LEFT, 6)
+        pos += 1
+
+        line = wx.StaticLine(self, wx.ID_ANY)
+        line.SetBackgroundColour(self.w_fg_color)
         self.gbs.Add(line, (pos, 0), (1, 2), wx.EXPAND | wx.TOP | wx.BOTTOM, 4)
         pos += 1
+
         panel_0 = wx.Panel(self)
         sizer_1 = wx.StdDialogButtonSizer()
         save_wgt = wx.Button(panel_0, wx.ID_FORWARD, label='&Save')
-        save_wgt.SetMinSize([-1, -1])
+        save_wgt.SetMinSize((-1, -1))
         save_wgt.SetBackgroundColour(wx.Colour(50, 50, 204))
         save_wgt.Bind(wx.EVT_BUTTON, self.button_save)
         cancel_wgt = wx.Button(panel_0, wx.ID_CANCEL, label='')
-        cancel_wgt.SetMinSize([-1, -1])
+        cancel_wgt.SetMinSize((-1, -1))
         cancel_wgt.SetBackgroundColour(wx.Colour(50, 50, 204))
         sizer_1.AddButton(save_wgt)
         cancel_wgt.Bind(wx.EVT_BUTTON, self.button_cancel)
@@ -399,11 +421,11 @@ class SearchDialog(wx.Dialog):
         panel_0 = wx.Panel(self)
         sizer_1 = wx.StdDialogButtonSizer()
         search_byn = wx.Button(panel_0, wx.ID_FORWARD, label='&Search')
-        search_byn.SetMinSize([-1, -1])
+        search_byn.SetMinSize((-1, -1))
         search_byn.SetBackgroundColour(wx.Colour(50, 50, 204))
         search_byn.Bind(wx.EVT_BUTTON, self.button_search)
         cancel_byn = wx.Button(panel_0, wx.ID_CANCEL, label='')
-        cancel_byn.SetMinSize([-1, -1])
+        cancel_byn.SetMinSize((-1, -1))
         cancel_byn.SetBackgroundColour(wx.Colour(*(50, 50, 204)))
         sizer_1.AddButton(search_byn)
         cancel_byn.Bind(wx.EVT_BUTTON, self.button_cancel)

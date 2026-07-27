@@ -133,7 +133,7 @@ class BaseDatabase(PopulateCollect, Settings):
             'trans_num INTEGER NOT NULL',
             'date DATE NOT NULL',
             'memo TEXT NULL',
-            'purged INTEGER default 0',
+            'purge INTEGER default 0',
             'ctime DATETIME NOT NULL',
             'mtime DATETIME NOT NULL',
             'CONSTRAINT unq UNIQUE (fy1fk, trans_num)',
@@ -143,8 +143,7 @@ class BaseDatabase(PopulateCollect, Settings):
             f'FOREIGN KEY (lrfk) REFERENCES {_T_LEDGER_REFERENCE} (pk)'),
         _T_LEDGER_TRANSACTION: (
             'pk INTEGER NOT NULL PRIMARY KEY',
-            't_type INTEGER NOT NULL',
-            'other TEXT NULL'),
+            't_type INTEGER NOT NULL'),
         _T_LEDGER_REFERENCE: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'ck_num TEXT NULL',
@@ -172,7 +171,6 @@ class BaseDatabase(PopulateCollect, Settings):
             'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_EXPENSE: (
-            'pk INTEGER NOT NULL PRIMARY KEY',
             'lhfk INTEGER NOT NULL',
             'ftfk INTEGER NOT NULL',
             'amount INTEGER',
@@ -183,16 +181,14 @@ class BaseDatabase(PopulateCollect, Settings):
         _V_LEDGER_HEADER: (
             'pk', 'trans_num', 'date', 'memo', 'fy1_year', 'fy1_month',
             'fy1_day', 'fy2_year', 'fy2_month', 'fy2_day', 't_type',
-            'trans_other', 'ref_ck_num', 'ref_rcpt_num', 'r_type', 'purged',
-            'ctime', 'mtime'),
+            'ck_num', 'rcpt_num', 'r_type', 'purge', 'ctime', 'mtime'),
         _V_LEDGER_EXPENSE: ('lhfk', 'field', 'amount'),
         }
     _SCHEMA_VIEW_QUERY = {
         _V_LEDGER_HEADER: (
             'SELECT ld.pk, ld.trans_num, ld.date, ld.memo, fy1.year, '
             'fy1.month, fy1.day, fy2.year, fy2.month, fy2.day, lt.t_type, '
-            'lt.other, lr.ck_num, lr.rcpt_num, lr.r_type, ld.purged, '
-            'ld.ctime, ld.mtime '
+            'lr.ck_num, lr.rcpt_num, lr.r_type, ld.purge, ld.ctime, ld.mtime '
             f'FROM {_T_LEDGER_HEADER} AS ld '
             f'JOIN {_T_FISCAL_YEAR} AS fy1 ON ld.fy1fk = fy1.pk '
             f'JOIN {_T_FISCAL_YEAR} AS fy2 ON ld.fy2fk = fy2.pk '
@@ -217,7 +213,6 @@ class BaseDatabase(PopulateCollect, Settings):
     _VIEWS.sort()
     _INDICES = [name.split()[0] for name in _SCHEMA_INDICES]
     _INDICES.sort()
-    _EXCLUDE_PANELS = ('fiscal', 'monthly', 'ledger')
     _MAX_FIELD_LEN = 50  # Max length of fields allowed in the field_table.
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
 
@@ -354,7 +349,7 @@ class BaseDatabase(PopulateCollect, Settings):
         :param dict panels: A dict of all non-excluded panels.
         """
         for panel_name, panel in panels.items():
-            if panel_name not in self._EXCLUDE_PANELS:
+            if panel_name in ('organization', 'budget'):
                 data = self.collect_panel_values(panel)
                 items = self.cache.get(self._T_DATA, year=year,
                                        r_type=panel_name)

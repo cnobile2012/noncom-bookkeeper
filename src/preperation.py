@@ -197,17 +197,35 @@ class DataPreperation:
         :returns: Any errors or None with no errors.
         :rtype: str or None
 
+        .. note::
+
+           1. panel:
+             a. transaction_id is read only
+             b. date is mandatory
+             c. memo not mandatory
+           2. transaction: One item must be chosen
+           3. reference: One item must be chosen
+           4. bank: Mandatory if
+             a. bank.deposit if transaction.distribution
+             b. bank.withdrawal if transaction.expense unless coh.disbursement
+           5. coh: Mandatory if
+             a. transaction.contribution unless reference.ocs
+             b. transaction.expense unless reference.ocs
+           6. income: One field is mandatory if transaction.contribution
+           7. expenses: At least one is mandatory if transaction.expense
+           8. Any empty strings or 0 (zero) amounts are removed from the data.
+
         {'panel': {'transaction_id': '',
                    'date': badidatetime.date(183, 7, 13), 'memo': 'Test memo'},
          'transaction': {'contribution': True, 'distribution': False,
-                         'expense': False, 'other': ''},
+                         'expense': False, 'other': False},
          'reference': {'check_number': '', 'receipt_number': '', 'ocs': True},
          'bank': {'deposit': False, 'withdrawal': False, 'amount': '',
                   'balance': ''},
          'coh': {'replenishment': False, 'disbursement': False, 'amount': '',
                  'balance': ''},
          'income': {'local_fund': True, 'contributed_expense': False,
-                    'misc': False, 'amount': '5000', 'balance': ''},
+                    'other': False, 'amount': '5000', 'balance': ''},
          'expenses': {'local_baháí_expenses': {
                           'administration': '', 'education': '',
                           'proclamation': '', 'scolarships': '',
@@ -244,7 +262,37 @@ class DataPreperation:
                       }
          }
         """
-        print('POOP', data, date)
+        error = None
+
+        if data:
+            # Only the date is mandatory, and it always defaults to today.
+            error = self._empty_fields('ledger', data)
+
+            if not error:
+                has0 = [v not in (False, '')
+                        for v in data['transaction'].values()].count(True) == 1
+                has1 = [v not in (False, '')
+                        for v in data['reference'].values()].count(True) == 1
+
+                if (has0 + has1) != 2:
+                    error = ("There must be one 'Transaction Type and one "
+                             "'Entry Reference.")
+
+                if not error:
+                    pass
+
+
+        print('POOP', data, date, error)
+        return error
+
+    def _build_ledger_state(self, data: dict) -> dict:
+        """
+        """
+        has_trans = [v not in (False, '')
+                     for v in data['transaction'].values()].count(True) == 1
+        has_ref = [v not in (False, '')
+                   for v in data['reference'].values()].count(True) == 1
+
 
     def _empty_fields(self, panel_name: str, data: dict) -> str | None:
         """
@@ -259,9 +307,9 @@ class DataPreperation:
         mandatory = []
 
         for w0, w1 in self.db.find_child_sets(self.db._mf.panels[panel_name]):
-            if hasattr(w0[2], 'mandatory') and w0[2].mandatory:
+            if getattr(w0[2], 'mandatory', False):
                 mandatory.append(w0[1])
-            elif w1 and hasattr(w1[2], 'mandatory') and w1[2].mandatory:
+            elif w1 and getattr(w1[2], 'mandatory', False):
                 mandatory.append(w0[1])
 
         empty_fields = [field for field, value in data.items()
@@ -299,7 +347,7 @@ class DataPreperation:
 
         # Populate all panel fields in the database.
         for name, panel in self.db._mf.panels.items():
-            if name in self.db._EXCLUDE_PANELS: continue
+            if name not in ('organization', 'budget'): continue
             panel_data = self.db.collect_panel_values(panel)
             await self.db._add_fields_to_field_type_table(panel_data)
 

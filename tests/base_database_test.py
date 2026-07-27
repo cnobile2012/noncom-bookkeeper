@@ -123,14 +123,14 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     _LDG_DATA = {
         'panel': {'date': '', 'memo': ''},
         'transaction': {'contribution': False, 'distribution': False,
-                        'expense': False, 'other': ''},
+                        'expense': False, 'other': False},
         'reference': {'check_number': '', 'receipt_number': '', 'ocs': False},
         'bank': {'deposit': False, 'withdrawal': False, 'amount': '',
                  'balance': ''},
         'coh': {'replenishment': False, 'disbursement': False, 'amount': '',
                 'balance': ''},
         'income': {'local_fund': False, 'contributed_expense': False,
-                   'misc': False, 'amount': '', 'balance': ''},
+                   'other': False, 'amount': '', 'balance': ''},
         'expenses': {'local_baháí_expenses':
                      {'administration': '', 'education': '',
                       'proclamation': '', 'scolarships': '',

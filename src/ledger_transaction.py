@@ -17,7 +17,7 @@ class LedgerTransaction:
     _REF_TYPES = ('ocs',)
     _BANK_TYPES = ('deposit', 'withdrawal')
     _COH_TYPES = ('replenishment', 'disbursement')
-    _INCM_TYPES = ('local_fund', 'contributed_expense', 'misc')
+    _INCM_TYPES = ('local_fund', 'contributed_expense', 'other')
 
     def __init__(self, db, data: dict={}) -> None:
         """
@@ -90,10 +90,10 @@ class LedgerTransaction:
             where = "AND ? = trans_num"
             param = trans_num
         elif ck_num:
-            where = "AND ? = ref_ck_num"
+            where = "AND ? = ck_num"
             param = ck_num
         elif rcpt_num:
-            where = "AND ? = ref_rcpt_num"
+            where = "AND ? = rcpt_num"
             param = rcpt_num
         elif memo:
             where = "AND memo LIKE '%' || ? || '%'"
@@ -155,7 +155,7 @@ class LedgerTransaction:
         :rtype: tuple
         """
         query = (f"INSERT INTO {self.db._T_LEDGER_TRANSACTION} "
-                 "(t_type, other) VALUES (:itype, :other);")
+                 "(t_type) VALUES (:itype);")
         cursor = await con.execute(query, self._trans)
         return cursor.lastrowid, cursor.rowcount
 
@@ -199,9 +199,9 @@ class LedgerTransaction:
         self._header['ltfk'] = trans_pk
         self._header['lrfk'] = ref_pk
         query = (f"INSERT INTO {self.db._T_LEDGER_HEADER} (fy1fk, fy2fk, "
-                 "ltfk, lrfk, trans_num, date, memo, purged, ctime, mtime) "
+                 "ltfk, lrfk, trans_num, date, memo, purge, ctime, mtime) "
                  "VALUES (:fy1fk, :fy2fk, :ltfk, :lrfk, :trans_num, :date, "
-                 ":memo, :purged, :ctime, :mtime);")
+                 ":memo, :purge, :ctime, :mtime);")
         cursor = await con.execute(query, self._header)
         return cursor.lastrowid, cursor.rowcount
 
@@ -227,15 +227,9 @@ class LedgerTransaction:
                 cursor = await con.execute(query, (trans_num,))
                 row = await cursor.fetchone()
                 pk, ltfk, lrfk = row
-
-                if self._trans:
-                    rowcount += await self._update_transaction(con, ltfk)
-
-                if self._ref:
-                    rowcount += await self._update_reference(con, lrfk)
-
-                if self._header:
-                    rowcount += await self._update_header(con, pk)
+                rowcount += await self._update_transaction(con, ltfk)
+                rowcount += await self._update_reference(con, lrfk)
+                rowcount += await self._update_header(con, pk)
 
                 if self._bank:
                     rowcount += await self._update_bank(con, pk)
@@ -265,13 +259,13 @@ class LedgerTransaction:
         :returns: The last row pk and the rowcount.
         :rtype: tuple
         """
-        self._trans['pk'] = ltfk
+        self._trans['ltfk'] = ltfk
         query = (f"UPDATE {self.db._T_LEDGER_TRANSACTION} "
-                 "SET t_type = :itype, other = :other WHERE pk = :pk;")
+                 "SET t_type = :itype WHERE pk = :ltfk;")
         cursor = await con.execute(query, self._trans)
         return cursor.rowcount
 
-    async def _update_reference(self, con, ltfk: int) -> int:
+    async def _update_reference(self, con, lrfk: int) -> int:
         """
         Update the reference meta-data.
 
@@ -280,10 +274,10 @@ class LedgerTransaction:
         :returns: The last row pk and the rowcount.
         :rtype: tuple
         """
-        self._ref['pk'] = ltfk
+        self._ref['lrfk'] = lrfk
         query = (f"UPDATE {self.db._T_LEDGER_REFERENCE} "
                  "SET ck_num = :check_number, rcpt_num = :receipt_number, "
-                 "r_type = :itype WHERE pk = :pk;")
+                 "r_type = :itype WHERE pk = :lrfk;")
         cursor = await con.execute(query, self._ref)
         return cursor.rowcount
 
@@ -296,7 +290,13 @@ class LedgerTransaction:
         :returns: The last row pk and the rowcount.
         :rtype: int
         """
-        return 0
+        self._header['pk'] = header_pk
+        self._header['mtime'] = badidatetime.datetime.now(self.db.utc_tzinfo)
+        query = (f"UPDATE {self.db._T_LEDGER_HEADER} SET date = :date, "
+                 "memo = :memo, purge = :purge, mtime = :mtime "
+                 "WHERE pk = :pk;")
+        cursor = await con.execute(query, self._header)
+        return cursor.rowcount
 
     async def select_bank(self, pk: int) -> list:
         """
@@ -332,7 +332,11 @@ class LedgerTransaction:
         :returns: The rowcount.
         :rtype: int
         """
-        return 0
+        self._bank['lhfk'] = header_pk
+        query = (f"UPDATE {self.db._T_LEDGER_BANK} SET t_type = :itype, "
+                 "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
+        cursor = await con.execute(query, self._bank)
+        return cursor.rowcount
 
     async def select_coh(self, pk: int) -> list:
         """
@@ -368,7 +372,11 @@ class LedgerTransaction:
         :returns: The rowcount.
         :rtype: int
         """
-        return 0
+        self._coh['lhfk'] = header_pk
+        query = (f"UPDATE {self.db._T_LEDGER_COH} SET t_type = :itype, "
+                 "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
+        cursor = await con.execute(query, self._coh)
+        return cursor.rowcount
 
     async def select_income(self, pk: int) -> list:
         """
@@ -404,7 +412,11 @@ class LedgerTransaction:
         :returns: The rowcount.
         :rtype: int
         """
-        return 0
+        self._income['lhfk'] = header_pk
+        query = (f"UPDATE {self.db._T_LEDGER_INCOME} SET t_type = :itype, "
+                 "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
+        cursor = await con.execute(query, self._income)
+        return cursor.rowcount
 
     async def select_expenses(self, pk: int) -> list:
         """
@@ -426,17 +438,15 @@ class LedgerTransaction:
         :rtype: int
         """
         rowcount = 0
-        params = {}
-        params['lhfk'] = header_pk
         query = (f"INSERT INTO {self.db._T_LEDGER_EXPENSE} (lhfk, ftfk, "
                  "amount) VALUES (:lhfk, :ftfk, :amount);")
         fts = await self.db.select_from_field_type_table(tuple(self._expenses))
+        params = [{'lhfk': header_pk, 'ftfk': ft[0],
+                   "amount": self._expenses[ft[1]]} for ft in fts]
 
-        for ft in fts:
-            params['ftfk'] = ft[0]
-            params['amount'] = self._expenses[ft[1]]
-            cursor = await con.execute(query, params)
-            rowcount += cursor.rowcount
+        if params:
+            cursor = await con.executemany(query, params)
+            rowcount = cursor.rowcount
 
         return rowcount
 
@@ -449,4 +459,6 @@ class LedgerTransaction:
         :returns: The rowcount.
         :rtype: int
         """
-        return 0
+        query = f"DELETE FROM {self.db._T_LEDGER_EXPENSE} WHERE lhfk = :lhfk;"
+        await con.execute(query, {'lhfk': header_pk})
+        return await self._insert_expenses(con, header_pk)

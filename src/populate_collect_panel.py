@@ -311,6 +311,7 @@ class PopulateCollect(AsyncEventLoop):
               ]
         """
         children = []
+        panel_class_name = panel.__class__.__name__
 
         for child in panel.GetChildren():
             add = False
@@ -325,13 +326,16 @@ class PopulateCollect(AsyncEventLoop):
                 add = True
             elif name in ('ColorCheckBox',):
                 label = child.GetLabelText()
+            elif name in ('BadiDatePickerCtrl',):
+                label = child.GetName()
 
             children.append((name, make_name(label), child))
             if add: children.append(None)
 
         result = [children[i:i+2] for i in range(0, len(children), 2)]
         assert all([len(item) == 2 for item in result]), (
-            "Warning must be two children in all tuples.")
+            f"Warning must have two children in all tuples, found {result} "
+            f"for class {panel_class_name}.")
         return result
 
     def _add_fiscal_year_choices(self, *, panel: wx.Panel=None, w0=None
