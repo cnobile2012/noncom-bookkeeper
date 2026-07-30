@@ -121,14 +121,16 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     _FY_DATA = {'fiscal_year_choice': 0, 'current_fiscal_year': False,
                 'work_on_this_fiscal_year': False, 'audit_complete': False}
     _LDG_DATA = {
-        'panel': {'date': '', 'memo': ''},
+        'panel': {'transaction_id': '', 'date': None, 'memo': ''},
         'transaction': {'contribution': False, 'distribution': False,
                         'expense': False, 'other': False},
-        'reference': {'check_number': '', 'receipt_number': '', 'ocs': False},
+        'reference': {'ocs': False, 'check_number': False,
+                      'receipt_number': False, 'deposit_number': False,
+                      'number': ''},
         'bank': {'deposit': False, 'withdrawal': False, 'amount': '',
                  'balance': ''},
-        'coh': {'replenishment': False, 'disbursement': False, 'amount': '',
-                'balance': ''},
+        'coh': {'replenishment': False, 'disbursement': False,
+                'amount': '', 'balance': ''},
         'income': {'local_fund': False, 'contributed_expense': False,
                    'other': False, 'amount': '', 'balance': ''},
         'expenses': {'local_baháí_expenses':
@@ -160,11 +162,9 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                       'asian_continental_board': '',
                       'us_deputization_fund_international_pioneering': ''},
                      'regional_funds':
-                     {'regional_baháí_council': '',
-                      'deputization_fund': '',
+                     {'regional_baháí_council': '', 'deputization_fund': '',
                       'regional_facilities_fund': ''},
-                     'area_funds': {'area_teaching_committee': ''}
-                     }
+                     'area_funds': {'area_teaching_committee': ''}}
         }
 
     def __init__(self, name, *args, **kwargs):

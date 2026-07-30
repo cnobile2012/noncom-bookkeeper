@@ -4,6 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
+import copy
 import os
 import wx
 import unittest
@@ -248,17 +249,17 @@ class TestPopulateCollect(BaseAsyncTests):
         Test that the collect_panel_values method collects data from
         panels and converts it to appropreate values for the database.
         """
-        mth_values = dict(self._MTH_DATA)
+        mth_values = copy.deepcopy(self._MTH_DATA)
         mth_values['month_index'] = 0
         date = badidatetime.date(183, 3, 5)
-        ldg_values0 = dict(self._LDG_DATA)
+        ldg_values0 = copy.deepcopy(self._LDG_DATA)
         ldg_values0['panel']['date'] = str(date)
         ldg_values0['panel']['transaction_id'] = '1'
         ldg_values0['transaction']['expense'] = True
         ldg_values0['reference']['ocs'] = True
         ldg_values0['expenses']['national_baháí_funds'][
             'national_baháí_fund'] = '150.00'
-        expect0 = dict(ldg_values0)
+        expect0 = copy.deepcopy(ldg_values0)
         expect0['panel']['date'] = date
         expect0['expenses']['national_baháí_funds'][
             'national_baháí_fund'] = '15000'
@@ -290,18 +291,18 @@ class TestPopulateCollect(BaseAsyncTests):
         Test that the populate_panel_values method populates the panel
         with the database values.
         """
-        org_data = dict(self._ORG_DATA)
+        org_data = copy.deepcopy(self._ORG_DATA)
         org_data['start_of_fiscal_year'] = org_data[
             'start_of_fiscal_year'].isoformat()
         date = badidatetime.date(183, 3, 5)
-        ldg_values0 = dict(self._LDG_DATA)
+        ldg_values0 = copy.deepcopy(self._LDG_DATA)
         ldg_values0['panel']['date'] = str(date)
         ldg_values0['panel']['transaction_id'] = '1'
         ldg_values0['transaction']['contribution'] = True
         ldg_values0['reference']['ocs'] = True
         ldg_values0['income']['local_fund'] = True
         ldg_values0['income']['amount'] = '50.00'
-        expect0 = dict(ldg_values0)
+        expect0 = copy.deepcopy(ldg_values0)
         expect0['panel']['date'] = date
         expect0['income']['amount'] = '5000'
 

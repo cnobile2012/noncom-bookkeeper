@@ -9,7 +9,7 @@ import asyncio
 import logging
 
 from .config import TomlAppConfig
-from .utilities import StoreObjects
+from .utilities import StoreObjects, ConfirmationDialog
 from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
                              ColorCheckBox, EVT_COLOR_CHECKBOX)
 
@@ -128,6 +128,13 @@ class MainFrame(wx.Frame, MenuBar):
             if error is None:
                 c_name = name.capitalize()
                 self.statusbar_message = f"Finished saving {c_name} data."
+            elif name in ('ledger',):
+                cap = "Ledger Rule Error"
+                bg = wx.Colour('yellow')
+                dlg = ConfirmationDialog(
+                    panel, error, cap, enable=True, bg_color=bg,
+                    fg_color=panel.w_fg_color)
+                dlg.show()
             else:
                 self.statusbar_warning = error
                 data = self._reset_panel(name)

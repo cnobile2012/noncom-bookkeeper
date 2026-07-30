@@ -16,8 +16,8 @@ from .custom_widgits import (ColorCheckBox, EVT_COLOR_CHECKBOX,
 
 
 def make_name(name: str) -> str:
-    name = re.sub(r"[!$&*@%\(\):\"'/\\]+", '', name)
-    name = re.sub(r"[- \s]+", '_', name).strip('_')
+    name = re.sub(r"[!$&*@%\(\):\"'\\]+", '', name)
+    name = re.sub(r"[- \s/]+", '_', name).strip('_')
     return re.sub(r"_+", "_", name).lower()
 
 
@@ -196,24 +196,28 @@ class ConfirmationDialog(wx.Dialog):
     Create a generic dialog box.
     """
 
-    def __init__(self, parent, msg, cap, *, bg_color=None, fg_color=None):
+    def __init__(self, parent, msg, cap, *, enable=False,  bg_color=None,
+                 fg_color=None):
         super().__init__(parent, wx.ID_ANY, cap,
                          style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
         self._parent = parent
+        self.enable = enable
         self.SetSize((300, 150))
 
-        self._bg_color = bg_color if bg_color else (220, 130, 143)  # Red-ish
-        self._fg_color = fg_color if fg_color else (50, 50, 204)    # Blue-ish
-        self.SetBackgroundColour(wx.Colour(*self._bg_color))
+        # Red-ish
+        _bg_color = bg_color if bg_color else wx.Colour(220, 130, 143)
+        # Blue-ish
+        _fg_color = fg_color if fg_color else wx.Colour(50, 50, 204)
+        self.SetBackgroundColour(_bg_color)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
 
         message = wx.StaticText(self, wx.ID_ANY, msg)
-        message.SetBackgroundColour(wx.Colour(*self._bg_color))
-        message.SetForegroundColour(wx.Colour(*self._fg_color))
+        message.SetBackgroundColour(wx.Colour(*_bg_color))
+        message.SetForegroundColour(wx.Colour(*_fg_color))
         message.Wrap(300)
-        sizer.Add(message, 0, wx.ALL | wx.CENTER, 10)
+        sizer.Add(message, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 10)
 
         line = wx.StaticLine(self, -1, size=(20, -1), style=wx.LI_HORIZONTAL)
         sizer.Add(line, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 6)
@@ -221,11 +225,13 @@ class ConfirmationDialog(wx.Dialog):
         button_sizer = wx.StdDialogButtonSizer()
         sizer.Add(button_sizer, 0, wx.CENTER | wx.ALL, 6)
 
-        ok_button = wx.Button(self, wx.ID_OK)
-        button_sizer.AddButton(ok_button)
+        if not enable:
+            ok_button = wx.Button(self, wx.ID_OK)
+            button_sizer.AddButton(ok_button)
 
         cancel_button = wx.Button(self, wx.ID_CANCEL)
         cancel_button.SetDefault()
+        cancel_button.Bind(wx.EVT_BUTTON, self.cancel)
         button_sizer.AddButton(cancel_button)
 
         button_sizer.Realize()
@@ -233,15 +239,24 @@ class ConfirmationDialog(wx.Dialog):
 
     def show(self):  # pragma: no cover
         self.CenterOnParent()
-        value = self.ShowModal()
+        ret = False
 
-        if value == wx.ID_OK:
-            ret = True
+        if self.enable:
+            value = self.Show()
         else:
-            ret = False
+            value = self.ShowModal()
 
-        self.Destroy()
+            if value == wx.ID_OK:
+                ret = True
+            else:
+                ret = False
+
+            self.Destroy()
+
         return ret
+
+    def cancel(self, event):
+        self.Destroy()
 
 
 class _ClickPosition(Borg):
@@ -344,7 +359,7 @@ class MutuallyExclusiveWidgets:
     _CAT_LABEL_1ST = '!$&'
     _CAT_LABEL_ALOW = "áí'a-z_"
     _WGT_LABEL_1ST = '*@%'
-    _WGT_LABEL_ALOW = "áí'a-zA-Z-:() "
+    _WGT_LABEL_ALOW = "áí'a-zA-Z-:/() "
     _CHECKBOXES = {}
     _TEXTCTRLES = {}
 

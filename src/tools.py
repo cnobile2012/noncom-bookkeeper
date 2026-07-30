@@ -448,7 +448,8 @@ class FieldEdit(BasePanel, wx.Panel):
                 # *** TODO *** Check database for entries on this field.
 
                 cap = "Removal Confirmation"
-                dlg = ConfirmationDialog(self, msg, cap, fg_color=w_fg_color_0)
+                w_fg_color = wx.Colour(w_fg_color_0)
+                dlg = ConfirmationDialog(self, msg, cap, fg_color=w_fg_color)
                 ret = dlg.show()
 
                 if ret:

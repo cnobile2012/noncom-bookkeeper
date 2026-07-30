@@ -534,13 +534,13 @@ class PopulateCollect(AsyncEventLoop):
             fy = self.cache.work_on_fiscal_year
             lt = LedgerTransaction(self)
             date = data['date']
-            trans_num = data['transaction_id']
-            ck_num = data['check_number']
-            rcpt_num = data['receipt_number']
+            trans_id = data['transaction_id']
+            r_type = data['r_type']
+            number = data['number']
             memo = data['memo']
             rows = self.run_async(lt.select_ledger_transaction(
-                fy[1], date=date, trans_num=trans_num, ck_num=ck_num,
-                rcpt_num=rcpt_num, memo=memo))
+                fy[1], date=date, trans_id=trans_id, r_type=r_type,
+                number=number, memo=memo))
             # *** TODO *** Do something with rows.
         else:
             rows = []

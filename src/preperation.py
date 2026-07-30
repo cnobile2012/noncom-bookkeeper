@@ -19,13 +19,29 @@ class DataPreperation:
     All data in the data and fiscal_year tables need to prepared before
     cached or saved to the database.
     """
+    _ERR_MSG0 = ("If Transaction Type->Contribution and Entry Reference->"
+                 "Receipt Number you must also enter Cash On Hand->Replen"
+                 "ishment and Income->Local Fund or at least one expense.")
+    _ERR_MSG1 = ("If Transaction Type->Contribution and Entry Reference->"
+                 "OCS you must also enter Income->Contributed Expense and"
+                 "at least one expense.")
+    _ERR_MSG2 = ("If Transaction Type->Distribution you must also enter "
+                 "Entry Reference->OCS and Bank->Deposit or Entry Refere"
+                 "nce->Deposit Number and Cash-on-Hand->Disbursement.")
+    _ERR_MSG3 = ("If Transaction Type->Expense you must also enter at "
+                 "least one expense and either Entry Reference->Check Nu"
+                 "mber and Bank->Withdrawal or Entry Reference->OCS and "
+                 "Bank->Withdrawal or Entry Reference->Receipt Number and "
+                 "Cash-on-Hand->Disbursement.")
+    _ERR_MSG4 = ("If Transaction Type->Other you must also enter a Memo "
+                 "and Entry Reference->Receipt Number and Cash-on-Hand->"
+                 "Replenishment and Income->Local Fund.")
 
     def __init__(self, db, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._tac = TomlAppConfig()
         self._log = logging.getLogger(self._tac.logger_name)
         self.db = db
-        self.lt = LedgerTransaction(db)
 
     async def organization(self, data: dict, date: tuple) -> str | None:
         """
@@ -196,103 +212,121 @@ class DataPreperation:
         :param tuple date: The current fiscal year date.
         :returns: Any errors or None with no errors.
         :rtype: str or None
-
-        .. note::
-
-           1. panel:
-             a. transaction_id is read only
-             b. date is mandatory
-             c. memo not mandatory
-           2. transaction: One item must be chosen
-           3. reference: One item must be chosen
-           4. bank: Mandatory if
-             a. bank.deposit if transaction.distribution
-             b. bank.withdrawal if transaction.expense unless coh.disbursement
-           5. coh: Mandatory if
-             a. transaction.contribution unless reference.ocs
-             b. transaction.expense unless reference.ocs
-           6. income: One field is mandatory if transaction.contribution
-           7. expenses: At least one is mandatory if transaction.expense
-           8. Any empty strings or 0 (zero) amounts are removed from the data.
-
-        {'panel': {'transaction_id': '',
-                   'date': badidatetime.date(183, 7, 13), 'memo': 'Test memo'},
-         'transaction': {'contribution': True, 'distribution': False,
-                         'expense': False, 'other': False},
-         'reference': {'check_number': '', 'receipt_number': '', 'ocs': True},
-         'bank': {'deposit': False, 'withdrawal': False, 'amount': '',
-                  'balance': ''},
-         'coh': {'replenishment': False, 'disbursement': False, 'amount': '',
-                 'balance': ''},
-         'income': {'local_fund': True, 'contributed_expense': False,
-                    'other': False, 'amount': '5000', 'balance': ''},
-         'expenses': {'local_baháí_expenses': {
-                          'administration': '', 'education': '',
-                          'proclamation': '', 'scolarships': '',
-                          'teaching': ''},
-                      'national_baháí_funds': {
-                          'national_baháí_fund': '',
-                          'baháí_chair_for_world_peace_reserved_fund': '',
-                          'persian_baháí_media_service_fund_payam_e_doost': '',
-                          'house_of_worship_campus_reserves_fund': '',
-                          'wilmette_institute_unrestricted_contribution': '',
-                          'humanitarian_relief_fund_in_usa': '',
-                          'us_baháí_archives_renovation_fund': '',
-                          'baháí_election_convention_contributions': '',
-                          'bosch_facilities_recovery_fund': '',
-                          'institute_properties_resurve_fund': '',
-                          'legal_defense_for_the_refugees_in_turkey': ''},
-                      'continental_and_international_funds': {
-                          'international_baháí_fund': '',
-                          'baháí_development_fund': '',
-                          'international_endowment_fund': '',
-                          'continental_baháí_fund': '',
-                          'national_house_of_worship_canada': '',
-                          'shrine_of_abdul_bahá': '',
-                          'humanitarian_relief_fund_world_center': '',
-                          'persian_relief_fund_world_center': '',
-                          'international_temples_fund': '',
-                          'asian_continental_board': '',
-                          'us_deputization_fund_international_pioneering': ''},
-                          'regional_funds': {
-                              'regional_baháí_council': '',
-                              'deputization_fund': '',
-                              'regional_facilities_fund': ''},
-                          'area_funds': {'area_teaching_committee': ''}
-                      }
-         }
         """
         error = None
+        # Only the date is mandatory, and it always defaults to today.
+        error = self._empty_fields('ledger', data)
+        trans_id = data['panel']['transaction_id']
+        data['panel']['purge'] = 0
+        amount = data['bank']['amount']
+        data['bank']['amount'] = int(amount) if amount.isdecimal() else None
+        amount = data['coh']['amount']
+        data['coh']['amount'] = int(amount) if amount.isdecimal() else None
+        amount = data['income']['amount']
+        data['income']['amount'] = int(amount) if amount.isdecimal() else None
 
-        if data:
-            # Only the date is mandatory, and it always defaults to today.
-            error = self._empty_fields('ledger', data)
+        for subcat in data['expenses'].values():
+            for field, amount in subcat.items():
+                subcat[field] = int(amount) if amount.isdecimal() else None
+
+        if not error:
+            state, error = self._build_ledger_state(data)
 
             if not error:
-                has0 = [v not in (False, '')
-                        for v in data['transaction'].values()].count(True) == 1
-                has1 = [v not in (False, '')
-                        for v in data['reference'].values()].count(True) == 1
+                panel = state['panel']
+                ref = state['reference']
+                bank = state['bank']
+                coh = state['coh']
+                income = state['income']
+                expenses = state['expenses']
 
-                if (has0 + has1) != 2:
-                    error = ("There must be one 'Transaction Type and one "
-                             "'Entry Reference.")
+                if state['transaction']['contribution']:
+                    if ref['receipt_number']:
+                        if not (coh['replenishment'] and income['local_fund']):
+                            error = self._ERR_MSG0
+                        elif not (income['contributed_expense'] and expenses):
+                            error = self._ERR_MSG0
+                    elif not ref['ocs'] and income['local_fund']:
+                        error = self._ERR_MSG1
+                elif state['transaction']['distribution']:
+                    if not (ref['ocs'] and bank['deposit']):
+                        error = self._ERR_MSG2
+                    elif not (ref['deposit_number'] and bank['deposit']
+                              and coh['disbursement']):
+                        error = self._ERR_MSG2
+                elif state['transaction']['expense']:
+                    if (not (ref['check_number'] and bank['withdrawal']
+                             and expenses)):
+                        error = self._ERR_MSG3
+                    elif not (ref['ocs'] and bank['withdrawal'] and expenses):
+                        error = self._ERR_MSG3
+                    elif (not (ref['receipt_number'] and coh['disbursement']
+                               and expenses)):
+                        error = self._ERR_MSG3
+                elif state['transaction']['other']:
+                    if (not panel['memo'] and ref['receipt_number']
+                        and coh['replenishment'] and income['local_fund']):
+                        error = self._ERR_MSG4
 
                 if not error:
-                    pass
+                    self.lt = LedgerTransaction(self.db, data)
 
+                    if trans_id.isdigit():
+                        await self.lt.update_ledger_transaction(int(trans_id))
+                    else:
+                        await self.lt.insert_ledger_transaction(date[0])
 
-        print('POOP', data, date, error)
         return error
 
     def _build_ledger_state(self, data: dict) -> dict:
         """
+        Build the boolean state matrix used to validate a ledger entry.
         """
-        has_trans = [v not in (False, '')
-                     for v in data['transaction'].values()].count(True) == 1
-        has_ref = [v not in (False, '')
-                   for v in data['reference'].values()].count(True) == 1
+        error = None
 
+        def build_amount_state(name, category: dict) -> dict:
+            nonlocal error
+            amount = category['amount'] != ''
+            fields = {key: value for key, value in category.items()
+                      if key not in ('amount', 'balance')}
+
+            if not amount:
+                # No amount means no transaction type is present.
+                fields = dict.fromkeys(fields, False)
+                error = f"For {name} there must be a Transaction Type."
+            elif not any(fields.values()):
+                # An amount without a transaction type is not valid.
+                amount = False
+                error = (f"For {name} an amount without a Transaction Type "
+                         "is invalid.")
+
+            return {**fields, 'amount': amount}
+
+        state = {
+            'panel': {
+                'memo': data['panel']['memo'] != '',
+                },
+            'transaction': {
+                'contribution': data['transaction']['contribution'],
+                'distribution': data['transaction']['distribution'],
+                'expense': data['transaction']['expense'],
+                'other': data['transaction']['other'],
+                },
+            'reference': {
+                'ocs': data['reference']['ocs'],
+                'check_number': data['reference']['check_number'],
+                'receipt_number': data['reference']['receipt_number'],
+                'deposit_number': data['reference']['deposit_number'],
+                'number': data['reference']['number'] != ''
+                },
+            'bank': build_amount_state('Bank', data['bank']),
+            'coh': build_amount_state('Cash on Hand', data['coh']),
+            'income': build_amount_state('Income', data['income']),
+            'expenses': any(value for subcat in data['expenses'].values()
+                            for value in subcat.values()),
+            }
+
+        return state, error
 
     def _empty_fields(self, panel_name: str, data: dict) -> str | None:
         """

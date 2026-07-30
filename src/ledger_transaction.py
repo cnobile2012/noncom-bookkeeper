@@ -13,8 +13,8 @@ class LedgerTransaction:
     """
     Handle all ledger transaction.
     """
-    _TRANS_TYPES = ('contribution', 'distribution', 'expense')
-    _REF_TYPES = ('ocs',)
+    _TRANS_TYPES = ('contribution', 'distribution', 'expense', 'other')
+    _REF_TYPES = ('ocs', 'check_number', 'receipt_number', 'deposit_number')
     _BANK_TYPES = ('deposit', 'withdrawal')
     _COH_TYPES = ('replenishment', 'disbursement')
     _INCM_TYPES = ('local_fund', 'contributed_expense', 'other')
@@ -68,40 +68,39 @@ class LedgerTransaction:
 
     async def select_ledger_transaction(self, year, *,
                                         date: badidatetime.date=None,
-                                        trans_num: int=None, ck_num: str=None,
-                                        rcpt_num: str=None, memo: str=None
+                                        trans_id: int=None, r_type: int=None,
+                                        number: str=None, memo: str=None
                                         ) -> list:
         """
         Select a row from the vw_ledger_header view.
 
         :param int year: The fiscal year.
         :param badidatetime.date date: The Badí' date.
-        :param int trans_num: The Transaction number.
-        :param str ck_num: The check number.
-        :param str rcpt_number: The receipt number.
+        :param int trans_id: The Transaction number.
+        :param int r_type: The referance type.
+        :param str number: The referance type number.
         :param str memo: A partial string in the memo.
         :returns: The row of data.
         :rtype: list
         """
+        param = (year,)
+
         if date:
-            where = "AND ? = date"
-            param = date
-        elif trans_num:
-            where = "AND ? = trans_num"
-            param = trans_num
-        elif ck_num:
-            where = "AND ? = ck_num"
-            param = ck_num
-        elif rcpt_num:
-            where = "AND ? = rcpt_num"
-            param = rcpt_num
+            where = "AND date = ?"
+            param += (date,)
+        elif trans_id:
+            where = "AND trans_id = ?"
+            param += (trans_id,)
+        elif r_type and number:
+            where = "AND r_type = ? AND number = ?"
+            param += (r_type, number)
         elif memo:
             where = "AND memo LIKE '%' || ? || '%'"
-            param = memo
+            param += (memo,)
 
         query = (f"SELECT * FROM {self.db._V_LEDGER_HEADER} WHERE "
                  f"fy1_year = ? {where};")
-        return await self.db._do_select_query(query, (year, param,))
+        return await self.db._do_select_query(query, param)
 
     async def insert_ledger_transaction(self, year: int) -> int:
         """
@@ -127,13 +126,16 @@ class LedgerTransaction:
                                                           ref_pk)
                 rowcount += rc
 
-                if self._bank:
+                if (self._bank and self._bank['itype'] != 0
+                    and self._bank['amount'] is not None):
                     rowcount += await self._insert_bank(con, header_pk)
 
-                if self._coh:
+                if (self._coh and self._coh['itype'] != 0
+                    and self._coh['amount'] != 0):
                     rowcount += await self._insert_coh(con, header_pk)
 
-                if self._income:
+                if (self._income and self._income['itype'] != 0
+                    and self._income['amount'] != 0):
                     rowcount += await self._insert_income(con, header_pk)
 
                 if self._expenses:
@@ -167,9 +169,8 @@ class LedgerTransaction:
         :returns: The last row pk and the rowcount.
         :rtype: tuple
         """
-        query = (f"INSERT INTO {self.db._T_LEDGER_REFERENCE} (ck_num, "
-                 "rcpt_num, r_type) VALUES (:check_number, :receipt_number, "
-                 ":itype);")
+        query = (f"INSERT INTO {self.db._T_LEDGER_REFERENCE} (r_type, number) "
+                 "VALUES (:itype, :number);")
         cursor = await con.execute(query, self._ref)
         return cursor.lastrowid, cursor.rowcount
 
@@ -191,25 +192,25 @@ class LedgerTransaction:
         self._header['fy1fk'] = fy[0]
         fy = await self.db.select_from_fiscal_year_table(year=year + 1)
         self._header['fy2fk'] = fy[0]
-        query = ("SELECT COALESCE(MAX(trans_num), 0) + 1 "
+        query = ("SELECT COALESCE(MAX(trans_id), 0) + 1 "
                  f"FROM {self.db._T_LEDGER_HEADER} WHERE fy1fk = :fy1fk;")
         cursor = await con.execute(query, self._header)
         row = await cursor.fetchone()
-        self._header['trans_num'] = row[0]
+        self._header['trans_id'] = row[0]
         self._header['ltfk'] = trans_pk
         self._header['lrfk'] = ref_pk
         query = (f"INSERT INTO {self.db._T_LEDGER_HEADER} (fy1fk, fy2fk, "
-                 "ltfk, lrfk, trans_num, date, memo, purge, ctime, mtime) "
-                 "VALUES (:fy1fk, :fy2fk, :ltfk, :lrfk, :trans_num, :date, "
+                 "ltfk, lrfk, trans_id, date, memo, purge, ctime, mtime) "
+                 "VALUES (:fy1fk, :fy2fk, :ltfk, :lrfk, :trans_id, :date, "
                  ":memo, :purge, :ctime, :mtime);")
         cursor = await con.execute(query, self._header)
         return cursor.lastrowid, cursor.rowcount
 
-    async def update_ledger_transaction(self, trans_num: int) -> int:
+    async def update_ledger_transaction(self, trans_id: int) -> int:
         """
         Update the ledger_transaction table.
 
-        :param int trans_num: The transaction number of the transaction.
+        :param int trans_id: The transaction number of the transaction.
         :returns: The rowcount caused by the insert.
         :rtype: int
         """
@@ -223,21 +224,24 @@ class LedgerTransaction:
                 rowcount = 0
                 query = ("SELECT pk, ltfk, lrfk "
                          f"FROM {self.db._T_LEDGER_HEADER} "
-                         "WHERE trans_num = ?;")
-                cursor = await con.execute(query, (trans_num,))
+                         "WHERE trans_id = ?;")
+                cursor = await con.execute(query, (trans_id,))
                 row = await cursor.fetchone()
                 pk, ltfk, lrfk = row
                 rowcount += await self._update_transaction(con, ltfk)
                 rowcount += await self._update_reference(con, lrfk)
                 rowcount += await self._update_header(con, pk)
 
-                if self._bank:
+                if (self._bank and self._bank['itype'] != 0
+                    and self._bank['amount'] != 0):
                     rowcount += await self._update_bank(con, pk)
 
-                if self._coh:
+                if (self._coh and self._coh['itype'] != 0
+                    and self._coh['amount'] != 0):
                     rowcount += await self._update_coh(con, pk)
 
-                if self._income:
+                if (self._income and self._income['itype'] != 0
+                    and self._income['amount'] != 0):
                     rowcount += await self._update_income(con, pk)
 
                 if self._expenses:
@@ -276,8 +280,7 @@ class LedgerTransaction:
         """
         self._ref['lrfk'] = lrfk
         query = (f"UPDATE {self.db._T_LEDGER_REFERENCE} "
-                 "SET ck_num = :check_number, rcpt_num = :receipt_number, "
-                 "r_type = :itype WHERE pk = :lrfk;")
+                 "SET r_type = :itype, number = :number WHERE pk = :lrfk;")
         cursor = await con.execute(query, self._ref)
         return cursor.rowcount
 

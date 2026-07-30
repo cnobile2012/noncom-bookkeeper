@@ -11,8 +11,8 @@ from wx.lib.scrolledpanel import ScrolledPanel
 from .config import TomlMetaData, TomlCreatePanel
 from .utilities import StoreObjects, MutuallyExclusiveWidgets, make_name
 from .bases import BasePanel
-from .custom_widgits import (
-    BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED, FlatArrowButton, EVT_FLAT_ARROW)
+from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
+                             FlatArrowButton, EVT_FLAT_ARROW)
 
 
 class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
@@ -83,6 +83,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
                      | wx.RIGHT | wx.BOTTOM, 6)
         widget_02 = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY,
                                 name='')
+        widget_02.Enable(False)
         widget_02.SetBackgroundColour(self.w1_bg_color)
         widget_02.SetForegroundColour(self.w_fg_color)
         widget_02.SetMinSize((self.tc_width+6, 26))
@@ -424,10 +425,10 @@ class SearchDialog(wx.Dialog):
         search_byn.SetMinSize((-1, -1))
         search_byn.SetBackgroundColour(wx.Colour(50, 50, 204))
         search_byn.Bind(wx.EVT_BUTTON, self.button_search)
+        sizer_1.AddButton(search_byn)
         cancel_byn = wx.Button(panel_0, wx.ID_CANCEL, label='')
         cancel_byn.SetMinSize((-1, -1))
         cancel_byn.SetBackgroundColour(wx.Colour(*(50, 50, 204)))
-        sizer_1.AddButton(search_byn)
         cancel_byn.Bind(wx.EVT_BUTTON, self.button_cancel)
         sizer_1.AddButton(cancel_byn)
         sizer_1.Realize()
