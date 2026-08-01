@@ -19,21 +19,27 @@ class DataPreperation:
     All data in the data and fiscal_year tables need to prepared before
     cached or saved to the database.
     """
-    _ERR_MSG0 = ("If Transaction Type->Contribution and Entry Reference->"
-                 "Receipt Number you must also enter Cash On Hand->Replen"
-                 "ishment and Income->Local Fund or at least one expense.")
-    _ERR_MSG1 = ("If Transaction Type->Contribution and Entry Reference->"
-                 "OCS you must also enter Income->Contributed Expense and"
-                 "at least one expense.")
-    _ERR_MSG2 = ("If Transaction Type->Distribution you must also enter "
-                 "Entry Reference->OCS and Bank->Deposit or Entry Refere"
-                 "nce->Deposit Number and Cash-on-Hand->Disbursement.")
-    _ERR_MSG3 = ("If Transaction Type->Expense you must also enter at "
-                 "least one expense and either Entry Reference->Check Nu"
-                 "mber and Bank->Withdrawal or Entry Reference->OCS and "
-                 "Bank->Withdrawal or Entry Reference->Receipt Number and "
-                 "Cash-on-Hand->Disbursement.")
-    _ERR_MSG4 = ("If Transaction Type->Other you must also enter a Memo "
+    _ERR_MSG0 = ("If Transaction Type (Contribution) and Entry Reference ("
+                 "Receipt) you must also enter Cash On Hand (Replenishment "
+                 "and Amount) and Income (Local Fund and Amount).")
+    _ERR_MSG1 = ("If Transaction Type (Contribution) and Entry Reference ("
+                 "Receipt and Number) you must also enter Income (Contributed "
+                 "Expense) and at least one expense.")
+    _ERR_MSG2 = ("Missing either the Transaction Type (Contribution) and "
+                 "Entry Reference (Receipt and Number)")
+    _ERR_MSG3 = ("If Transaction Type->Contribution and Entry Reference->"
+                 "OCS you must also enter Income (Local Fund and Amount).")
+    _ERR_MSG4 = ("If Transaction Type (Distribution) you must also enter "
+                 "Entry Reference (OCS) and Bank (Deposit and Amount).")
+    _ERR_MSG5 = ("If Transaction Type (Distribution) you must also enter "
+                 "Entry Reference (Deposit and Number) and Bank (Deposit and "
+                 "Amount) and Cash-on-Hand (Disbursement and Amount).")
+    _ERR_MSG6 = ("If Transaction Type->Expense you must also enter at "
+                 "least one expense and either Entry Reference (Check and Nu"
+                 "mber) and Bank (Withdrawal) or Entry Reference->OCS and "
+                 "Bank->Withdrawal or Entry Reference (Receipt and Number) "
+                 "and Cash-on-Hand->Disbursement.")
+    _ERR_MSG7 = ("If Transaction Type->Other you must also enter a Memo "
                  "and Entry Reference->Receipt Number and Cash-on-Hand->"
                  "Replenishment and Income->Local Fund.")
 
@@ -213,68 +219,81 @@ class DataPreperation:
         :returns: Any errors or None with no errors.
         :rtype: str or None
         """
-        error = None
         # Only the date is mandatory, and it always defaults to today.
         error = self._empty_fields('ledger', data)
         trans_id = data['panel']['transaction_id']
         data['panel']['purge'] = 0
-        amount = data['bank']['amount']
-        data['bank']['amount'] = int(amount) if amount.isdecimal() else None
-        amount = data['coh']['amount']
-        data['coh']['amount'] = int(amount) if amount.isdecimal() else None
-        amount = data['income']['amount']
-        data['income']['amount'] = int(amount) if amount.isdecimal() else None
-
-        for subcat in data['expenses'].values():
-            for field, amount in subcat.items():
-                subcat[field] = int(amount) if amount.isdecimal() else None
 
         if not error:
-            state, error = self._build_ledger_state(data)
+            state = self._build_ledger_state(data)
+            panel = state['panel']
+            ref = state['reference']
+            bank = state['bank']
+            coh = state['coh']
+            income = state['income']
+            expenses = state['expenses']
+
+            if state['transaction']['contribution']:
+                receipt_stats = (ref['receipt'], ref['number'])
+
+                if all(receipt_stats):
+                    fund_stats = (coh['replenishment'], coh['amount'],
+                              income['local_fund'], income['amount'])
+
+                    if all(fund_stats):
+                        error = None
+                    else:
+                        error = self._ERR_MSG0
+
+                        if (income['contributed_expense'] and income['amount']
+                            and expenses):
+                            error = None
+                        elif not any(fund_stats):
+                            error = self._ERR_MSG1
+                elif any(receipt_stats):
+                    error = self._ERR_MSG2
+                elif not (ref['ocs'] and income['local_fund']
+                          and income['amount']):
+                    error = self._ERR_MSG3
+            elif state['transaction']['distribution']:
+                if (ref['ocs'] and bank['deposit'] and bank['amount']):
+                    error = None
+                else:
+                    error = self._ERR_MSG4
+
+                    if (ref['deposit'] and ref['number']
+                        and bank['deposit'] and bank['amount']
+                        and coh['disbursement'] and coh['amount']):
+                        error = None
+                    elif not ref['ocs']:
+                        error = self._ERR_MSG5
+            elif state['transaction']['expense']:
+                if not (ref['check'] and bank['withdrawal']
+                        and bank['amount'] and expenses):
+                    error = self._ERR_MSG6
+
+                if not (ref['ocs'] and bank['withdrawal'] and bank['amount']
+                        and expenses):
+                    error = self._ERR_MSG6
+
+                if not (ref['receipt'] and coh['disbursement']
+                        and coh['amount'] and expenses):
+                    error = self._ERR_MSG6
+            elif state['transaction']['other']:
+                if not (panel['memo'] and ref['receipt']
+                        and coh['replenishment'] and coh['amount']
+                        and income['local_fund'] and income['amount']):
+                    error = self._ERR_MSG7
 
             if not error:
-                panel = state['panel']
-                ref = state['reference']
-                bank = state['bank']
-                coh = state['coh']
-                income = state['income']
-                expenses = state['expenses']
+                self.lt = LedgerTransaction(self.db, data)
 
-                if state['transaction']['contribution']:
-                    if ref['receipt_number']:
-                        if not (coh['replenishment'] and income['local_fund']):
-                            error = self._ERR_MSG0
-                        elif not (income['contributed_expense'] and expenses):
-                            error = self._ERR_MSG0
-                    elif not ref['ocs'] and income['local_fund']:
-                        error = self._ERR_MSG1
-                elif state['transaction']['distribution']:
-                    if not (ref['ocs'] and bank['deposit']):
-                        error = self._ERR_MSG2
-                    elif not (ref['deposit_number'] and bank['deposit']
-                              and coh['disbursement']):
-                        error = self._ERR_MSG2
-                elif state['transaction']['expense']:
-                    if (not (ref['check_number'] and bank['withdrawal']
-                             and expenses)):
-                        error = self._ERR_MSG3
-                    elif not (ref['ocs'] and bank['withdrawal'] and expenses):
-                        error = self._ERR_MSG3
-                    elif (not (ref['receipt_number'] and coh['disbursement']
-                               and expenses)):
-                        error = self._ERR_MSG3
-                elif state['transaction']['other']:
-                    if (not panel['memo'] and ref['receipt_number']
-                        and coh['replenishment'] and income['local_fund']):
-                        error = self._ERR_MSG4
-
-                if not error:
-                    self.lt = LedgerTransaction(self.db, data)
-
-                    if trans_id.isdigit():
-                        await self.lt.update_ledger_transaction(int(trans_id))
-                    else:
-                        await self.lt.insert_ledger_transaction(date[0])
+                if trans_id.isdigit():
+                    rc = await self.lt.update_ledger_transaction(int(trans_id))
+                    self._log.info("Updated %s rows of ledger data.", rc)
+                else:
+                    rc = await self.lt.insert_ledger_transaction(date[0])
+                    self._log.info("Inserted %s rows of ledger data.", rc)
 
         return error
 
@@ -282,26 +301,6 @@ class DataPreperation:
         """
         Build the boolean state matrix used to validate a ledger entry.
         """
-        error = None
-
-        def build_amount_state(name, category: dict) -> dict:
-            nonlocal error
-            amount = category['amount'] != ''
-            fields = {key: value for key, value in category.items()
-                      if key not in ('amount', 'balance')}
-
-            if not amount:
-                # No amount means no transaction type is present.
-                fields = dict.fromkeys(fields, False)
-                error = f"For {name} there must be a Transaction Type."
-            elif not any(fields.values()):
-                # An amount without a transaction type is not valid.
-                amount = False
-                error = (f"For {name} an amount without a Transaction Type "
-                         "is invalid.")
-
-            return {**fields, 'amount': amount}
-
         state = {
             'panel': {
                 'memo': data['panel']['memo'] != '',
@@ -314,19 +313,32 @@ class DataPreperation:
                 },
             'reference': {
                 'ocs': data['reference']['ocs'],
-                'check_number': data['reference']['check_number'],
-                'receipt_number': data['reference']['receipt_number'],
-                'deposit_number': data['reference']['deposit_number'],
+                'check': data['reference']['check'],
+                'receipt': data['reference']['receipt'],
+                'deposit': data['reference']['deposit'],
                 'number': data['reference']['number'] != ''
                 },
-            'bank': build_amount_state('Bank', data['bank']),
-            'coh': build_amount_state('Cash on Hand', data['coh']),
-            'income': build_amount_state('Income', data['income']),
+            'bank': {
+                'deposit': data['bank']['deposit'],
+                'withdrawal': data['bank']['withdrawal'],
+                'amount': data['bank']['amount'] is not None,
+                },
+            'coh': {
+                'replenishment': data['coh']['replenishment'],
+                'disbursement': data['coh']['disbursement'],
+                'amount': data['coh']['amount'] is not None,
+                },
+            'income': {
+                'local_fund': data['income']['local_fund'],
+                'contributed_expense': data['income']['contributed_expense'],
+                'other': data['income']['other'],
+                'amount': data['income']['amount'] is not None,
+                },
             'expenses': any(value for subcat in data['expenses'].values()
                             for value in subcat.values()),
             }
 
-        return state, error
+        return state
 
     def _empty_fields(self, panel_name: str, data: dict) -> str | None:
         """

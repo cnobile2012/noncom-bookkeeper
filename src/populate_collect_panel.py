@@ -140,8 +140,10 @@ class PopulateCollect(AsyncEventLoop):
         panel_name = panel.__class__.__name__
 
         if panel_name == 'LedgerDataEntry':
+            to_int = True
             def push(key, value): self._lde_push(key, value, panel, data)
         else:
+            to_int = False
             def push(key, value): data[key] = value
 
         for w0, w1 in self.find_child_sets(panel):
@@ -163,7 +165,7 @@ class PopulateCollect(AsyncEventLoop):
                 if name1 == 'TextCtrl':
                     financial = getattr(widget1, 'financial', False)
                     push(field_name, self._value_to_db(
-                        value, financial=financial))
+                        value, financial=financial, to_int=to_int))
                 elif name1 in ('BadiDatePickerCtrl', 'DatePickerCtrl',
                                'ColorCheckBox', 'CheckBox'):
                     push(field_name, value)
@@ -362,14 +364,15 @@ class PopulateCollect(AsyncEventLoop):
         widget.SetItems(choices + [f"{t[0]}-{t[1]}" for t in data])
         widget.SetSelection(0)
 
-    def _value_to_db(self, value, financial: bool=False) -> str:
+    def _value_to_db(self, value, *, financial: bool=False, to_int: bool=False
+                     ) -> str:
         """
         Convert a currency value to an integer.
 
         .. note::
 
            We store currency values as integers converted to strings.
-           Example $1952.14 in the db is 195214.
+           Example 1952.14 in the db is 195214.
 
         :param value: A currency value from a field.
         :type value: str, int or badidatetime.date or wx.DateTime.
@@ -384,6 +387,9 @@ class PopulateCollect(AsyncEventLoop):
                 value = value[1:]
 
             value = value.replace('.', '').replace(',', '')
+
+            if financial and to_int:
+                value = int(value.strip()) if value.isdecimal() else None
         elif isinstance(value, (badidatetime.datetime, datetime.datetime,
                                 wx.DateTime)):
             value = str(value)

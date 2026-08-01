@@ -54,7 +54,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         ref_data0 = copy.deepcopy(self._LDG_DATA['reference'])
         ref_data0['ocs'] = True
         ref_data1 = copy.deepcopy(self._LDG_DATA['reference'])
-        ref_data1['receipt_number'] = True
+        ref_data1['receipt'] = True
         ref_data1['number'] = 'B100'
         bank_data = copy.deepcopy(self._LDG_DATA['bank'])
         bank_data['withdrawal'] = True
@@ -97,9 +97,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         dt_data = {'panel': {'date': date, 'purge': 0, 'memo': "Something"},
                    'transaction': {'contribution': False, 'distribution': True,
                                    'expense': False, 'other': False},
-                   'reference': {'ocs': True, 'check_number': False,
-                                 'receipt_number': False,
-                                 'deposit_number': False, 'number': ''},
+                   'reference': {'ocs': True, 'check': False, 'receipt': False,
+                                 'deposit': False, 'number': ''},
                    'bank': {'deposit': True, 'withdrawal': False,
                             'amount': 5000, 'balance': None}
                    }
@@ -113,9 +112,8 @@ class TestLedgerTransaction(BaseAsyncTests):
                    'transaction': {'contribution': False,
                                    'distribution': False, 'expense': True,
                                    'other': False},
-                   'reference': {'ocs': False, 'check_number': True,
-                                 'receipt_number': False,
-                                 'deposit_number': False, 'number': '1000'},
+                   'reference': {'ocs': False, 'check': True, 'receipt': False,
+                                 'deposit': False, 'number': '1000'},
                    'bank': {'deposit': False, 'withdrawal': True,
                             'amount': 5000, 'balance': None},
                    'expenses': {'national_baháí_fund': 10000,
@@ -132,9 +130,8 @@ class TestLedgerTransaction(BaseAsyncTests):
                    'transaction': {'contribution': True,
                                    'distribution': False, 'expense': False,
                                    'other': False},
-                   'reference': {'ocs': False, 'check_number': False,
-                                 'receipt_number': True,
-                                 'deposit_number': False, 'number': 'B1000'},
+                   'reference': {'ocs': False, 'check': False, 'receipt': True,
+                                 'deposit': False, 'number': 'B1000'},
                    'coh': {'replenishment': True, 'disbursement': False,
                            'amount': 5000, 'balance': None},
                    }
@@ -182,9 +179,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': False, 'distribution': True,
                                 'expense': False, 'other': False},
-                'reference': {'ocs': True, 'check_number': False,
-                              'receipt_number': False,
-                              'deposit_number': False, 'number': ''},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
                 'bank': {'deposit': True, 'withdrawal': False, 'amount': 5000,
                          'balance': None}
                 }
@@ -217,9 +213,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
-                'reference': {'ocs': False, 'check_number': False,
-                              'receipt_number': True,
-                              'deposit_number': False, 'number': 'B1000'},
+                'reference': {'ocs': False, 'check': False, 'receipt': True,
+                              'deposit': False, 'number': 'B1000'},
                 'coh': {'replenishment': True, 'disbursement': False,
                         'amount': 5000, 'balance': None}
                 }
@@ -252,9 +247,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
-                'reference': {'ocs': True, 'check_number': False,
-                              'receipt_number': False,
-                              'deposit_number': False, 'number': ''},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
                 'income': {'local_fund': True, 'contributed_expense': False,
                            'other': False, 'amount': 5000, 'balance': None}
                 }
@@ -288,9 +282,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
-                'reference': {'ocs': True, 'check_number': False,
-                              'receipt_number': False,
-                              'deposit_number': False, 'number': ''},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
                 'expenses': {'national_baháí_fund': 10000,
                              'regional_baháí_council': 5000}
                 }
@@ -319,8 +312,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
-                'reference': {'check_numberX': '', 'receipt_number': '',
-                              'deposit_number': '', 'ocs': True},
+                'reference': {'checkX': '', 'receipt': '', 'deposit': '',
+                              'ocs': True},
                 }
         lt = LedgerTransaction(self.db, data)
 
@@ -348,9 +341,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': True,
                                 'expense': False, 'other': False},
-                'reference': {'ocs': True, 'check_number': False,
-                              'receipt_number': False,
-                              'deposit_number': False, 'number': ''},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
                 'bank': {'deposit': True, 'withdrawal': False, 'amount': 5000,
                          'balance': None}
                 }
@@ -391,9 +383,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
-                'reference': {'ocs': False, 'check_number': False,
-                              'receipt_number': True,
-                              'deposit_number': False, 'number': 'STR9999'},
+                'reference': {'ocs': False, 'check': False, 'receipt': True,
+                              'deposit': False, 'number': 'STR9999'},
                 'coh': {'replenishment': False, 'disbursement': True,
                         'amount': 5000, 'balance': None}
                 }
@@ -435,9 +426,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
-                'reference': {'ocs': False, 'check_number': False,
-                              'receipt_number': True,
-                              'deposit_number': False, 'number': 'STR9999'},
+                'reference': {'ocs': False, 'check': False, 'receipt': True,
+                              'deposit': False, 'number': 'STR9999'},
                 'income': {'local_fund': False, 'contributed_expense': True,
                            'other': False, 'amount': 5000, 'balance': None}
                 }
@@ -446,7 +436,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         u_data['transaction']['contribution'] = True
         u_data['transaction']['expense'] = False
         u_data['reference']['ocs'] = True
-        u_data['reference']['receipt_number'] = False
+        u_data['reference']['receipt'] = False
         u_data['reference']['number'] = ''
         u_data['income']['local_fund'] = True
         u_data['income']['contributed_expense'] = False
@@ -483,9 +473,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
-                'reference': {'ocs': True, 'check_number': False,
-                              'receipt_number': False,
-                              'deposit_number': False, 'number': ''},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
                 'expenses': {'national_baháí_fund': 10000,
                              'regional_baháí_council': 5000,
                              'deputization_fund': 1000}
@@ -495,7 +484,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         u_data['transaction']['contribution'] = False
         u_data['transaction']['expense'] = True
         u_data['reference']['ocs'] = False
-        u_data['reference']['check_number'] = True
+        u_data['reference']['check'] = True
         u_data['reference']['number'] = '1000'
         u_data['expenses']['national_baháí_fund'] = 15000
         u_data['expenses']['regional_baháí_council'] = 10000
@@ -528,9 +517,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
-                'reference': {'ocs': True, 'check_number': True,
-                              'receipt_number': False,
-                              'deposit_number': False, 'number': '1000'}
+                'reference': {'ocs': True, 'check': True, 'receipt': False,
+                              'deposit': False, 'number': '1000'}
                 }
         u_data = copy.deepcopy(data)
         u_data['panel']['memo'] = "Updated"

@@ -45,8 +45,7 @@ data_entry_titles = [  # Title, num_cb, num_txt, cb_pos, span, btn
     ]
 data_entry_labels = [
     ['transaction', 'Contribution:', 'Distribution:', 'Expense:', 'Other:'],
-    ['$reference', 'OCS:', 'Check Number:', 'Receipt Number:', 'Deposit Number:',
-     'Number:'],
+    ['$reference', 'OCS:', 'Check:', 'Receipt:', 'Deposit:', 'Number:'],
     ['$bank', 'Deposit:', 'Withdrawal:', '@Amount:', '%Balance:'],
     ['$coh', 'Replenishment:', 'Disbursement:', '@Amount:', '%Balance:'],
     ['$income', 'Local Fund:', 'Contributed Expense:', 'Other:', '@Amount:',

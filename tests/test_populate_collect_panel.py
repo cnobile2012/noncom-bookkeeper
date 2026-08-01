@@ -262,7 +262,7 @@ class TestPopulateCollect(BaseAsyncTests):
         expect0 = copy.deepcopy(ldg_values0)
         expect0['panel']['date'] = date
         expect0['expenses']['national_baháí_funds'][
-            'national_baháí_fund'] = '15000'
+            'national_baháí_fund'] = 15000
 
         data = (
             ('organization', 9, self._ORG_DATA, self._ORG_DATA),
@@ -304,7 +304,7 @@ class TestPopulateCollect(BaseAsyncTests):
         ldg_values0['income']['amount'] = '50.00'
         expect0 = copy.deepcopy(ldg_values0)
         expect0['panel']['date'] = date
-        expect0['income']['amount'] = '5000'
+        expect0['income']['amount'] = 5000
 
         data = (
             ('organization', org_data, False, org_data),
@@ -474,23 +474,28 @@ class TestPopulateCollect(BaseAsyncTests):
         value to an integer.
         """
         data = (
-            (195214, True, '195214'),
-            ('1952.14', True, '195214'),
-            ('-1952.14', True, '-195214'),
-            ('+1952.14', True, '195214'),
-            ('$1952.14', True, '195214'),
-            ('=1952.14', True, '195214'),
-            (badidatetime.datetime(183, 3, 5), False, '0183-03-05T00:00:00'),
-            (datetime.datetime(2026, 5, 1), False, '2026-05-01 00:00:00'),
-            (wx.DateTime(1, 5, 2026), False,
+            # (195214, True, False, '195214'),
+            # ('1952.14', True, False, '195214'),
+            # ('-1952.14', True, False, '-195214'),
+            # ('+1952.14', True, False, '195214'),
+            # ('$1952.14', True, False, '195214'),
+            # ('=1952.14', True, False, '195214'),
+            ('1952.14', True, True, 195214),
+            (badidatetime.datetime(183, 3, 5), False, False,
+             '0183-03-05T00:00:00'),
+            (datetime.datetime(2026, 5, 1), False, False,
+             '2026-05-01 00:00:00'),
+            (wx.DateTime(1, 5, 2026), False, False,
              'Mon 01 Jun 2026 12:00:00 AM EDT'),
-            (' 123456 ', False, '123456'),
+            (' 123456 ', False, False, '123456'),
             )
-        msg = "Expected {}, found {}."
+        msg = "Expected {} with financial {}, to_int {}, found {}."
 
-        for value, financial, expected in data:
-            result = self.db._value_to_db(value, financial)
-            self.assertEqual(expected, result, msg.format(expected, result))
+        for value, financial, to_int, expected in data:
+            result = self.db._value_to_db(value, financial=financial,
+                                          to_int=to_int)
+            self.assertEqual(expected, result, msg.format(
+                expected, financial, to_int, result))
 
     #@unittest.skip("Temporarily skipped")
     def test__panel_to_financial_panel(self):

@@ -14,7 +14,7 @@ class LedgerTransaction:
     Handle all ledger transaction.
     """
     _TRANS_TYPES = ('contribution', 'distribution', 'expense', 'other')
-    _REF_TYPES = ('ocs', 'check_number', 'receipt_number', 'deposit_number')
+    _REF_TYPES = ('ocs', 'check', 'receipt', 'deposit')
     _BANK_TYPES = ('deposit', 'withdrawal')
     _COH_TYPES = ('replenishment', 'disbursement')
     _INCM_TYPES = ('local_fund', 'contributed_expense', 'other')
@@ -94,6 +94,9 @@ class LedgerTransaction:
         elif r_type and number:
             where = "AND r_type = ? AND number = ?"
             param += (r_type, number)
+        elif r_type:
+            where = "AND r_type = ?"
+            param += (r_type,)
         elif memo:
             where = "AND memo LIKE '%' || ? || '%'"
             param += (memo,)
