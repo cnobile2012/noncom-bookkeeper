@@ -376,7 +376,8 @@ class Database(BaseDatabase):
             assert f_items, "Programming error, no field data."
             f_month = await self.select_from_month_table(order=month)
             assert f_month, "Programming error, no month data."
-            fy2 = await self.select_from_fiscal_year_table(year=fy1[1]+1)
+            fy2_year = fy1[1]+1  # Get next year
+            fy2 = await self.select_from_fiscal_year_table(year=fy2_year)
             assert fy2, "Programming error, no 2nd year fiscal year data."
 
             query = (

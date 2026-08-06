@@ -102,7 +102,7 @@ class LedgerTransaction:
             param += (memo,)
 
         query = (f"SELECT * FROM {self.db._V_LEDGER_HEADER} WHERE "
-                 f"fy1_year = ? {where};")
+                 f"fy_year = ? {where};")
         return await self.db._do_select_query(query, param)
 
     async def insert_ledger_transaction(self, year: int) -> int:

@@ -148,6 +148,34 @@ class TestDataPreperation(BaseAsyncTests):
                         expected, error))
 
     #@unittest.skip("Temporarily skipped")
+    async def test_organization_update(self):
+        """
+        Test that the organization method updates the fiscal_year table for
+        the current year.
+        """
+        await self.asyncTearDown()
+        year, month, day = (183, 4, 1)
+        fy_data = {'data': [(year, month, day, 1, 1, 0),
+                            (year+1, month, day, 0, 0, 0)]}
+        rowcount = await self.db.cache.insert(self.db._T_FISCAL_YEAR, fy_data)
+        self.assertEqual(2, rowcount)
+        # Fix the month and day
+        date = badidatetime.date(183, 3, 5)
+        data = copy.deepcopy(self._ORG_DATA)
+        data['start_of_fiscal_year'] = date
+        await self.insert_field_data(data)
+        await self.insert_months()
+
+        with patch.object(self.db, '_mf', self.fmf):
+            error = await self.tdp.organization(data, (year, month, day))
+
+        for year in (year, year+1):
+            result = self.db.cache.get(self.db._T_FISCAL_YEAR, year=year)
+            result = result[0]
+            self.assertEqual(result[2], date.month)
+            self.assertEqual(result[3], date.day)
+
+    #@unittest.skip("Temporarily skipped")
     async def test_budget(self):
         """
         Test that the budget method inserts or updates budget data properly.
@@ -273,13 +301,13 @@ class TestDataPreperation(BaseAsyncTests):
                                  f"Expected '{expected}', found '{error}'.")
 
     #@unittest.skip("Temporarily skipped")
-    async def test_ledger(self):
+    async def test_ledger_contributions(self):
         """
         Test that the ledger method verifies the business rules for
-        entering ledger data.
+        entering ledger transaction contribution data.
         """
         date = badidatetime.date(183, 7, 18)
-        # Test 1
+        # Test 1 -- fund_stats pass
         ldg_data0 = copy.deepcopy(self._LDG_DATA)
         ldg_data0['panel']['date'] = date
         ldg_data0['transaction']['contribution'] = True
@@ -290,11 +318,14 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data0['coh']['amount'] = 10000
         ldg_data0['income']['local_fund'] = True
         ldg_data0['income']['amount'] = 10000
-        expect0 = (1, 1, date, '', 183, 3, 5, 184, 3, 5, 1, 3, 'R1000', 0)
-        # Test 2
+        expect0 = (1, 1, 183, date, '', 1, 3, 'R1000', 0)
+        # Test 2 -- fund_stats fail
         ldg_error0 = copy.deepcopy(ldg_data0)
         ldg_error0['income']['amount'] = None
-        # Test 3
+        # Test 3 -- balance fail
+        ldg_error1 = copy.deepcopy(ldg_data0)
+        ldg_error1['coh']['amount'] = 5000
+        # Test 4 -- contributed_expense pass
         ldg_data1 = copy.deepcopy(self._LDG_DATA)
         ldg_data1['panel']['date'] = date
         ldg_data1['transaction']['contribution'] = True
@@ -303,67 +334,36 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data1['income']['contributed_expense'] = True
         ldg_data1['income']['amount'] = 1000
         ldg_data1['expenses']['local_baháí_expenses']['administration'] = 1000
-        expect1 = (2, 2, date, '', 183, 3, 5, 184, 3, 5, 1, 3, 'R2000', 0)
-        # Test 4
-        ldg_error1 = copy.deepcopy(ldg_data1)
-        ldg_error1['coh']['amount'] = None
-        ldg_error1['income']['amount'] = None
-        # Test 5
+        expect1 = (2, 2, 183, date, '', 1, 3, 'R2000', 0)
+        # Test 5 -- contributed_expense fail
         ldg_error2 = copy.deepcopy(ldg_data1)
-        ldg_error2['reference']['number'] = ''
-        # Test 6
+        ldg_error2['coh']['amount'] = None
+        ldg_error2['income']['amount'] = None
+        # Test 6 -- receipt_stats fail
+        ldg_error3 = copy.deepcopy(ldg_data1)
+        ldg_error3['reference']['number'] = ''
+        # Test 7 -- ocs pass
         ldg_data2 = copy.deepcopy(self._LDG_DATA)
         ldg_data2['panel']['date'] = date
         ldg_data2['transaction']['contribution'] = True
         ldg_data2['reference']['ocs'] = True
         ldg_data2['income']['local_fund'] = True
         ldg_data2['income']['amount'] = 5000
-        expect2 = (3, 3, date, '', 183, 3, 5, 184, 3, 5, 1, 1, '', 0)
-        # Test 7
-        ldg_error3 = copy.deepcopy(ldg_data2)
-        ldg_error3['income']['amount'] = None
-        # Test 8
-        ldg_data3 = copy.deepcopy(self._LDG_DATA)
-        ldg_data3['panel']['date'] = date
-        ldg_data3['transaction']['distribution'] = True
-        ldg_data3['reference']['ocs'] = True
-        ldg_data3['bank']['deposit'] = True
-        ldg_data3['bank']['amount'] = 15000
-        expect3 = (4, 4, date, '', 183, 3, 5, 184, 3, 5, 2, 1, '', 0)
-        # Test 9
-        ldg_error4 = copy.deepcopy(ldg_data3)
-        ldg_error4['bank']['deposit'] = True
-        ldg_error4['bank']['amount'] = None
-        # Test 10
-        ldg_data4 = copy.deepcopy(self._LDG_DATA)
-        ldg_data4['panel']['date'] = date
-        ldg_data4['transaction']['distribution'] = True
-        ldg_data4['reference']['deposit'] = True
-        ldg_data4['reference']['number'] = '07/29/2026'
-        ldg_data4['bank']['deposit'] = True
-        ldg_data4['bank']['amount'] = 2000
-        ldg_data4['coh']['disbursement'] = True
-        ldg_data4['coh']['amount'] = 2000
-        expect4 = (5, 5, date, '', 183, 3, 5, 184, 3, 5, 2, 4, '07/29/2026', 0)
-        # Test 11
-        ldg_error5 = copy.deepcopy(ldg_data4)
-        ldg_error5['coh']['disbursement'] = False
-        ldg_error5['coh']['amount'] = None
+        expect2 = (3, 3, 183, date, '', 1, 1, '', 0)
+        # Test 8 -- ocs fail
+        ldg_error4 = copy.deepcopy(ldg_data2)
+        ldg_error4['income']['amount'] = None
 
         data = (
+            # Transaction->Contributions
             (ldg_data0, {'r_type': 3, 'number': 'R1000'}, expect0),
             (ldg_error0, {'r_type': 3, 'number': 'R1000'}, self.tdp._ERR_MSG0),
+            (ldg_error1, {'r_type': 3, 'number': 'R1000'}, self.tdp._ERR_MSG0),
             (ldg_data1, {'r_type': 3, 'number': 'R2000'}, expect1),
-            (ldg_error1, {'r_type': 3, 'number': 'R2000'}, self.tdp._ERR_MSG1),
-            (ldg_error2, {'r_type': 3, 'number': 'R2000'}, self.tdp._ERR_MSG2),
+            (ldg_error2, {'r_type': 3, 'number': 'R2000'}, self.tdp._ERR_MSG1),
+            (ldg_error3, {'r_type': 3, 'number': 'R2000'}, self.tdp._ERR_MSG2),
             (ldg_data2, {'r_type': 1}, expect2),
-            (ldg_error3, {'r_type': 1}, self.tdp._ERR_MSG3),
-            (ldg_data3, {'trans_id': 4}, expect3),
-            (ldg_error4, {'trans_id': 4}, self.tdp._ERR_MSG4),
-            (ldg_data4, {'r_type': 4, 'number': '07/29/2026'}, expect4),
-            (ldg_error5, {'r_type': 4, 'number': '07/29/2026'},
-             self.tdp._ERR_MSG5),
-            
+            (ldg_error4, {'r_type': 1}, self.tdp._ERR_MSG3),
             )
         msg = "Expected '{}' with search {}, found '{}'."
 
@@ -374,13 +374,212 @@ class TestDataPreperation(BaseAsyncTests):
                 if not error:
                     result = await self.lt.select_ledger_transaction(
                         self.db.cache.year, **search)
+                    self.assertEqual(1, len(result), "Wrong record count.")
                     result = result[0][:-2]
                     self.assertEqual(expected, result, msg.format(
                         expected, search, result))
                 else:
                     self.assertEqual(expected, error, msg.format(
                         expected, search, error))
-                    #print('POOP0', error)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_ledger_distributions(self):
+        """
+        Test that the ledger method verifies the business rules for
+        entering ledger transaction distribution data.
+        """
+        date = badidatetime.date(183, 7, 18)
+        # Test 1 -- bank deposit pass
+        ldg_data1 = copy.deepcopy(self._LDG_DATA)
+        ldg_data1['panel']['date'] = date
+        ldg_data1['transaction']['distribution'] = True
+        ldg_data1['reference']['ocs'] = True
+        ldg_data1['bank']['deposit'] = True
+        ldg_data1['bank']['amount'] = 15000
+        expect1 = (1, 1, 183, date, '', 2, 1, '', 0)
+        # Test 2 -- bank deposit fail
+        ldg_error1 = copy.deepcopy(ldg_data1)
+        ldg_error1['bank']['deposit'] = True
+        ldg_error1['bank']['amount'] = None
+        # Test 3 -- disbursement pass
+        ldg_data2 = copy.deepcopy(self._LDG_DATA)
+        ldg_data2['panel']['date'] = date
+        ldg_data2['transaction']['distribution'] = True
+        ldg_data2['reference']['deposit'] = True
+        ldg_data2['reference']['number'] = '07/29/2026'
+        ldg_data2['bank']['deposit'] = True
+        ldg_data2['bank']['amount'] = 2000
+        ldg_data2['coh']['disbursement'] = True
+        ldg_data2['coh']['amount'] = 2000
+        expect2 = (2, 2, 183, date, '', 2, 4, '07/29/2026', 0)
+        # Test 4 -- disbursement fail
+        ldg_error2 = copy.deepcopy(ldg_data2)
+        ldg_error2['coh']['disbursement'] = False
+        ldg_error2['coh']['amount'] = None
+        # Test 5 -- balance fail
+        ldg_error3 = copy.deepcopy(ldg_data2)
+        ldg_error3['bank']['amount'] = 1000
+
+        data = (
+            # Transaction->Distributions
+            (ldg_data1, {'trans_id': 1}, expect1),
+            (ldg_error1, {'trans_id': 1}, self.tdp._ERR_MSG4),
+            (ldg_data2, {'r_type': 4, 'number': '07/29/2026'}, expect2),
+            (ldg_error2, {'r_type': 4, 'number': '07/29/2026'},
+             self.tdp._ERR_MSG5),
+            (ldg_error3, {'r_type': 4, 'number': '07/29/2026'},
+             self.tdp._ERR_MSG5),
+            )
+        msg = "Expected '{}' with search {}, found '{}'."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for ldg_data, search, expected in data:
+                error = await self.tdp.ledger(ldg_data, (183, 3, 5))
+
+                if not error:
+                    result = await self.lt.select_ledger_transaction(
+                        self.db.cache.year, **search)
+                    self.assertEqual(1, len(result), "Wrong record count.")
+                    result = result[0][:-2]
+                    self.assertEqual(expected, result, msg.format(
+                        expected, search, result))
+                else:
+                    self.assertEqual(expected, error, msg.format(
+                        expected, search, error))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_ledger_expenses(self):
+        """
+        Test that the ledger method verifies the business rules for
+        entering ledger transaction expenses data.
+        """
+        date = badidatetime.date(183, 7, 18)
+        # Test 1 -- check pass
+        ldg_data1 = copy.deepcopy(self._LDG_DATA)
+        ldg_data1['panel']['date'] = date
+        ldg_data1['panel']['total_expenses'] = 25000
+        ldg_data1['transaction']['expense'] = True
+        ldg_data1['reference']['check'] = True
+        ldg_data1['reference']['number'] = '1000'
+        ldg_data1['bank']['withdrawal'] = True
+        ldg_data1['bank']['amount'] = 25000
+        ldg_data1['expenses']['national_baháí_funds'][
+            'national_baháí_fund'] = 15000
+        ldg_data1['expenses']['continental_and_international_funds'][
+            'shrine_of_abdul_bahá'] = 10000
+        expect1 = (1, 1, 183, date, '', 3, 2, '1000', 0)
+        # Test 2 -- check fail
+        ldg_error1 = copy.deepcopy(ldg_data1)
+        ldg_error1['reference']['check'] = False
+        # Test 3 -- receipt_stats pass
+        ldg_data2 = copy.deepcopy(self._LDG_DATA)
+        ldg_data2['panel']['date'] = date
+        ldg_data2['panel']['total_expenses'] = 1000
+        ldg_data2['transaction']['expense'] = True
+        ldg_data2['reference']['receipt'] = True
+        ldg_data2['reference']['number'] = 'R3000'
+        ldg_data2['coh']['disbursement'] = True
+        ldg_data2['coh']['amount'] = 1000
+        ldg_data2['expenses']['local_baháí_expenses']['administration'] = 1000
+        expect2 = (2, 2, 183, date, '', 3, 3, 'R3000', 0)
+        # Test 4 -- receipt_stats fail
+        ldg_error2 = copy.deepcopy(ldg_data2)
+        ldg_error2['reference']['receipt'] = False
+        # Test 5 -- ocs pass
+        ldg_data3 = copy.deepcopy(self._LDG_DATA)
+        ldg_data3['panel']['date'] = date
+        ldg_data3['panel']['total_expenses'] = 30000
+        ldg_data3['transaction']['expense'] = True
+        ldg_data3['reference']['ocs'] = True
+        ldg_data3['bank']['withdrawal'] = True
+        ldg_data3['bank']['amount'] = 30000
+        ldg_data3['expenses']['national_baháí_funds'][
+            'national_baháí_fund'] = 20000
+        ldg_data3['expenses']['continental_and_international_funds'][
+            'shrine_of_abdul_bahá'] = 10000
+        expect3 = (3, 3, 183, date, '', 3, 1, '', 0)
+        # Test 6 -- ocs fail
+        ldg_error3 = copy.deepcopy(ldg_data3)
+        ldg_error3['reference']['ocs'] = False
+        # Test 7 -- ocs balance fail
+        ldg_error4 = copy.deepcopy(ldg_data3)
+        ldg_error4['bank']['amount'] = 20000
+
+        data = (
+            # Transaction->Expenses
+            (ldg_data1, {'r_type': 2, 'number': '1000'}, expect1),
+            (ldg_error1, {'r_type': 2, 'number': '1000'}, self.tdp._ERR_MSG6),
+            (ldg_data2, {'r_type': 3, 'number': 'R3000'}, expect2),
+            (ldg_error2, {'r_type': 3, 'number': 'R3000'}, self.tdp._ERR_MSG7),
+            (ldg_data3, {'r_type': 1}, expect3),
+            (ldg_error3, {'r_type': 1}, self.tdp._ERR_MSG8),
+            (ldg_error4, {'r_type': 1}, self.tdp._ERR_MSG8),
+            )
+        msg = "Expected '{}' with search {}, found '{}'."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for ldg_data, search, expected in data:
+                error = await self.tdp.ledger(ldg_data, (183, 3, 5))
+
+                if not error:
+                    result = await self.lt.select_ledger_transaction(
+                        self.db.cache.year, **search)
+                    self.assertEqual(1, len(result), "Wrong record count.")
+                    result = result[0][:-2]
+                    self.assertEqual(expected, result, msg.format(
+                        expected, search, result))
+                else:
+                    self.assertEqual(expected, error, msg.format(
+                        expected, search, error))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_ledger_other(self):
+        """
+        Test that the ledger method verifies the business rules for
+        entering ledger transaction other data.
+        """
+        date = badidatetime.date(183, 7, 18)
+        # Test 1 -- other pass
+        ldg_data1 = copy.deepcopy(self._LDG_DATA)
+        ldg_data1['panel']['date'] = date
+        ldg_data1['panel']['memo'] = "Test memo"
+        ldg_data1['transaction']['other'] = True
+        ldg_data1['reference']['receipt'] = True
+        ldg_data1['reference']['number'] = 'R4000'
+        ldg_data1['coh']['replenishment'] = True
+        ldg_data1['coh']['amount'] = 10000
+        ldg_data1['income']['local_fund'] = True
+        ldg_data1['income']['amount'] = 10000
+        expect0 = (1, 1, 183, date, 'Test memo', 4, 3, 'R4000', 0)
+        # Test 2 -- other fail
+        ldg_error1 = copy.deepcopy(ldg_data1)
+        ldg_error1['reference']['number'] = ''
+        # Test 2 -- balance fail
+        ldg_error2 = copy.deepcopy(ldg_data1)
+        ldg_error2['coh']['amount'] = 5000
+
+        data = (
+            # Transaction->Other
+            (ldg_data1, {'memo': "Test memo"}, expect0),
+            (ldg_error1, {'memo': "Test memo"}, self.tdp._ERR_MSG10),
+            (ldg_error2, {'memo': "Test memo"}, self.tdp._ERR_MSG10),
+            )
+        msg = "Expected '{}' with search {}, found '{}'."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for ldg_data, search, expected in data:
+                error = await self.tdp.ledger(ldg_data, (183, 3, 5))
+
+                if not error:
+                    result = await self.lt.select_ledger_transaction(
+                        self.db.cache.year, **search)
+                    self.assertEqual(1, len(result), "Wrong record count.")
+                    result = result[0][:-2]
+                    self.assertEqual(expected, result, msg.format(
+                        expected, search, result))
+                else:
+                    self.assertEqual(expected, error, msg.format(
+                        expected, search, error))
 
     #@unittest.skip("Temporarily skipped")
     async def test__build_ledger_state(self):

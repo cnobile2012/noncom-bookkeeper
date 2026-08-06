@@ -388,7 +388,7 @@ class PopulateCollect(AsyncEventLoop):
 
             value = value.replace('.', '').replace(',', '')
 
-            if financial and to_int:
+            if to_int:
                 value = int(value.strip()) if value.isdecimal() else None
         elif isinstance(value, (badidatetime.datetime, datetime.datetime,
                                 wx.DateTime)):

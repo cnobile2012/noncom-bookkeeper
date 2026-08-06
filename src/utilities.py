@@ -203,7 +203,6 @@ class ConfirmationDialog(wx.Dialog):
         self._parent = parent
         self.enable = enable
         self.SetSize((300, 150))
-
         # Red-ish
         _bg_color = bg_color if bg_color else wx.Colour(220, 130, 143)
         # Blue-ish
@@ -212,7 +211,6 @@ class ConfirmationDialog(wx.Dialog):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
-
         message = wx.StaticText(self, wx.ID_ANY, msg)
         message.SetBackgroundColour(wx.Colour(*_bg_color))
         message.SetForegroundColour(wx.Colour(*_fg_color))
@@ -233,7 +231,6 @@ class ConfirmationDialog(wx.Dialog):
         cancel_button.SetDefault()
         cancel_button.Bind(wx.EVT_BUTTON, self.cancel)
         button_sizer.AddButton(cancel_button)
-
         button_sizer.Realize()
         sizer.Fit(self)
 
@@ -362,6 +359,7 @@ class MutuallyExclusiveWidgets:
     _WGT_LABEL_ALOW = "áí'a-zA-Z-:/() "
     _CHECKBOXES = {}
     _TEXTCTRLES = {}
+    _EXPENSES_CTRLS = []
 
     def create_widgets(self, num_cb: int=0, num_txt: int=0, cb_pos: str='top',
                        labels: tuple=(), pos_idx: int=0) -> int:
@@ -508,7 +506,13 @@ class MutuallyExclusiveWidgets:
             tc.category = category
 
             if tc.financial:
-                tc.Bind(wx.EVT_TEXT, self.set_dirty_flag)
+                if category in ('local_baháí_expenses', 'national_baháí_funds',
+                                'continental_and_international_funds',
+                                'regional_funds', 'area_funds'):
+                    tc.Bind(wx.EVT_TEXT, self.on_expense_changed)
+                    self._EXPENSES_CTRLS.append(tc)
+                else:
+                    tc.Bind(wx.EVT_TEXT, self.set_dirty_flag)
 
             self.gbs.Add(tc, (pos_idx, 1), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
@@ -589,3 +593,7 @@ class MutuallyExclusiveWidgets:
             return all(c not in s[1:] for c in chars)
 
         return False
+
+    @property
+    def expenses_ctrls(self):
+        return self._EXPENSES_CTRLS

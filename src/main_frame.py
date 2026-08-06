@@ -123,12 +123,13 @@ class MainFrame(wx.Frame, MenuBar):
             self._log.debug("Checking '%s' for changes.", name)
             error = asyncio.run(self.db.save_to_database(name, panel),
                                 debug=self.options.debug)
-            panel.dirty = False
 
             if error is None:
+                panel.dirty = False
                 c_name = name.capitalize()
                 self.statusbar_message = f"Finished saving {c_name} data."
-            elif name in ('ledger',):
+            elif error and name in ('ledger',):
+                self._log.warning(error)
                 cap = "Ledger Rule Error"
                 bg = wx.Colour('yellow')
                 dlg = ConfirmationDialog(
@@ -136,6 +137,8 @@ class MainFrame(wx.Frame, MenuBar):
                     fg_color=panel.w_fg_color)
                 dlg.show()
             else:
+                panel.dirty = False
+                self._log.warning(error)
                 self.statusbar_warning = error
                 data = self._reset_panel(name)
                 self.db.populate_panel_values(name, panel, data)
@@ -147,7 +150,6 @@ class MainFrame(wx.Frame, MenuBar):
                         if panel.save:
                             panel.save = False
                             do_save(name, panel)
-                            panel.dirty = False
                         elif panel.cancel:
                             panel.cancel = False
                             data = self._reset_panel(name)

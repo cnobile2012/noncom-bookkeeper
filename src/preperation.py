@@ -5,6 +5,8 @@
 __docformat__ = "restructuredtext en"
 
 import logging
+import datetime
+import badidatetime
 
 from geopy.geocoders import Nominatim
 from geopy import exc
@@ -21,27 +23,36 @@ class DataPreperation:
     """
     _ERR_MSG0 = ("If Transaction Type (Contribution) and Entry Reference ("
                  "Receipt) you must also enter Cash On Hand (Replenishment "
-                 "and Amount) and Income (Local Fund and Amount).")
+                 "and Amount) and Income (Local Fund and Amount) and both "
+                 "amounts must be equal.")
     _ERR_MSG1 = ("If Transaction Type (Contribution) and Entry Reference ("
                  "Receipt and Number) you must also enter Income (Contributed "
                  "Expense) and at least one expense.")
     _ERR_MSG2 = ("Missing either the Transaction Type (Contribution) and "
                  "Entry Reference (Receipt and Number)")
-    _ERR_MSG3 = ("If Transaction Type->Contribution and Entry Reference->"
-                 "OCS you must also enter Income (Local Fund and Amount).")
+    _ERR_MSG3 = ("If Transaction Type->Contribution and Entry Reference ("
+                 "OCS) you must also enter Income (Local Fund and Amount).")
     _ERR_MSG4 = ("If Transaction Type (Distribution) you must also enter "
                  "Entry Reference (OCS) and Bank (Deposit and Amount).")
     _ERR_MSG5 = ("If Transaction Type (Distribution) you must also enter "
                  "Entry Reference (Deposit and Number) and Bank (Deposit and "
-                 "Amount) and Cash-on-Hand (Disbursement and Amount).")
-    _ERR_MSG6 = ("If Transaction Type->Expense you must also enter at "
-                 "least one expense and either Entry Reference (Check and Nu"
-                 "mber) and Bank (Withdrawal) or Entry Reference->OCS and "
-                 "Bank->Withdrawal or Entry Reference (Receipt and Number) "
-                 "and Cash-on-Hand->Disbursement.")
-    _ERR_MSG7 = ("If Transaction Type->Other you must also enter a Memo "
-                 "and Entry Reference->Receipt Number and Cash-on-Hand->"
-                 "Replenishment and Income->Local Fund.")
+                 "Amount) and Cash-on-Hand (Disbursement and Amount) and both "
+                 "amounts must be equal.")
+    _ERR_MSG6 = ("If Transaction Type (Expense) and Entry Reference (Check "
+                 "and Number) you must enter a Bank (Withdrawal) and at least "
+                 "one expense and the amount and expenses must be equal.")
+    _ERR_MSG7 = ("If Transaction Type (Expense) and Entry Reference (Receipt "
+                 "and Number) you must enter a Cash On Hand (Disbursement "
+                 "and Amount) and at least one expense and the amount and "
+                 "expenses must be equal.")
+    _ERR_MSG8 = ("If Transaction Type (Expense) and Entry Reference (OCS) "
+                 "you must enter Bank (Withdrawal and Amount) and at least "
+                 "one expense and the amount and expenses must be equal.")
+    _ERR_MSG9 = ("If Transaction Type (Expense) and not Entry Reference (OCS) "
+                 "you must enter a Reference (Number).")
+    _ERR_MSG10 = ("If Transaction Type->Other you must also enter a Memo "
+                  "and Entry Reference->Receipt Number and Cash-on-Hand->"
+                  "Replenishment and Income->Local Fund.")
 
     def __init__(self, db, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,12 +98,18 @@ class DataPreperation:
                             p_year, p_month, p_day)
                     elif latest_fy and latest_fy == p_year:
                         await self._enter_next_year(p_year, p_month, p_day)
-                    elif f_year == p_year:  # This is an update
-                        # Update the fiscal both years.
+                    elif f_year == p_year:
+                        # Update fiscal year month and day.
                         if f_month != p_month or f_day != p_day:
                             wrong_fy = (f_year, f_month, f_day)
                             correct_fy = (p_year, p_month, p_day)
-                            await self._fix_fiscal_years(wrong_fy, correct_fy)
+                            rc = await self._fix_fiscal_years(wrong_fy,
+                                                              correct_fy)
+
+                            if rc != 2:  # pragma: no cover
+                                error = ("Could not update the fiscal years "
+                                         "properly, '2' should have been "
+                                         f"updated found '{rc}' updated.")
                     else:
                         error = ("Cannot enter a year that is not immediately "
                                  "before or after the earliest or latest "
@@ -237,8 +254,11 @@ class DataPreperation:
                 receipt_stats = (ref['receipt'], ref['number'])
 
                 if all(receipt_stats):
-                    fund_stats = (coh['replenishment'], coh['amount'],
-                              income['local_fund'], income['amount'])
+                    equal = (data['coh']['amount'] == data['income']['amount']
+                             if data['coh']['amount'] not in (None, '')
+                             else False)
+                    fund_stats = (coh['replenishment'], income['local_fund'],
+                                  coh['amount'], income['amount'], equal)
 
                     if all(fund_stats):
                         error = None
@@ -260,30 +280,54 @@ class DataPreperation:
                     error = None
                 else:
                     error = self._ERR_MSG4
+                    equal = (data['bank']['amount'] == data['coh']['amount']
+                             if data['bank']['amount'] not in (None, '')
+                             else False)
 
-                    if (ref['deposit'] and ref['number']
-                        and bank['deposit'] and bank['amount']
-                        and coh['disbursement'] and coh['amount']):
+                    if (ref['deposit'] and ref['number'] and bank['deposit']
+                        and coh['disbursement'] and bank['amount']
+                        and coh['amount'] and equal):
                         error = None
                     elif not ref['ocs']:
                         error = self._ERR_MSG5
             elif state['transaction']['expense']:
-                if not (ref['check'] and bank['withdrawal']
-                        and bank['amount'] and expenses):
-                    error = self._ERR_MSG6
+                if ref['number'] and expenses:
+                    c_equal = (data['bank']['amount'] == data['panel']
+                               ['total_expenses'] if data['bank']['amount']
+                               not in (None, '') else False)
+                    check_stats = (ref['check'], bank['withdrawal'],
+                                   bank['amount'], c_equal)
+                    r_equal = (data['coh']['amount'] == data['panel']
+                               ['total_expenses'] if data['coh']['amount']
+                               not in (None, '') else False)
+                    receipt_stats = (ref['receipt'], coh['disbursement'],
+                                     coh['amount'], r_equal)
 
-                if not (ref['ocs'] and bank['withdrawal'] and bank['amount']
-                        and expenses):
-                    error = self._ERR_MSG6
+                    if all(check_stats):
+                        error = None
+                    elif any(check_stats):
+                        error = self._ERR_MSG6
+                    elif all(receipt_stats):
+                        error = None
+                    elif any(receipt_stats):
+                        error = self._ERR_MSG7
+                else:
+                    equal = (data['bank']['amount'] == data['panel']
+                             ['total_expenses'] if data['bank']['amount']
+                             not in (None, '') else False)
 
-                if not (ref['receipt'] and coh['disbursement']
-                        and coh['amount'] and expenses):
-                    error = self._ERR_MSG6
+                    if not (ref['ocs'] and bank['withdrawal']
+                            and bank['amount'] and expenses and equal):
+                        error = self._ERR_MSG8
             elif state['transaction']['other']:
-                if not (panel['memo'] and ref['receipt']
+                equal = (data['coh']['amount'] == data['income']['amount']
+                         if data['coh']['amount'] not in (None, '') else False)
+
+                if not (panel['memo'] and ref['receipt'] and ref['number']
                         and coh['replenishment'] and coh['amount']
-                        and income['local_fund'] and income['amount']):
-                    error = self._ERR_MSG7
+                        and income['local_fund'] and income['amount']
+                        and equal):
+                    error = self._ERR_MSG10
 
             if not error:
                 self.lt = LedgerTransaction(self.db, data)
@@ -321,18 +365,18 @@ class DataPreperation:
             'bank': {
                 'deposit': data['bank']['deposit'],
                 'withdrawal': data['bank']['withdrawal'],
-                'amount': data['bank']['amount'] is not None,
+                'amount': data['bank']['amount'] not in (None, ''),
                 },
             'coh': {
                 'replenishment': data['coh']['replenishment'],
                 'disbursement': data['coh']['disbursement'],
-                'amount': data['coh']['amount'] is not None,
+                'amount': data['coh']['amount'] not in (None, ''),
                 },
             'income': {
                 'local_fund': data['income']['local_fund'],
                 'contributed_expense': data['income']['contributed_expense'],
                 'other': data['income']['other'],
-                'amount': data['income']['amount'] is not None,
+                'amount': data['income']['amount'] not in (None, ''),
                 },
             'expenses': any(value for subcat in data['expenses'].values()
                             for value in subcat.values()),
@@ -397,6 +441,20 @@ class DataPreperation:
             panel_data = self.db.collect_panel_values(panel)
             await self.db._add_fields_to_field_type_table(panel_data)
 
+    async def _enter_previous_year(self, year: int, month: int, day: int
+                                   ) -> int:
+        """
+        Enter the next year.
+
+        :param int year: This is the UI entered year.
+        :param int month: This is the UI entered month.
+        :param int day: This is the UI entered day.
+        :returns: The number of DB rows affected.
+        :rtype: int
+        """
+        return await self.db.cache.insert(
+            self.db._T_FISCAL_YEAR, {'data': [(year, month, day, 0, 0, 0)]})
+
     async def _enter_next_year(self, year: int, month: int, day: int) -> int:
         """
         Update the current fiscal year to be the previous fiscal year then
@@ -422,24 +480,10 @@ class DataPreperation:
             self.db._T_FISCAL_YEAR, {'data': [(year+1, month, day, 0, 0, 0)]})
         return rowcount
 
-    async def _enter_previous_year(self, year: int, month: int, day: int
-                                   ) -> int:
-        """
-        Enter the next year.
-
-        :param int year: This is the UI entered year.
-        :param int month: This is the UI entered month.
-        :param int day: This is the UI entered day.
-        :returns: The number of DB rows affected.
-        :rtype: int
-        """
-        return await self.db.cache.insert(
-            self.db._T_FISCAL_YEAR, {'data': [(year, month, day, 0, 0, 0)]})
-
     async def _fix_fiscal_years(self, wrong_fy: tuple, correct_fy: tuple
                                 ) -> int:
         """
-        We need to fix the fiscal years if the month and/or day were
+        We need to fix the fiscal years if either of the month or day were
         entered wrong.
 
         :param tuple wrong_fy: A tuple indicating the year, mont, and day.
@@ -653,12 +697,25 @@ class DataPreperation:
     @property
     def ledger_data(self) -> dict:
         """
-        This property get the ledger data.
+        This property gets the ledger data.
 
         :returns: The ledger data as defined by {<field name>: <value>}.
         :rtype: dict
         """
         panel = self.db._mf.panels['ledger']
         data = self.db.collect_panel_values(panel)
-        # *** TODO *** Make DB call to get the refreash data.
-        return {}
+
+        for category, subcat in data.items():
+            for field, value in subcat.items():
+                if isinstance(value, dict):
+                    for fld, val in value.items():
+                        value[fld] = ''
+                else:
+                    if isinstance(value, (str, int)):
+                        subcat[field] = ''
+                    elif isinstance(value, bool):
+                        subcat[field] = False
+                    elif isinstance(value, badidatetime.date):
+                        subcat[field] = badidatetime.date.today()
+
+        return data

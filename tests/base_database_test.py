@@ -121,7 +121,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     _FY_DATA = {'fiscal_year_choice': 0, 'current_fiscal_year': False,
                 'work_on_this_fiscal_year': False, 'audit_complete': False}
     _LDG_DATA = {
-        'panel': {'transaction_id': '', 'date': None, 'memo': ''},
+        'panel': {'transaction_id': '', 'date': None, 'memo': '',
+                  'total_expenses': ''},
         'transaction': {'contribution': False, 'distribution': False,
                         'expense': False, 'other': False},
         'reference': {'ocs': False, 'check': False, 'receipt': False,
@@ -163,7 +164,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                      'regional_funds':
                      {'regional_baháí_council': '', 'deputization_fund': '',
                       'regional_facilities_fund': ''},
-                     'area_funds': {'area_teaching_committee': ''}}
+                     'area_funds': {'area_teaching_committee': ''}
+                     }
         }
 
     def __init__(self, name, *args, **kwargs):

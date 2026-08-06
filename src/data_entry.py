@@ -6,6 +6,8 @@ __docformat__ = "restructuredtext en"
 
 import re
 import wx
+
+from decimal import Decimal
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData, TomlCreatePanel
@@ -19,6 +21,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
     """
     Implements data entry into the ledger.
     """
+    _BUTTON_OBJS = []
     _tmd = TomlMetaData()
     _tcp = TomlCreatePanel()
 
@@ -144,6 +147,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
                 # We need to bind after the method call above, because the
                 # two dicts above are not updated until the method is called.
                 button.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(label))
+                self._BUTTON_OBJS.append(button)
 
             # Next
             pos += 1
@@ -160,14 +164,16 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         balance_text.SetMinSize((-1, -1))
         self.gbs.Add(balance_text, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT, 6)
-        balance_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY,
-                                   name='')
-        balance_ctrl.SetBackgroundColour(self.w1_bg_color)
-        balance_ctrl.SetForegroundColour(self.w_fg_color)
-        balance_ctrl.SetMinSize((self.tc_width, 26))
-        balance_ctrl.category = 'expenses'
-        self.gbs.Add(balance_ctrl, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.LEFT, 6)
+        self.balance_ctrl = wx.TextCtrl(self, wx.ID_ANY, "",
+                                        style=wx.TE_READONLY, name='')
+        self.balance_ctrl.SetBackgroundColour(self.w1_bg_color)
+        self.balance_ctrl.SetForegroundColour(self.w_fg_color)
+        self.balance_ctrl.SetMinSize((self.tc_width, 26))
+        self.balance_ctrl.category = 'panel'
+        self.balance_ctrl.financial = True
+        self.gbs.Add(self.balance_ctrl, (pos, 1), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
+        self._de_labels['panel'] += [make_name(balance_text.GetLabel())]
         pos += 1
 
         line = wx.StaticLine(self, wx.ID_ANY)
@@ -223,6 +229,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         if self.dirty:
             mf = self._so.get_object('MainFrame')
             mf.statusbar_message = 'Saving data.'
+            self._reset_buttons()
 
         self._save = value
 
@@ -239,8 +246,15 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         if self.dirty:
             mf = self._so.get_object('MainFrame')
             mf.statusbar_message = 'Restoring data.'
+            self._reset_buttons()
 
         self._cancel = value
+
+    def _reset_buttons(self):
+        for button in self._BUTTON_OBJS:
+            event = wx.CommandEvent(wx.wxEVT_BUTTON, button.GetId())
+            event.SetEventObject(button)
+            button.GetEventHandler().ProcessEvent(event)
 
     def _title_generator(self):
         return (title_data for title_data in self._tmd.data_entry_title_data)
@@ -308,6 +322,21 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
     def search_box(self, event) -> None:
         dlg = SearchDialog(self, self.bg_color, self.w_fg_color)
         dlg.ShowModal()
+
+    def on_expense_changed(self, event):
+        if not self.initializing:
+            self.dirty = True
+
+        total = Decimal("0")
+
+        for ctrl in self.expenses_ctrls:
+            value = ctrl.GetValue().strip()
+
+            if value:
+                total += Decimal(value)
+
+        self.balance_ctrl.SetValue(f"{total:.2f}")
+        event.Skip()
 
     def on_arrow(self, event) -> None:
         direction = event.GetDirection()

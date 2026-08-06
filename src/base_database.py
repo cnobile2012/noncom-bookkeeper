@@ -178,16 +178,14 @@ class BaseDatabase(PopulateCollect, Settings):
         }
     _SCHEMA_VIEWS = {
         _V_LEDGER_HEADER: (
-            'pk', 'trans_id', 'date', 'memo', 'fy1_year', 'fy1_month',
-            'fy1_day', 'fy2_year', 'fy2_month', 'fy2_day', 't_type', 'r_type',
+            'pk', 'trans_id', 'fy_year', 'date', 'memo', 't_type', 'r_type',
             'number', 'purge', 'ctime', 'mtime'),
         _V_LEDGER_EXPENSE: ('lhfk', 'field', 'amount'),
         }
     _SCHEMA_VIEW_QUERY = {
         _V_LEDGER_HEADER: (
-            'SELECT ld.pk, ld.trans_id, ld.date, ld.memo, fy1.year, '
-            'fy1.month, fy1.day, fy2.year, fy2.month, fy2.day, lt.t_type, '
-            'lr.r_type, lr.number, ld.purge, ld.ctime, ld.mtime '
+            'SELECT ld.pk, ld.trans_id, fy1.year, ld.date, ld.memo, '
+            'lt.t_type, lr.r_type, lr.number, ld.purge, ld.ctime, ld.mtime '
             f'FROM {_T_LEDGER_HEADER} AS ld '
             f'JOIN {_T_FISCAL_YEAR} AS fy1 ON ld.fy1fk = fy1.pk '
             f'JOIN {_T_FISCAL_YEAR} AS fy2 ON ld.fy2fk = fy2.pk '
@@ -203,8 +201,12 @@ class BaseDatabase(PopulateCollect, Settings):
         ('idx_month_month ON month(month);'),
         ('idx_month_ord ON month(ord);'),
         ('idx_fiscal_year_year ON fiscal_year(year);'),
-        ('one_current_fiscal_year ON fiscal_year(current) WHERE current = 1'),
-        ('one_work_on_fiscal_year ON fiscal_year(work_on) WHERE work_on = 1'),
+        ('idx_fiscal_current_active ON fiscal_year (current) '
+         'WHERE current = 1;'),
+        ('idx_fiscal_workon_active ON fiscal_year (work_on) '
+         'WHERE work_on = 1;'),
+        ('one_current_fiscal_year ON fiscal_year(current) WHERE current = 1;'),
+        ('one_work_on_fiscal_year ON fiscal_year(work_on) WHERE work_on = 1;'),
         )
     _TABLES = list(_SCHEMA_TABLES)
     _TABLES.sort()
