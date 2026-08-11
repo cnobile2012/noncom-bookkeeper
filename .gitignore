@@ -20,6 +20,7 @@ docs/htmlcov
 !docs/*.pdf
 logs/
 data/
+db/
 package
 docs/source/install.rst
 

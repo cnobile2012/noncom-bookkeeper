@@ -150,6 +150,12 @@ class MainFrame(wx.Frame, MenuBar):
                         if panel.save:
                             panel.save = False
                             do_save(name, panel)
+
+                            if hasattr(panel, 'reset_buttons'):  # ledger
+                                data = self._reset_panel(name)
+                                self.db.populate_panel_values(
+                                    name, panel, data)
+                                panel.reset_buttons()
                         elif panel.cancel:
                             panel.cancel = False
                             data = self._reset_panel(name)

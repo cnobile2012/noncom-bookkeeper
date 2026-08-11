@@ -238,8 +238,14 @@ class DataPreperation:
         """
         # Only the date is mandatory, and it always defaults to today.
         error = self._empty_fields('ledger', data)
-        trans_id = data['panel']['transaction_id']
-        data['panel']['purge'] = 0
+
+        if not error:
+            pd = data['panel']['date']
+            p_date = (pd.year, pd.month, pd.day)
+            fy2 = (date[0]+1, date[1], date[2])
+
+            if not (date <= p_date < fy2):
+                error = "The transaction date is not in this fiscal year."
 
         if not error:
             state = self._build_ledger_state(data)
@@ -276,7 +282,7 @@ class DataPreperation:
                           and income['amount']):
                     error = self._ERR_MSG3
             elif state['transaction']['distribution']:
-                if (ref['ocs'] and bank['deposit'] and bank['amount']):
+                if ref['ocs'] and bank['deposit'] and bank['amount']:
                     error = None
                 else:
                     error = self._ERR_MSG4
@@ -291,10 +297,11 @@ class DataPreperation:
                     elif not ref['ocs']:
                         error = self._ERR_MSG5
             elif state['transaction']['expense']:
+                c_equal = (data['bank']['amount'] == data['panel']
+                           ['total_expenses'] if data['bank']['amount']
+                           not in (None, '') else False)
+
                 if ref['number'] and expenses:
-                    c_equal = (data['bank']['amount'] == data['panel']
-                               ['total_expenses'] if data['bank']['amount']
-                               not in (None, '') else False)
                     check_stats = (ref['check'], bank['withdrawal'],
                                    bank['amount'], c_equal)
                     r_equal = (data['coh']['amount'] == data['panel']
@@ -312,12 +319,8 @@ class DataPreperation:
                     elif any(receipt_stats):
                         error = self._ERR_MSG7
                 else:
-                    equal = (data['bank']['amount'] == data['panel']
-                             ['total_expenses'] if data['bank']['amount']
-                             not in (None, '') else False)
-
                     if not (ref['ocs'] and bank['withdrawal']
-                            and bank['amount'] and expenses and equal):
+                            and bank['amount'] and expenses and c_equal):
                         error = self._ERR_MSG8
             elif state['transaction']['other']:
                 equal = (data['coh']['amount'] == data['income']['amount']
@@ -328,8 +331,12 @@ class DataPreperation:
                         and income['local_fund'] and income['amount']
                         and equal):
                     error = self._ERR_MSG10
+            else:
+                error = "Transaction Type fields are missing."
 
             if not error:
+                data['panel']['purge'] = 0
+                trans_id = data['panel']['transaction_id']
                 self.lt = LedgerTransaction(self.db, data)
 
                 if trans_id.isdigit():
@@ -378,8 +385,8 @@ class DataPreperation:
                 'other': data['income']['other'],
                 'amount': data['income']['amount'] not in (None, ''),
                 },
-            'expenses': any(value for subcat in data['expenses'].values()
-                            for value in subcat.values()),
+            'expenses': any(value for value in data['expenses'].values()
+                            if value not in (None, '')),
             }
 
         return state
@@ -648,7 +655,8 @@ class DataPreperation:
         """
         This property gets the organization data.
 
-        :returns: The organization data as defined by {<field name>: <value>}.
+        :returns: The organization panel data as defined by
+                  {<field name>: <value>}.
         :rtype: dict
         """
         items = self.db.cache.get(self.db._T_DATA, r_type='organization')
@@ -659,7 +667,7 @@ class DataPreperation:
         """
         This property gets the budget data.
 
-        :returns: The budget data as defined by {<field name>: <value>}.
+        :returns: The budget panel data as defined by {<field name>: <value>}.
         :rtype: dict
         """
         items = self.db.cache.get(self.db._T_DATA, r_type='budget')
@@ -670,7 +678,7 @@ class DataPreperation:
         """
         This property gets the monthly data.
 
-        :returns: The monthly data as defined by {<field name>: <value>}.
+        :returns: The monthly panel data as defined by {<field name>: <value>}.
         :rtype: dict
         """
         panel = self.db._mf.panels['monthly']
@@ -699,7 +707,7 @@ class DataPreperation:
         """
         This property gets the ledger data.
 
-        :returns: The ledger data as defined by {<field name>: <value>}.
+        :returns: The ledger panel data as defined by {<field name>: <value>}.
         :rtype: dict
         """
         panel = self.db._mf.panels['ledger']

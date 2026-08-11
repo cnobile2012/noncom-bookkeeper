@@ -10,7 +10,7 @@ import wx
 from wx.lib.inspection import InspectionTool
 
 from .config import TomlAppConfig, TomlMetaData
-from .data_entry import LedgerDataEntry
+from .ledger_entry import LedgerDataEntry
 from .tools import ShortCuts, FieldEdit
 from .settings import FiscalSettings, Paths
 

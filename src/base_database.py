@@ -64,7 +64,7 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_LEDGER_COH = 'ledger_coh'
     _T_LEDGER_INCOME = 'ledger_income'
     _T_LEDGER_EXPENSE = 'ledger_expense'
-    _V_LEDGER_HEADER = 'vw_ledger_header'
+    _V_LEDGER_TRANSACTION = 'vw_ledger_transaction'
     _V_LEDGER_EXPENSE = 'vw_ledger_expense'
     _SCHEMA_TABLES = {
         _T_FISCAL_YEAR: (
@@ -151,21 +151,21 @@ class BaseDatabase(PopulateCollect, Settings):
         _T_LEDGER_BANK: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'lhfk INTEGER NOT NULL UNIQUE',
-            't_type INTEGER NOT NULL',
+            'b_type INTEGER NOT NULL',
             'amount INTEGER',
             'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_COH: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'lhfk INTEGER NOT NULL UNIQUE',
-            't_type INTEGER NOT NULL',
+            'c_type INTEGER NOT NULL',
             'amount INTEGER',
             'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_INCOME: (
             'pk INTEGER NOT NULL PRIMARY KEY',
             'lhfk INTEGER NOT NULL UNIQUE',
-            't_type INTEGER NOT NULL',
+            'i_type INTEGER NOT NULL',
             'amount INTEGER',
             'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
@@ -177,24 +177,28 @@ class BaseDatabase(PopulateCollect, Settings):
             f'FOREIGN KEY (ftfk) REFERENCES {_T_FIELD_TYPE} (pk)'),
         }
     _SCHEMA_VIEWS = {
-        _V_LEDGER_HEADER: (
-            'pk', 'trans_id', 'fy_year', 'date', 'memo', 't_type', 'r_type',
-            'number', 'purge', 'ctime', 'mtime'),
-        _V_LEDGER_EXPENSE: ('lhfk', 'field', 'amount'),
+        _V_LEDGER_TRANSACTION: (
+            'trans_id', 'fy_year', 'date', 'memo', 't_type', 'r_type',
+            'number', 'b_type', 'b_amount', 'c_type', 'c_amount', 'i_type',
+            'i_amount', 'purge', 'ctime', 'mtime'),
+        _V_LEDGER_EXPENSE: ('trans_id', 'field', 'amount'),
         }
     _SCHEMA_VIEW_QUERY = {
-        _V_LEDGER_HEADER: (
-            'SELECT ld.pk, ld.trans_id, fy1.year, ld.date, ld.memo, '
-            'lt.t_type, lr.r_type, lr.number, ld.purge, ld.ctime, ld.mtime '
-            f'FROM {_T_LEDGER_HEADER} AS ld '
-            f'JOIN {_T_FISCAL_YEAR} AS fy1 ON ld.fy1fk = fy1.pk '
-            f'JOIN {_T_FISCAL_YEAR} AS fy2 ON ld.fy2fk = fy2.pk '
-            f'JOIN {_T_LEDGER_TRANSACTION} AS lt ON ld.ltfk = lt.pk '
-            f'JOIN {_T_LEDGER_REFERENCE} AS lr ON ld.lrfk = lr.pk;'),
-        _V_LEDGER_EXPENSE: (
-            'SELECT le.lhfk, ft.field, le.amount '
+        _V_LEDGER_TRANSACTION: (
+            'SELECT lh.trans_id, fy1.year, lh.date, lh.memo, lt.t_type, '
+            'lr.r_type, lr.number, lb.b_type, lb.amount, lc.c_type, '
+            'lc.amount, li.i_type, li.amount, lh.purge, lh.ctime, lh.mtime '
             f'FROM {_T_LEDGER_HEADER} AS lh '
-            f'JOIN {_T_LEDGER_EXPENSE} AS le ON le.lhfk = lh.pk '
+            f'JOIN {_T_FISCAL_YEAR} AS fy1 ON lh.fy1fk = fy1.pk '
+            f'JOIN {_T_LEDGER_TRANSACTION} AS lt ON lh.ltfk = lt.pk '
+            f'JOIN {_T_LEDGER_REFERENCE} AS lr ON lh.lrfk = lr.pk '
+            f'LEFT JOIN {_T_LEDGER_BANK} AS lb ON lh.pk = lb.lhfk '
+            f'LEFT JOIN {_T_LEDGER_COH} AS lc ON lh.pk = lc.lhfk '
+            f'LEFT JOIN {_T_LEDGER_INCOME} AS li ON lh.pk = li.lhfk;'),
+        _V_LEDGER_EXPENSE: (
+            'SELECT lh.trans_id, ft.field, le.amount '
+            f'FROM {_T_LEDGER_HEADER} AS lh '
+            f'JOIN {_T_LEDGER_EXPENSE} AS le ON lh.pk = le.lhfk '
             f'JOIN {_T_FIELD_TYPE} AS ft ON le.ftfk = ft.pk;')
         }
     _SCHEMA_INDICES = (

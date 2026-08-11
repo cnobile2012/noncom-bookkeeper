@@ -169,12 +169,10 @@ class TestPopulateCollect(BaseAsyncTests):
 
         ldg_values3 = {'transaction': {'expense': True},
                        'reference': {'ocs': True},
-                       'expenses': {'national_baháí_funds':
-                                    {'national_baháí_fund': '150.00'}}}
+                       'expenses': {'national_baháí_fund': '150.00'}}
         expect30 = {'transaction': {'expense': True}}
         expect31 = {'reference': {'ocs': True}}
-        expect32 = {'expenses': {'national_baháí_funds':
-                                 {'national_baháí_fund': '150.00'}}}
+        expect32 = {'expenses': {'national_baháí_fund': '150.00'}}
         data = (
             ('panel.date', '0183-03-05', ldg_values0, expect00),
             ('panel.memo', 'Some text.', ldg_values0, expect01),
@@ -187,8 +185,7 @@ class TestPopulateCollect(BaseAsyncTests):
             ('bank.amount', '150.00', ldg_values2, expect22),
             ('transaction.expense', True, ldg_values3, expect30),
             ('reference.ocs', True, ldg_values3, expect31),
-            ('national_baháí_funds.national_baháí_fund', '150.00',
-             ldg_values3, expect32),
+            ('expenses.national_baháí_fund', '150.00', ldg_values3, expect32),
             )
         msg = "Expected {}, found {}."
 
@@ -216,8 +213,7 @@ class TestPopulateCollect(BaseAsyncTests):
                        'bank': {'amount': '150.00'}}
         ldg_values3 = {'transaction': {'expense': True},
                        'reference': {'ocs': True},
-                       'expenses': {'national_baháí_funds':
-                                    {'national_baháí_fund': '150.00'}}}
+                       'expenses': {'national_baháí_fund': '150.00'}}
         data = (
             ('panel.date', ldg_values0, '0183-03-05'),
             ('panel.memo', ldg_values0, 'Some text.'),
@@ -230,8 +226,7 @@ class TestPopulateCollect(BaseAsyncTests):
             ('bank.amount', ldg_values2, '150.00'),
             ('transaction.expense', ldg_values3, True),
             ('reference.ocs', ldg_values3, True),
-            ('national_baháí_funds.national_baháí_fund', ldg_values3,
-             '150.00'),
+            ('expenses.national_baháí_fund', ldg_values3, '150.00'),
             )
         msg = "Expected {}, found {}."
 
@@ -257,12 +252,10 @@ class TestPopulateCollect(BaseAsyncTests):
         ldg_values0['panel']['transaction_id'] = '1'
         ldg_values0['transaction']['expense'] = True
         ldg_values0['reference']['ocs'] = True
-        ldg_values0['expenses']['national_baháí_funds'][
-            'national_baháí_fund'] = '150.00'
+        ldg_values0['expenses']['national_baháí_fund'] = '150.00'
         expect0 = copy.deepcopy(ldg_values0)
         expect0['panel']['date'] = date
-        expect0['expenses']['national_baháí_funds'][
-            'national_baháí_fund'] = 15000
+        expect0['expenses']['national_baháí_fund'] = 15000
 
         data = (
             ('organization', 9, self._ORG_DATA, self._ORG_DATA),
@@ -280,6 +273,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 result = self.db.collect_panel_values(panel)
                 self.assertEqual(count, len(result), msg.format(
                     count, panel_name, len(result)))
+                #print(result, '\n', expected)
 
                 for field_name, value in expected.items():
                     self.assertEqual(value, result[field_name], msg.format(
@@ -555,7 +549,7 @@ class TestPopulateCollect(BaseAsyncTests):
     @unittest.skip("Temporarily skipped")
     def test_get_prev_and_next(self):
         """
-        Test that the get_prev_and_next method 
+        Test that the get_prev_and_next method
         """
         pass
 

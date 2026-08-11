@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# src/data_entry.py
+# src/ledger_entry.py
 #
 __docformat__ = "restructuredtext en"
 
@@ -202,19 +202,28 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
 
     @property
     def ledger_labels(self) -> dict:
+        """
+        Flatten the expenses, but leave everything else alone.
+
+        :returns: A flattened dict of all the editable fields.
+        :rtype: dict
+        """
+        result = {}
         skip = []
 
         for key, value in self._de_labels.items():
             if not value:
-                skip.append(key)
                 break
 
             skip.append(key)
 
-        tmp = {key: self._de_labels[key] for key in skip}
-        tmp[skip[-1]] = {k: v for k, v in self._de_labels.items()
-                         if k not in skip}
-        return tmp
+        for key, fields in self._de_labels.items():
+            if key in set(self._de_labels) - set(skip):
+                result.setdefault("expenses", []).extend(fields)
+            else:
+                result[key] = fields
+
+        return result
 
     def button_save(self, event):
         self.save = True
@@ -229,7 +238,6 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         if self.dirty:
             mf = self._so.get_object('MainFrame')
             mf.statusbar_message = 'Saving data.'
-            self._reset_buttons()
 
         self._save = value
 
@@ -246,11 +254,11 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         if self.dirty:
             mf = self._so.get_object('MainFrame')
             mf.statusbar_message = 'Restoring data.'
-            self._reset_buttons()
+            self.reset_buttons()
 
         self._cancel = value
 
-    def _reset_buttons(self):
+    def reset_buttons(self):
         for button in self._BUTTON_OBJS:
             event = wx.CommandEvent(wx.wxEVT_BUTTON, button.GetId())
             event.SetEventObject(button)
@@ -384,68 +392,79 @@ class SearchDialog(wx.Dialog):
         self.gbs = wx.GridBagSizer(2, 2)
         sizer.Add(self.gbs, 1, wx.CENTER, 10)
 
+        trans_text = wx.StaticText(self, wx.ID_ANY, "Transaction ID:")
+        trans_text.SetForegroundColour(fg_color)
+        self.gbs.Add(trans_text, (0, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        trans_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        trans_ctrl.SetBackgroundColour(w_bg_color)
+        trans_ctrl.SetForegroundColour(fg_color)
+        trans_ctrl.SetMinSize((parent.tc_width, 26))
+        self.gbs.Add(trans_ctrl, (0, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
         # Search for specific date of item.
         srch_text = wx.StaticText(self, wx.ID_ANY, "Date:")
         srch_text.SetForegroundColour(fg_color)
-        self.gbs.Add(srch_text, (0, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(srch_text, (1, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT | wx.BOTTOM, 6)
         self.srch_ctrl = BadiDatePickerCtrl(self, wx.ID_ANY)
         self.srch_ctrl.SetBackgroundColour(w_bg_color)
         self.srch_ctrl.SetForegroundColour(fg_color)
         self.srch_ctrl.SetMinSize((130, 28))
         self.srch_ctrl.SetValue('')
-        self.gbs.Add(self.srch_ctrl, (0, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-
-        trans_text = wx.StaticText(self, wx.ID_ANY, "Transaction ID:")
-        trans_text.SetForegroundColour(fg_color)
-        self.gbs.Add(trans_text, (1, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-        trans_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        trans_ctrl.SetBackgroundColour(w_bg_color)
-        trans_ctrl.SetForegroundColour(fg_color)
-        trans_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(trans_ctrl, (1, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-
-        check_text = wx.StaticText(self, wx.ID_ANY, "Check Number:")
-        check_text.SetForegroundColour(fg_color)
-        self.gbs.Add(check_text, (2, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-        check_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        check_ctrl.SetBackgroundColour(w_bg_color)
-        check_ctrl.SetForegroundColour(fg_color)
-        check_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(check_ctrl, (2, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-
-        rcpt_text = wx.StaticText(self, wx.ID_ANY, "Receipt Number:")
-        rcpt_text.SetForegroundColour(fg_color)
-        self.gbs.Add(rcpt_text, (3, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-        rcpt_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        rcpt_ctrl.SetBackgroundColour(w_bg_color)
-        rcpt_ctrl.SetForegroundColour(fg_color)
-        rcpt_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(rcpt_ctrl, (3, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(self.srch_ctrl, (1, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT | wx.BOTTOM, 6)
 
         memo_text = wx.StaticText(self, wx.ID_ANY, "Memo:")
         memo_text.SetForegroundColour(fg_color)
-        self.gbs.Add(memo_text, (4, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(memo_text, (2, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT | wx.BOTTOM, 6)
         memo_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
         memo_ctrl.SetBackgroundColour(w_bg_color)
         memo_ctrl.SetForegroundColour(fg_color)
         memo_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(memo_ctrl, (4, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+        self.gbs.Add(memo_ctrl, (2, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
+        check_text = wx.StaticText(self, wx.ID_ANY, "Check Number:")
+        check_text.SetForegroundColour(fg_color)
+        self.gbs.Add(check_text, (3, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        check_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        check_ctrl.SetBackgroundColour(w_bg_color)
+        check_ctrl.SetForegroundColour(fg_color)
+        check_ctrl.SetMinSize((parent.tc_width, 26))
+        self.gbs.Add(check_ctrl, (3, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
+        rcpt_text = wx.StaticText(self, wx.ID_ANY, "Receipt Number:")
+        rcpt_text.SetForegroundColour(fg_color)
+        self.gbs.Add(rcpt_text, (4, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        rcpt_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        rcpt_ctrl.SetBackgroundColour(w_bg_color)
+        rcpt_ctrl.SetForegroundColour(fg_color)
+        rcpt_ctrl.SetMinSize((parent.tc_width, 26))
+        self.gbs.Add(rcpt_ctrl, (4, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+
+        rcpt_text = wx.StaticText(self, wx.ID_ANY, "Deposit Number:")
+        rcpt_text.SetForegroundColour(fg_color)
+        self.gbs.Add(rcpt_text, (5, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT | wx.BOTTOM, 6)
+        rcpt_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
+        rcpt_ctrl.SetBackgroundColour(w_bg_color)
+        rcpt_ctrl.SetForegroundColour(fg_color)
+        rcpt_ctrl.SetMinSize((parent.tc_width, 26))
+        self.gbs.Add(rcpt_ctrl, (5, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
                      | wx.RIGHT | wx.BOTTOM, 6)
 
         self.warn_text = wx.StaticText(self, wx.ID_ANY, label="",
                                        style=wx.ALIGN_CENTER_HORIZONTAL)
         self.warn_text.SetForegroundColour(w_fg_color)
         self.warn_text.Hide()
-        self.gbs.Add(self.warn_text, (5, 0), (1, 2),
+        self.gbs.Add(self.warn_text, (6, 0), (1, 2),
                      wx.ALIGN_CENTER | wx.ALL, 6)
 
         panel_0 = wx.Panel(self)
@@ -462,7 +481,7 @@ class SearchDialog(wx.Dialog):
         sizer_1.AddButton(cancel_byn)
         sizer_1.Realize()
         panel_0.SetSizer(sizer_1)
-        self.gbs.Add(panel_0, (6, 0), (1, 2), wx.EXPAND, 0)
+        self.gbs.Add(panel_0, (7, 0), (1, 2), wx.EXPAND, 0)
 
     def button_search(self, event):
         db = self._so.get_object('Database')

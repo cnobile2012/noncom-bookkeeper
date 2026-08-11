@@ -14,7 +14,7 @@ from src.config import Settings, TomlPanelConfig, TomlAppConfig
 from src.bahai_database import Database
 from src.panel_factory import PanelFactory
 from src.utilities import StoreObjects
-from src.data_entry import LedgerDataEntry
+from src.ledger_entry import LedgerDataEntry
 
 __all__ = ('FakeFrame', 'FakeMainFrame', 'Options', 'FakeWidget', 'FakeEvent',
            'FakePanel')

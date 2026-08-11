@@ -301,6 +301,33 @@ class TestDataPreperation(BaseAsyncTests):
                                  f"Expected '{expected}', found '{error}'.")
 
     #@unittest.skip("Temporarily skipped")
+    async def test_ledger_date(self):
+        """
+        Test that the ledger method verifies the business rules for
+        entering ledger transaction date data.
+        """
+        err_msg0 = "The transaction date is not in this fiscal year."
+        # Test 1 -- fund_stats pass
+        date = badidatetime.date(183, 3, 4)
+        ldg_data0 = copy.deepcopy(self._LDG_DATA)
+        ldg_data0['panel']['date'] = date
+        # Test 1 -- fund_stats pass
+        date = badidatetime.date(184, 3, 5)
+        ldg_data1 = copy.deepcopy(self._LDG_DATA)
+        ldg_data1['panel']['date'] = date
+
+        data = (
+            (ldg_data0, err_msg0),
+            (ldg_data1, err_msg0),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for ldg_data, expected in data:
+                error = await self.tdp.ledger(ldg_data, (183, 3, 5))
+                self.assertEqual(expected, error, msg.format(expected, error))
+
+    #@unittest.skip("Temporarily skipped")
     async def test_ledger_contributions(self):
         """
         Test that the ledger method verifies the business rules for
@@ -318,7 +345,8 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data0['coh']['amount'] = 10000
         ldg_data0['income']['local_fund'] = True
         ldg_data0['income']['amount'] = 10000
-        expect0 = (1, 1, 183, date, '', 1, 3, 'R1000', 0)
+        expect0 = (1, 183, date, '', 1, 3, 'R1000', None, None, 1, 10000, 1,
+                   10000, 0)
         # Test 2 -- fund_stats fail
         ldg_error0 = copy.deepcopy(ldg_data0)
         ldg_error0['income']['amount'] = None
@@ -333,8 +361,9 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data1['reference']['number'] = 'R2000'
         ldg_data1['income']['contributed_expense'] = True
         ldg_data1['income']['amount'] = 1000
-        ldg_data1['expenses']['local_baháí_expenses']['administration'] = 1000
-        expect1 = (2, 2, 183, date, '', 1, 3, 'R2000', 0)
+        ldg_data1['expenses']['administration'] = 1000
+        expect1 = (2, 183, date, '', 1, 3, 'R2000', None, None, None, None, 2,
+                   1000, 0)
         # Test 5 -- contributed_expense fail
         ldg_error2 = copy.deepcopy(ldg_data1)
         ldg_error2['coh']['amount'] = None
@@ -349,7 +378,8 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data2['reference']['ocs'] = True
         ldg_data2['income']['local_fund'] = True
         ldg_data2['income']['amount'] = 5000
-        expect2 = (3, 3, 183, date, '', 1, 1, '', 0)
+        expect2 = (3, 183, date, '', 1, 1, '', None, None, None, None, 1,
+                   5000, 0)
         # Test 8 -- ocs fail
         ldg_error4 = copy.deepcopy(ldg_data2)
         ldg_error4['income']['amount'] = None
@@ -396,7 +426,8 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data1['reference']['ocs'] = True
         ldg_data1['bank']['deposit'] = True
         ldg_data1['bank']['amount'] = 15000
-        expect1 = (1, 1, 183, date, '', 2, 1, '', 0)
+        expect1 = (1, 183, date, '', 2, 1, '', 1, 15000, None, None, None,
+                   None, 0)
         # Test 2 -- bank deposit fail
         ldg_error1 = copy.deepcopy(ldg_data1)
         ldg_error1['bank']['deposit'] = True
@@ -411,7 +442,8 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data2['bank']['amount'] = 2000
         ldg_data2['coh']['disbursement'] = True
         ldg_data2['coh']['amount'] = 2000
-        expect2 = (2, 2, 183, date, '', 2, 4, '07/29/2026', 0)
+        expect2 = (2, 183, date, '', 2, 4, '07/29/2026', 1, 2000, 2, 2000,
+                   None, None, 0)
         # Test 4 -- disbursement fail
         ldg_error2 = copy.deepcopy(ldg_data2)
         ldg_error2['coh']['disbursement'] = False
@@ -463,11 +495,10 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data1['reference']['number'] = '1000'
         ldg_data1['bank']['withdrawal'] = True
         ldg_data1['bank']['amount'] = 25000
-        ldg_data1['expenses']['national_baháí_funds'][
-            'national_baháí_fund'] = 15000
-        ldg_data1['expenses']['continental_and_international_funds'][
-            'shrine_of_abdul_bahá'] = 10000
-        expect1 = (1, 1, 183, date, '', 3, 2, '1000', 0)
+        ldg_data1['expenses']['national_baháí_fund'] = 15000
+        ldg_data1['expenses']['shrine_of_abdul_bahá'] = 10000
+        expect1 = (1, 183, date, '', 3, 2, '1000', 2, 25000, None, None, None,
+                   None, 0)
         # Test 2 -- check fail
         ldg_error1 = copy.deepcopy(ldg_data1)
         ldg_error1['reference']['check'] = False
@@ -480,8 +511,9 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data2['reference']['number'] = 'R3000'
         ldg_data2['coh']['disbursement'] = True
         ldg_data2['coh']['amount'] = 1000
-        ldg_data2['expenses']['local_baháí_expenses']['administration'] = 1000
-        expect2 = (2, 2, 183, date, '', 3, 3, 'R3000', 0)
+        ldg_data2['expenses']['administration'] = 1000
+        expect2 = (2, 183, date, '', 3, 3, 'R3000', None, None, 2, 1000, None,
+                   None, 0)
         # Test 4 -- receipt_stats fail
         ldg_error2 = copy.deepcopy(ldg_data2)
         ldg_error2['reference']['receipt'] = False
@@ -493,11 +525,10 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data3['reference']['ocs'] = True
         ldg_data3['bank']['withdrawal'] = True
         ldg_data3['bank']['amount'] = 30000
-        ldg_data3['expenses']['national_baháí_funds'][
-            'national_baháí_fund'] = 20000
-        ldg_data3['expenses']['continental_and_international_funds'][
-            'shrine_of_abdul_bahá'] = 10000
-        expect3 = (3, 3, 183, date, '', 3, 1, '', 0)
+        ldg_data3['expenses']['national_baháí_fund'] = 20000
+        ldg_data3['expenses']['shrine_of_abdul_bahá'] = 10000
+        expect3 = (3, 183, date, '', 3, 1, '', 2, 30000, None, None, None,
+                   None, 0)
         # Test 6 -- ocs fail
         ldg_error3 = copy.deepcopy(ldg_data3)
         ldg_error3['reference']['ocs'] = False
@@ -550,7 +581,8 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data1['coh']['amount'] = 10000
         ldg_data1['income']['local_fund'] = True
         ldg_data1['income']['amount'] = 10000
-        expect0 = (1, 1, 183, date, 'Test memo', 4, 3, 'R4000', 0)
+        expect0 = (1, 183, date, 'Test memo', 4, 3, 'R4000', None, None, 1,
+                   10000, 1, 10000, 0)
         # Test 2 -- other fail
         ldg_error1 = copy.deepcopy(ldg_data1)
         ldg_error1['reference']['number'] = ''
@@ -619,7 +651,7 @@ class TestDataPreperation(BaseAsyncTests):
         ldg_data1['coh']['amount'] = None
         ldg_data1['income']['contributed_expense'] = True
         ldg_data1['income']['amount'] = None
-        ldg_data1['expenses']['local_baháí_expenses']['teaching'] = 10000
+        ldg_data1['expenses']['teaching'] = 10000
         expect_data1 = {'panel': {'memo': False},
                         'transaction': {'contribution': True,
                                         'distribution': False,
@@ -986,3 +1018,49 @@ class TestDataPreperation(BaseAsyncTests):
 
             for field in test_fields:
                 self.assertIn(field, fields)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_ledger_data(self):
+        """
+        Test that the ledger_data property returns the ledger data.
+        """
+        date = badidatetime.date(183, 3, 5)
+        ldg_data0 = copy.deepcopy(self._LDG_DATA)
+        ldg_data0['panel']['date'] = date
+        ldg_data0['panel']['memo'] = "Test memo"
+        ldg_data0['transaction']['contribution'] = True
+        ldg_data0['reference']['receipt'] = True
+        ldg_data0['reference']['number'] = 'R5000'
+        ldg_data0['coh']['replenishment'] = True
+        ldg_data0['coh']['amount'] = 10000
+        ldg_data0['income']['local_fund'] = True
+        ldg_data0['income']['amount'] = 10000
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.fmf.panels['ledger']
+            self.db.populate_panel_values('ledger', panel, ldg_data0)
+            # inter_result = self.db.collect_panel_values(panel)
+            items = self.tdp.ledger_data
+
+        self.db.populate_panel_values('ledger', panel, items)
+        result = self.db.collect_panel_values(panel)
+        p_date = result['panel']['date']
+        today = badidatetime.date.today()
+        self.assertEqual(today, p_date, msg.format(today, p_date))
+        memo = result['panel']['memo']
+        self.assertEqual('', memo, msg.format('', memo))
+        cont = result['transaction']['contribution']
+        self.assertEqual(False, cont, msg.format(False, cont))
+        ref_rcpt = result['reference']['receipt']
+        self.assertEqual(False, ref_rcpt, msg.format(False, ref_rcpt))
+        ref_num = result['reference']['number']
+        self.assertEqual('', ref_num, msg.format('', ref_num))
+        coh_rpl = result['coh']['replenishment']
+        self.assertEqual(False, coh_rpl, msg.format(False, coh_rpl))
+        coh_amt = result['coh']['amount']
+        self.assertEqual('', coh_amt, msg.format('', coh_amt))
+        inc_lf = result['income']['local_fund']
+        self.assertEqual(False, inc_lf, msg.format(False, inc_lf))
+        inc_amt = result['income']['amount']
+        self.assertEqual('', inc_amt, msg.format('', inc_amt))

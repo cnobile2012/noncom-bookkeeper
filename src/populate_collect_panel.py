@@ -83,7 +83,8 @@ class PopulateCollect(AsyncEventLoop):
     def _lde_push(self, key: str, value: str, panel: wx.Panel, data: dict
                   ) -> None:
         """
-        Push LedgerDataEntry panel data to a dictionary object.
+        Push LedgerDataEntry panel data to a dictionary object and flatten and
+        remove empty expenses so they are all in the 'expenses' category.
 
         :param str key: The panel compound category.field_name.
         :param str value: The pane value for the field name.
@@ -93,14 +94,8 @@ class PopulateCollect(AsyncEventLoop):
         category, field_name = key.split('.')
 
         for cat, labels in panel.ledger_labels.items():
-            if isinstance(labels, list) and category == cat:
-                if field_name in labels:
-                    data.setdefault(cat, {})[field_name] = value
-            elif isinstance(labels, dict):
-                for sub_cat, sub_labels in labels.items():
-                    if field_name in sub_labels and category == sub_cat:
-                        tmp = data.setdefault(cat, {})
-                        tmp.setdefault(sub_cat, {})[field_name] = value
+            if category == cat and field_name in labels:
+                data.setdefault(cat, {})[field_name] = value
 
     def _lde_pop(self, key: str, panel: wx.Panel, data: dict) -> str:
         """
@@ -116,13 +111,8 @@ class PopulateCollect(AsyncEventLoop):
         category, field_name = key.split('.')
 
         for cat, labels in panel.ledger_labels.items():
-            if isinstance(labels, list) and category == cat:
-                if field_name in labels:
-                    result = data[cat][field_name]
-            elif isinstance(labels, dict):
-                for sub_cat, sub_labels in labels.items():
-                    if field_name in sub_labels:
-                        result = data[cat][sub_cat][field_name]
+            if category == cat and field_name in labels:
+                result = data[cat][field_name]
 
         return result
 
@@ -210,6 +200,7 @@ class PopulateCollect(AsyncEventLoop):
 
                 if name0 in self._EXCLUDE_WIDGETS: continue
                 value = pop(field_name)
+                #print('POOP', field_name, value)
                 if value is None: continue
 
                 if name0 in ('RadioBox', 'ComboBox'):
@@ -335,9 +326,13 @@ class PopulateCollect(AsyncEventLoop):
             if add: children.append(None)
 
         result = [children[i:i+2] for i in range(0, len(children), 2)]
-        assert all([len(item) == 2 for item in result]), (
-            f"Warning must have two children in all tuples, found {result} "
-            f"for class {panel_class_name}.")
+
+        for idx, item in enumerate(result):
+            if len(item) != 2:
+                assert False, (
+                    "Warning must have two children in all tuples, found error"
+                    f" in item {idx} '{item}' from class {panel_class_name}.")
+
         return result
 
     def _add_fiscal_year_choices(self, *, panel: wx.Panel=None, w0=None
@@ -535,19 +530,42 @@ class PopulateCollect(AsyncEventLoop):
         """
         data = self.collect_panel_values(panel)
         valid = [v != '' for v in data.values()].count(True) == 1
+        data['purge'] = None  # Temporary
 
         if valid:
             fy = self.cache.work_on_fiscal_year
             lt = LedgerTransaction(self)
-            date = data['date']
-            trans_id = data['transaction_id']
-            r_type = data['r_type']
-            number = data['number']
-            memo = data['memo']
-            rows = self.run_async(lt.select_ledger_transaction(
-                fy[1], date=date, trans_id=trans_id, r_type=r_type,
-                number=number, memo=memo))
-            # *** TODO *** Do something with rows.
+            ck_num = data['check_number']
+            rt_num = data['receipt_number']
+            dp_num = data['deposit_number']
+            r_type = [idx for idx, num in enumerate((ck_num, rt_num, dp_num),
+                                                    start=1) if num]
+            r_type = r_type[0] if r_type else 0
+            number = ck_num + rt_num + dp_num
+            kwargs = {}
+            kwargs['trans_id'] = data['transaction_id']
+            kwargs['date'] = data['date']
+            kwargs['memo'] = data['memo']
+            # kwargs['t_type'] =
+            kwargs['r_type'] = r_type
+            kwargs['number'] = number
+            # kwargs['b_type'] =
+            # kwargs['c_type'] =
+            # kwargs['i_type'] =
+            kwargs['purge'] = data['purge']
+            t_rows = self.run_async(lt.select_ledger_transaction(
+                fy[1], **kwargs))
+            rows = []
+
+            for row in t_rows:
+                e_rows = self.run_async(lt.select_expenses(row[0]))
+                rows.append((row, e_rows))
+
+            #print('POOP', rows)
+            # [((1, 183, badidatetime.date(183, 7, 19), '', 1, 1, '', None,
+            #    None, None, None, 1, 5000, 0, <badidatetime.datetime>,
+            #    <badidatetime.datetime>), [])]
+
         else:
             rows = []
 

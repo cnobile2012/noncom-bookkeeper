@@ -82,7 +82,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for items, types, expected in data:
-            result = lt._make_types(items, types)
+            result = lt._make_type_index(items, types)
             self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
@@ -105,7 +105,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         lt = LedgerTransaction(self.db, dt_data)
         rowcount = await lt.insert_ledger_transaction(183)
         self.assertEqual(4, rowcount, msg.format(4, rowcount))
-        expect_data0 = (1, 1, 183, date, "Something", 2, 1, '', 0)
+        expect_data0 = (1, 183, date, "Something", 2, 1, '', 1, 5000, None,
+                        None, None, None, 0)
         # check_num query
         ck_data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                    'transaction': {'contribution': False,
@@ -121,10 +122,11 @@ class TestLedgerTransaction(BaseAsyncTests):
         lt = LedgerTransaction(self.db, ck_data)
         rowcount = await lt.insert_ledger_transaction(183)
         self.assertEqual(6, rowcount, msg.format(6, rowcount))
-        expect_data1 = (2, 2, 183, date, "Description", 3, 2, '1000', 0)
+        expect_data1 = (2, 183, date, "Description", 3, 2, '1000', 2, 5000,
+                        None, None, None, None, 0)
         # rcpt_num query
         rt_data = {'panel': {'date': date, 'purge': 0,
-                             'memo': "Description of the transaction."},
+                             'memo': "Description"},
                    'transaction': {'contribution': True,
                                    'distribution': False, 'expense': False,
                                    'other': False},
@@ -136,8 +138,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         lt = LedgerTransaction(self.db, rt_data)
         rowcount = await lt.insert_ledger_transaction(183)
         self.assertEqual(4, rowcount, msg.format(4, rowcount))
-        expect_data2 = (3, 3, 183, date, "Description of the transaction.", 1,
-                        3, 'B1000', 0)
+        expect_data2 = (3, 183, date, "Description", 1, 3, 'B1000', None, None,
+                        1, 5000, None, None, 0)
 
         data = (
             (date, None, None, None, None, False, expect_data0),
@@ -150,8 +152,8 @@ class TestLedgerTransaction(BaseAsyncTests):
 
         for date, trans_id, r_type, number, memo, multi, expected in data:
             result = await lt.select_ledger_transaction(
-                183, date=date, trans_id=trans_id, r_type=r_type,
-                number=number, memo=memo)
+                183, **{'date': date, 'trans_id': trans_id, 'r_type': r_type,
+                        'number': number, 'memo': memo})
 
             if multi:
                 for idx, row in enumerate(result):
@@ -171,7 +173,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         """
         expected_records = 4
         date = badidatetime.date(183, 3, 5)
-        expect_data0 = (1, 1, 183, date, 'Description', 2, 1, '', 0)
+        expect_data0 = (1, 183, date, 'Description', 2, 1, '', 1, 5000, None,
+                        None, None, None, 0)
         expect_data1 = (1, 1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': False, 'distribution': True,
@@ -204,7 +207,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         """
         expected_records = 4
         date = badidatetime.date(183, 3, 5)
-        expect_data0 = (1, 1, 183, date, 'Description', 1, 3, 'B1000', 0)
+        expect_data0 = (1, 183, date, 'Description', 1, 3, 'B1000', None, None,
+                        1, 5000, None, None, 0)
         expect_data1 = (1, 1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': True, 'distribution': False,
@@ -237,7 +241,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         """
         expected_records = 4
         date = badidatetime.date(183, 3, 5)
-        expect_data0 = (1, 1, 183, date, "Description", 1, 1, '', 0)
+        expect_data0 = (1, 183, date, "Description", 1, 1, '', None, None,
+                        None, None, 1, 5000, 0)
         expect_data1 = (1, 1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': True, 'distribution': False,
@@ -270,7 +275,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         """
         expected_records = 5
         date = badidatetime.date(183, 3, 5)
-        expect_data0 = (1, 1, 183, date, "Description", 3, 1, '', 0)
+        expect_data0 = (1, 183, date, "Description", 3, 1, '', None, None,
+                        None, None, None, None, 0)
         expect_data1 = [(1, 'national_baháí_fund', 10000),
                         (1, 'regional_baháí_council', 5000)]
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
@@ -290,8 +296,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         result = result[0][:-2]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
-        header_pk = result[0]
-        result = await lt.select_expenses(header_pk)
+        trans_id = result[0]
+        result = await lt.select_expenses(trans_id)
         self.assertEqual(expect_data1, result, msg.format(
             expect_data1, result))
 
@@ -329,7 +335,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         trans_id = 1
         expect_rowcount = 4
         date = badidatetime.date(183, 3, 5)
-        expect_data0 = (1, 1, 183, date, 'Updated', 3, 1, '', 0)
+        expect_data0 = (1, 183, date, 'Updated', 3, 1, '', 2, 5000, None, None,
+                        None, None, 0)
         expect_data1 = (1, 1, 2, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': True,
@@ -370,7 +377,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         trans_id = 1
         expected_records = 4
         date = badidatetime.date(183, 3, 5)
-        expect_data0 = (1, 1, 183, date, 'Updated', 1, 3, 'R9999', 0)
+        expect_data0 = (1, 183, date, 'Updated', 1, 3, 'R9999', None, None, 1,
+                        5000, None, None, 0)
         expect_data1 = (1, 1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': False,
@@ -412,7 +420,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         trans_id = 1
         expected_records = 4
         date = badidatetime.date(183, 3, 5)
-        expect_data0 = (1, 1, 183, date, 'Updated', 1, 1, '', 0)
+        expect_data0 = (1, 183, date, 'Updated', 1, 1, '', None, None, None,
+                        None, 1, 5000, 0)
         expect_data1 = (1, 1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': False,
@@ -456,7 +465,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         trans_id = 1
         expected_records = 6
         date = badidatetime.date(183, 3, 5)
-        expect_data0 = (1, 1, 183, date, 'Updated', 3, 2, '1000', 0)
+        expect_data0 = (1, 183, date, 'Updated', 3, 2, '1000', None, None,
+                        None, None, None, None, 0)
         expect_data1 = [(1, 'deputization_fund', ''),
                         (1, 'national_baháí_fund', 15000),
                         (1, 'regional_baháí_council', 10000)]
@@ -490,8 +500,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         result = result[0][:-2]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
-        header_pk = result[0]
-        result = await lt.select_expenses(header_pk)
+        trans_id = result[0]
+        result = await lt.select_expenses(trans_id)
         self.assertEqual(expect_data1, result, msg.format(
             expect_data1, result))
 

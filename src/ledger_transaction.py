@@ -31,17 +31,19 @@ class LedgerTransaction:
         self.db = db
 
         if data:
-            self._trans = self._make_types(data['transaction'],
-                                           self._TRANS_TYPES)
-            self._ref = self._make_types(data['reference'], self._REF_TYPES)
             self._header = data['panel']
-            self._bank = self._make_types(data.get('bank'), self._BANK_TYPES)
-            self._coh = self._make_types(data.get('coh'), self._COH_TYPES)
-            self._income = self._make_types(data.get('income'),
+            self._trans = self._make_type_index(data['transaction'],
+                                           self._TRANS_TYPES)
+            self._ref = self._make_type_index(data['reference'],
+                                              self._REF_TYPES)
+            self._bank = self._make_type_index(data.get('bank'),
+                                               self._BANK_TYPES)
+            self._coh = self._make_type_index(data.get('coh'), self._COH_TYPES)
+            self._income = self._make_type_index(data.get('income'),
                                             self._INCM_TYPES)
             self._expenses = data.get('expenses')
 
-    def _make_types(self, data: dict, types: tuple) -> dict:
+    def _make_type_index(self, data: dict, types: tuple) -> dict:
         """
         Derive the type for each category that has types.
 
@@ -66,44 +68,45 @@ class LedgerTransaction:
 
         return items
 
-    async def select_ledger_transaction(self, year, *,
-                                        date: badidatetime.date=None,
-                                        trans_id: int=None, r_type: int=None,
-                                        number: str=None, memo: str=None
-                                        ) -> list:
+    # def revert_type_index(self, t_type: int, r_type: int) -> tuple:
+    #     """
+    #     Revert back to the panel view fields and value.
+
+    #     :param int t_type: The transaction type.
+    #     :param int r_type: The reference type.
+    #     :returns: The field name and value.
+    #     :rtype: tuple
+    #     """
+
+    async def select_ledger_transaction(self, year, **kwargs) -> list:
         """
-        Select a row from the vw_ledger_header view.
+        Select a row from the vw_ledger_transaction view.
 
         :param int year: The fiscal year.
-        :param badidatetime.date date: The Badí' date.
-        :param int trans_id: The Transaction number.
-        :param int r_type: The referance type.
-        :param str number: The referance type number.
-        :param str memo: A partial string in the memo.
+        :param dict kwargs: Keyword arguments of column name and value.
         :returns: The row of data.
         :rtype: list
         """
-        param = (year,)
+        def make_where(column, value):
+            if value:
+                if column == 'memo':
+                    where = f"AND memo LIKE '%' || :{column} || '%' "
+                else:
+                    where = f"AND {column} = :{column} "
+            else:
+                where = ''
 
-        if date:
-            where = "AND date = ?"
-            param += (date,)
-        elif trans_id:
-            where = "AND trans_id = ?"
-            param += (trans_id,)
-        elif r_type and number:
-            where = "AND r_type = ? AND number = ?"
-            param += (r_type, number)
-        elif r_type:
-            where = "AND r_type = ?"
-            param += (r_type,)
-        elif memo:
-            where = "AND memo LIKE '%' || ? || '%'"
-            param += (memo,)
+            return where
 
-        query = (f"SELECT * FROM {self.db._V_LEDGER_HEADER} WHERE "
-                 f"fy_year = ? {where};")
-        return await self.db._do_select_query(query, param)
+        where = ''
+
+        for column, value in kwargs.items():
+            where += make_where(column, value)
+
+        query = (f"SELECT * FROM {self.db._V_LEDGER_TRANSACTION} WHERE "
+                 f"fy_year = :year {where.strip()};")
+        kwargs['year'] = year
+        return await self.db._do_select_query(query, kwargs)
 
     async def insert_ledger_transaction(self, year: int) -> int:
         """
@@ -324,7 +327,7 @@ class LedgerTransaction:
         :rtype: int
         """
         self._bank['lhfk'] = header_pk
-        query = (f"INSERT INTO {self.db._T_LEDGER_BANK} (lhfk, t_type, "
+        query = (f"INSERT INTO {self.db._T_LEDGER_BANK} (lhfk, b_type, "
                  "amount, balance) VALUES (:lhfk, :itype, :amount, :balance);")
         cursor = await con.execute(query, self._bank)
         return cursor.rowcount
@@ -339,7 +342,7 @@ class LedgerTransaction:
         :rtype: int
         """
         self._bank['lhfk'] = header_pk
-        query = (f"UPDATE {self.db._T_LEDGER_BANK} SET t_type = :itype, "
+        query = (f"UPDATE {self.db._T_LEDGER_BANK} SET b_type = :itype, "
                  "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
         cursor = await con.execute(query, self._bank)
         return cursor.rowcount
@@ -364,7 +367,7 @@ class LedgerTransaction:
         :rtype: int
         """
         self._coh['lhfk'] = header_pk
-        query = (f"INSERT INTO {self.db._T_LEDGER_COH} (lhfk, t_type, amount, "
+        query = (f"INSERT INTO {self.db._T_LEDGER_COH} (lhfk, c_type, amount, "
                  "balance) VALUES (:lhfk, :itype, :amount, :balance);")
         cursor = await con.execute(query, self._coh)
         return cursor.rowcount
@@ -379,7 +382,7 @@ class LedgerTransaction:
         :rtype: int
         """
         self._coh['lhfk'] = header_pk
-        query = (f"UPDATE {self.db._T_LEDGER_COH} SET t_type = :itype, "
+        query = (f"UPDATE {self.db._T_LEDGER_COH} SET c_type = :itype, "
                  "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
         cursor = await con.execute(query, self._coh)
         return cursor.rowcount
@@ -404,7 +407,7 @@ class LedgerTransaction:
         :rtype: int
         """
         self._income['lhfk'] = header_pk
-        query = (f"INSERT INTO {self.db._T_LEDGER_INCOME} (lhfk, t_type, "
+        query = (f"INSERT INTO {self.db._T_LEDGER_INCOME} (lhfk, i_type, "
                  "amount, balance) VALUES (:lhfk, :itype, :amount, :balance);")
         cursor = await con.execute(query, self._income)
         return cursor.rowcount
@@ -419,20 +422,21 @@ class LedgerTransaction:
         :rtype: int
         """
         self._income['lhfk'] = header_pk
-        query = (f"UPDATE {self.db._T_LEDGER_INCOME} SET t_type = :itype, "
+        query = (f"UPDATE {self.db._T_LEDGER_INCOME} SET i_type = :itype, "
                  "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
         cursor = await con.execute(query, self._income)
         return cursor.rowcount
 
-    async def select_expenses(self, pk: int) -> list:
+    async def select_expenses(self, trans_id: int) -> list:
         """
         Select the expense records based on the header pk.
 
-        :param int pk: The ledger_header pk.
+        :param int trans_id: The ledger_header transaction ID.
         :returns: A row of data relating to the ledger_header table.
         """
-        query = f"SELECT * FROM {self.db._V_LEDGER_EXPENSE} WHERE lhfk = ?;"
-        return await self.db._do_select_query(query, (pk,))
+        query = (f"SELECT * FROM {self.db._V_LEDGER_EXPENSE} "
+                 "WHERE trans_id = ?;")
+        return await self.db._do_select_query(query, (trans_id,))
 
     async def _insert_expenses(self, con, header_pk: int) -> int:
         """

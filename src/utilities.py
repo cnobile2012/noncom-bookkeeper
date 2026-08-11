@@ -203,6 +203,8 @@ class ConfirmationDialog(wx.Dialog):
         self._parent = parent
         self.enable = enable
         self.SetSize((300, 150))
+        self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                             wx.FONTWEIGHT_BOLD, 0, ''))
         # Red-ish
         _bg_color = bg_color if bg_color else wx.Colour(220, 130, 143)
         # Blue-ish
@@ -417,13 +419,21 @@ class MutuallyExclusiveWidgets:
         start_pos = pos_idx
         cb_list = self._CHECKBOXES.setdefault(label, [])
         tc_list = self._TEXTCTRLES.setdefault(label, [])
+        tmp_label = make_name(label)
+        tmp_labels = labels
+
+        if tmp_label in ('local_baháí_expenses', 'national_baháí_funds',
+                         'continental_and_international_funds',
+                         'regional_funds', 'area_funds'):
+            tmp_labels = [f"{l[0]}expenses" if i == 0 else l
+                          for i, l in enumerate(labels)]
 
         if cb_pos == 'top':  # CheckBoxs are on the top
-            pos_idx = self._create_ccbs(cb_list, num_cb, labels, pos_idx)
+            pos_idx = self._create_ccbs(cb_list, num_cb, tmp_labels, pos_idx)
             ctrl_labels = [label] + labels[1+num_cb:]
             self._create_ctrls(tc_list, num_txt, ctrl_labels, pos_idx)
         else:  # CheckBoxs are on the bottom
-            pos_idx = self._create_ctrls(tc_list, num_txt, labels, pos_idx)
+            pos_idx = self._create_ctrls(tc_list, num_txt, tmp_labels, pos_idx)
             ccb_labels = [label] + labels[1+num_txt:]
             self._create_ccbs(cb_list, num_cb, ccb_labels, pos_idx)
 
