@@ -364,7 +364,8 @@ class MutuallyExclusiveWidgets:
     _EXPENSES_CTRLS = []
 
     def create_widgets(self, num_cb: int=0, num_txt: int=0, cb_pos: str='top',
-                       labels: tuple=(), pos_idx: int=0) -> int:
+                       labels: tuple=(), pos_idx: int=0, *, search: bool=False
+                       ) -> int:
         """
         Create ColorCheckBox and TextCtrl widgets that can be mutually
         exclusive or part of the mutually exclusive group.
@@ -402,6 +403,8 @@ class MutuallyExclusiveWidgets:
                            inverse will happen.
         :param tuple labels: A list of labels used in the StaticText widgets.
         :param int pos_idx: The position y index for the GridBagSizer.
+        :param bool search: If False (default) most thing are active, else if
+                            True, the code is optimized for the search panel.
         :returns: Position of the next available position.
         :rtype: int
         """
@@ -420,13 +423,19 @@ class MutuallyExclusiveWidgets:
         cb_list = self._CHECKBOXES.setdefault(label, [])
         tc_list = self._TEXTCTRLES.setdefault(label, [])
         tmp_label = make_name(label)
-        tmp_labels = labels
 
         if tmp_label in ('local_baháí_expenses', 'national_baháí_funds',
                          'continental_and_international_funds',
                          'regional_funds', 'area_funds'):
             tmp_labels = [f"{l[0]}expenses" if i == 0 else l
                           for i, l in enumerate(labels)]
+        else:
+            if search:
+                tmp_labels = [lbl for lbl in labels
+                              if lbl not in ('@Amount:', '%Balance:')]
+                num_txt -= len(labels) - len(tmp_labels)
+            else:
+                tmp_labels = labels
 
         if cb_pos == 'top':  # CheckBoxs are on the top
             pos_idx = self._create_ccbs(cb_list, num_cb, tmp_labels, pos_idx)
@@ -444,8 +453,7 @@ class MutuallyExclusiveWidgets:
 
         if label[0] not in ('$', '&'):
             for tc in tc_list:
-                tc.Bind(wx.EVT_SET_FOCUS,
-                        self.on_text_focus_wrapper(label))
+                tc.Bind(wx.EVT_SET_FOCUS, self.on_text_focus_wrapper(label))
 
         return start_pos + num_cb + num_txt
 
@@ -516,9 +524,7 @@ class MutuallyExclusiveWidgets:
             tc.category = category
 
             if tc.financial:
-                if category in ('local_baháí_expenses', 'national_baháí_funds',
-                                'continental_and_international_funds',
-                                'regional_funds', 'area_funds'):
+                if category == 'expenses':
                     tc.Bind(wx.EVT_TEXT, self.on_expense_changed)
                     self._EXPENSES_CTRLS.append(tc)
                 else:

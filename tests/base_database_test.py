@@ -12,6 +12,7 @@ import badidatetime
 
 from src.bahai_database import Database
 from src.utilities import StoreObjects
+#from src.ledger_transaction import LedgerTransaction
 
 from .sample_data import TEST_DATA
 from .fixtures import FakeMainFrame, Options
@@ -189,9 +190,20 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
 
     async def insert_data(self):
         rowcount = 0
+        ledger = {}
 
         for table, data in TEST_DATA.items():
-            rowcount += await self.insert_table(table, data)
+            if table in (self.db._T_LEDGER_HEADER,
+                         self.db._T_LEDGER_TRANSACTION,
+                         self.db._T_LEDGER_REFERENCE, self.db._T_LEDGER_BANK,
+                         self.db._T_LEDGER_COH, self.db._T_LEDGER_INCOME,
+                         self.db._T_LEDGER_EXPENSE):
+                ledger[table] = data
+            else:
+                rowcount += await self.insert_table(table, data)
+
+        if ledger:
+            rowcount += await self.insert_table('ledger_data', ledger)
 
         return rowcount
 
@@ -207,20 +219,29 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         match table_name:
             case self.db._T_FISCAL_YEAR:
                 rowcount = await self.db.insert_into_fiscal_year_table(data)
+                data_len = len(data)
             case self.db._T_MONTH:
                 rowcount = await self.db.insert_into_month_table(data)
+                data_len = len(data)
             case self.db._T_FIELD_TYPE:
                 rowcount = await self.db.insert_into_field_type_table(data)
+                data_len = len(data)
             case self.db._T_DATA:
                 rowcount = await self.db.insert_all_into_config_data_table(
                     data)
+                data_len = len(data)
             case self.db._T_MONTHLY:
                 rowcount = await self.db.insert_all_into_monthly_table(data)
+                data_len = len(data)
+            case 'ledger_data':
+                rowcount = await self._insert_ledger(data)
+                data_len = sum([len(v) for v in data.values()])
             case _:
                 rowcount = 0
+                data_len = 0
 
-        assert len(data) == rowcount, (
-            f"Invalid inserted {rowcount}, found {len(data)} rows for "
+        assert data_len == rowcount, (
+            f"Invalid inserted {rowcount}, found {data_len} rows for "
             f"table {table_name}.")
 
         return rowcount
@@ -276,3 +297,127 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         rowcount = await self.db.cache.insert(self.db._T_MONTH, data)
         self.assertEqual(len(data['data']), rowcount)
         return rowcount
+
+    async def insert_monthly(self) -> int:
+        """
+        Insert monthly data in the DB.
+        """
+        data = {'year': self.db.cache.year,
+                'data': TEST_DATA[self.db._T_MONTHLY]}
+        rowcount = await self.db.insert_all_into_monthly_table(
+            TEST_DATA[self.db._T_MONTHLY])
+        await self.db.cache._load_monthly()
+        self.assertEqual(len(data['data']), rowcount)
+        return rowcount
+
+    async def insert_ledger_requirements(self):
+        """
+        Insert all the requirements for the ledger.
+        """
+        await self.insert_fiscal_year()
+        await self.insert_field_data(self._ORG_EMPTY)
+        await self.insert_field_data(self._BGT_EMPTY)
+        await self.insert_field_data(self._LDG_DATA['expenses'])
+        await self.insert_months()
+        await self.insert_monthly()
+        await self.db.cache.load()
+
+    async def _insert_ledger(self, data: dict) -> int:
+        """
+        Insert the ledger data.
+        """
+        async with aiosqlite.connect(
+            self.db.user_data_fullpath,
+            detect_types=self.db._DETECT_TYPES) as con:
+            await con.execute("PRAGMA foreign_keys=ON")
+            rowcount = 0
+
+            try:
+                await con.execute("BEGIN;")
+                rowcount += await self._insert_transaction(
+                    con, data[self.db._T_LEDGER_TRANSACTION])
+                rowcount += await self._insert_reference(
+                    con, data[self.db._T_LEDGER_REFERENCE])
+                rowcount += await self._insert_header(
+                    con, data[self.db._T_LEDGER_HEADER])
+                rowcount += await self._insert_bank(
+                    con, data[self.db._T_LEDGER_BANK])
+                rowcount += await self._insert_coh(
+                    con, data[self.db._T_LEDGER_COH])
+                rowcount += await self._insert_income(
+                    con, data[self.db._T_LEDGER_INCOME])
+                rowcount += await self._insert_expenses(
+                    con, data[self.db._T_LEDGER_EXPENSE])
+                await con.commit()
+                return rowcount
+            except Exception as e:
+                await con.rollback()
+                self.db._log.exception("Error during ledger insert.")
+                raise
+
+        return rowcount
+
+    async def _insert_transaction(self, con, data) -> int:
+        """
+        Insert the ledger_transaction data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_TRANSACTION} "
+                 "(pk, t_type) VALUES (?, ?);")
+
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount
+
+    async def _insert_reference(self, con, data) -> int:
+        """
+        Insert the ledger_reference data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_REFERENCE} (pk, r_type, "
+                 "number) VALUES (?, ?, ?);")
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount
+
+    async def _insert_header(self, con, data) -> int:
+        """
+        Insert the ledger_header data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_HEADER} (pk, fy1fk, fy2fk, "
+                 "ltfk, lrfk, trans_id, date, memo, purge, ctime, mtime) "
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount
+
+    async def _insert_bank(self, con, data) -> int:
+        """
+        Insert the ledger_bank data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_BANK} (pk, lhfk, b_type, "
+                 "amount, balance) VALUES (?, ?, ?, ?, ?);")
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount
+
+    async def _insert_coh(self, con, data) -> int:
+        """
+        Insert the ledger_coh data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_COH} (pk, lhfk, c_type, "
+                 "amount, balance) VALUES (?, ?, ?, ?, ?);")
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount
+
+    async def _insert_income(self, con, data) -> int:
+        """
+        Insert the ledger_income data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_INCOME} (pk, lhfk, i_type, "
+                 "amount, balance) VALUES (?, ?, ?, ?, ?);")
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount
+
+    async def _insert_expenses(self, con, data) -> int:
+        """
+        Insert the ledger_expense data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_EXPENSE} (lhfk, ftfk, "
+                 "amount) VALUES (?, ?, ?);")
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount

@@ -50,7 +50,7 @@ class PopulateCollect(AsyncEventLoop):
         return self._check_panels_for_entries('budget')
 
     @property
-    def open_ledger_entry(self) -> bool:
+    def has_ledger_data(self) -> bool:
         """
         Check that the db has the ledger Information.
 
@@ -76,9 +76,18 @@ class PopulateCollect(AsyncEventLoop):
                 or not w1[2].mandatory):
                 continue
 
-            items.append(data[w0[1]])
+            name0, field_name, widget0 = w0
 
-        return all([item not in self._EMPTY_FIELDS for item in items])
+            if name == 'ledger':
+                for cat, subcat in data.items():
+                    for fn, val in subcat.items():
+                        if fn == 'date' or not val: continue
+                        items.append(val)
+            else:
+                items.append(data[field_name])
+
+        valid = all([item not in self._EMPTY_FIELDS for item in items])
+        return valid if items else False
 
     def _lde_push(self, key: str, value: str, panel: wx.Panel, data: dict
                   ) -> None:
@@ -200,7 +209,6 @@ class PopulateCollect(AsyncEventLoop):
 
                 if name0 in self._EXCLUDE_WIDGETS: continue
                 value = pop(field_name)
-                #print('POOP', field_name, value)
                 if value is None: continue
 
                 if name0 in ('RadioBox', 'ComboBox'):
@@ -311,7 +319,8 @@ class PopulateCollect(AsyncEventLoop):
             name = child.__class__.__name__
             label = child.GetLabel()
 
-            if name in ('StaticLine', 'Panel', 'Button', 'FlatArrowButton'):
+            if name in ('StaticLine', 'Panel', 'Button', 'FlatArrowButton',
+                        'ConfirmationDialog'):
                 continue
             if name in ('StaticText',) and not label.endswith(':'):
                 continue
@@ -327,7 +336,7 @@ class PopulateCollect(AsyncEventLoop):
 
         result = [children[i:i+2] for i in range(0, len(children), 2)]
 
-        for idx, item in enumerate(result):
+        for idx, item in enumerate(result):  # pragma: no cover
             if len(item) != 2:
                 assert False, (
                     "Warning must have two children in all tuples, found error"
@@ -522,51 +531,91 @@ class PopulateCollect(AsyncEventLoop):
         self.populate_panel_values('monthly', panel, data)
         panel.initializing = False
 
-    def ledger_search_panel(self, panel: wx.Panel):
+    def ledger_search_panel(self, panel: wx.Panel) -> list:
         """
         Do the ledger search for the ledger panel.
 
         :param  wx.Panel panel: The ledger panel.
+        :resurns: A list of found records.
+        :rtype: list
+
+        .. note::
+
+           1. Incoming data:
+              {'panel.transaction_id': '', 'panel.date': '', 'panel.memo': '',
+               'transaction.contribution': True,
+               'transaction.distribution': False, 'transaction.expense': False,
+               'transaction.other': False,
+               'reference.ocs': True, 'reference.check': False,
+               'reference.receipt': False, 'reference.deposit': False,
+               'reference.number': '',
+               'bank.deposit': False, 'bank.withdrawal': True,
+               'coh.replenishment': False, 'coh.disbursement': False,
+               'income.local_fund': False, 'income.contributed_expense': False,
+               'income.other': False}
+
+           2. Resulting data (Zero or many rows):
+              [((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
+                 3, 1, '', 2, 30000, None, None, None, None, 0,
+                <badidatetime.datetime>, <badidatetime.datetime>),
+                [(5, 'national_baháí_fund', 20000),
+                 (5, 'regional_baháí_council', 10000)])]
         """
         data = self.collect_panel_values(panel)
-        valid = [v != '' for v in data.values()].count(True) == 1
-        data['purge'] = None  # Temporary
+        data['panel.purge'] = None  # Temporary
+        fy = self.cache.work_on_fiscal_year
+        lt = LedgerTransaction(self)
+        kwargs = {}
+        kwargs['trans_id'] = data['panel.transaction_id']
+        kwargs['date'] = data['panel.date']
+        kwargs['memo'] = data['panel.memo']
+        kwargs['purge'] = data['panel.purge']
+        # Transaction Type
+        cont = data['transaction.contribution']
+        dist = data['transaction.distribution']
+        exps = data['transaction.expense']
+        othr = data['transaction.other']
+        t_type = [idx for idx, value in enumerate((cont, dist, exps, othr),
+                                                  start=1) if value]
+        kwargs['t_type'] = t_type[0] if t_type else 0
+        # Entry Reference
+        ocs = data['reference.ocs']
+        ck = data['reference.check']
+        rt = data['reference.receipt']
+        dp = data['reference.deposit']
+        r_type = [idx for idx, value in enumerate((ocs, ck, rt, dp), start=1)
+                  if value]
+        kwargs['r_type'] = r_type[0] if r_type else 0
+        kwargs['number'] = data['reference.number']
+        # Bank
+        dpst = data['bank.deposit']
+        wthd = data['bank.withdrawal']
+        b_type = [idx for idx, value in enumerate((dpst, wthd), start=1)
+                  if value]
+        kwargs['b_type'] = b_type[0] if b_type else 0
+        # CoH
+        rpln = data['coh.replenishment']
+        dsbu = data['coh.disbursement']
+        c_type = [idx for idx, value in enumerate((rpln, dsbu), start=1)
+                  if value]
+        kwargs['c_type'] = c_type[0] if c_type else 0
+        # Income
+        lf = data['income.local_fund']
+        ce = data['income.contributed_expense']
+        othr = data['income.other']  # Sale of an item
+        i_type = [idx for idx, value in enumerate((lf, ce, othr), start=1)
+                  if value]
+        kwargs['i_type'] = i_type[0] if i_type else 0
+        rows = []
+
+        valid = any([val for val in kwargs.values() if val])
 
         if valid:
-            fy = self.cache.work_on_fiscal_year
-            lt = LedgerTransaction(self)
-            ck_num = data['check_number']
-            rt_num = data['receipt_number']
-            dp_num = data['deposit_number']
-            r_type = [idx for idx, num in enumerate((ck_num, rt_num, dp_num),
-                                                    start=1) if num]
-            r_type = r_type[0] if r_type else 0
-            number = ck_num + rt_num + dp_num
-            kwargs = {}
-            kwargs['trans_id'] = data['transaction_id']
-            kwargs['date'] = data['date']
-            kwargs['memo'] = data['memo']
-            # kwargs['t_type'] =
-            kwargs['r_type'] = r_type
-            kwargs['number'] = number
-            # kwargs['b_type'] =
-            # kwargs['c_type'] =
-            # kwargs['i_type'] =
-            kwargs['purge'] = data['purge']
             t_rows = self.run_async(lt.select_ledger_transaction(
                 fy[1], **kwargs))
-            rows = []
 
             for row in t_rows:
-                e_rows = self.run_async(lt.select_expenses(row[0]))
+                e_rows = self.run_async(lt.select_expenses(row[0]))  # trans_id
                 rows.append((row, e_rows))
 
-            #print('POOP', rows)
-            # [((1, 183, badidatetime.date(183, 7, 19), '', 1, 1, '', None,
-            #    None, None, None, 1, 5000, 0, <badidatetime.datetime>,
-            #    <badidatetime.datetime>), [])]
-
-        else:
-            rows = []
-
-        return valid
+        return rows

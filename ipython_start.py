@@ -7,6 +7,7 @@ from src.custom_widgits import (BadiDatePickerCtrl, ColorCheckBox,
 from src.bahai_database import Database
 from src.config import (TomlMetaData, TomlPanelConfig, TomlAppConfig,
                         TomlCreatePanel)
+from src.ledger_transaction import LedgerTransaction
 
 db = Database()
 tmd = TomlMetaData()

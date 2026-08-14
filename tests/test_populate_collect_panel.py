@@ -16,6 +16,7 @@ from unittest.mock import patch
 from src.bases import BaseGenerated
 from src.config import Settings
 from src.utilities import StoreObjects
+from src.ledger_entry import SearchDialog
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
@@ -89,25 +90,33 @@ class TestPopulateCollect(BaseAsyncTests):
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
 
-    @unittest.skip("Temporarily skipped")
-    async def test_open_ledger_entry(self):
+    #@unittest.skip("Temporarily skipped")
+    async def test_has_ledger_data(self):
         """
-        Test that the open_ledger_entry property returns True or False
+        Test that the has_ledger_data property returns True or False
         depending on the existance of manditory data in the panel.
         """
+        ldg_data0 = copy.deepcopy(self._LDG_DATA)
+        ldg_data0['panel']['transaction_id'] = 1
+        ldg_data0['transaction']['contribution'] = True
+        ldg_data0['reference']['ocs'] = True
+        ldg_data0['income']['local_fund'] = True
+        ldg_data0['income']['amount'] = '100.00'
+        ldg_data0['income']['balance'] = '100.00'
+
         data = (
             ({}, False),
-            (self._LGD_DATA, True),
+            (ldg_data0, True),
             )
         msg = "Expected {}, found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels['ledger']
-            self.db.populate_panel_values('ledger', panel, {})
+            self.db.populate_panel_values('ledger', panel, {})  # Clear all
 
-            for values, expected in data:
-                self.db.populate_panel_values('ledger', panel, values)
-                result = self.db.open_ledger_entry
+            for ldg_data, expected in data:
+                self.db.populate_panel_values('ledger', panel, ldg_data)
+                result = self.db.has_ledger_data
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
 
@@ -468,12 +477,13 @@ class TestPopulateCollect(BaseAsyncTests):
         value to an integer.
         """
         data = (
-            # (195214, True, False, '195214'),
-            # ('1952.14', True, False, '195214'),
-            # ('-1952.14', True, False, '-195214'),
-            # ('+1952.14', True, False, '195214'),
-            # ('$1952.14', True, False, '195214'),
-            # ('=1952.14', True, False, '195214'),
+            (1952.14, True, True, 195214),
+            (195214, True, False, '195214'),
+            ('1952.14', True, False, '195214'),
+            ('-1952.14', True, False, '-195214'),
+            ('+1952.14', True, False, '195214'),
+            ('$1952.14', True, False, '195214'),
+            ('=1952.14', True, False, '195214'),
             ('1952.14', True, True, 195214),
             (badidatetime.datetime(183, 3, 5), False, False,
              '0183-03-05T00:00:00'),
@@ -639,9 +649,68 @@ class TestPopulateCollect(BaseAsyncTests):
                                 self.assertEqual(value, result, msg.format(
                                     value, field_name, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test_ledger_search_panel(self):
         """
-        Test that the ledger_search_panel method updates the ledger TODO.
+        Test that the ledger_search_panel method returns data for either the
+        LedgerDataEntry or SearchResult panels.
         """
-        pass
+        # Test 1
+        test_data0 = {'panel.transaction_id': '', 'panel.date': '',
+                      'panel.memo': '', 'transaction.contribution': False,
+                      'transaction.distribution': False,
+                      'transaction.expense': False, 'transaction.other': False,
+                      'reference.ocs': False, 'reference.check': False,
+                      'reference.receipt': False, 'reference.deposit': False,
+                      'reference.number': '', 'bank.deposit': False,
+                      'bank.withdrawal': False, 'coh.replenishment': False,
+                      'coh.disbursement': False, 'income.local_fund': False,
+                      'income.contributed_expense': False,
+                      'income.other': False}
+        # Test 2
+        test_data1 = copy.deepcopy(test_data0)
+        test_data1['panel.transaction_id'] = 1
+        expect1 = [((1, 183, badidatetime.date(183, 7, 19),
+                     'Test OCS Contribution', 1, 1, '', None, None, None, None,
+                     1, 5000, 0,), [])]
+        # Test 3
+        test_data2 = copy.deepcopy(test_data0)
+        test_data2['transaction.contribution'] = True
+        expect2 = [((1, 183, badidatetime.date(183, 7, 19),
+                     'Test OCS Contribution', 1, 1, '', None, None, None, None,
+                     1, 5000, 0), []),
+                   ((2, 183, badidatetime.date(183, 8, 5),
+                     'Test OCS Contribution', 1, 1, '', None, None, None, None,
+                     1, 2000, 0), [])]
+        # Test 4
+        test_data3 = copy.deepcopy(test_data0)
+        test_data3['panel.date'] = badidatetime.date(183, 8, 10)
+        expect3 = [((5, 183, badidatetime.date(183, 8, 10), 'Test expenses', 3,
+                     1, '', 2, 30000, None, None, None, None, 0),
+                    [(5, 'national_baháí_fund', 20000),
+                     (5, 'regional_baháí_council', 10000)])]
+
+        data = (
+            (test_data0, []),
+            (test_data1, expect1),
+            (test_data2, expect2),
+            (test_data3, expect3),
+            )
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = SearchDialog(self.fmf)
+
+            for test_data, expected in data:
+                self.db.populate_panel_values('search_dialog', panel,
+                                              test_data)
+                items = self.db.ledger_search_panel(panel)
+
+                if items:
+                    # Remove the ctime and mtime
+                    result = [((item[0][:-2]), item[1]) for item in items]
+                else:
+                    result = items
+
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))

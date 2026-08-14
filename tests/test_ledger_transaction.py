@@ -36,8 +36,7 @@ class TestLedgerTransaction(BaseAsyncTests):
     async def asyncSetUp(self):
         await self.db.create_db()
         self.db.cache._flush_cache()
-        await self.insert_data()
-        await self.db.cache.load()
+        await self.insert_ledger_requirements()
 
     async def asyncTearDown(self):
         self.db.cache._flush_cache()
@@ -91,6 +90,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the select_ledger_transaction method selects
         ledger_transaction data properly.
         """
+        #print(self.db.cache.get('field_type', r_type='budget'))
         msg = "Expected {}, found {}."
         # date and trans_id querys
         date = badidatetime.date(183, 3, 5)

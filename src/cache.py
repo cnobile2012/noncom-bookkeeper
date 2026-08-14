@@ -326,6 +326,8 @@ class Cache:
                     for month in data:
                         if month[2] == r_type:
                             data = [month]
+            case _:
+                data = []
 
         self._log.info("Retrived '%s' data.", table_name)
         return data

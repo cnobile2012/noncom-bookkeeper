@@ -89,8 +89,8 @@ class LedgerTransaction:
         """
         def make_where(column, value):
             if value:
-                if column == 'memo':
-                    where = f"AND memo LIKE '%' || :{column} || '%' "
+                if column in ('memo', 'number'):
+                    where = f"AND {column} LIKE '%' || :{column} || '%' "
                 else:
                     where = f"AND {column} = :{column} "
             else:

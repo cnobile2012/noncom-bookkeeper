@@ -17,16 +17,83 @@ from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
                              FlatArrowButton, EVT_FLAT_ARROW)
 
 
-class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
+class _CreateWidgets:
+    _tmd = TomlMetaData()
+    _tcp = TomlCreatePanel()
+
+    def _title_generator(self):
+        return (title_data for title_data in self._tmd.data_entry_title_data)
+
+    def _label_generator(self):
+        entry_labels = self._tmd.data_entry_labels
+        items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
+        self._tcp.current_panel = items
+        exp = 'Expenses'
+        expense_title = ''
+
+        for title, labels in self._tcp.field_names_by_category.items():
+            if title == exp:
+                expense_title = title
+                labels = []
+
+            if expense_title != exp:
+                continue
+
+            labels = [f'@{n}' for n in labels]
+            labels.insert(0, f"&{make_name(title)}")
+            entry_labels.append(labels)
+
+        return (item for item in entry_labels)
+
+    def _make_heading(self, title: str, pos: int, *, span: int=2,
+                      btn: bool=True) -> tuple:
+        text = wx.StaticText(self, wx.ID_ANY, title)
+        text.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT,
+                             wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, 0, ''))
+        text.SetForegroundColour(self.w_fg_color)
+        text.SetMinSize((-1, -1))
+        self.gbs.Add(text, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
+                     | wx.RIGHT, 6)
+
+        if btn:
+            button = wx.Button(self, wx.ID_CLEAR, label='')
+            button.SetBackgroundColour(self.w_fg_color)
+            button.SetMinSize((48, 24))
+            self.gbs.Add(button, (pos, 1), (1, 1),
+                         wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
+        else:
+            button = None
+
+        line = wx.StaticLine(self, wx.ID_ANY)
+        line.SetBackgroundColour(self.w_fg_color)
+        self.gbs.Add(line, (pos+1, 0), (1, span), wx.EXPAND | wx.TOP
+                     | wx.BOTTOM, 4)
+        return button, pos + 2
+
+    def _next_title_and_labels(self, title_gen, label_gen) -> tuple:
+        try:
+            title = next(title_gen)
+        except StopIteration:
+            title = None
+            labels = None
+        else:
+            try:
+                labels = next(label_gen)
+            except StopIteration:
+                pass
+
+        return title, labels
+
+
+class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
+                      MutuallyExclusiveWidgets):
     """
     Implements data entry into the ledger.
     """
     _BUTTON_OBJS = []
-    _tmd = TomlMetaData()
-    _tcp = TomlCreatePanel()
 
     def __init__(self, parent, id=wx.ID_ANY, *args, **kwargs):
-        super().__init__(parent, id=id, *args, **kwargs)
+        super().__init__(parent, id, *args, **kwargs)
         BasePanel.__init__(self, *args, **kwargs)
         self._so = StoreObjects()
         self.frame = parent.GetParent()
@@ -264,72 +331,13 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
             event.SetEventObject(button)
             button.GetEventHandler().ProcessEvent(event)
 
-    def _title_generator(self):
-        return (title_data for title_data in self._tmd.data_entry_title_data)
-
-    def _label_generator(self):
-        entry_labels = self._tmd.data_entry_labels
-        items = self._tmd.panel_config.get('budget', {}).get('widgets', {})
-        self._tcp.current_panel = items
-        exp = 'Expenses'
-        expense_title = ''
-
-        for title, labels in self._tcp.field_names_by_category.items():
-            if title == exp:
-                expense_title = title
-                labels = []
-
-            if expense_title != exp:
-                continue
-
-            labels = [f'@{n}' for n in labels]
-            labels.insert(0, f"&{make_name(title)}")
-            entry_labels.append(labels)
-
-        return (item for item in entry_labels)
-
-    def _make_heading(self, title: str, pos: int, *, span: int=2,
-                      btn: bool=True) -> tuple:
-        text = wx.StaticText(self, wx.ID_ANY, title)
-        text.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT,
-                             wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, 0, ''))
-        text.SetForegroundColour(self.w_fg_color)
-        text.SetMinSize((-1, -1))
-        self.gbs.Add(text, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
-
-        if btn:
-            button = wx.Button(self, wx.ID_CLEAR, label='')
-            button.SetBackgroundColour(self.w_fg_color)
-            button.SetMinSize((48, 24))
-            self.gbs.Add(button, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                        | wx.LEFT, 6)
-        else:
-            button = None
-
-        line = wx.StaticLine(self, wx.ID_ANY)
-        line.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(line, (pos+1, 0), (1, span), wx.EXPAND | wx.TOP
-                     | wx.BOTTOM, 4)
-        return button, pos + 2
-
-    def _next_title_and_labels(self, title_gen, label_gen) -> tuple:
-        try:
-            title = next(title_gen)
-        except StopIteration:
-            title = None
-            labels = None
-        else:
-            try:
-                labels = next(label_gen)
-            except StopIteration:
-                pass
-
-        return title, labels
-
     def search_box(self, event) -> None:
-        dlg = SearchDialog(self, self.bg_color, self.w_fg_color)
-        dlg.ShowModal()
+        style = (wx.CAPTION | wx.CLOSE_BOX | wx.SYSTEM_MENU |
+                 wx.FRAME_FLOAT_ON_PARENT | wx.FRAME_FLOAT_ON_PARENT)
+        frame = wx.Frame(self, title="Search Ledger", style=style)
+        frame.SetSize((400, 600))
+        SearchDialog(frame, bg_color=self.bg_color, fg_color=self.w_fg_color)
+        frame.Show()
 
     def on_expense_changed(self, event):
         if not self.initializing:
@@ -359,20 +367,23 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, MutuallyExclusiveWidgets):
         return self.bg_color
 
 
-class SearchDialog(wx.Dialog):
+class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
+                   MutuallyExclusiveWidgets):
     """
     Create a search dialog for the ledger panel.
     """
 
-    def __init__(self, parent, bg_color, fg_color):
-        super().__init__(parent, wx.ID_ANY, "Search Ledger",
-                         style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
-        self._parent = parent
+    def __init__(self, parent, id=wx.ID_ANY, *args, bg_color=None,
+                 fg_color=None, **kwargs):
+        super().__init__(parent, id, *args, **kwargs)
+        self.parent = parent
         self._so = StoreObjects()
+        self.w_fg_color = wx.Colour(50, 50, 204)     # Dark Blue
+        self.w_bg_color = wx.Colour(255, 253, 208)   # Cream
+        self.w1_bg_color = wx.Colour(222, 237, 230)  # Gray
+        w1_fg_color = wx.Colour(255, 0, 0)           # Red-ish
         title = "Search for Ledger Records"
-        w_bg_color = wx.Colour(255, 253, 208)  # Cream
-        w_fg_color = wx.Colour(255, 0, 0)      # Red-ish
-        self.SetSize((350, 375))
+        self.tc_width = 130
         self.SetBackgroundColour(bg_color)
         self.SetForegroundColour(fg_color)
         self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
@@ -391,81 +402,80 @@ class SearchDialog(wx.Dialog):
 
         self.gbs = wx.GridBagSizer(2, 2)
         sizer.Add(self.gbs, 1, wx.CENTER, 10)
+        pos = 0
 
         trans_text = wx.StaticText(self, wx.ID_ANY, "Transaction ID:")
         trans_text.SetForegroundColour(fg_color)
-        self.gbs.Add(trans_text, (0, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.gbs.Add(trans_text, (pos, 0), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
         trans_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        trans_ctrl.SetBackgroundColour(w_bg_color)
+        trans_ctrl.SetBackgroundColour(self.w_bg_color)
         trans_ctrl.SetForegroundColour(fg_color)
-        trans_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(trans_ctrl, (0, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        trans_ctrl.SetMinSize((self.tc_width, 26))
+        trans_ctrl.category = 'panel'
+        self.gbs.Add(trans_ctrl, (pos, 1), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
+        pos += 1
 
         # Search for specific date of item.
         srch_text = wx.StaticText(self, wx.ID_ANY, "Date:")
         srch_text.SetForegroundColour(fg_color)
-        self.gbs.Add(srch_text, (1, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.gbs.Add(srch_text, (pos, 0), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
         self.srch_ctrl = BadiDatePickerCtrl(self, wx.ID_ANY)
-        self.srch_ctrl.SetBackgroundColour(w_bg_color)
+        self.srch_ctrl.SetBackgroundColour(self.w_bg_color)
         self.srch_ctrl.SetForegroundColour(fg_color)
         self.srch_ctrl.SetMinSize((130, 28))
         self.srch_ctrl.SetValue('')
-        self.gbs.Add(self.srch_ctrl, (1, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.srch_ctrl.category = 'panel'
+        self.gbs.Add(self.srch_ctrl, (pos, 1), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
+        pos += 1
 
         memo_text = wx.StaticText(self, wx.ID_ANY, "Memo:")
         memo_text.SetForegroundColour(fg_color)
-        self.gbs.Add(memo_text, (2, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.gbs.Add(memo_text, (pos, 0), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
         memo_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        memo_ctrl.SetBackgroundColour(w_bg_color)
+        memo_ctrl.SetBackgroundColour(self.w_bg_color)
         memo_ctrl.SetForegroundColour(fg_color)
-        memo_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(memo_ctrl, (2, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        memo_ctrl.SetMinSize((self.tc_width, 26))
+        memo_ctrl.category = 'panel'
+        self.gbs.Add(memo_ctrl, (pos, 1), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
 
-        check_text = wx.StaticText(self, wx.ID_ANY, "Check Number:")
-        check_text.SetForegroundColour(fg_color)
-        self.gbs.Add(check_text, (3, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-        check_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        check_ctrl.SetBackgroundColour(w_bg_color)
-        check_ctrl.SetForegroundColour(fg_color)
-        check_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(check_ctrl, (3, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        title_gen = self._title_generator()
+        # The first label is the category name the rest are StaticText labels.
+        label_gen = self._label_generator()
+        title_data, labels = self._next_title_and_labels(title_gen, label_gen)
+        pos += 2
 
-        rcpt_text = wx.StaticText(self, wx.ID_ANY, "Receipt Number:")
-        rcpt_text.SetForegroundColour(fg_color)
-        self.gbs.Add(rcpt_text, (4, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-        rcpt_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        rcpt_ctrl.SetBackgroundColour(w_bg_color)
-        rcpt_ctrl.SetForegroundColour(fg_color)
-        rcpt_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(rcpt_ctrl, (4, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        while title_data is not None and labels is not None:
+            title, num_cb, num_txt, cb_pos, span, btn = title_data[:6]
+            button, pos = self._make_heading(title, pos, span=span, btn=btn)
+            pos = self.create_widgets(num_cb, num_txt, cb_pos, labels, pos,
+                                      search=True)
+            label = labels[0]
 
-        rcpt_text = wx.StaticText(self, wx.ID_ANY, "Deposit Number:")
-        rcpt_text.SetForegroundColour(fg_color)
-        self.gbs.Add(rcpt_text, (5, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
-        rcpt_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
-        rcpt_ctrl.SetBackgroundColour(w_bg_color)
-        rcpt_ctrl.SetForegroundColour(fg_color)
-        rcpt_ctrl.SetMinSize((parent.tc_width, 26))
-        self.gbs.Add(rcpt_ctrl, (5, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+            if button:
+                button.Bind(wx.EVT_BUTTON, self.reset_inputs_wrapper(label))
+
+            # Next
+            pos += 1
+            title_data, labels = self._next_title_and_labels(
+                title_gen, label_gen)
+
+            # We do not want to search expenses.
+            if title_data[0] == 'Expenses':
+                break
 
         self.warn_text = wx.StaticText(self, wx.ID_ANY, label="",
                                        style=wx.ALIGN_CENTER_HORIZONTAL)
-        self.warn_text.SetForegroundColour(w_fg_color)
+        self.warn_text.SetForegroundColour(w1_fg_color)
         self.warn_text.Hide()
-        self.gbs.Add(self.warn_text, (6, 0), (1, 2),
+        self.gbs.Add(self.warn_text, (pos, 0), (1, 2),
                      wx.ALIGN_CENTER | wx.ALL, 6)
+        pos += 1
 
         panel_0 = wx.Panel(self)
         sizer_1 = wx.StdDialogButtonSizer()
@@ -481,21 +491,23 @@ class SearchDialog(wx.Dialog):
         sizer_1.AddButton(cancel_byn)
         sizer_1.Realize()
         panel_0.SetSizer(sizer_1)
-        self.gbs.Add(panel_0, (7, 0), (1, 2), wx.EXPAND, 0)
+        self.gbs.Add(panel_0, (pos, 0), (1, 2), wx.EXPAND, 0)
+
+        self.SetupScrolling(rate_x=20, rate_y=40)
 
     def button_search(self, event):
         db = self._so.get_object('Database')
-        valid = db.ledger_search_panel(self)
+        rows = db.ledger_search_panel(self)
+        print('POOP', rows)
 
-        if valid:
-            self.Destroy()
+        if rows:
+            self.parent.Destroy()
         else:
-            msg = ("Can only search for one item at a time. Please click "
-                   "Cancel and try again.")
+            msg = ("Found no results.")
             self.warn_text.SetLabel(msg)
             self.warn_text.Wrap(250)
             self.warn_text.Show()
             self.Layout()
 
     def button_cancel(self, event):
-        self.Destroy()
+        self.parent.Destroy()

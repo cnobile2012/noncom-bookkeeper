@@ -333,6 +333,8 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the ledger method verifies the business rules for
         entering ledger transaction contribution data.
         """
+        await self.asyncTearDown()
+        await self.insert_ledger_requirements()
         date = badidatetime.date(183, 7, 18)
         # Test 1 -- fund_stats pass
         ldg_data0 = copy.deepcopy(self._LDG_DATA)
@@ -418,6 +420,8 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the ledger method verifies the business rules for
         entering ledger transaction distribution data.
         """
+        await self.asyncTearDown()
+        await self.insert_ledger_requirements()
         date = badidatetime.date(183, 7, 18)
         # Test 1 -- bank deposit pass
         ldg_data1 = copy.deepcopy(self._LDG_DATA)
@@ -485,6 +489,8 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the ledger method verifies the business rules for
         entering ledger transaction expenses data.
         """
+        await self.asyncTearDown()
+        await self.insert_ledger_requirements()
         date = badidatetime.date(183, 7, 18)
         # Test 1 -- check pass
         ldg_data1 = copy.deepcopy(self._LDG_DATA)
@@ -569,6 +575,8 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the ledger method verifies the business rules for
         entering ledger transaction other data.
         """
+        await self.asyncTearDown()
+        await self.insert_ledger_requirements()
         date = badidatetime.date(183, 7, 18)
         # Test 1 -- other pass
         ldg_data1 = copy.deepcopy(self._LDG_DATA)
