@@ -121,7 +121,7 @@ class PopulateCollect(AsyncEventLoop):
 
         for cat, labels in panel.ledger_labels.items():
             if category == cat and field_name in labels:
-                result = data[cat][field_name]
+                result = data[cat].get(field_name, '')
 
         return result
 
@@ -233,6 +233,11 @@ class PopulateCollect(AsyncEventLoop):
                         value = self.convert_date_to_yymmdd(value)
 
                     widget1.SetValue(value)
+
+                    if (panel_name == 'ledger' and value
+                        and name1 == 'ColorCheckBox'):
+                        widget1.Notify()
+
                 else:  # pragma: no cover
                     self._set_statusbar(name0, f" with value {value}.")
         elif panel_name == 'fiscal':  # First time run only.
@@ -320,7 +325,7 @@ class PopulateCollect(AsyncEventLoop):
             label = child.GetLabel()
 
             if name in ('StaticLine', 'Panel', 'Button', 'FlatArrowButton',
-                        'ConfirmationDialog'):
+                        'ConfirmationDialog', 'Frame'):
                 continue
             if name in ('StaticText',) and not label.endswith(':'):
                 continue
@@ -452,6 +457,76 @@ class PopulateCollect(AsyncEventLoop):
     def isfloat(self, value: str) -> bool:
         return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True
 
+    def convert_db_to_panel(self, row: tuple) -> dict:
+        """
+        Convert a row from the ledger tables to data usable for populating
+        the ledger panel.
+
+        .. note::
+
+           ((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
+             3, 1, '', 2, 30000, None, None, None, None, 0,
+             <badidatetime.datetime>, <badidatetime.datetime>),
+            [(5, 'national_baháí_fund', 20000),
+             (5, 'regional_baháí_council', 10000)])
+        """
+        def db_to_panel(fn: str, value: str | int, mapping: dict) -> bool:
+            return fn == mapping[value]
+
+        trn_map = {None: '', 1: 'contribution', 2: 'distribution',
+                   3: 'expense', 4: 'other'}
+        ref_map = {None: '', 1: 'ocs', 2: 'check', 3: 'receipt', 4: 'deposit'}
+        bnk_map = {None: '', 1: 'deposit', 2: 'withdrawal'}
+        coh_map = {None: '', 1: 'replenishment', 2: 'disbursement'}
+        inc_map = {None: '', 1: 'local_fund', 2: 'contributed_expense',
+                   3: 'other'}
+        trans = row[0]
+        expenses = row[1]
+        data = {'panel': {}, 'transaction': {}, 'reference': {}, 'bank': {},
+                'coh': {}, 'income': {}, 'expenses': {}}
+        data['panel']['transaction_id'] = trans[0]
+        data['panel']['date'] = trans[2]
+        data['panel']['memo'] = trans[3]
+        data['panel']['total_expenses'] = 0
+        data['transaction']['contribution'] = db_to_panel('contribution',
+                                                          trans[4], trn_map)
+        data['transaction']['distribution'] = db_to_panel('distribution',
+                                                          trans[4], trn_map)
+        data['transaction']['expense'] = db_to_panel('expense', trans[4],
+                                                     trn_map)
+        data['transaction']['other'] = db_to_panel('other', trans[4], trn_map)
+        data['reference']['ocs'] = db_to_panel('ocs', trans[5], ref_map)
+        data['reference']['check'] = db_to_panel('check', trans[5], ref_map)
+        data['reference']['receipt'] = db_to_panel('receipt', trans[5],
+                                                   ref_map)
+        data['reference']['deposit'] = db_to_panel('deposit', trans[5],
+                                                   ref_map)
+        data['reference']['number'] = trans[6]
+        data['bank']['deposit'] = db_to_panel('deposit', trans[7], bnk_map)
+        data['bank']['withdrawal'] = db_to_panel('withdrawal', trans[7],
+                                                 bnk_map)
+        data['bank']['amount'] = trans[8]
+        data['bank']['balance'] = ''
+        data['coh']['replenishment'] = db_to_panel('replenishment', trans[9],
+                                                   coh_map)
+        data['coh']['disbursement'] = db_to_panel('disbursement', trans[9],
+                                                  coh_map)
+        data['coh']['amount'] = trans[10]
+        data['coh']['balance'] = ''
+        data['income']['local_fund'] = db_to_panel('local_fund', trans[11],
+                                                   inc_map)
+        data['income']['contributed_expense'] = db_to_panel(
+            'contributed_expense', trans[11], inc_map)
+        data['income']['other'] = db_to_panel('other', trans[11], inc_map)
+        data['income']['amount'] = trans[12]
+        data['income']['balance'] = ''
+
+        for _, fn, amount in expenses:
+            data['expenses'][fn] = amount
+            data['panel']['total_expenses'] += amount
+
+        return data
+
     # MONTHS = list(ordered_month().keys())
     # MONTH_INDEX = {m: i for i, m in enumerate(MONTHS)}
 
@@ -557,7 +632,7 @@ class PopulateCollect(AsyncEventLoop):
            2. Resulting data (Zero or many rows):
               [((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
                  3, 1, '', 2, 30000, None, None, None, None, 0,
-                <badidatetime.datetime>, <badidatetime.datetime>),
+                 <badidatetime.datetime>, <badidatetime.datetime>),
                 [(5, 'national_baháí_fund', 20000),
                  (5, 'regional_baháí_council', 10000)])]
         """
@@ -571,12 +646,12 @@ class PopulateCollect(AsyncEventLoop):
         kwargs['memo'] = data['panel.memo']
         kwargs['purge'] = data['panel.purge']
         # Transaction Type
-        cont = data['transaction.contribution']
-        dist = data['transaction.distribution']
-        exps = data['transaction.expense']
-        othr = data['transaction.other']
-        t_type = [idx for idx, value in enumerate((cont, dist, exps, othr),
-                                                  start=1) if value]
+        co = data['transaction.contribution']
+        di = data['transaction.distribution']
+        ex = data['transaction.expense']
+        ot = data['transaction.other']
+        t_type = [idx for idx, value in enumerate((co, di, ex, ot), start=1)
+                  if value]
         kwargs['t_type'] = t_type[0] if t_type else 0
         # Entry Reference
         ocs = data['reference.ocs']

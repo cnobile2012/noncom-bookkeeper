@@ -223,8 +223,9 @@ class MainFrame(wx.Frame, MenuBar):
         self.Bind(wx.EVT_IDLE, self.on_idle)
 
     def on_size(self, event):
-        event.Skip()
         self.__resized = True
+        self.Layout()
+        event.Skip()
 
     def on_idle(self, event):
         if self.__resized:

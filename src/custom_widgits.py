@@ -392,29 +392,19 @@ class BadiDatePickerCtrl(wx.Panel):
 ColorCheckBoxEvent, EVT_COLOR_CHECKBOX = NewEvent()
 
 
-class ColorCheckBoxClickEvent(ColorCheckBoxEvent):
-    def __init__(self, state):
-        super().__init__()
-        self._state = state
-
-    def GetColorCheckBoxState(self):
-        return self._state
-
-
 class ColorCheckBox(wx.Panel):
     """
     A custom checkbox.
 
     .. note::
 
-       1. If the panel is bigger that the chekbox itself then
-          SetBackgroundColour() and SetForegroundColour() will affect
-          their color.
-       2. The forground color of the checkbox itself is affected by
+       1. If the panel is bigger than the chekbox then SetBackgroundColour()
+          and SetForegroundColour() will affect their color.
+       2. The foreground color of the checkbox is affected by
           SetForegroundColour(), but the background color defaults to white
           unless a different color is passed to the constructor argument
           cb_color.
-       3. The border of the chekbox itself defaults to Black
+       3. The border of the chekbox defaults to Black
     """
     def __init__(self, parent: wx.Window, id: int=wx.ID_ANY, label: str="",
                  name: str="", label_position="right", checked: bool=False,
@@ -508,7 +498,13 @@ class ColorCheckBox(wx.Panel):
             self.checked = bool(value)
             self.Refresh()
 
-    def SetReadOnly(self, value=True):
+    def Notify(self):
+        evt = ColorCheckBoxEvent()
+        evt.SetEventObject(self)
+        evt.state = self.GetValue()
+        wx.PostEvent(self, evt)
+
+    def SetReadOnly(self, value: bool=True):
         self.read_only = value
         self.Enable(False)
 
@@ -522,7 +518,7 @@ class ColorCheckBox(wx.Panel):
     def IsEnabled(self):
         return self.enabled
 
-    def SetSize(self, size=(120, 24)):
+    def SetSize(self, size: tuple=(120, 24)):
         self.SetMinSize(size)
 
     def GetLabelText(self):

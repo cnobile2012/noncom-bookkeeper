@@ -11,7 +11,7 @@ from badidatetime import date, MONTHNAMES
 
 from src.custom_widgits import (
     ordered_month, EVT_BADI_DATE_CHANGED, BadiDateChangedEvent, CustomTextCtrl,
-    EVT_COLOR_CHECKBOX, ColorCheckBoxClickEvent)
+    EVT_COLOR_CHECKBOX)
 
 from . import FakeFrame, FakePanel, check_flag
 

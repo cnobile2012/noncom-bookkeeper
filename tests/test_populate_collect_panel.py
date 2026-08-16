@@ -556,6 +556,82 @@ class TestPopulateCollect(BaseAsyncTests):
             result = self.db.isfloat(value)
             self.assertEqual(expected, result, msg.format(expected, result))
 
+    #@unittest.skip("Temporarily skipped")
+    def test_convert_db_to_panel(self):
+        """
+        Test that the convert_db_to_panel method correctly converts DB
+        row data into panel data.
+        """
+        row0 = ((1, 183, badidatetime.date(183, 7, 19),
+                 'Test OCS Contribution', 1, 1, '', None, None, None, None,
+                 1, 5000), [])
+        expect0 = copy.deepcopy(self._LDG_DATA)
+        expect0['panel']['transaction_id'] = str(row0[0][0])
+        expect0['panel']['date'] = row0[0][2]
+        expect0['panel']['memo'] = row0[0][3]
+        expect0['transaction']['contribution'] = True
+        expect0['reference']['ocs'] = True
+        expect0['income']['local_fund'] = True
+        expect0['income']['amount'] = row0[0][12]
+        row1 = ((3, 183, badidatetime.date(183, 8, 7), 'Test OCS Distribution',
+                 2, 1, '', 1, 5000, None, None, None, None), [])
+        expect1 = copy.deepcopy(self._LDG_DATA)
+        expect1['panel']['transaction_id'] = str(row1[0][0])
+        expect1['panel']['date'] = row1[0][2]
+        expect1['panel']['memo'] = row1[0][3]
+        expect1['transaction']['distribution'] = True
+        expect1['reference']['ocs'] = True
+        expect1['bank']['deposit'] = True
+        expect1['bank']['amount'] = row1[0][8]
+        row2 = ((4, 183, badidatetime.date(183, 8, 7), 'Test CoH Distribution',
+                 2, 4, '2026-08-06', 1, 5000, 2, 5000, None, None), [])
+        expect2 = copy.deepcopy(self._LDG_DATA)
+        expect2['panel']['transaction_id'] = str(row2[0][0])
+        expect2['panel']['date'] = row2[0][2]
+        expect2['panel']['memo'] = row2[0][3]
+        expect2['transaction']['distribution'] = True
+        expect2['reference']['deposit'] = True
+        expect2['reference']['number'] = row2[0][6]
+        expect2['bank']['deposit'] = True
+        expect2['bank']['amount'] = row2[0][8]
+        expect2['coh']['disbursement'] = True
+        expect2['coh']['amount'] = row2[0][10]
+        row3 = ((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
+                 3, 1, '', 2, 30000, None, None, None, None),
+                [(5, 'national_baháí_fund', 20000),
+                 (5, 'regional_baháí_council', 10000)])
+        expect3 = copy.deepcopy(self._LDG_DATA)
+        expect3['panel']['transaction_id'] = str(row3[0][0])
+        expect3['panel']['date'] = row3[0][2]
+        expect3['panel']['memo'] = row3[0][3]
+        expect3['transaction']['expense'] = True
+        expect3['reference']['ocs'] = True
+        expect3['bank']['withdrawal'] = True
+        expect3['bank']['amount'] = row3[0][8]
+        expect3['expenses']['national_baháí_fund'] = row3[1][0][2]
+        expect3['expenses']['regional_baháí_council'] = row3[1][1][2]
+        expect3['panel']['total_expenses'] = row3[1][0][2] + row3[1][1][2]
+
+        data = (
+            (row0, expect0),
+            (row1, expect1),
+            (row2, expect2),
+            (row3, expect3),
+            )
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            panel = self.fmf.panels['ledger']
+
+            for row, expected in data:
+                # Set the panel empty
+                self.db.populate_panel_values('ledger', panel, self._LDG_DATA)
+                items = self.db.convert_db_to_panel(row)
+                self.db.populate_panel_values('ledger', panel, items)
+                result = self.db.collect_panel_values(panel)
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
+
     @unittest.skip("Temporarily skipped")
     def test_get_prev_and_next(self):
         """

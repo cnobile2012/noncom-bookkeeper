@@ -8,6 +8,7 @@ import re
 import wx
 
 from decimal import Decimal
+from wx.dataview import DataViewListCtrl, DV_SINGLE
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from .config import TomlMetaData, TomlCreatePanel
@@ -395,8 +396,8 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         title_font = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD)
         message = wx.StaticText(self, wx.ID_ANY, title)
-        message.SetBackgroundColour(wx.Colour(bg_color))
-        message.SetForegroundColour(wx.Colour(fg_color))
+        message.SetBackgroundColour(bg_color)
+        message.SetForegroundColour(fg_color)
         message.SetFont(title_font)
         sizer.Add(message, 0, wx.ALL | wx.CENTER, 10)
 
@@ -498,10 +499,16 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
     def button_search(self, event):
         db = self._so.get_object('Database')
         rows = db.ledger_search_panel(self)
-        print('POOP', rows)
+        bg = self.parent.Parent.bg_color
+        fgw = self.parent.Parent.w_fg_color
+        msg = "Choose Search Results"
+        cap = "Search Results"
 
         if rows:
-            self.parent.Destroy()
+            dlg = SearchResult(self.parent, msg, cap, rows=rows, bg_color=bg,
+                               fg_color=fgw)
+            self.parent.Hide()
+            dlg.ShowModal()
         else:
             msg = ("Found no results.")
             self.warn_text.SetLabel(msg)
@@ -509,5 +516,114 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
             self.warn_text.Show()
             self.Layout()
 
+        event.Skip()
+
     def button_cancel(self, event):
+        event.Skip()
         self.parent.Destroy()
+
+
+class SearchResult(wx.Dialog):
+    """
+    Show the result of the search so one can be chosen to edit.
+    """
+
+    def __init__(self, parent, msg, cap, *, rows=[], bg_color=None,
+                 fg_color=None):
+        super().__init__(parent, wx.ID_ANY, cap,
+                         style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
+        self.parent = parent
+        self.rows = rows
+        self._so = StoreObjects()
+        self.SetSize((1500, 600))
+        self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                             wx.FONTWEIGHT_BOLD, 0, ''))
+        # Red-ish
+        _bg_color = bg_color if bg_color else wx.Colour(220, 130, 143)
+        # Blue-ish
+        _fg_color = fg_color if fg_color else wx.Colour(50, 50, 204)
+        self.SetBackgroundColour(_bg_color)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(sizer)
+        message = wx.StaticText(self, wx.ID_ANY, msg)
+        message.SetBackgroundColour(_bg_color)
+        message.SetForegroundColour(_fg_color)
+        message.Wrap(300)
+        sizer.Add(message, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 10)
+
+        line0 = wx.StaticLine(self, -1, size=(20, -1), style=wx.LI_HORIZONTAL)
+        sizer.Add(line0, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 6)
+
+        self.list_ctrl = DataViewListCtrl(self, wx.ID_ANY, style=DV_SINGLE)
+        self.list_ctrl.SetMinSize((1600, 200))
+        # lc_bg_color = wx.Colour(255, 255, 200)
+        # self.list_ctrl.SetBackgroundColour(lc_bg_color)
+        # self.list_ctrl.SetForegroundColour(_fg_color)
+        headers = ["Trans ID", "Fiscal Year", "Date", "Memo", "Trans Type",
+                   "Entry Ref", "Number", "Bank Type", "Bank Amount",
+                   "CoH Type", "Coh Amount", "Income Type", "Income Amount"]
+        dc = wx.ClientDC(self)
+        width = max([[s for s in dc.GetTextExtent(fn)][0] for fn in headers])
+        [self.list_ctrl.AppendTextColumn(fn, width=width) for fn in headers]
+        trn_map = {None: None, 1: 'Contribution', 2: 'Distribution',
+                   3: 'Expense', 4: 'Other'}
+        ref_map = {None: None, 1: 'OCS', 2: 'Check', 3: 'Receipt',
+                   4: 'Deposit'}
+        bnk_map = {None: None, 1: 'Deposit', 2: 'Withdrawal'}
+        coh_map = {None: None, 1: 'Replenishment', 2: 'Disbursement'}
+        inc_map = {None: None, 1: 'Local Fund', 2: 'Contributed Expense',
+                   3: 'Other'}
+
+        for row in rows:
+            display_row = []
+
+            for idx, itm in enumerate(row[0][:-3]):
+                match idx:
+                    case 4:
+                        itm = trn_map[itm]
+                    case 5:
+                        itm = ref_map[itm]
+                    case 7:
+                        itm = bnk_map[itm]
+                    case 9:
+                        itm = coh_map[itm]
+                    case 11:
+                        itm = inc_map[itm]
+
+                display_row.append(str(itm))
+
+            self.list_ctrl.AppendItem(display_row)
+
+        sizer.Add(self.list_ctrl, 1, wx.EXPAND | wx.ALL, 10)
+
+        button_sizer = wx.StdDialogButtonSizer()
+        sizer.Add(button_sizer, 0, wx.CENTER | wx.ALL, 6)
+        ok_button = wx.Button(self, wx.ID_OK)
+        ok_button.Bind(wx.EVT_BUTTON, self.btn_continue)
+        button_sizer.AddButton(ok_button)
+        cancel_button = wx.Button(self, wx.ID_CANCEL)
+        cancel_button.SetDefault()
+        cancel_button.Bind(wx.EVT_BUTTON, self.btn_cancel)
+        button_sizer.AddButton(cancel_button)
+        button_sizer.Realize()
+        sizer.Fit(self)
+        self.Layout()
+        self.Fit()
+
+    def btn_cancel(self, event):
+        event.Skip()
+        self.Destroy()
+
+    def btn_continue(self, event):
+        """
+        Populate the data in the ledger panel.
+        """
+        display_row = self.list_ctrl.GetSelectedRow()
+        db = self._so.get_object('Database')
+        mf = self._so.get_object('MainFrame')
+        row = self.rows[display_row]
+        data = db.convert_db_to_panel(row)
+        db.populate_panel_values('ledger', mf.panels['ledger'], data)
+        #self.Destroy()
+        event.Skip()

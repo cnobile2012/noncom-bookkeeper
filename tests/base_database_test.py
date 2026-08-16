@@ -123,7 +123,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                 'work_on_this_fiscal_year': False, 'audit_complete': False}
     _LDG_DATA = {
         'panel': {'transaction_id': '', 'date': None, 'memo': '',
-                  'total_expenses': ''},
+                  'total_expenses': 0},
         'transaction': {'contribution': False, 'distribution': False,
                         'expense': False, 'other': False},
         'reference': {'ocs': False, 'check': False, 'receipt': False,

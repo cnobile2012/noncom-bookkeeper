@@ -196,11 +196,10 @@ class ConfirmationDialog(wx.Dialog):
     Create a generic dialog box.
     """
 
-    def __init__(self, parent, msg, cap, *, enable=False,  bg_color=None,
+    def __init__(self, parent, msg, cap, *, enable=False, bg_color=None,
                  fg_color=None):
         super().__init__(parent, wx.ID_ANY, cap,
                          style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
-        self._parent = parent
         self.enable = enable
         self.SetSize((300, 150))
         self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
