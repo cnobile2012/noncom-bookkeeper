@@ -157,11 +157,11 @@ class TestLedgerTransaction(BaseAsyncTests):
 
             if multi:
                 for idx, row in enumerate(result):
-                    row = row[:-2]
+                    row = row[:-1]
                     self.assertEqual(expected[idx], row, msg.format(
                         expected[idx], row))
             else:
-                result = result[0][:-2]
+                result = result[0][:-1]
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
 
@@ -175,7 +175,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Description', 2, 1, '', 1, 5000, None,
                         None, None, None, 0)
-        expect_data1 = (1, 1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': False, 'distribution': True,
                                 'expense': False, 'other': False},
@@ -190,7 +190,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
         result = await lt.select_ledger_transaction(date.year, date=date)
-        result = result[0][:-2]
+        result = result[0][:-1]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
         header_pk = result[0]
@@ -209,7 +209,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Description', 1, 3, 'B1000', None, None,
                         1, 5000, None, None, 0)
-        expect_data1 = (1, 1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
@@ -224,7 +224,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
         result = await lt.select_ledger_transaction(date.year, date=date)
-        result = result[0][:-2]
+        result = result[0][:-1]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
         header_pk = result[0]
@@ -243,7 +243,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, "Description", 1, 1, '', None, None,
                         None, None, 1, 5000, 0)
-        expect_data1 = (1, 1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
@@ -258,7 +258,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
         result = await lt.select_ledger_transaction(date.year, date=date)
-        result = result[0][:-2]
+        result = result[0][:-1]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
         header_pk = result[0]
@@ -293,7 +293,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
         result = await lt.select_ledger_transaction(date.year, date=date)
-        result = result[0][:-2]
+        result = result[0][:-1]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
         trans_id = result[0]
@@ -337,7 +337,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Updated', 3, 1, '', 2, 5000, None, None,
                         None, None, 0)
-        expect_data1 = (1, 1, 2, 5000, None)
+        expect_data1 = (1, 2, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': True,
                                 'expense': False, 'other': False},
@@ -360,7 +360,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         self.assertEqual(expect_rowcount, rowcount, msg.format(
             expect_rowcount, rowcount))
         result = await lt.select_ledger_transaction(date.year, date=date)
-        result = result[0][:-2]
+        result = result[0][:-1]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
         header_pk = result[0]
@@ -379,7 +379,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Updated', 1, 3, 'R9999', None, None, 1,
                         5000, None, None, 0)
-        expect_data1 = (1, 1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
@@ -403,7 +403,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
         result = await lt.select_ledger_transaction(date.year, date=date)
-        result = result[0][:-2]
+        result = result[0][:-1]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
         header_pk = result[0]
@@ -422,7 +422,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Updated', 1, 1, '', None, None, None,
                         None, 1, 5000, 0)
-        expect_data1 = (1, 1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000, None)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
@@ -448,7 +448,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
         result = await lt.select_ledger_transaction(date.year, date=date)
-        result = result[0][:-2]
+        result = result[0][:-1]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
         header_pk = result[0]
@@ -497,7 +497,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
         result = await lt.select_ledger_transaction(date.year, date=date)
-        result = result[0][:-2]
+        result = result[0][:-1]
         self.assertEqual(expect_data0, result, msg.format(
             expect_data0, result))
         trans_id = result[0]

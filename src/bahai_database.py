@@ -194,11 +194,56 @@ class Database(BaseDatabase):
         return await self._do_update_query(query, items)
 
     #
+    # Fiscal year balences methods.
+    #
+
+    async def select_fiscal_year_balances(self, year: int, a_type: int
+                                          ) -> tuple:
+        """
+        Select from the `fiscal_year_balances` table.
+
+        :param int year: The beginning fiscal year.
+        :param int a_type: An integer indicating the type of balance to
+                           retrive.
+        :returns: The balance data queried.
+        """
+        query = (f"SELECT * FROM {self._T_FISCAL_YEAR_BALANCES} AS fyb "
+                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = fyb.fy1fk "
+                 "WHERE fy.year = ? AND fyb.a_type = ?;")
+        rows = await self._do_select_query(query, (year, a_type))
+        return rows[0] if len(rows) == 1 else ()
+
+    async def insert_fiscal_year_balances(self, year: int, data: dict) -> int:
+        """
+        Insert into the `fiscal_year_balances` table.
+
+        :param int year: The beginning fiscal year.
+        :param dict data: The data to insert in this form:
+                          {'a_type': 1, 'balance': 10000}
+        :returns: The rowcount of the update.
+        :rtype: int
+        """
+        fy1 = await self.select_from_fiscal_year_table(year=year)
+
+        if fy1:
+            data['fy1fk'] = fy1[0]
+            now = badidatetime.datetime.now(self.utc_tzinfo)
+            data['mtime'] = now
+            query = (f"INSERT INTO {self._T_FISCAL_YEAR_BALANCES} (fy1fk, "
+                     "a_type, balance, mtime) VALUES (:fy1fk, :a_type, "
+                     ":balance, :mtime);")
+            rowcount = await self._do_insert_query(query, data)
+        else:
+            rowcount = 0
+
+        return rowcount
+
+    #
     # Month SELECT and INSERT methods.
     #
 
     async def select_from_month_table(self, *, name: str=None, order: int=None,
-                                      pk: int=None) -> list:
+                                      pk: int=None) -> list | tuple:
         """
         Select from the `month` table.
         """
@@ -206,16 +251,20 @@ class Database(BaseDatabase):
                 "Cannot query for more than one or none of the arguments.")
 
         if name:
-            where = f"WHERE month = {name}"
+            where = "WHERE month = ?"
+            params = (name,)
         elif order:
-            where = f"WHERE ord = {order}"
+            where = "WHERE ord = ?"
+            params = (order,)
         elif pk:
-            where = f"WHERE pk = {pk}"
+            where = "WHERE pk = ?"
+            params = (pk,)
         else:
             where = ""
+            params = ()
 
         query = (f"SELECT * FROM {self._T_MONTH} {where};")
-        data = await self._do_select_query(query)
+        data = await self._do_select_query(query, params)
         return data[0] if len(data) == 1 else data
 
     async def insert_into_month_table(self, months: list) -> int:
@@ -335,7 +384,7 @@ class Database(BaseDatabase):
             f"JOIN {self._T_FISCAL_YEAR} AS y1 ON y1.pk = d.fy1fk "
             "      AND y1.year = ? "
             f"JOIN {self._T_FISCAL_YEAR} AS y2 ON y2.pk = d.fy2fk "
-            "      AND y2.year = ? "
+            "      AND y2.year = ?;"
             )
         return await self._do_select_query(query, params)
 
@@ -457,7 +506,7 @@ class Database(BaseDatabase):
         query = ("SELECT m.pk, fy.pk, m.cal_year_month, m.participation, "
                  "m.outstanding, m.coh, m.membership, m.treasurer, "
                  f"m.locality, m.ctime, m.mtime FROM {self._T_MONTHLY} AS m "
-                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = m.fyfk "
+                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = m.fy1fk "
                  "WHERE fy.year = :year")
         return await self._do_select_query(query + where, data)
 
@@ -466,11 +515,11 @@ class Database(BaseDatabase):
         Insert all data into the monthly table.
 
         :param list data: The data from the any panel  in the form of:
-                          [(pk, fyfk, participation, outstanding, coh,
+                          [(pk, fy1fk, participation, outstanding, coh,
                             membership, treasurer, locality, ctime,
                             mtime), ...].
         """
-        query = (f"INSERT INTO {self._T_MONTHLY} (pk, fyfk, cal_year_month, "
+        query = (f"INSERT INTO {self._T_MONTHLY} (pk, fy1fk, cal_year_month, "
                  "participation, outstanding, coh, membership, treasurer, "
                  "locality, ctime, mtime) "
                  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
@@ -489,10 +538,10 @@ class Database(BaseDatabase):
         now = badidatetime.datetime.now(self.utc_tzinfo)
         data['ctime'] = data['mtime'] = now
         fy = await self.select_from_fiscal_year_table(year=year)
-        data['fyfk'] = fy[0]
-        query = (f"INSERT INTO {self._T_MONTHLY} (fyfk, cal_year_month, "
+        data['fy1fk'] = fy[0]
+        query = (f"INSERT INTO {self._T_MONTHLY} (fy1fk, cal_year_month, "
                  "participation, outstanding, coh, membership, treasurer, "
-                 "locality, ctime, mtime) VALUES (:fyfk, :cal_year_month, "
+                 "locality, ctime, mtime) VALUES (:fy1fk, :cal_year_month, "
                  ":participation, :outstanding, :coh, :membership, "
                  ":treasurer, :locality, :ctime, :mtime);")
         return await self._do_insert_query(query, data)
@@ -514,7 +563,7 @@ class Database(BaseDatabase):
                  "coh = :coh, membership = :membership, "
                  "treasurer = :treasurer, locality = :locality, "
                  f"mtime = :mtime FROM {self._T_FISCAL_YEAR} AS fy "
-                 "WHERE fy.pk = m.fyfk AND fy.year = :year "
+                 "WHERE fy.pk = m.fy1fk AND fy.year = :year "
                  "AND cal_year_month = :cal_year_month;")
         return await self._do_update_query(query, data)
 

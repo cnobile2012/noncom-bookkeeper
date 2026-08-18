@@ -557,9 +557,6 @@ class SearchResult(wx.Dialog):
 
         self.list_ctrl = DataViewListCtrl(self, wx.ID_ANY, style=DV_SINGLE)
         self.list_ctrl.SetMinSize((1600, 200))
-        # lc_bg_color = wx.Colour(255, 255, 200)
-        # self.list_ctrl.SetBackgroundColour(lc_bg_color)
-        # self.list_ctrl.SetForegroundColour(_fg_color)
         headers = ["Trans ID", "Fiscal Year", "Date", "Memo", "Trans Type",
                    "Entry Ref", "Number", "Bank Type", "Bank Amount",
                    "CoH Type", "Coh Amount", "Income Type", "Income Amount"]
@@ -623,7 +620,8 @@ class SearchResult(wx.Dialog):
         db = self._so.get_object('Database')
         mf = self._so.get_object('MainFrame')
         row = self.rows[display_row]
+
         data = db.convert_db_to_panel(row)
+        db.clear_panel('ledger', mf.panels['ledger'])
         db.populate_panel_values('ledger', mf.panels['ledger'], data)
-        #self.Destroy()
         event.Skip()

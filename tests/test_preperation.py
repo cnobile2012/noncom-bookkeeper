@@ -407,7 +407,7 @@ class TestDataPreperation(BaseAsyncTests):
                     result = await self.lt.select_ledger_transaction(
                         self.db.cache.year, **search)
                     self.assertEqual(1, len(result), "Wrong record count.")
-                    result = result[0][:-2]
+                    result = result[0][:-1]
                     self.assertEqual(expected, result, msg.format(
                         expected, search, result))
                 else:
@@ -476,7 +476,7 @@ class TestDataPreperation(BaseAsyncTests):
                     result = await self.lt.select_ledger_transaction(
                         self.db.cache.year, **search)
                     self.assertEqual(1, len(result), "Wrong record count.")
-                    result = result[0][:-2]
+                    result = result[0][:-1]
                     self.assertEqual(expected, result, msg.format(
                         expected, search, result))
                 else:
@@ -562,7 +562,7 @@ class TestDataPreperation(BaseAsyncTests):
                     result = await self.lt.select_ledger_transaction(
                         self.db.cache.year, **search)
                     self.assertEqual(1, len(result), "Wrong record count.")
-                    result = result[0][:-2]
+                    result = result[0][:-1]
                     self.assertEqual(expected, result, msg.format(
                         expected, search, result))
                 else:
@@ -614,7 +614,7 @@ class TestDataPreperation(BaseAsyncTests):
                     result = await self.lt.select_ledger_transaction(
                         self.db.cache.year, **search)
                     self.assertEqual(1, len(result), "Wrong record count.")
-                    result = result[0][:-2]
+                    result = result[0][:-1]
                     self.assertEqual(expected, result, msg.format(
                         expected, search, result))
                 else:

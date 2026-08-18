@@ -692,7 +692,7 @@ class DataPreperation:
             columns = self.db.get_db_columns(self.db._T_MONTHLY)
 
             for idx, key in enumerate(columns):
-                if key in ('pk', 'fyfk', 'cal_year_month', 'ctime', 'mtime'):
+                if key in ('pk', 'fy1fk', 'cal_year_month', 'ctime', 'mtime'):
                     continue
 
                 if key == 'outstanding':

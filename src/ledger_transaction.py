@@ -68,16 +68,6 @@ class LedgerTransaction:
 
         return items
 
-    # def revert_type_index(self, t_type: int, r_type: int) -> tuple:
-    #     """
-    #     Revert back to the panel view fields and value.
-
-    #     :param int t_type: The transaction type.
-    #     :param int r_type: The reference type.
-    #     :returns: The field name and value.
-    #     :rtype: tuple
-    #     """
-
     async def select_ledger_transaction(self, year, **kwargs) -> list:
         """
         Select a row from the vw_ledger_transaction view.
@@ -93,6 +83,16 @@ class LedgerTransaction:
                     where = f"AND {column} LIKE '%' || :{column} || '%' "
                 else:
                     where = f"AND {column} = :{column} "
+            elif value is None and column in ('b_type', 'c_type', 'i_type'):
+                match column:
+                    case 'b_type':
+                        types = "1, 2"
+                    case 'c_type':
+                        types = "1, 2"
+                    case 'i_type':
+                        types = "1, 2, 3"
+
+                where = f"AND {column} IN ({types}) "
             else:
                 where = ''
 
@@ -193,7 +193,7 @@ class LedgerTransaction:
         :rtype: tuple
         """
         now = badidatetime.datetime.now(self.db.utc_tzinfo)
-        self._header['ctime'] = self._header['mtime'] = now
+        self._header['ctime'] = now
         fy = await self.db.select_from_fiscal_year_table(year=year)
         self._header['fy1fk'] = fy[0]
         fy = await self.db.select_from_fiscal_year_table(year=year + 1)
@@ -206,9 +206,9 @@ class LedgerTransaction:
         self._header['ltfk'] = trans_pk
         self._header['lrfk'] = ref_pk
         query = (f"INSERT INTO {self.db._T_LEDGER_HEADER} (fy1fk, fy2fk, "
-                 "ltfk, lrfk, trans_id, date, memo, purge, ctime, mtime) "
+                 "ltfk, lrfk, trans_id, date, memo, purge, ctime) "
                  "VALUES (:fy1fk, :fy2fk, :ltfk, :lrfk, :trans_id, :date, "
-                 ":memo, :purge, :ctime, :mtime);")
+                 ":memo, :purge, :ctime);")
         cursor = await con.execute(query, self._header)
         return cursor.lastrowid, cursor.rowcount
 
@@ -300,10 +300,8 @@ class LedgerTransaction:
         :rtype: int
         """
         self._header['pk'] = header_pk
-        self._header['mtime'] = badidatetime.datetime.now(self.db.utc_tzinfo)
         query = (f"UPDATE {self.db._T_LEDGER_HEADER} SET date = :date, "
-                 "memo = :memo, purge = :purge, mtime = :mtime "
-                 "WHERE pk = :pk;")
+                 "memo = :memo, purge = :purge WHERE pk = :pk;")
         cursor = await con.execute(query, self._header)
         return cursor.rowcount
 

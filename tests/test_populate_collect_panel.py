@@ -59,8 +59,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels['organization']
-            self.db.populate_panel_values('organization', panel,
-                                          self._ORG_EMPTY)
+            self.db.clear_panel('organization', panel)
 
             for values, expected in data:
                 self.db.populate_panel_values('organization', panel, values)
@@ -82,7 +81,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels['budget']
-            self.db.populate_panel_values('budget', panel, self._BGT_EMPTY)
+            self.db.clear_panel('budget', panel)
 
             for values, expected in data:
                 self.db.populate_panel_values('budget', panel, values)
@@ -112,7 +111,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels['ledger']
-            self.db.populate_panel_values('ledger', panel, {})  # Clear all
+            self.db.clear_panel('ledger', panel)
 
             for ldg_data, expected in data:
                 self.db.populate_panel_values('ledger', panel, ldg_data)
@@ -126,26 +125,28 @@ class TestPopulateCollect(BaseAsyncTests):
         Test that the _check_panels_for_entries method correctly check
         if a given panel has entries.
         """
+        ldg_data0 = copy.deepcopy(self._LDG_DATA)
+        ldg_data0['panel']['transaction_id'] = 1
+        ldg_data0['transaction']['contribution'] = True
+        ldg_data0['reference']['ocs'] = True
+        ldg_data0['income']['local_fund'] = True
+        ldg_data0['income']['amount'] = '100.00'
+        ldg_data0['income']['balance'] = '100.00'
+
         data = (
             ('organization', {}, False),
             ('budget', {}, False),
-            # ('ledger',  {}, False),
+            ('ledger',  {}, False),
             ('organization', self._ORG_DATA, True),
             ('budget', self._BGT_DATA, True),
-            # ('ledger', self._LGD_DATA, True),
+            ('ledger', ldg_data0, True),
             )
         msg = "Expected {}, found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
             for panel_name, values, expected in data:
                 panel = self.fmf.panels[panel_name]
-
-                if panel_name == 'organization':
-                    empty_data = self._ORG_EMPTY
-                elif panel_name == 'budget':
-                    empty_data = self._BGT_EMPTY
-
-                self.db.populate_panel_values(panel_name, panel, empty_data)
+                self.db.clear_panel(panel_name, panel)
                 self.db.populate_panel_values(panel_name, panel, values)
                 result = self.db._check_panels_for_entries(panel_name)
                 self.assertEqual(expected, result, msg.format(
@@ -625,7 +626,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
             for row, expected in data:
                 # Set the panel empty
-                self.db.populate_panel_values('ledger', panel, self._LDG_DATA)
+                self.db.clear_panel('ledger', panel)
                 items = self.db.convert_db_to_panel(row)
                 self.db.populate_panel_values('ledger', panel, items)
                 result = self.db.collect_panel_values(panel)
@@ -783,8 +784,8 @@ class TestPopulateCollect(BaseAsyncTests):
                 items = self.db.ledger_search_panel(panel)
 
                 if items:
-                    # Remove the ctime and mtime
-                    result = [((item[0][:-2]), item[1]) for item in items]
+                    # Remove the ctime
+                    result = [((item[0][:-1]), item[1]) for item in items]
                 else:
                     result = items
 

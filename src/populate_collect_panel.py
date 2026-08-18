@@ -243,6 +243,39 @@ class PopulateCollect(AsyncEventLoop):
         elif panel_name == 'fiscal':  # First time run only.
             self._add_fiscal_year_choices(panel=panel)
 
+    def clear_panel(self, panel_name: str, panel: wx.Panel) -> None:
+        """
+        Clear all fields in a panel.
+
+        :param str name: The name of the panel.
+        :param wx.Panel panel: The panel object.
+        """
+        for w0, w1 in self.find_child_sets(panel):
+            name0, field_name, widget0 = w0
+
+            if w1:
+                name1, _, widget1 = w1
+
+            if name0 in self._EXCLUDE_WIDGETS: continue
+
+            if name0 == 'RadioBox':
+                widget0.SetSelection(0)
+            elif name0 == 'ComboBox':
+                widget0.SetSelection(-1)
+                widget0.SetValue('')
+            elif name0 == 'StaticText':
+                if name1 == 'TextCtrl':
+                    widget1.SetValue('')
+                elif name1 == 'BadiDatePickerCtrl':
+                    widget1.SetValue(badidatetime.date.today())
+                elif name1 == 'DatePickerCtrl':
+                    widget1.SetValue(wx.DateTime.Today())
+                elif name1 == 'ColorCheckBox':
+                    widget1.SetValue(False)
+
+                    if panel_name == 'ledger':
+                        widget1.Notify()
+
     def _set_statusbar(self, name: str, add_msg: str='.') -> None:
         """
         Log and send an error message to the panel status bar.
@@ -457,6 +490,55 @@ class PopulateCollect(AsyncEventLoop):
     def isfloat(self, value: str) -> bool:
         return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True
 
+    def find_balance(self, year: int, data: dict) -> int:
+        """
+        Find the current balance for the given search criteria.
+
+        :param int year: The beginning year of the fiscal year.
+        :param dict data: Query criteria.
+        :returns: The balance for the given search criteria.
+        :rtype: int
+
+        .. note::
+
+           Incoming data:
+           1. {'b_type': 1}
+           2. {'c_type': 2}
+           3. {'i_type': 1}
+        """
+        lt = LedgerTransaction(self)
+        rows = self.run_async(lt.select_ledger_transaction(year, **data))
+        key = list(data.keys())[0]
+        accum = 0
+
+        for row in rows:
+            match key:
+                case 'b_type':
+                    if row[7] == 1:
+                        accum += row[8]
+                    else:
+                        accum -= row[8]
+                case 'c_type':
+                    if row[9] == 1:
+                        accum += row[10]
+                    else:
+                        accum -= row[10]
+                case 'i_type':
+                    accum += row[12]
+                case 'expenses':
+                    for exp in self.run_async(lt.select_expenses(row[0])):
+                        accum += exp[2]
+                case _:
+                    assert False, f"Invalid search criteria {key}."
+
+        return accum
+
+    def save_row_to_history(self, row: tuple):
+        """
+        Save the update to the `ledger_transaction_history` table.
+        """
+        pass
+
     def convert_db_to_panel(self, row: tuple) -> dict:
         """
         Convert a row from the ledger tables to data usable for populating
@@ -464,11 +546,12 @@ class PopulateCollect(AsyncEventLoop):
 
         .. note::
 
-           ((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
-             3, 1, '', 2, 30000, None, None, None, None, 0,
-             <badidatetime.datetime>, <badidatetime.datetime>),
-            [(5, 'national_baháí_fund', 20000),
-             (5, 'regional_baháí_council', 10000)])
+           1. Incoming data:
+              ((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
+                3, 1, '', 2, 30000, None, None, None, None, 0,
+                <badidatetime.datetime>, <badidatetime.datetime>),
+               [(5, 'national_baháí_fund', 20000),
+                (5, 'regional_baháí_council', 10000)])
         """
         def db_to_panel(fn: str, value: str | int, mapping: dict) -> bool:
             return fn == mapping[value]

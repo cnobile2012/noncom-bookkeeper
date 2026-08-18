@@ -381,8 +381,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         Insert the ledger_header data.
         """
         query = (f"INSERT INTO {self.db._T_LEDGER_HEADER} (pk, fy1fk, fy2fk, "
-                 "ltfk, lrfk, trans_id, date, memo, purge, ctime, mtime) "
-                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
+                 "ltfk, lrfk, trans_id, date, memo, purge, ctime) "
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount
 
@@ -390,8 +390,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         """
         Insert the ledger_bank data.
         """
-        query = (f"INSERT INTO {self.db._T_LEDGER_BANK} (pk, lhfk, b_type, "
-                 "amount, balance) VALUES (?, ?, ?, ?, ?);")
+        query = (f"INSERT INTO {self.db._T_LEDGER_BANK} (lhfk, b_type, "
+                 "amount, balance) VALUES (?, ?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount
 
@@ -399,8 +399,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         """
         Insert the ledger_coh data.
         """
-        query = (f"INSERT INTO {self.db._T_LEDGER_COH} (pk, lhfk, c_type, "
-                 "amount, balance) VALUES (?, ?, ?, ?, ?);")
+        query = (f"INSERT INTO {self.db._T_LEDGER_COH} (lhfk, c_type, "
+                 "amount, balance) VALUES (?, ?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount
 
@@ -408,8 +408,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         """
         Insert the ledger_income data.
         """
-        query = (f"INSERT INTO {self.db._T_LEDGER_INCOME} (pk, lhfk, i_type, "
-                 "amount, balance) VALUES (?, ?, ?, ?, ?);")
+        query = (f"INSERT INTO {self.db._T_LEDGER_INCOME} (lhfk, i_type, "
+                 "amount, balance) VALUES (?, ?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount
 
