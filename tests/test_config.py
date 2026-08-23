@@ -36,6 +36,22 @@ class TestSettingsBorg(unittest.TestCase):
         self._set.testing = False
 
     #@unittest.skip("Temporarily skipped")
+    def test_log_level_setter_getter(self):
+        """
+        Test that the log_level properties set and get the logging level.
+        """
+        data = (
+            (False, False),
+            (True, True),
+            )
+        msg = "Expected {} found {}"
+
+        for set, expected in data:
+            self._set.log_level = set
+            result = self._set.log_level
+            self.assertEqual(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
     def test_debug_setter_getter(self):
         """
         Test that the debug properties cause the directory environment

@@ -5,6 +5,8 @@
 __docformat__ = "restructuredtext en"
 
 import os
+import ctypes
+import ctypes.util
 import time
 import pytest
 import tracemalloc
@@ -44,6 +46,31 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
 
     for name, elapsed in sorted(slow_tests, key=lambda x: x[1], reverse=True,):
         terminalreporter.write_line(f"{elapsed:8.3f}s  {name}")
+
+
+def _install_glib_log_filter():
+    libglib = ctypes.util.find_library("glib-2.0")
+    if not libglib:
+        return None
+    glib = ctypes.CDLL(libglib)
+
+    G_LOG_LEVEL_CRITICAL = 1 << 3
+    G_LOG_LEVEL_WARNING = 1 << 4
+
+    LOG_FUNC = ctypes.CFUNCTYPE(None, ctypes.c_char_p, ctypes.c_int,
+                                ctypes.c_char_p, ctypes.c_void_p)
+
+    def _null_log_handler(log_domain, log_level, message, user_data):
+        pass  # swallow silently
+
+    handler_ref = LOG_FUNC(_null_log_handler)  # keep a reference alive!
+    glib.g_log_set_handler(
+        b"Gtk", G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_WARNING, handler_ref,
+        None)
+    return handler_ref
+
+
+_glib_handler_keepalive = _install_glib_log_filter()
 
 
 s = Settings()

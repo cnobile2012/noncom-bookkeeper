@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# tests/base_database_test.py
+# tests/test_base_database.py
 #
 __docformat__ = "restructuredtext en"
 

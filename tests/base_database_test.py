@@ -172,9 +172,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         StoreObjects().set_object(cls._db.__class__.__name__, cls._db)
         cls._db.testing = True
         cls._db.create_dirs()
-        cls.app = wx.GetApp()
 
-        if cls.app is None:
+        if not wx.GetApp():
             cls.app = wx.App(False)
 
         cls.frame = FakeMainFrame(options=Options())

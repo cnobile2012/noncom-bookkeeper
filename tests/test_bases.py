@@ -139,7 +139,11 @@ class TestBaseGenerated(unittest.TestCase):
             def get_selection(self, event):
                 pass
 
-        app = wx.App()
+        app = wx.GetApp()
+
+        if app is None:
+            app = wx.App(False)
+
         frame = FakeFrame()
         data = (
             # panel,             value,       init,  sel,   expect
@@ -179,7 +183,11 @@ class TestBaseGenerated(unittest.TestCase):
                 self.locale_prefix = {selection: text}
                 self.widget_00 = FakeWidget()
 
-        app = wx.App()
+        app = wx.GetApp()
+
+        if app is None:
+            app = wx.App(False)
+
         kwargs = {'selection': 'my_selecttion', 'text': "String of text."}
         frame = FakeFrame()
         panel = FakePanel(frame, **kwargs)

@@ -708,7 +708,7 @@ class TomlCreatePanel(BaseSystemData):
 
     def add_name(self, name: str, key_num: int=None) -> None:
         """
-        Add the named StaticText and it companion the TextCtrl to the end
+        Add the named StaticText and its companion the TextCtrl to the end
         Toml file. If `key_num` is provided the `key_num is the x coordinate
         and 0 will be the y continent.
 
@@ -742,7 +742,7 @@ class TomlCreatePanel(BaseSystemData):
 
     def remove_name(self, name):
         """
-        Remove the named StaticText and it companion the TextCtrl from
+        Remove the named StaticText and its companion the TextCtrl from
         the Toml file.
 
         :param name: The value name of the StaticText widget.

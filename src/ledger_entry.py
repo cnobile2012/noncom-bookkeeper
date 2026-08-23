@@ -80,7 +80,7 @@ class _CreateWidgets:
         else:
             try:
                 labels = next(label_gen)
-            except StopIteration:
+            except StopIteration:  # pragma: no cover
                 pass
 
         return title, labels
@@ -96,6 +96,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
     def __init__(self, parent, id=wx.ID_ANY, *args, **kwargs):
         super().__init__(parent, id, *args, **kwargs)
         BasePanel.__init__(self, *args, **kwargs)
+        self.sd = None
         self._so = StoreObjects()
         self.frame = parent.GetParent()
         self.dirty = False
@@ -337,10 +338,11 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
                  wx.FRAME_FLOAT_ON_PARENT | wx.FRAME_FLOAT_ON_PARENT)
         frame = wx.Frame(self, title="Search Ledger", style=style)
         frame.SetSize((400, 600))
-        SearchDialog(frame, bg_color=self.bg_color, fg_color=self.w_fg_color)
-        frame.Show()
+        self.sd = SearchDialog(frame, bg_color=self.bg_color,
+                               fg_color=self.w_fg_color)
+        frame.Show(True)
 
-    def on_expense_changed(self, event):
+    def on_expense_changed(self, event) -> None:
         if not self.initializing:
             self.dirty = True
 
@@ -451,7 +453,7 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         title_data, labels = self._next_title_and_labels(title_gen, label_gen)
         pos += 2
 
-        while title_data is not None and labels is not None:
+        while None not in (title_data, labels):
             title, num_cb, num_txt, cb_pos, span, btn = title_data[:6]
             button, pos = self._make_heading(title, pos, span=span, btn=btn)
             pos = self.create_widgets(num_cb, num_txt, cb_pos, labels, pos,
@@ -480,7 +482,7 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
 
         panel_0 = wx.Panel(self)
         sizer_1 = wx.StdDialogButtonSizer()
-        search_byn = wx.Button(panel_0, wx.ID_FORWARD, label='&Search')
+        search_byn = wx.Button(panel_0, wx.ID_FORWARD, label='&Continue')
         search_byn.SetMinSize((-1, -1))
         search_byn.SetBackgroundColour(wx.Colour(50, 50, 204))
         search_byn.Bind(wx.EVT_BUTTON, self.button_search)
@@ -493,7 +495,6 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         sizer_1.Realize()
         panel_0.SetSizer(sizer_1)
         self.gbs.Add(panel_0, (pos, 0), (1, 2), wx.EXPAND, 0)
-
         self.SetupScrolling(rate_x=20, rate_y=40)
 
     def button_search(self, event):
@@ -505,10 +506,10 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         cap = "Search Results"
 
         if rows:
-            dlg = SearchResult(self.parent, msg, cap, rows=rows, bg_color=bg,
-                               fg_color=fgw)
+            self._dlg = SearchResult(self.parent, msg, cap, rows=rows,
+                                     bg_color=bg, fg_color=fgw)
             self.parent.Hide()
-            dlg.ShowModal()
+            self._dlg.ShowModal()
         else:
             msg = ("Found no results.")
             self.warn_text.SetLabel(msg)
@@ -519,6 +520,7 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         event.Skip()
 
     def button_cancel(self, event):
+        self.parent.Parent.sd = None
         event.Skip()
         self.parent.Destroy()
 
@@ -575,7 +577,7 @@ class SearchResult(wx.Dialog):
         for row in rows:
             display_row = []
 
-            for idx, itm in enumerate(row[0][:-3]):
+            for idx, itm in enumerate(row[0][:-2]):  # Remove purge & ctime
                 match idx:
                     case 4:
                         itm = trn_map[itm]
@@ -620,7 +622,6 @@ class SearchResult(wx.Dialog):
         db = self._so.get_object('Database')
         mf = self._so.get_object('MainFrame')
         row = self.rows[display_row]
-
         data = db.convert_db_to_panel(row)
         db.clear_panel('ledger', mf.panels['ledger'])
         db.populate_panel_values('ledger', mf.panels['ledger'], data)

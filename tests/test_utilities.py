@@ -11,6 +11,8 @@ from . import check_flag
 from src.utilities import (Borg, StoreObjects, GridBagSizer,
                            ConfirmationDialog, _ClickPosition, EventStaticText)
 
+from .base_database_test import BaseAsyncTests
+
 
 class TestBorg(unittest.TestCase):
 
@@ -125,20 +127,15 @@ class TestStoreObjects(unittest.TestCase):
         self.assertEqual(expect, found, msg)
 
 
-class BaseTests(unittest.TestCase):
+class BaseTests(BaseAsyncTests):
 
     def __init__(self, name):
         super().__init__(name)
 
     @classmethod
     def setUpClass(cls):
-        cls.app = wx.App(False)
+        super().setUpClass()
         cls.create_objects(cls)
-
-    @classmethod
-    def tearDownClass(self):
-        if wx.GetApp():
-            wx.GetApp().Destroy()
 
     def create_objects(self):
         self.frame = wx.Frame(None)
@@ -311,7 +308,11 @@ class TestConfirmationDialog(unittest.TestCase):
         if self.frame: self.frame.Destroy()
 
     def setup_config_dialog(self, msg, cap, *, bg_color=None, fg_color=None):
-        app = wx.App()
+        app = wx.GetApp()
+
+        if app is None:
+            app = wx.App(False)
+
         self.frame = wx.Frame(None)
         cd = ConfirmationDialog(self.frame, msg, cap, bg_color=bg_color,
                                 fg_color=fg_color)
@@ -462,8 +463,8 @@ class TestEventStaticText(BaseTests):
         check_flag(self.__class__.__name__)
         self.create_objects()
 
-    def tearDown(self):
-        self.app.ExitMainLoop()
+    # def tearDown(self):
+    #     self.app.ExitMainLoop()
 
     def get_widget(self, index=0):
         return self.frame.GetChildren()[index]
@@ -504,7 +505,6 @@ class TestEventStaticText(BaseTests):
     def test_WidgetEvent_data(self):
         """
         Test that the WidgetEvent data returns properly.
-        ** Must have a GUI display to not fail. **
         """
         widget = self.get_widget(1)
         expected_label = widget.GetLabel()
@@ -525,7 +525,7 @@ class TestEventStaticText(BaseTests):
 
         self.frame.Bind(widget.EVT_CLICK_POSITION, event_click,
                         id=widget.GetId())
-        self.frame.Show()
+        # self.frame.Show()  # Not needed to pass tests.
         self.simulate_left_click(widget)
         wx.CallLater(250, self.app.ExitMainLoop)
         self.app.MainLoop()

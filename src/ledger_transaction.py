@@ -470,3 +470,9 @@ class LedgerTransaction:
         query = f"DELETE FROM {self.db._T_LEDGER_EXPENSE} WHERE lhfk = :lhfk;"
         await con.execute(query, {'lhfk': header_pk})
         return await self._insert_expenses(con, header_pk)
+
+    async def select_transaction_history(self, *, history_id: int=None,
+                                         trans_id: int=None) -> list:
+        """
+        Select the 
+        """

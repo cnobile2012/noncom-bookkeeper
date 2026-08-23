@@ -419,6 +419,8 @@ class MutuallyExclusiveWidgets:
                    for lb in labels[1:]), f"Invalid label(s) in {labels[1:]}."
 
         start_pos = pos_idx
+        self._CHECKBOXES = {}
+        self._TEXTCTRLES = {}
         cb_list = self._CHECKBOXES.setdefault(label, [])
         tc_list = self._TEXTCTRLES.setdefault(label, [])
         tmp_label = make_name(label)

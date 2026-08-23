@@ -50,7 +50,10 @@ class TestCustomTextCtrl(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.app = wx.App(False)
+        cls.app = wx.GetApp()
+
+        if cls.app is None:
+            cls.app = wx.App(False)
 
     @classmethod
     def tearDownClass(cls):
@@ -154,7 +157,11 @@ class TestBadiDateChangedEvent(unittest.TestCase):
 
 #     def setUp(self):
 #         check_flag(self.__class__.__name__)
-#         self.app = wx.App(False)
+#          app = wx.GetApp()
+
+#          if app is None:
+#              app = wx.App(False)
+
 #         self.frame = FakeFrame()
 #         self.panel = FakePanel(self.frame)
 

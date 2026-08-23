@@ -12,20 +12,21 @@ from src.settings import FiscalSettings, Paths
 from src.custom_widgits import EVT_COLOR_CHECKBOX
 
 from . import FakeFrame, FakePanel, check_flag
+from .base_database_test import BaseAsyncTests
 
 
-class TestFiscalSettings(unittest.TestCase):
+class TestFiscalSettings(BaseAsyncTests):
 
     def __init__(self, name):
         super().__init__(name)
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        self.app = wx.App(False)
 
     def tearDown(self):
-        hasattr(self, 'frame') and self.frame.Destroy()
-        self.app.Destroy()
+        if hasattr(self, 'frame') and self.frame:
+            self.frame.Hide()
+            self.frame.Destroy()
 
     def create_fiscal_settings_instance(self):
         self.frame = FakeFrame()
@@ -37,8 +38,7 @@ class TestFiscalSettings(unittest.TestCase):
     def fire_event(self, widget, evt_type):
         event = wx.CommandEvent(evt_type.typeId, widget.GetId())
         event.SetEventObject(widget)
-        wx.PostEvent(widget, event)
-        wx.Yield()
+        widget.GetEventHandler().ProcessEvent(event)
 
     #@unittest.skip("Temporarily skipped")
     def test_constructor(self):
@@ -93,7 +93,13 @@ class TestPaths(unittest.TestCase):
         check_flag(self.__class__.__name__)
         Settings()
 
+        if not wx.GetApp():
+            self.app = wx.App(False)
+
     def tearDown(self):
+        if self.app:
+            self.app.Destroy()
+
         Settings().clear_state()
 
     #@unittest.skip("Temporarily skipped")
@@ -113,7 +119,6 @@ class TestPaths(unittest.TestCase):
         """
         Test that the color for the property background_color is returned.
         """
-        app = wx.App()
         paths = Paths(FakeFrame(None))
         expected_result = paths._bg_color
         bg_color = paths.background_color

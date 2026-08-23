@@ -63,7 +63,7 @@ tar	: clobber
 tests	: clobber
 	@rm -rf $(DOCS_DIR)/htmlcov
 	@mkdir -p $(LOGS_DIR)
-	@coverage erase --rcfile=$(COVERAGE_FILE)
+	@coverage erase --rcfile=$(COVERAGE_FILE)  # --capture=fd
 	@coverage run --rcfile=$(COVERAGE_FILE) -m pytest --capture=tee-sys \
             --ignore tests/individual $(TEST_PATH)
 	@coverage report -m --rcfile=$(COVERAGE_FILE)

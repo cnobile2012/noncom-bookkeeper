@@ -72,8 +72,8 @@ class FakeMainFrame(wx.Frame):
                     self.__panel_classes[panel] = globals(
                         )[class_name](self, *self.args, **self.kwargs)
 
-        self.__panel_classes['ledger'] = LedgerDataEntry(self, *self.args,
-                                                         **self.kwargs)
+            self.__panel_classes['ledger'] = LedgerDataEntry(self, *self.args,
+                                                             **self.kwargs)
 
     @property
     def panels(self):
@@ -104,7 +104,7 @@ class FakeMainFrame(wx.Frame):
 
     @property
     def statusbar_message(self):
-        return self_message
+        return self._message
 
     @statusbar_message.setter
     def statusbar_message(self, value):
