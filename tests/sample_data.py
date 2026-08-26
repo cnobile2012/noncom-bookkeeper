@@ -42,7 +42,6 @@ TEST_DATA = {'fiscal_year': [(1, 183, 3, 5, 1, 1, 0,
                              (2, 184, 3, 5, 0, 0, 0,
                               badidatetime.datetime(183, 8, 6, None, None, 22, 49, 50, 106000, tzinfo=badidatetime.timezone.utc),
                               badidatetime.datetime(183, 8, 6, None, None, 22, 49, 50, 106000, tzinfo=badidatetime.timezone.utc))],
-             'fiscal_year_balances': [],
              'month': [(1, 'Bahá', 1,
                         badidatetime.datetime(183, 8, 6, None, None, 22, 49, 50, 116800, tzinfo=badidatetime.timezone.utc)),
                        (2, 'Jalál', 2,
@@ -370,30 +369,124 @@ TEST_DATA = {'fiscal_year': [(1, 183, 3, 5, 1, 1, 0,
                           badidatetime.datetime(183, 7, 18, None, None, 6, 42, 55, 774800, tzinfo=badidatetime.timezone.utc)),
                          (6, 1, (183, 8), 20, 0, 0, 20, 'Joe Schmo', 0,
                           badidatetime.datetime(183, 8, 5, None, None, 18, 43, 20, 85600, tzinfo=badidatetime.timezone.utc),
-                          badidatetime.datetime(183, 8, 5, None, None, 18, 43, 55, 92000, tzinfo=badidatetime.timezone.utc))],
+                          badidatetime.datetime(183, 8, 5, None, None, 18, 43, 55, 92000, tzinfo=badidatetime.timezone.utc)),
+                         (7, 1, (183, 9), 20, 0, 0, 20, 'Joe Schmo', 0,
+                          badidatetime.datetime(183, 9, 3, None, None, 5, 43, 27, 750000, tzinfo=badidatetime.timezone.utc),
+                          badidatetime.datetime(183, 9, 3, None, None, 5, 43, 27, 750000, tzinfo=badidatetime.timezone.utc))],
              'report_type': [],
              'report_pivot': [],
-             'ledger_header': [(1, 1, 2, 1, 1, 1, badidatetime.date(183, 7, 19),
-                                'Test OCS Contribution', 0,
-                                badidatetime.datetime(183, 7, 19, None, None, 0, 39, 42, 674400, tzinfo=badidatetime.timezone.utc)),
-                               (2, 1, 2, 2, 2, 2, badidatetime.date(183, 8, 5),
-                                'Test OCS Contribution', 0,
-                                badidatetime.datetime(183, 8, 5, None, None, 18, 44, 55, 122000, tzinfo=badidatetime.timezone.utc)),
-                               (3, 1, 2, 3, 3, 3, badidatetime.date(183, 8, 7),
-                                'Test OCS Distribution', 0,
-                                badidatetime.datetime(183, 8, 7, None, None, 5, 8, 13, 840800, tzinfo=badidatetime.timezone.utc)),
-                               (4, 1, 2, 4, 4, 4, badidatetime.date(183, 8, 7),
-                                'Test CoH Distribution', 0,
-                                badidatetime.datetime(183, 8, 7, None, None, 5, 17, 28, 262400, tzinfo=badidatetime.timezone.utc)),
-                               (5, 1, 2, 5, 5, 5, badidatetime.date(183, 8, 10),
-                                'Test expenses', 0,
-                                badidatetime.datetime(183, 8, 10, None, None, 6, 18, 27, 925200, tzinfo=badidatetime.timezone.utc))],
-             'ledger_transaction': [(1, 1), (2, 1), (3, 2), (4, 2), (5, 3)],
-             'ledger_reference': [(1, 1, ''), (2, 1, ''), (3, 1, ''),
-                                  (4, 4, '2026-08-06'), (5, 1, '')],
-             'ledger_bank': [(3, 1, 5000, ''), (4, 1, 5000, ''),
-                             (5, 2, 30000, '')],
-             'ledger_coh': [(4, 2, 5000, '')],
-             'ledger_income': [(1, 1, 5000, ''), (2, 1, 2000, '')],
-             'ledger_expense': [(5, 30, 20000), (5, 36, 10000)],
-             'ledger_transaction_history': []}
+             'ledger_header': [(1, 1, 2, 1, 1, 1, badidatetime.date(183, 9, 6),
+                                'Test OSC distribution', 0,
+                                badidatetime.datetime(183, 9, 6, None, None, 5, 49, 58, 764000, tzinfo=badidatetime.timezone.utc)),
+                               (2, 1, 2, 2, 2, 2, badidatetime.date(183, 9, 6),
+                                'Test OSC contribution', 0,
+                                badidatetime.datetime(183, 9, 6, None, None, 5, 51, 8, 784000, tzinfo=badidatetime.timezone.utc)),
+                               (3, 1, 2, 3, 3, 3, badidatetime.date(183, 9, 6),
+                                'Test contribution receipt', 0,
+                                badidatetime.datetime(183, 9, 6, None, None, 5, 52, 53, 817600, tzinfo=badidatetime.timezone.utc)),
+                               (4, 1, 2, 4, 4, 4, badidatetime.date(183, 9, 6),
+                                'Test expense', 0,
+                                badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 826400, tzinfo=badidatetime.timezone.utc))],
+             'ledger_transaction': [(1, 2), (2, 1), (3, 1), (4, 3)],
+             'ledger_reference': [(1, 1, ''), (2, 1, ''), (3, 3, 'R1000'),
+                                  (4, 1, '')],
+             'ledger_bank': [(1, 1, 15000), (4, 2, 25000)],
+             'ledger_coh': [(3, 1, 2500)],
+             'ledger_income': [(2, 1, 5000), (3, 1, 2500)],
+             'ledger_expense': [(4, 30, 15000), (4, 39, 10000)],
+             'ledger_transaction_history': [(1, 1, 1, 1,
+                                             '{"panel": {"transaction_id": "", '
+                                             '"date": "0183-09-06", "memo": '
+                                             '"Test OSC distribution", '
+                                             '"total_expenses": "", "purge": 0}, '
+                                             '"transaction": {"contribution": '
+                                             'false, "distribution": true, '
+                                             '"expense": false, "other": false}, '
+                                             '"reference": {"ocs": true, '
+                                             '"check": false, "receipt": false, '
+                                             '"deposit": false, "number": ""}, '
+                                             '"bank": {"deposit": true, '
+                                             '"withdrawal": false, "amount": '
+                                             '15000}, "coh": {"replenishment": '
+                                             'false, "disbursement": false, '
+                                             '"amount": ""}, "income": '
+                                             '{"local_fund": false, '
+                                             '"contributed_expense": false, '
+                                             '"other": false, "amount": ""}, '
+                                             '"expenses": {}}',
+                                             badidatetime.datetime(183, 9, 6, None, None, 5, 49, 58, 778400, tzinfo=badidatetime.timezone.utc)),
+                                            (2, 1, 2, 2,
+                                             '{"panel": {"transaction_id": "", '
+                                             '"date": "0183-09-06", "memo": '
+                                             '"Test OSC contribution", '
+                                             '"total_expenses": "", "purge": 0}, '
+                                             '"transaction": {"contribution": '
+                                             'true, "distribution": false, '
+                                             '"expense": false, "other": false}, '
+                                             '"reference": {"ocs": true, '
+                                             '"check": false, "receipt": false, '
+                                             '"deposit": false, "number": ""}, '
+                                             '"bank": {"deposit": false, '
+                                             '"withdrawal": false, "amount": '
+                                             '""}, "coh": {"replenishment": '
+                                             'false, "disbursement": false, '
+                                             '"amount": ""}, "income": '
+                                             '{"local_fund": true, '
+                                             '"contributed_expense": false, '
+                                             '"other": false, "amount": 5000}, '
+                                             '"expenses": {}}',
+                                             badidatetime.datetime(183, 9, 6, None, None, 5, 51, 8, 794800, tzinfo=badidatetime.timezone.utc)),
+                                            (3, 1, 3, 3,
+                                             '{"panel": {"transaction_id": "", '
+                                             '"date": "0183-09-06", "memo": '
+                                             '"Test contribution receipt", '
+                                             '"total_expenses": "", "purge": 0}, '
+                                             '"transaction": {"contribution": '
+                                             'true, "distribution": false, '
+                                             '"expense": false, "other": false}, '
+                                             '"reference": {"ocs": false, '
+                                             '"check": false, "receipt": true, '
+                                             '"deposit": false, "number": '
+                                             '"R1000"}, "bank": {"deposit": '
+                                             'false, "withdrawal": false, '
+                                             '"amount": ""}, "coh": '
+                                             '{"replenishment": true, '
+                                             '"disbursement": false, "amount": '
+                                             '2500}, "income": {"local_fund": '
+                                             'true, "contributed_expense": '
+                                             'false, "other": false, "amount": '
+                                             '2500}, "expenses": {}}',
+                                             badidatetime.datetime(183, 9, 6, None, None, 5, 52, 53, 828400, tzinfo=badidatetime.timezone.utc)),
+                                            (4, 1, 4, 4,
+                                             '{"panel": {"transaction_id": "", '
+                                             '"date": "0183-09-06", "memo": '
+                                             '"Test expense", "total_expenses": '
+                                             '25000, "purge": 0}, "transaction": '
+                                             '{"contribution": false, '
+                                             '"distribution": false, "expense": '
+                                             'true, "other": false}, '
+                                             '"reference": {"ocs": true, '
+                                             '"check": false, "receipt": false, '
+                                             '"deposit": false, "number": ""}, '
+                                             '"bank": {"deposit": false, '
+                                             '"withdrawal": true, "amount": '
+                                             '25000}, "coh": {"replenishment": '
+                                             'false, "disbursement": false, '
+                                             '"amount": ""}, "income": '
+                                             '{"local_fund": false, '
+                                             '"contributed_expense": false, '
+                                             '"other": false, "amount": ""}, '
+                                             '"expenses": '
+                                             '{"national_bah\\u00e1\\u00ed_fund": '
+                                             '15000, '
+                                             '"shrine_of_abdul_bah\\u00e1": '
+                                             '10000}}',
+                                             badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 837200, tzinfo=badidatetime.timezone.utc))],
+             'ledger_balances': [(1, 1, -10000,
+                                  badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 848000, tzinfo=badidatetime.timezone.utc)),
+                                 (1, 3, 7500,
+                                  badidatetime.datetime(183, 9, 6, None, None, 5, 52, 53, 860800, tzinfo=badidatetime.timezone.utc)),
+                                 (1, 2, 2500,
+                                  badidatetime.datetime(183, 9, 6, None, None, 5, 52, 53, 842800, tzinfo=badidatetime.timezone.utc)),
+                                 (1, 4, 25000,
+                                  badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 858800, tzinfo=badidatetime.timezone.utc))]}

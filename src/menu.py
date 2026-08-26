@@ -254,6 +254,7 @@ class MenuBar:
         if 'ledger' not in self.panels:
             self.panels = ('ledger', LedgerDataEntry(self.parent))
 
+        self.db.clear_panel('ledger', self.panels['ledger'])
         self._do_panel_switch('ledger')
 
     def edit_fiscal_year(self, event):  # TODO Has screen fill issues

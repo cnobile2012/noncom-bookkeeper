@@ -151,19 +151,22 @@ class MainFrame(wx.Frame, MenuBar):
                             panel.save = False
                             do_save(name, panel)
 
-                            if hasattr(panel, 'reset_buttons'):  # ledger
+                            if name == 'ledger':
+                                self.db.clear_panel('ledger', panel)
+                                panel.reset_buttons()
+                        elif panel.cancel:
+                            if name == 'ledger':
+                                self.db.clear_panel('ledger', panel)
+                                panel.reset_buttons()
+                            else:
+                                panel.cancel = False
                                 data = self._reset_panel(name)
                                 self.db.populate_panel_values(
                                     name, panel, data)
-                                panel.reset_buttons()
-                        elif panel.cancel:
-                            panel.cancel = False
-                            data = self._reset_panel(name)
-                            self.db.populate_panel_values(name, panel, data)
-                            panel.dirty = False
-                            c_name = name.capitalize()
-                            self.statusbar_message = (
-                                f"Finished restoring {c_name} data.")
+                                panel.dirty = False
+                                c_name = name.capitalize()
+                                self.statusbar_message = (
+                                    f"Finished restoring {c_name} data.")
                     else:
                         self.statusbar_message = f"Saving {name} data."
                         do_save(name, panel)
@@ -178,8 +181,6 @@ class MainFrame(wx.Frame, MenuBar):
                 data = self.db.dp.budget_data
             case 'monthly':
                 data = self.db.dp.monthly_data
-            case 'ledger':
-                data = self.db.dp.ledger_data
 
         return data
 

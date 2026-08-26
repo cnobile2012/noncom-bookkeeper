@@ -43,9 +43,9 @@ class TestLedgerTransaction(BaseAsyncTests):
         await self.truncate_all_tables()
 
     #@unittest.skip("Temporarily skipped")
-    def test__make_types(self):
+    def test__make_type_index(self):
         """
-        Test that the _make_types method converts linear values into a
+        Test that the _make_type_index method converts linear values into a
         sequence of numbers.
         """
         trans_data = copy.deepcopy(self._LDG_DATA['transaction'])
@@ -85,12 +85,76 @@ class TestLedgerTransaction(BaseAsyncTests):
             self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
+    def test_serialize_data(self):
+        """
+        Test that the serialize_data method serializes the given dictionary
+        to a JSON object.
+        """
+        lt = LedgerTransaction(self.db)
+        date = badidatetime.date(183, 3, 5)
+        dt_data = {'panel': {'date': date, 'purge': 0, 'memo': "Something"},
+                   'transaction': {'contribution': False, 'distribution': True,
+                                   'expense': False, 'other': False},
+                   'reference': {'ocs': True, 'check': False, 'receipt': False,
+                                 'deposit': False, 'number': ''},
+                   'bank': {'deposit': True, 'withdrawal': False,
+                            'amount': 5000, 'balance': None}
+                   }
+        expect0 = ('{"panel": {"date": "0183-03-05", "purge": 0, '
+                   '"memo": "Something"}, "transaction": {"contribution": '
+                   'false, "distribution": true, "expense": false, "other": '
+                   'false}, "reference": {"ocs": true, "check": false, '
+                   '"receipt": false, "deposit": false, "number": ""}, '
+                   '"bank": {"deposit": true, "withdrawal": false, '
+                   '"amount": 5000, "balance": null}}')
+
+        data = (
+            (dt_data, expect0),
+            )
+        msg = "Expected {}, found {}."
+
+        for test_data, expected in data:
+            result = lt.serialize_data(test_data)
+            self.assertEqual(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_deserialize_data(self):
+        """
+        Test that the deserialize_data method deserializes a JSON object
+        to a dictionary.
+        """
+        lt = LedgerTransaction(self.db)
+        d_json0 = ('{"panel": {"date": "0183-03-05", "purge": 0, '
+                   '"memo": "Something"}, "transaction": {"contribution": '
+                   'false, "distribution": true, "expense": false, "other": '
+                   'false}, "reference": {"ocs": true, "check": false, '
+                   '"receipt": false, "deposit": false, "number": ""}, '
+                   '"bank": {"deposit": true, "withdrawal": false, '
+                   '"amount": 5000, "balance": null}}')
+        date = badidatetime.date(183, 3, 5)
+        expect0 = {'panel': {'date': date, 'purge': 0, 'memo': "Something"},
+                   'transaction': {'contribution': False, 'distribution': True,
+                                   'expense': False, 'other': False},
+                   'reference': {'ocs': True, 'check': False, 'receipt': False,
+                                 'deposit': False, 'number': ''},
+                   'bank': {'deposit': True, 'withdrawal': False,
+                            'amount': 5000, 'balance': None}
+                   }
+        data = (
+            (d_json0, expect0),
+            )
+        msg = "Expected {}, found {}."
+
+        for test_json, expected in data:
+            result = lt.deserialize_data(test_json)
+            self.assertEqual(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
     async def test_select_ledger_transaction(self):
         """
         Test that the select_ledger_transaction method selects
         ledger_transaction data properly.
         """
-        #print(self.db.cache.get('field_type', r_type='budget'))
         msg = "Expected {}, found {}."
         # date and trans_id querys
         date = badidatetime.date(183, 3, 5)
@@ -104,7 +168,9 @@ class TestLedgerTransaction(BaseAsyncTests):
                    }
         lt = LedgerTransaction(self.db, dt_data)
         rowcount = await lt.insert_ledger_transaction(183)
-        self.assertEqual(4, rowcount, msg.format(4, rowcount))
+        expected_records = 6
+        self.assertEqual(expected_records, rowcount, msg.format(
+            expected_records, rowcount))
         expect_data0 = (1, 183, date, "Something", 2, 1, '', 1, 5000, None,
                         None, None, None, 0)
         # check_num query
@@ -121,7 +187,9 @@ class TestLedgerTransaction(BaseAsyncTests):
                    }
         lt = LedgerTransaction(self.db, ck_data)
         rowcount = await lt.insert_ledger_transaction(183)
-        self.assertEqual(6, rowcount, msg.format(6, rowcount))
+        expected_records = 9
+        self.assertEqual(expected_records, rowcount, msg.format(
+            expected_records, rowcount))
         expect_data1 = (2, 183, date, "Description", 3, 2, '1000', 2, 5000,
                         None, None, None, None, 0)
         # rcpt_num query
@@ -137,7 +205,9 @@ class TestLedgerTransaction(BaseAsyncTests):
                    }
         lt = LedgerTransaction(self.db, rt_data)
         rowcount = await lt.insert_ledger_transaction(183)
-        self.assertEqual(4, rowcount, msg.format(4, rowcount))
+        expected_records = 6
+        self.assertEqual(expected_records, rowcount, msg.format(
+            expected_records, rowcount))
         expect_data2 = (3, 183, date, "Description", 1, 3, 'B1000', None, None,
                         1, 5000, None, None, 0)
 
@@ -171,18 +241,17 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the insert_ledger_transaction method inserts
         bank data properly.
         """
-        expected_records = 4
+        expected_records = 6
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Description', 2, 1, '', 1, 5000, None,
                         None, None, None, 0)
-        expect_data1 = (1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': False, 'distribution': True,
                                 'expense': False, 'other': False},
                 'reference': {'ocs': True, 'check': False, 'receipt': False,
                               'deposit': False, 'number': ''},
-                'bank': {'deposit': True, 'withdrawal': False, 'amount': 5000,
-                         'balance': None}
+                'bank': {'deposit': True, 'withdrawal': False, 'amount': 5000}
                 }
         msg = "Expected {}, found {}."
         lt = LedgerTransaction(self.db, data)
@@ -205,18 +274,18 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the insert_ledger_transaction method inserts
         coh data properly.
         """
-        expected_records = 4
+        expected_records = 6
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Description', 1, 3, 'B1000', None, None,
                         1, 5000, None, None, 0)
-        expect_data1 = (1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
                 'reference': {'ocs': False, 'check': False, 'receipt': True,
                               'deposit': False, 'number': 'B1000'},
                 'coh': {'replenishment': True, 'disbursement': False,
-                        'amount': 5000, 'balance': None}
+                        'amount': 5000}
                 }
         msg = "Expected {}, found {}."
         lt = LedgerTransaction(self.db, data)
@@ -239,18 +308,18 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the insert_ledger_transaction method inserts
         income data properly.
         """
-        expected_records = 4
+        expected_records = 6
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, "Description", 1, 1, '', None, None,
                         None, None, 1, 5000, 0)
-        expect_data1 = (1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
                 'reference': {'ocs': True, 'check': False, 'receipt': False,
                               'deposit': False, 'number': ''},
                 'income': {'local_fund': True, 'contributed_expense': False,
-                           'other': False, 'amount': 5000, 'balance': None}
+                           'other': False, 'amount': 5000}
                 }
         msg = "Expected {}, found {}."
         lt = LedgerTransaction(self.db, data)
@@ -273,7 +342,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the insert_ledger_transaction method inserts
         income data properly.
         """
-        expected_records = 5
+        expected_records = 7
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, "Description", 3, 1, '', None, None,
                         None, None, None, None, 0)
@@ -333,18 +402,17 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the update_ledger_transaction method updates the bank data.
         """
         trans_id = 1
-        expect_rowcount = 4
+        expect_rowcount = 6
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Updated', 3, 1, '', 2, 5000, None, None,
                         None, None, 0)
-        expect_data1 = (1, 2, 5000, None)
+        expect_data1 = (1, 2, 5000)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': True,
                                 'expense': False, 'other': False},
                 'reference': {'ocs': True, 'check': False, 'receipt': False,
                               'deposit': False, 'number': ''},
-                'bank': {'deposit': True, 'withdrawal': False, 'amount': 5000,
-                         'balance': None}
+                'bank': {'deposit': True, 'withdrawal': False, 'amount': 5000}
                 }
         u_data = copy.deepcopy(data)
         u_data['panel']['memo'] = "Updated"
@@ -375,18 +443,18 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the update_ledger_transaction method updates the coh data.
         """
         trans_id = 1
-        expected_records = 4
+        expected_records = 6
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Updated', 1, 3, 'R9999', None, None, 1,
                         5000, None, None, 0)
-        expect_data1 = (1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
                 'reference': {'ocs': False, 'check': False, 'receipt': True,
                               'deposit': False, 'number': 'STR9999'},
                 'coh': {'replenishment': False, 'disbursement': True,
-                        'amount': 5000, 'balance': None}
+                        'amount': 5000}
                 }
         u_data = copy.deepcopy(data)
         u_data['panel']['memo'] = "Updated"
@@ -418,18 +486,18 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the update_ledger_transaction method updates the coh data.
         """
         trans_id = 1
-        expected_records = 4
+        expected_records = 6
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Updated', 1, 1, '', None, None, None,
                         None, 1, 5000, 0)
-        expect_data1 = (1, 1, 5000, None)
+        expect_data1 = (1, 1, 5000)
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
                 'reference': {'ocs': False, 'check': False, 'receipt': True,
                               'deposit': False, 'number': 'STR9999'},
                 'income': {'local_fund': False, 'contributed_expense': True,
-                           'other': False, 'amount': 5000, 'balance': None}
+                           'other': False, 'amount': 5000}
                 }
         u_data = copy.deepcopy(data)
         u_data['panel']['memo'] = "Updated"
@@ -463,12 +531,11 @@ class TestLedgerTransaction(BaseAsyncTests):
         Test that the update_ledger_transaction method updates the coh data.
         """
         trans_id = 1
-        expected_records = 6
+        expected_records = 7
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Updated', 3, 2, '1000', None, None,
                         None, None, None, None, 0)
-        expect_data1 = [(1, 'deputization_fund', ''),
-                        (1, 'national_baháí_fund', 15000),
+        expect_data1 = [(1, 'national_baháí_fund', 15000),
                         (1, 'regional_baháí_council', 10000)]
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': True, 'distribution': False,

@@ -623,6 +623,9 @@ class SearchResult(wx.Dialog):
         mf = self._so.get_object('MainFrame')
         row = self.rows[display_row]
         data = db.convert_db_to_panel(row)
+        panel = mf.panels['ledger']
+        panel.initializing = True
         db.clear_panel('ledger', mf.panels['ledger'])
-        db.populate_panel_values('ledger', mf.panels['ledger'], data)
+        db.populate_panel_values('ledger', panel, data)
+        panel.initializing = False
         event.Skip()

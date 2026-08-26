@@ -188,6 +188,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         return self._db
 
     async def insert_data(self):
+        #*** TODO *** Add new tables to the list below.
         rowcount = 0
         ledger = {}
 
@@ -240,7 +241,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                 data_len = 0
 
         assert data_len == rowcount, (
-            f"Invalid inserted {rowcount}, found {data_len} rows for "
+            f"Invalid inserted {rowcount}, should be {data_len} rows for "
             f"table {table_name}.")
 
         return rowcount
@@ -390,7 +391,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         Insert the ledger_bank data.
         """
         query = (f"INSERT INTO {self.db._T_LEDGER_BANK} (lhfk, b_type, "
-                 "amount, balance) VALUES (?, ?, ?, ?);")
+                 "amount) VALUES (?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount
 
@@ -399,7 +400,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         Insert the ledger_coh data.
         """
         query = (f"INSERT INTO {self.db._T_LEDGER_COH} (lhfk, c_type, "
-                 "amount, balance) VALUES (?, ?, ?, ?);")
+                 "amount) VALUES (?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount
 
@@ -408,7 +409,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         Insert the ledger_income data.
         """
         query = (f"INSERT INTO {self.db._T_LEDGER_INCOME} (lhfk, i_type, "
-                 "amount, balance) VALUES (?, ?, ?, ?);")
+                 "amount) VALUES (?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount
 

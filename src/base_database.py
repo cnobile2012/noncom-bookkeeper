@@ -51,7 +51,6 @@ class BaseDatabase(PopulateCollect, Settings):
     https://docs.wxpython.org/
     """
     _T_FISCAL_YEAR = 'fiscal_year'
-    _T_FISCAL_YEAR_BALANCES = 'fiscal_year_balances'
     _T_MONTH = 'month'
     _T_FIELD_TYPE = 'field_type'
     _T_DATA = 'config_data'
@@ -66,8 +65,10 @@ class BaseDatabase(PopulateCollect, Settings):
     _T_LEDGER_INCOME = 'ledger_income'
     _T_LEDGER_EXPENSE = 'ledger_expense'
     _T_LEDGER_TRANS_HISTORY = 'ledger_transaction_history'
+    _T_LEDGER_BALANCES = 'ledger_balances'
     _V_LEDGER_TRANSACTION = 'vw_ledger_transaction'
     _V_LEDGER_EXPENSE = 'vw_ledger_expense'
+    _V_LEDGER_HISTORY = 'vw_ledger_history'
     _SCHEMA_TABLES = {
         _T_FISCAL_YEAR: (
             'pk INTEGER NOT NULL PRIMARY KEY',  # fy1fk or fy2fk in data
@@ -79,12 +80,6 @@ class BaseDatabase(PopulateCollect, Settings):
             'audit INTEGER NOT NULL DEFAULT 0 CHECK (audit IN (0, 1))',
             'ctime DATETIME NOT NULL',
             'mtime DATETIME NOT NULL'),
-        _T_FISCAL_YEAR_BALANCES: (
-            'fy1fk INTEGER NOT NULL',
-            'a_type INTEGER NOT NULL',
-            'balance INTEGER NOT NULL',
-            'mtime DATETIME NOT NULL',
-            f'FOREIGN KEY (fy1fk) REFERENCES {_T_FISCAL_YEAR} (pk)'),
         _T_MONTH: (
             'pk INTEGER NOT NULL PRIMARY KEY',  # mfk in data
             'month TEXT UNIQUE NOT NULL',
@@ -159,19 +154,16 @@ class BaseDatabase(PopulateCollect, Settings):
             'lhfk INTEGER NOT NULL UNIQUE',
             'b_type INTEGER NOT NULL',
             'amount INTEGER',
-            'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_COH: (
             'lhfk INTEGER NOT NULL UNIQUE',
             'c_type INTEGER NOT NULL',
             'amount INTEGER',
-            'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_INCOME: (
             'lhfk INTEGER NOT NULL UNIQUE',
             'i_type INTEGER NOT NULL',
             'amount INTEGER',
-            'balance INTEGER',
             f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
         _T_LEDGER_EXPENSE: (
             'lhfk INTEGER NOT NULL',
@@ -181,11 +173,19 @@ class BaseDatabase(PopulateCollect, Settings):
             f'FOREIGN KEY (ftfk) REFERENCES {_T_FIELD_TYPE} (pk)'),
         _T_LEDGER_TRANS_HISTORY: (
             'lhfk INTEGER NOT NULL',
+            'fy1fk INTEGER NOT NULL',
             'history_id INTEGER NOT NULL',
             'trans_id INTEGER NOT NULL',
-            'details TUPLE NOT NULL',
+            'details TEXT NOT NULL',
             'mtime DATETIME NOT NULL',
-            f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)')
+            'CONSTRAINT unq UNIQUE (fy1fk, history_id)',
+            f'FOREIGN KEY (lhfk) REFERENCES {_T_LEDGER_HEADER} (pk)'),
+        _T_LEDGER_BALANCES: (
+            'fy1fk INTEGER NOT NULL',
+            'a_type INTEGER NOT NULL',
+            'balance INTEGER NOT NULL',
+            'mtime DATETIME NOT NULL',
+            f'FOREIGN KEY (fy1fk) REFERENCES {_T_FISCAL_YEAR} (pk)'),
         }
     _SCHEMA_VIEWS = {
         _V_LEDGER_TRANSACTION: (
@@ -193,6 +193,9 @@ class BaseDatabase(PopulateCollect, Settings):
             'number', 'b_type', 'b_amount', 'c_type', 'c_amount', 'i_type',
             'i_amount', 'purge', 'ctime'),
         _V_LEDGER_EXPENSE: ('trans_id', 'field', 'amount'),
+        _V_LEDGER_HISTORY: (
+            'history_id', 'trans_id', 'fy_year', 'date', 'details', 'ctime',
+            'mtime'),
         }
     _SCHEMA_VIEW_QUERY = {
         _V_LEDGER_TRANSACTION: (
@@ -210,7 +213,13 @@ class BaseDatabase(PopulateCollect, Settings):
             'SELECT lh.trans_id, ft.field, le.amount '
             f'FROM {_T_LEDGER_HEADER} AS lh '
             f'JOIN {_T_LEDGER_EXPENSE} AS le ON lh.pk = le.lhfk '
-            f'JOIN {_T_FIELD_TYPE} AS ft ON le.ftfk = ft.pk;')
+            f'JOIN {_T_FIELD_TYPE} AS ft ON le.ftfk = ft.pk;'),
+        _V_LEDGER_HISTORY: (
+            'SELECT ly.history_id, lh.trans_id, fy1.year, lh.date, '
+            'ly.details, lh.ctime, ly.mtime '
+            f'FROM {_T_LEDGER_TRANS_HISTORY} AS ly '
+            f'JOIN {_T_LEDGER_HEADER} AS lh ON lh.pk = ly.lhfk '
+            f'JOIN {_T_FISCAL_YEAR} AS fy1 ON lh.fy1fk = fy1.pk;'),
         }
     _SCHEMA_INDICES = (
         ('idx_month_month ON month(month);'),

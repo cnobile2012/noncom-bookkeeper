@@ -198,6 +198,8 @@ class PopulateCollect(AsyncEventLoop):
             def pop(key): return data.get(key)
 
         if data:  # When run after first time.
+            balances = self._get_balances()
+
             for w0, w1 in self.find_child_sets(panel):
                 name0, field_name, widget0 = w0
 
@@ -221,6 +223,10 @@ class PopulateCollect(AsyncEventLoop):
                         financial = getattr(widget1, 'financial', False)
 
                         if financial:
+                            if (balances and 'balance' in field_name
+                                and value == ''):
+                                value = balances[widget1.category]
+
                             value = self._panel_to_financial_panel(value)
                         elif not financial:
                             p_value = widget1.GetValue()
@@ -250,22 +256,27 @@ class PopulateCollect(AsyncEventLoop):
         :param str name: The name of the panel.
         :param wx.Panel panel: The panel object.
         """
+        balances = self._get_balances()
+
         for w0, w1 in self.find_child_sets(panel):
             name0, field_name, widget0 = w0
 
             if w1:
                 name1, _, widget1 = w1
 
-            if name0 in self._EXCLUDE_WIDGETS: continue
-
-            if name0 == 'RadioBox':
+            if name0 in self._EXCLUDE_WIDGETS:
+                continue
+            elif name0 == 'RadioBox':
                 widget0.SetSelection(0)
             elif name0 == 'ComboBox':
                 widget0.SetSelection(-1)
                 widget0.SetValue('')
             elif name0 == 'StaticText':
                 if name1 == 'TextCtrl':
-                    widget1.SetValue('')
+                    if balances and field_name == 'balance':
+                        widget1.SetValue(str(balances[widget1.category]))
+                    else:
+                        widget1.SetValue('')
                 elif name1 == 'BadiDatePickerCtrl':
                     widget1.SetValue(badidatetime.date.today())
                 elif name1 == 'DatePickerCtrl':
@@ -273,52 +284,8 @@ class PopulateCollect(AsyncEventLoop):
                 elif name1 == 'ColorCheckBox':
                     widget1.SetValue(False)
 
-                    if panel_name == 'ledger':
-                        widget1.Notify()
-
-    def _set_statusbar(self, name: str, add_msg: str='.') -> None:
-        """
-        Log and send an error message to the panel status bar.
-
-        :param str, name: Invalid widgit name.
-        "param str add_msg: An additional message to add to the out
-                            going messgage.
-        """
-        msg = f"Invalid widget type, found '{name}'"
-
-        if '(' in add_msg:
-            lg_msg = msg + add_msg
-            sb_msg = msg + '.'
-        else:
-            lg_msg = msg + add_msg
-            sb_msg = lg_msg
-
-        self._log.error(lg_msg)
-        self._mf.statusbar_error = sb_msg
-
-    def _process_box_value(self, widget, field_name: str, value: str | int
-                           ) -> str:
-        """
-        Process values from the RadioBox and ComboBox widgets.
-
-        :param widget: Either a RadioBox or ComboBox widget.
-        :param str field_name: The name of the widget.
-        :param str or int value: The value to convert to an integer if
-                                 not already an integer.
-        :returns: An integer value of the incoming string.
-        :rtype: int
-        """
-        if value != '':
-            value, error = self._str_to_int(value)
-
-            if value is None:
-                error = error.format(field_name)
-                self._log.warning(error)
-                self._mf.statusbar_warning = error
-            else:
-                widget.SetSelection(value)
-
-        return value
+                    #if panel_name == 'ledger':
+                    #    widget1.Notify()
 
     def find_child_sets(self, panel: wx.Panel) -> list:
         """
@@ -381,6 +348,50 @@ class PopulateCollect(AsyncEventLoop):
                     f" in item {idx} '{item}' from class {panel_class_name}.")
 
         return result
+
+    def _set_statusbar(self, name: str, add_msg: str='.') -> None:
+        """
+        Log and send an error message to the panel status bar.
+
+        :param str, name: Invalid widgit name.
+        "param str add_msg: An additional message to add to the out
+                            going messgage.
+        """
+        msg = f"Invalid widget type, found '{name}'"
+
+        if '(' in add_msg:
+            lg_msg = msg + add_msg
+            sb_msg = msg + '.'
+        else:
+            lg_msg = msg + add_msg
+            sb_msg = lg_msg
+
+        self._log.error(lg_msg)
+        self._mf.statusbar_error = sb_msg
+
+    def _process_box_value(self, widget, field_name: str, value: str | int
+                           ) -> str:
+        """
+        Process values from the RadioBox and ComboBox widgets.
+
+        :param widget: Either a RadioBox or ComboBox widget.
+        :param str field_name: The name of the widget.
+        :param str or int value: The value to convert to an integer if
+                                 not already an integer.
+        :returns: An integer value of the incoming string.
+        :rtype: int
+        """
+        if value != '':
+            value, error = self._str_to_int(value)
+
+            if value is None:
+                error = error.format(field_name)
+                self._log.warning(error)
+                self._mf.statusbar_warning = error
+            else:
+                widget.SetSelection(value)
+
+        return value
 
     def _add_fiscal_year_choices(self, *, panel: wx.Panel=None, w0=None
                                  ) -> None:
@@ -487,57 +498,19 @@ class PopulateCollect(AsyncEventLoop):
 
         return value, error
 
+    def _get_balances(self) -> dict:
+        """
+        Get the balances and return a dict.
+        """
+        bals = {}
+        names = {1: 'bank', 2: 'coh', 3: 'income', 4: 'expenses'}
+        lt = LedgerTransaction(self)
+        balances = self.run_async(lt.select_transaction_balances(
+            self.cache.year))
+        return {names[bal[1]]: bal[2] for bal in balances}
+
     def isfloat(self, value: str) -> bool:
         return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True
-
-    def find_balance(self, year: int, data: dict) -> int:
-        """
-        Find the current balance for the given search criteria.
-
-        :param int year: The beginning year of the fiscal year.
-        :param dict data: Query criteria.
-        :returns: The balance for the given search criteria.
-        :rtype: int
-
-        .. note::
-
-           Incoming data:
-           1. {'b_type': 1}
-           2. {'c_type': 2}
-           3. {'i_type': 1}
-        """
-        lt = LedgerTransaction(self)
-        rows = self.run_async(lt.select_ledger_transaction(year, **data))
-        key = list(data.keys())[0]
-        accum = 0
-
-        for row in rows:
-            match key:
-                case 'b_type':
-                    if row[7] == 1:
-                        accum += row[8]
-                    else:
-                        accum -= row[8]
-                case 'c_type':
-                    if row[9] == 1:
-                        accum += row[10]
-                    else:
-                        accum -= row[10]
-                case 'i_type':
-                    accum += row[12]
-                case 'expenses':
-                    for exp in self.run_async(lt.select_expenses(row[0])):
-                        accum += exp[2]
-                case _:
-                    assert False, f"Invalid search criteria {key}."
-
-        return accum
-
-    def save_row_to_history(self, row: tuple):
-        """
-        Save the update to the `ledger_transaction_history` table.
-        """
-        pass
 
     def convert_db_to_panel(self, row: tuple) -> dict:
         """
@@ -589,50 +562,23 @@ class PopulateCollect(AsyncEventLoop):
         data['bank']['withdrawal'] = db_to_panel('withdrawal', trans[7],
                                                  bnk_map)
         data['bank']['amount'] = trans[8]
-        data['bank']['balance'] = ''
         data['coh']['replenishment'] = db_to_panel('replenishment', trans[9],
                                                    coh_map)
         data['coh']['disbursement'] = db_to_panel('disbursement', trans[9],
                                                   coh_map)
         data['coh']['amount'] = trans[10]
-        data['coh']['balance'] = ''
         data['income']['local_fund'] = db_to_panel('local_fund', trans[11],
                                                    inc_map)
         data['income']['contributed_expense'] = db_to_panel(
             'contributed_expense', trans[11], inc_map)
         data['income']['other'] = db_to_panel('other', trans[11], inc_map)
         data['income']['amount'] = trans[12]
-        data['income']['balance'] = ''
 
         for _, fn, amount in expenses:
             data['expenses'][fn] = amount
             data['panel']['total_expenses'] += amount
 
         return data
-
-    # MONTHS = list(ordered_month().keys())
-    # MONTH_INDEX = {m: i for i, m in enumerate(MONTHS)}
-
-    # def get_prev_and_next(self, direction, year, month):
-    #     """
-    #     Get the previous and next year and month.
-    #     """
-    #     idx = self.MONTH_INDEX[month]
-
-    #     if direction == 'RIGHT':  # Next month
-    #         idx += 1
-
-    #         if idx > 19:
-    #             idx = 0
-    #             year += 1
-    #     else:  # LEFT -- previous month
-    #         idx -= 1
-
-    #         if idx < 0:
-    #             idx = 19
-    #             year -= 1
-
-    #     return year, self.MONTHS[idx]
 
     #
     # Methods called from panels
@@ -722,7 +668,6 @@ class PopulateCollect(AsyncEventLoop):
         data = self.collect_panel_values(panel)
         data['panel.purge'] = None  # Temporary
         fy = self.cache.work_on_fiscal_year
-        lt = LedgerTransaction(self)
         kwargs = {}
         kwargs['trans_id'] = data['panel.transaction_id']
         kwargs['date'] = data['panel.date']
@@ -765,8 +710,8 @@ class PopulateCollect(AsyncEventLoop):
                   if value]
         kwargs['i_type'] = i_type[0] if i_type else 0
         rows = []
-
         valid = any([val for val in kwargs.values() if val])
+        lt = LedgerTransaction(self)
 
         if valid:
             t_rows = self.run_async(lt.select_ledger_transaction(

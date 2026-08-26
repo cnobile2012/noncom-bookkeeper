@@ -701,29 +701,3 @@ class DataPreperation:
                 values[key] = items[idx]
 
         return values
-
-    @property
-    def ledger_data(self) -> dict:
-        """
-        This property gets the ledger data.
-
-        :returns: The ledger panel data as defined by {<field name>: <value>}.
-        :rtype: dict
-        """
-        panel = self.db._mf.panels['ledger']
-        data = self.db.collect_panel_values(panel)
-
-        for category, subcat in data.items():
-            for field, value in subcat.items():
-                if isinstance(value, dict):
-                    for fld, val in value.items():
-                        value[fld] = ''
-                else:
-                    if isinstance(value, (str, int)):
-                        subcat[field] = ''
-                    elif isinstance(value, bool):
-                        subcat[field] = False
-                    elif isinstance(value, badidatetime.date):
-                        subcat[field] = badidatetime.date.today()
-
-        return data

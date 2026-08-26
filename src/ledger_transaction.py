@@ -4,6 +4,7 @@
 #
 __docformat__ = "restructuredtext en"
 
+import json
 import sqlite3
 import aiosqlite
 import badidatetime
@@ -41,7 +42,10 @@ class LedgerTransaction:
             self._coh = self._make_type_index(data.get('coh'), self._COH_TYPES)
             self._income = self._make_type_index(data.get('income'),
                                             self._INCM_TYPES)
-            self._expenses = data.get('expenses')
+            self._expenses = {
+                key: value for key, value in data.get('expenses', {}).items()
+                if value not in self.db._EMPTY_FIELDS}
+            self._details = self.serialize_data(data)
 
     def _make_type_index(self, data: dict, types: tuple) -> dict:
         """
@@ -67,6 +71,65 @@ class LedgerTransaction:
                     items[field_name] = value
 
         return items
+
+    def serialize_data(self, data: dict) -> str:
+        """
+        Serialize the data for insertion into the history table.
+
+        :param dict data: The data to process or an empty object if
+                          selecting data.
+        :returns: A JSON object.
+        :rtype: str
+        """
+        to_json = {}
+
+        for cat, cat_values in data.items():
+            if isinstance(cat_values, dict):
+                tmp = to_json.setdefault(cat, {})
+
+                for key, value in cat_values.items():
+                    if isinstance(value, (badidatetime.date,
+                                          badidatetime.datetime)):
+                        value = value.isoformat()
+
+                    empty = value not in self.db._EMPTY_FIELDS
+
+                    if ((cat == 'expenses' and empty) or cat != 'expenses'):
+                        tmp[key] = value
+
+        return json.dumps(to_json)
+
+    def deserialize_data(self, json_str: str) -> dict:
+        """
+        Deserialize a JSON string to a dict.
+
+        :param str json_str: A sring representing a JSON object.
+        :returns: A dictionary from a JSON object.
+        :rtype: dict
+        """
+        tmp_data = json.loads(json_str)
+        data = {}
+
+        for cat, cat_values in tmp_data.items():
+            if isinstance(cat_values, dict):
+                tmp = data.setdefault(cat, {})
+
+                for key, value in cat_values.items():
+                    if isinstance(value, str):
+                        v_len = len(value)
+
+                        if (v_len >= 10
+                            and (value[4], value[7]).count('-') == 2):
+                            if (v_len >= 19
+                                and (value[13], value[16]).count(':') == 2):
+                                value = badidatetime.datetime.fromisoformat(
+                                    value)
+                            else:
+                                value = badidatetime.date.fromisoformat(value)
+
+                    tmp[key] = value
+
+        return data
 
     async def select_ledger_transaction(self, year, **kwargs) -> list:
         """
@@ -128,24 +191,38 @@ class LedgerTransaction:
                 rowcount += rc
                 ref_pk, rc = await self._insert_reference(con)
                 rowcount += rc
-                header_pk, rc = await self._insert_header(con, year, trans_pk,
-                                                          ref_pk)
+                fy = await self.db.select_from_fiscal_year_table(year=year)
+                fy1fk = fy[0]
+                fy = await self.db.select_from_fiscal_year_table(year=year + 1)
+                fy2fk = fy[0]
+                header_pk, rc = await self._insert_header(
+                    con, fy1fk, fy2fk, trans_pk, ref_pk)
                 rowcount += rc
+                rowcount += await self._insert_ledger_history(
+                    con, header_pk, fy1fk)
 
                 if (self._bank and self._bank['itype'] != 0
                     and self._bank['amount'] is not None):
                     rowcount += await self._insert_bank(con, header_pk)
+                    rowcount += await self._update_ledger_balances(
+                        con, fy1fk, 1)
 
                 if (self._coh and self._coh['itype'] != 0
                     and self._coh['amount'] != 0):
                     rowcount += await self._insert_coh(con, header_pk)
+                    rowcount += await self._update_ledger_balances(
+                        con, fy1fk, 2)
 
                 if (self._income and self._income['itype'] != 0
                     and self._income['amount'] != 0):
                     rowcount += await self._insert_income(con, header_pk)
+                    rowcount += await self._update_ledger_balances(
+                        con, fy1fk, 3)
 
                 if self._expenses:
                     rowcount += await self._insert_expenses(con, header_pk)
+                    rowcount += await self._update_ledger_balances(
+                        con, fy1fk, 4)
 
                 await con.commit()
                 return rowcount
@@ -180,24 +257,22 @@ class LedgerTransaction:
         cursor = await con.execute(query, self._ref)
         return cursor.lastrowid, cursor.rowcount
 
-    async def _insert_header(self, con, year: int, trans_pk: int, ref_pk: int
-                             ) -> tuple:
+    async def _insert_header(self, con, fy1fk: int, fy2fk: int, trans_pk: int,
+                             ref_pk: int) -> tuple:
         """
         Insert the ledger header data.
 
         :param com: The database connection object.
-        :param int, year: The fiscal year to insert data for.
+        :param int fy1fk: The fiscal year primary key.
+        :param int fy2fk: The fiscal year primary key.
         :param int trans_pk: The ledger_transaction pk.
         :param int ref_pk: the ledger_reference pk.
         :returns: The last row pk and the rowcount.
         :rtype: tuple
         """
-        now = badidatetime.datetime.now(self.db.utc_tzinfo)
-        self._header['ctime'] = now
-        fy = await self.db.select_from_fiscal_year_table(year=year)
-        self._header['fy1fk'] = fy[0]
-        fy = await self.db.select_from_fiscal_year_table(year=year + 1)
-        self._header['fy2fk'] = fy[0]
+        self._header['fy1fk'] = fy1fk
+        self._header['fy2fk'] = fy2fk
+        self._header['ctime'] = badidatetime.datetime.now(self.db.utc_tzinfo)
         query = ("SELECT COALESCE(MAX(trans_id), 0) + 1 "
                  f"FROM {self.db._T_LEDGER_HEADER} WHERE fy1fk = :fy1fk;")
         cursor = await con.execute(query, self._header)
@@ -224,34 +299,45 @@ class LedgerTransaction:
             self.db.user_data_fullpath,
             detect_types=self.db._DETECT_TYPES) as con:
             await con.execute("PRAGMA foreign_keys=ON")
+            self._header['trans_id'] = trans_id  # This is for the history
 
             try:
                 await con.execute("BEGIN;")
                 rowcount = 0
-                query = ("SELECT pk, ltfk, lrfk "
-                         f"FROM {self.db._T_LEDGER_HEADER} "
-                         "WHERE trans_id = ?;")
+                query = ("SELECT lh.pk, lh.ltfk, lh.lrfk, fy.pk "
+                         f"FROM {self.db._T_LEDGER_HEADER} AS lh "
+                         f"JOIN {self.db._T_FISCAL_YEAR} AS fy "
+                         "ON lh.fy1fk = fy.pk WHERE trans_id = ?;")
                 cursor = await con.execute(query, (trans_id,))
                 row = await cursor.fetchone()
-                pk, ltfk, lrfk = row
+                pk, ltfk, lrfk, fy1fk = row
                 rowcount += await self._update_transaction(con, ltfk)
                 rowcount += await self._update_reference(con, lrfk)
                 rowcount += await self._update_header(con, pk)
+                rowcount += await self._insert_ledger_history(con, pk, fy1fk)
 
                 if (self._bank and self._bank['itype'] != 0
                     and self._bank['amount'] != 0):
                     rowcount += await self._update_bank(con, pk)
+                    rowcount += await self._update_ledger_balances(
+                        con, fy1fk, 1)
 
                 if (self._coh and self._coh['itype'] != 0
                     and self._coh['amount'] != 0):
                     rowcount += await self._update_coh(con, pk)
+                    rowcount += await self._update_ledger_balances(
+                        con, fy1fk, 2)
 
                 if (self._income and self._income['itype'] != 0
                     and self._income['amount'] != 0):
                     rowcount += await self._update_income(con, pk)
+                    rowcount += await self._update_ledger_balances(
+                        con, fy1fk, 3)
 
                 if self._expenses:
                     rowcount += await self._update_expenses(con, pk)
+                    rowcount += await self._update_ledger_balances(
+                        con, fy1fk, 4)
 
                 await con.commit()
                 return rowcount
@@ -326,7 +412,7 @@ class LedgerTransaction:
         """
         self._bank['lhfk'] = header_pk
         query = (f"INSERT INTO {self.db._T_LEDGER_BANK} (lhfk, b_type, "
-                 "amount, balance) VALUES (:lhfk, :itype, :amount, :balance);")
+                 "amount) VALUES (:lhfk, :itype, :amount);")
         cursor = await con.execute(query, self._bank)
         return cursor.rowcount
 
@@ -341,7 +427,7 @@ class LedgerTransaction:
         """
         self._bank['lhfk'] = header_pk
         query = (f"UPDATE {self.db._T_LEDGER_BANK} SET b_type = :itype, "
-                 "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
+                 "amount = :amount WHERE lhfk = :lhfk")
         cursor = await con.execute(query, self._bank)
         return cursor.rowcount
 
@@ -365,8 +451,8 @@ class LedgerTransaction:
         :rtype: int
         """
         self._coh['lhfk'] = header_pk
-        query = (f"INSERT INTO {self.db._T_LEDGER_COH} (lhfk, c_type, amount, "
-                 "balance) VALUES (:lhfk, :itype, :amount, :balance);")
+        query = (f"INSERT INTO {self.db._T_LEDGER_COH} (lhfk, c_type, amount) "
+                 "VALUES (:lhfk, :itype, :amount);")
         cursor = await con.execute(query, self._coh)
         return cursor.rowcount
 
@@ -381,7 +467,7 @@ class LedgerTransaction:
         """
         self._coh['lhfk'] = header_pk
         query = (f"UPDATE {self.db._T_LEDGER_COH} SET c_type = :itype, "
-                 "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
+                 "amount = :amount WHERE lhfk = :lhfk")
         cursor = await con.execute(query, self._coh)
         return cursor.rowcount
 
@@ -406,7 +492,7 @@ class LedgerTransaction:
         """
         self._income['lhfk'] = header_pk
         query = (f"INSERT INTO {self.db._T_LEDGER_INCOME} (lhfk, i_type, "
-                 "amount, balance) VALUES (:lhfk, :itype, :amount, :balance);")
+                 "amount) VALUES (:lhfk, :itype, :amount);")
         cursor = await con.execute(query, self._income)
         return cursor.rowcount
 
@@ -421,7 +507,7 @@ class LedgerTransaction:
         """
         self._income['lhfk'] = header_pk
         query = (f"UPDATE {self.db._T_LEDGER_INCOME} SET i_type = :itype, "
-                 "amount = :amount, balance = :balance WHERE lhfk = :lhfk")
+                 "amount = :amount WHERE lhfk = :lhfk")
         cursor = await con.execute(query, self._income)
         return cursor.rowcount
 
@@ -449,14 +535,20 @@ class LedgerTransaction:
         query = (f"INSERT INTO {self.db._T_LEDGER_EXPENSE} (lhfk, ftfk, "
                  "amount) VALUES (:lhfk, :ftfk, :amount);")
         fts = await self.db.select_from_field_type_table(tuple(self._expenses))
+        flds = [row[1] for row in fts]
+        has_fields = all([False for key in self._expenses if key not in flds])
         params = [{'lhfk': header_pk, 'ftfk': ft[0],
-                   "amount": self._expenses[ft[1]]} for ft in fts]
+                   'amount': self._expenses[ft[1]]} for ft in fts]
 
-        if params:
-            cursor = await con.executemany(query, params)
-            rowcount = cursor.rowcount
+        if not has_fields:
+            raise ValueError("Expense fields missing in the "
+                             f"'{self.db._T_FIELD_TYPE}' table.")
 
-        return rowcount
+        if len(params) != len(self._expenses):
+            raise ValueError("Invalid number of parameters for the query.")
+
+        cursor = await con.executemany(query, params)
+        return cursor.rowcount
 
     async def _update_expenses(self, con, header_pk: int) -> int:
         """
@@ -471,8 +563,116 @@ class LedgerTransaction:
         await con.execute(query, {'lhfk': header_pk})
         return await self._insert_expenses(con, header_pk)
 
-    async def select_transaction_history(self, *, history_id: int=None,
-                                         trans_id: int=None) -> list:
+    async def select_ledger_history(self, *, history_id: int=None,
+                                    trans_id: int=None) -> list:
         """
-        Select the 
+        Select the ledger_transaction_history by history_id  or trans_id
+        or both.
+
+        :param int history_id: The ID for this history transaction.
+        :param int trans_id: The ID for the entire transaction.
+        :returns The list of histories related to this tansaction ID.
+        :rtype: list
         """
+        where = ""
+        params = ()
+
+        if history_id is not None:
+            where += "history_is = ?"
+            params += (history_id,)
+
+        if trans_id is not None:
+            where += " AND trans_id = ?" if where else "trans_id = ?"
+            params += (trans_id,)
+
+        query = f"SELECT * FROM {self.db._V_LEDGER_HISTORY} WHERE {where};"
+        return await self.db._do_select_query(query, params)
+
+    async def _insert_ledger_history(self, con, header_pk: int, fy1fk: int
+                                     ) -> int:
+        """
+        Insert into the ledger_transaction_history table.
+
+        :param con: The database connection object.
+        :param int header_pk: The ledger_header primary key.
+        :param int fy1fk: The fiscal year primary key.
+        :returns: The rowcount.
+        :rtype: int
+        """
+        history = {'lhfk': header_pk, 'fy1fk': fy1fk}
+        query = ("SELECT COALESCE(MAX(history_id), 0) + 1 "
+                 f"FROM {self.db._T_LEDGER_TRANS_HISTORY} "
+                 "WHERE fy1fk = :fy1fk;")
+        cursor = await con.execute(query, history)
+        row = await cursor.fetchone()
+        history['history_id'] = row[0]
+        history['trans_id'] = self._header['trans_id']
+        history['mtime'] = badidatetime.datetime.now(self.db.utc_tzinfo)
+        history['details'] = self._details
+        query = (f"INSERT INTO {self.db._T_LEDGER_TRANS_HISTORY} ("
+                 "lhfk, fy1fk, history_id, trans_id, details, mtime) VALUES ("
+                 ":lhfk, :fy1fk, :history_id, :trans_id, :details, :mtime);")
+        cursor = await con.execute(query, history)
+        return cursor.rowcount
+
+    async def select_transaction_balances(self, year: int, a_type: int=None
+                                          ) -> list:
+        """
+        Select the ledger_balences record.
+
+        :param int year: The fiscal year year.
+        :param int a_type: The category where the balance is required.
+        :returns The list of balances.
+        :rtype: list
+        """
+        where = ""
+        params = {'year': year}
+
+        if a_type:
+            where += " AND lb.a_type = :a_type"
+            params.update({'a_type': a_type})
+
+        query = ('SELECT fy.year, lb.a_type, lb.balance, lb.mtime '
+                 f'FROM {self.db._T_LEDGER_BALANCES} AS lb '
+                 f'JOIN {self.db._T_FISCAL_YEAR} AS fy ON fy.pk = lb.fy1fk;')
+        return await self.db._do_select_query(query, params)
+
+    async def _update_ledger_balances(self, con, fy1fk: int, a_type: int
+                                      ) -> int:
+        """
+        Insert into the ledger_balances table.
+        """
+        def add_balance(a_type: int, balance: int) -> int:
+            if a_type == 1:
+                mul = 1 if self._bank['itype'] == 1 else -1
+                balance += self._bank['amount'] * mul
+            elif a_type == 2:
+                mul = 1 if self._coh['itype'] == 1 else -1
+                balance += self._coh['amount']
+            elif a_type == 3:
+                balance += self._income['amount']
+            elif a_type == 4:
+                balance += sum([v for v in self._expenses.values()])
+
+            return balance
+
+        params = {'fy1fk': fy1fk, 'a_type': a_type}
+        query = (f"SELECT balance FROM {self.db._T_LEDGER_BALANCES} "
+                 "WHERE fy1fk = :fy1fk AND a_type = :a_type;")
+        row = await self.db._do_select_query(query, params)
+        params['mtime'] = badidatetime.datetime.now(self.db.utc_tzinfo)
+
+        if row:
+            balance = add_balance(a_type, row[0][0])
+            query = (f"UPDATE {self.db._T_LEDGER_BALANCES} "
+                     "SET balance = :balance, mtime = :mtime "
+                     "WHERE fy1fk = :fy1fk AND a_type = :a_type;")
+        else:
+            balance = add_balance(a_type, 0)
+            query = (f"INSERT INTO {self.db._T_LEDGER_BALANCES} (fy1fk, "
+                     "a_type, balance, mtime) "
+                     "VALUES (:fy1fk, :a_type, :balance, :mtime);")
+
+        params.update({'balance': balance})
+        cursor = await con.execute(query, params)
+        return cursor.rowcount

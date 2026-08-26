@@ -511,7 +511,7 @@ class TestSearchDialog(BaseAsyncTests):
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels.get('ledger')
 
-        
+
 
 
 

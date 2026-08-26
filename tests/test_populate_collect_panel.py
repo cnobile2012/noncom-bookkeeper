@@ -17,6 +17,7 @@ from src.bases import BaseGenerated
 from src.config import Settings
 from src.utilities import StoreObjects
 from src.ledger_entry import SearchDialog
+from src.ledger_transaction import LedgerTransaction
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
@@ -44,6 +45,62 @@ class TestPopulateCollect(BaseAsyncTests):
     async def asyncTearDown(self):
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
+
+    async def _insert_transactions(self):
+        """
+        Insert a few transactions.
+        """
+        await self.asyncTearDown()
+        await self.insert_fiscal_year()
+        await self.insert_field_data(self._LDG_DATA['expenses'])
+        # [((1, 183, badidatetime.date(183, 9, 6), 'Test OCS Contribution', 1,
+        #    1, '', None, None, None, None, 1, 5000, 0), [])]
+        date = badidatetime.date(183, 9, 6)
+        data0 = {'panel': {'date': date, 'purge': 0,
+                           'memo': "Test OCS Contribution"},
+                'transaction': {'contribution': True, 'distribution': False,
+                                'expense': False, 'other': False},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
+                'income': {'local_fund': True, 'contributed_expense': False,
+                           'other': False, 'amount': 5000}
+                 }
+        lt = LedgerTransaction(self.db, data0)
+        rowcount = await lt.insert_ledger_transaction(date.year)
+        self.assertEqual(6, rowcount)
+        # [((2, 183, badidatetime.date(183, 8, 5), 'Test OCS Contribution', 1,
+        #    1, '', None, None, None, None, 1, 2000, 0), [])]
+        date = badidatetime.date(183, 8, 5)
+        data1 = {'panel': {'date': date, 'purge': 0,
+                           'memo': "Test OCS Contribution"},
+                'transaction': {'contribution': True, 'distribution': False,
+                                'expense': False, 'other': False},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
+                'income': {'local_fund': True, 'contributed_expense': False,
+                           'other': False, 'amount': 2000}
+                 }
+        lt = LedgerTransaction(self.db, data1)
+        rowcount = await lt.insert_ledger_transaction(date.year)
+        self.assertEqual(6, rowcount)
+        # [((3, 183, badidatetime.date(183, 8, 10), 'Test expenses', 3, 1, '',
+        #    2, 30000, None, None, None, None, 0),
+        #   [(3, 'national_baháí_fund', 20000),
+        #    (3, 'regional_baháí_council', 10000)])]
+        date = badidatetime.date(183, 8, 10)
+        data2 = {'panel': {'date': date, 'purge': 0, 'memo': "Test expenses"},
+                 'transaction': {'contribution': False, 'distribution': False,
+                                 'expense': True, 'other': False},
+                 'reference': {'ocs': True, 'check': False, 'receipt': False,
+                               'deposit': False, 'number': ''},
+                 'bank': {'deposit': False, 'withdrawal': True,
+                          'amount': 30000},
+                 'expenses': {'national_baháí_fund': 20000,
+                              'regional_baháí_council': 10000}
+                 }
+        lt = LedgerTransaction(self.db, data2)
+        rowcount = await lt.insert_ledger_transaction(date.year)
+        self.assertEqual(9, rowcount)
 
     #@unittest.skip("Temporarily skipped")
     async def test_has_org_info_data(self):
@@ -731,7 +788,13 @@ class TestPopulateCollect(BaseAsyncTests):
         """
         Test that the ledger_search_panel method returns data for either the
         LedgerDataEntry or SearchResult panels.
+
+        *** TODO *** Insert test records, don't rely on the DB records.
         """
+        # Insert test data
+        await self._insert_transactions()
+
+
         # Test 1
         test_data0 = {'panel.transaction_id': '', 'panel.date': '',
                       'panel.memo': '', 'transaction.contribution': False,
@@ -747,13 +810,13 @@ class TestPopulateCollect(BaseAsyncTests):
         # Test 2
         test_data1 = copy.deepcopy(test_data0)
         test_data1['panel.transaction_id'] = 1
-        expect1 = [((1, 183, badidatetime.date(183, 7, 19),
+        expect1 = [((1, 183, badidatetime.date(183, 9, 6),
                      'Test OCS Contribution', 1, 1, '', None, None, None, None,
                      1, 5000, 0,), [])]
         # Test 3
         test_data2 = copy.deepcopy(test_data0)
         test_data2['transaction.contribution'] = True
-        expect2 = [((1, 183, badidatetime.date(183, 7, 19),
+        expect2 = [((1, 183, badidatetime.date(183, 9, 6),
                      'Test OCS Contribution', 1, 1, '', None, None, None, None,
                      1, 5000, 0), []),
                    ((2, 183, badidatetime.date(183, 8, 5),
@@ -762,10 +825,10 @@ class TestPopulateCollect(BaseAsyncTests):
         # Test 4
         test_data3 = copy.deepcopy(test_data0)
         test_data3['panel.date'] = badidatetime.date(183, 8, 10)
-        expect3 = [((5, 183, badidatetime.date(183, 8, 10), 'Test expenses', 3,
+        expect3 = [((3, 183, badidatetime.date(183, 8, 10), 'Test expenses', 3,
                      1, '', 2, 30000, None, None, None, None, 0),
-                    [(5, 'national_baháí_fund', 20000),
-                     (5, 'regional_baháí_council', 10000)])]
+                    [(3, 'national_baháí_fund', 20000),
+                     (3, 'regional_baháí_council', 10000)])]
 
         data = (
             (test_data0, []),
