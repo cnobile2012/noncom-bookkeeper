@@ -188,16 +188,20 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         return self._db
 
     async def insert_data(self):
-        #*** TODO *** Add new tables to the list below.
         rowcount = 0
         ledger = {}
 
         for table, data in TEST_DATA.items():
             if table in (self.db._T_LEDGER_HEADER,
                          self.db._T_LEDGER_TRANSACTION,
-                         self.db._T_LEDGER_REFERENCE, self.db._T_LEDGER_BANK,
-                         self.db._T_LEDGER_COH, self.db._T_LEDGER_INCOME,
-                         self.db._T_LEDGER_EXPENSE):
+                         self.db._T_LEDGER_REFERENCE,
+                         self.db._T_LEDGER_BANK,
+                         self.db._T_LEDGER_COH,
+                         self.db._T_LEDGER_INCOME,
+                         self.db._T_LEDGER_EXPENSE,
+                         self.db._T_LEDGER_TRANS_HISTORY,
+                         self.db._T_LEDGER_BALANCES,
+                         ):
                 ledger[table] = data
             else:
                 rowcount += await self.insert_table(table, data)
@@ -255,18 +259,18 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         query1 = ("SELECT name FROM sqlite_master "
                   "WHERE name = 'sqlite_sequence';")
 
-        async with aiosqlite.connect(self._db.user_data_fullpath) as db:
-            async with db.execute(query0) as cursor:
+        async with aiosqlite.connect(self.db.user_data_fullpath) as con:
+            async with con.execute(query0) as cursor:
                 for table in [row[0] for row in await cursor.fetchall()]:
                     await cursor.execute(f"DELETE FROM '{table}';")
 
                 # Reset auto-increment counters if they exist.
-                cursor = await db.execute(query1)
+                cursor = await con.execute(query1)
 
                 if await cursor.fetchone():
                     await cursor.execute("DELETE FROM sqlite_sequence;")
 
-                await db.commit()
+                await con.commit()
 
     async def insert_fiscal_year(self) -> int:
         """
@@ -348,6 +352,10 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                     con, data[self.db._T_LEDGER_INCOME])
                 rowcount += await self._insert_expenses(
                     con, data[self.db._T_LEDGER_EXPENSE])
+                rowcount += await self._insert_history(
+                    con, data[self.db._T_LEDGER_TRANS_HISTORY])
+                rowcount += await self._insert_balances(
+                    con, data[self.db._T_LEDGER_BALANCES])
                 await con.commit()
                 return rowcount
             except Exception as e:
@@ -371,8 +379,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         """
         Insert the ledger_reference data.
         """
-        query = (f"INSERT INTO {self.db._T_LEDGER_REFERENCE} (pk, r_type, "
-                 "number) VALUES (?, ?, ?);")
+        query = (f"INSERT INTO {self.db._T_LEDGER_REFERENCE} "
+                 "(pk, r_type, number) VALUES (?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount
 
@@ -419,5 +427,24 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
         """
         query = (f"INSERT INTO {self.db._T_LEDGER_EXPENSE} (lhfk, ftfk, "
                  "amount) VALUES (?, ?, ?);")
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount
+
+    async def _insert_history(self, con, data) -> int:
+        """
+        Insert the ledger_transaction_history data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_TRANS_HISTORY} ("
+                 "lhfk, fy1fk, history_id, trans_id, details, mtime) "
+                 "VALUES (?, ?, ?, ?, ?, ?);")
+        cursor = await con.executemany(query, data)
+        return cursor.rowcount
+
+    async def _insert_balances(self, con, data) -> int:
+        """
+        Insert the ledger_balances data.
+        """
+        query = (f"INSERT INTO {self.db._T_LEDGER_BALANCES} (fy1fk, a_type, "
+                 "balance, mtime) VALUES (?, ?, ?, ?);")
         cursor = await con.executemany(query, data)
         return cursor.rowcount

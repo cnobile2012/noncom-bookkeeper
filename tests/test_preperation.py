@@ -597,12 +597,18 @@ class TestDataPreperation(BaseAsyncTests):
         # Test 2 -- balance fail
         ldg_error2 = copy.deepcopy(ldg_data1)
         ldg_error2['coh']['amount'] = 5000
+        ldg_error3 = copy.deepcopy(self._LDG_DATA)
+        ldg_error3['transaction']['other'] = False
+        ldg_error3['panel']['date'] = date
+        err_msg0 = "Transaction Type fields are missing."
 
         data = (
             # Transaction->Other
             (ldg_data1, {'memo': "Test memo"}, expect0),
             (ldg_error1, {'memo': "Test memo"}, self.tdp._ERR_MSG10),
             (ldg_error2, {'memo': "Test memo"}, self.tdp._ERR_MSG10),
+            # Misc error
+            (ldg_error3, {}, err_msg0),
             )
         msg = "Expected '{}' with search {}, found '{}'."
 
@@ -620,6 +626,38 @@ class TestDataPreperation(BaseAsyncTests):
                 else:
                     self.assertEqual(expected, error, msg.format(
                         expected, search, error))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_ledger_update(self):
+        """
+        Test that the ledger method verifies the business rules for
+        entering ledger transaction other data.
+        """
+        msg = "Expected '{}', found '{}'."
+        await self.asyncTearDown()
+        await self.insert_ledger_requirements()
+        date = badidatetime.date(183, 7, 18)
+        # Test 1 -- insert
+        date = badidatetime.date(183, 3, 5)
+        dt_data = copy.deepcopy(self._LDG_DATA)
+        dt_data['panel']['date'] = date
+        dt_data['panel']['purge'] = 0
+        dt_data['panel']['memo'] = "Something"
+        dt_data['transaction']['distribution'] = True
+        dt_data['reference']['ocs'] = True
+        dt_data['bank']['deposit'] = True
+        dt_data['bank']['amount'] = 5000
+        lt = LedgerTransaction(self.db, dt_data)
+        rowcount = await lt.insert_ledger_transaction(183)
+        expected_records = 6
+        self.assertEqual(expected_records, rowcount, msg.format(
+            expected_records, rowcount))
+        dt_data['panel']['transaction_id'] = '1'
+        dt_data['panel']['memo'] = "Something Changed"
+
+        with patch.object(self.db, '_mf', self.fmf):
+            error = await self.tdp.ledger(dt_data, (183, 3, 5))
+            self.assertIsNone(error)
 
     #@unittest.skip("Temporarily skipped")
     async def test__build_ledger_state(self):

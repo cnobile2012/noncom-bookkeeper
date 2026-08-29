@@ -97,6 +97,10 @@ class LedgerTransaction:
                     if ((cat == 'expenses' and empty) or cat != 'expenses'):
                         tmp[key] = value
 
+        # bytes(json.encode('utf-8'))
+        # c_data = zlib.compress(b_data, 9)
+        # b_data = zlib.decompress(c_data)
+        # json = str(b_data, 'utf-9')
         return json.dumps(to_json)
 
     def deserialize_data(self, json_str: str) -> dict:
@@ -114,20 +118,18 @@ class LedgerTransaction:
             if isinstance(cat_values, dict):
                 tmp = data.setdefault(cat, {})
 
-                for key, value in cat_values.items():
-                    if isinstance(value, str):
-                        v_len = len(value)
+                for key, val in cat_values.items():
+                    if isinstance(val, str):
+                        v_len = len(val)
 
-                        if (v_len >= 10
-                            and (value[4], value[7]).count('-') == 2):
-                            if (v_len >= 19
-                                and (value[13], value[16]).count(':') == 2):
-                                value = badidatetime.datetime.fromisoformat(
-                                    value)
+                        if v_len >= 10 and (val[4], val[7]).count('-') == 2:
+                            if (v_len >= 19  # pragma: no cover
+                                and (val[13], val[16]).count(':') == 2):
+                                val = badidatetime.datetime.fromisoformat(val)
                             else:
-                                value = badidatetime.date.fromisoformat(value)
+                                val = badidatetime.date.fromisoformat(val)
 
-                    tmp[key] = value
+                    tmp[key] = val
 
         return data
 
@@ -226,7 +228,7 @@ class LedgerTransaction:
 
                 await con.commit()
                 return rowcount
-            except Exception as e:
+            except Exception:
                 await con.rollback()
                 self.db._log.exception("Error during ledger insert.")
                 raise
@@ -341,7 +343,7 @@ class LedgerTransaction:
 
                 await con.commit()
                 return rowcount
-            except Exception as e:
+            except Exception:
                 await con.rollback()
                 self.db._log.exception("Error during ledger update.")
                 raise
@@ -531,7 +533,6 @@ class LedgerTransaction:
         :returns: The rowcount.
         :rtype: int
         """
-        rowcount = 0
         query = (f"INSERT INTO {self.db._T_LEDGER_EXPENSE} (lhfk, ftfk, "
                  "amount) VALUES (:lhfk, :ftfk, :amount);")
         fts = await self.db.select_from_field_type_table(tuple(self._expenses))
@@ -543,9 +544,6 @@ class LedgerTransaction:
         if not has_fields:
             raise ValueError("Expense fields missing in the "
                              f"'{self.db._T_FIELD_TYPE}' table.")
-
-        if len(params) != len(self._expenses):
-            raise ValueError("Invalid number of parameters for the query.")
 
         cursor = await con.executemany(query, params)
         return cursor.rowcount
@@ -577,11 +575,11 @@ class LedgerTransaction:
         where = ""
         params = ()
 
-        if history_id is not None:
-            where += "history_is = ?"
+        if history_id:
+            where += "history_id = ?"
             params += (history_id,)
 
-        if trans_id is not None:
+        if trans_id:
             where += " AND trans_id = ?" if where else "trans_id = ?"
             params += (trans_id,)
 
@@ -634,7 +632,8 @@ class LedgerTransaction:
 
         query = ('SELECT fy.year, lb.a_type, lb.balance, lb.mtime '
                  f'FROM {self.db._T_LEDGER_BALANCES} AS lb '
-                 f'JOIN {self.db._T_FISCAL_YEAR} AS fy ON fy.pk = lb.fy1fk;')
+                 f'JOIN {self.db._T_FISCAL_YEAR} AS fy ON fy.pk = lb.fy1fk '
+                 f'WHERE fy.year = :year{where};')
         return await self.db._do_select_query(query, params)
 
     async def _update_ledger_balances(self, con, fy1fk: int, a_type: int

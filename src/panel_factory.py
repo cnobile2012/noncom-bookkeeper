@@ -11,9 +11,6 @@ from .bases import find_dict
 from .custom_widgits import ordered_month
 from .utilities import StoreObjects
 
-# https://pwwang.github.io/python-varname/
-# from varname import varname, nameof
-
 
 class PanelFactory(TomlMetaData):
     """
@@ -51,17 +48,24 @@ class PanelFactory(TomlMetaData):
         panel_kwargs = self.panel_config.get(panel, {}).get('meta')
         klass = StringIO()
 
-        if panel in ('organization',):
+        if panel == 'organization':
+            klass.write("from src.bases import BaseGenerated\n")
             klass.write("from src.custom_widgits import BadiDatePickerCtrl, "
                         "EVT_BADI_DATE_CHANGED\n")
             klass.write("from src.utilities import StoreObjects\n\n\n")
 
-        if panel in ('fiscal',):
+        if panel == 'budget':
+            klass.write("from src.bases import BaseGenerated\n")
+            klass.write("from src.utilities import StoreObjects\n\n\n")
+
+        if panel == 'fiscal':
+            klass.write("from src.bases import BaseGenerated\n")
             klass.write("from src.utilities import StoreObjects\n")
             klass.write("from src.custom_widgits import ColorCheckBox, "
                         "EVT_COLOR_CHECKBOX\n\n\n")
 
-        if panel in ('monthly',):
+        if panel == 'monthly':
+            klass.write("from src.bases import BaseGenerated\n")
             klass.write("from src.utilities import StoreObjects\n")
             klass.write("from src.custom_widgits import FlatArrowButton, "
                         "EVT_FLAT_ARROW\n\n\n")
@@ -248,7 +252,6 @@ class PanelFactory(TomlMetaData):
     def text_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
         mandatory = dict_.get('mandatory', False)
-        man = '*' if mandatory else ''
         parent, id, label = dict_.get('args')
         label = f"'''{label}'''"
         style = dict_.get('style', 0)
@@ -426,7 +429,6 @@ class PanelFactory(TomlMetaData):
     def left_right_buttons(self, klass, value):
         dict_ = find_dict(value)
         parent, left_tooltip, right_tooltip = dict_.get('args')
-        sizer = dict_.get('sizer')
         klass.write(f"        left = FlatArrowButton({parent}, label='←', "
                     f"direction='left', tooltip='{left_tooltip}')\n")
         klass.write(f"        right = FlatArrowButton({parent}, "

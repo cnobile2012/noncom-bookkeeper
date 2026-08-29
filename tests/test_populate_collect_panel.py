@@ -38,8 +38,11 @@ class TestPopulateCollect(BaseAsyncTests):
     async def asyncSetUp(self):
         await self.db.create_db()
         self.db.cache._flush_cache()
-        await self.insert_data()
+        # Needed for test_collect_panel_values and test_update_monthly_panel
+        await self.insert_fiscal_year()
+        await self.insert_monthly()
         await self.db.cache.load()
+        # Needed for everything
         self.frame.create_panels()
 
     async def asyncTearDown(self):
@@ -58,12 +61,12 @@ class TestPopulateCollect(BaseAsyncTests):
         date = badidatetime.date(183, 9, 6)
         data0 = {'panel': {'date': date, 'purge': 0,
                            'memo': "Test OCS Contribution"},
-                'transaction': {'contribution': True, 'distribution': False,
-                                'expense': False, 'other': False},
-                'reference': {'ocs': True, 'check': False, 'receipt': False,
-                              'deposit': False, 'number': ''},
-                'income': {'local_fund': True, 'contributed_expense': False,
-                           'other': False, 'amount': 5000}
+                 'transaction': {'contribution': True, 'distribution': False,
+                                 'expense': False, 'other': False},
+                 'reference': {'ocs': True, 'check': False, 'receipt': False,
+                               'deposit': False, 'number': ''},
+                 'income': {'local_fund': True, 'contributed_expense': False,
+                            'other': False, 'amount': 5000}
                  }
         lt = LedgerTransaction(self.db, data0)
         rowcount = await lt.insert_ledger_transaction(date.year)
@@ -73,12 +76,12 @@ class TestPopulateCollect(BaseAsyncTests):
         date = badidatetime.date(183, 8, 5)
         data1 = {'panel': {'date': date, 'purge': 0,
                            'memo': "Test OCS Contribution"},
-                'transaction': {'contribution': True, 'distribution': False,
-                                'expense': False, 'other': False},
-                'reference': {'ocs': True, 'check': False, 'receipt': False,
-                              'deposit': False, 'number': ''},
-                'income': {'local_fund': True, 'contributed_expense': False,
-                           'other': False, 'amount': 2000}
+                 'transaction': {'contribution': True, 'distribution': False,
+                                 'expense': False, 'other': False},
+                 'reference': {'ocs': True, 'check': False, 'receipt': False,
+                               'deposit': False, 'number': ''},
+                 'income': {'local_fund': True, 'contributed_expense': False,
+                            'other': False, 'amount': 2000}
                  }
         lt = LedgerTransaction(self.db, data1)
         rowcount = await lt.insert_ledger_transaction(date.year)
@@ -116,7 +119,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels['organization']
-            self.db.clear_panel('organization', panel)
+            self.db.clear_panel(panel)
 
             for values, expected in data:
                 self.db.populate_panel_values('organization', panel, values)
@@ -138,7 +141,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels['budget']
-            self.db.clear_panel('budget', panel)
+            self.db.clear_panel(panel)
 
             for values, expected in data:
                 self.db.populate_panel_values('budget', panel, values)
@@ -168,7 +171,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels['ledger']
-            self.db.clear_panel('ledger', panel)
+            self.db.clear_panel(panel)
 
             for ldg_data, expected in data:
                 self.db.populate_panel_values('ledger', panel, ldg_data)
@@ -203,7 +206,7 @@ class TestPopulateCollect(BaseAsyncTests):
         with patch.object(self.db, '_mf', self.fmf):
             for panel_name, values, expected in data:
                 panel = self.fmf.panels[panel_name]
-                self.db.clear_panel(panel_name, panel)
+                self.db.clear_panel(panel)
                 self.db.populate_panel_values(panel_name, panel, values)
                 result = self.db._check_panels_for_entries(panel_name)
                 self.assertEqual(expected, result, msg.format(
@@ -334,13 +337,12 @@ class TestPopulateCollect(BaseAsyncTests):
         msg = "Expected '{}', panel_name '{}', found '{}'."
 
         with patch.object(self.db, '_mf', self.fmf):
-            for panel_name, count, values, expected in data:
+            for panel_name, num_flds, values, expected in data:
                 panel = self.fmf.panels[panel_name]
                 self.db.populate_panel_values(panel_name, panel, values)
                 result = self.db.collect_panel_values(panel)
-                self.assertEqual(count, len(result), msg.format(
-                    count, panel_name, len(result)))
-                #print(result, '\n', expected)
+                self.assertEqual(num_flds, len(result), msg.format(
+                    num_flds, panel_name, len(result)))
 
                 for field_name, value in expected.items():
                     self.assertEqual(value, result[field_name], msg.format(
@@ -394,6 +396,84 @@ class TestPopulateCollect(BaseAsyncTests):
 
                         self.assertEqual(value, field, msg.format(
                             value, field_name, field))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_clear_panel(self):
+        """
+        Test that the clear_panel method clears all fields except balance
+        fields which are set to the current balance for that category.
+        """
+        def find_result(field, data):
+            field0, _, field1 = field.partition('.')
+
+            if field1:
+                result = data[field0][field1]
+            else:
+                result = data[field]
+
+            return result
+
+        org_data = copy.deepcopy(self._ORG_DATA)
+        bgt_data = copy.deepcopy(self._BGT_DATA)
+        mth_data = copy.deepcopy(self._MTH_DATA)
+        fy_data = copy.deepcopy(self._FY_DATA)
+        fy_data['current_fiscal_year'] = True
+        ldg_data = copy.deepcopy(self._LDG_DATA)
+        ldg_data['panel']['memo'] = 'Test Memo'
+
+        data = (
+            ('organization', org_data, ('locale_name', 'New York')),
+            ('budget', bgt_data, ('cash_in_bank', '200000')),
+            ('monthly', mth_data, ('treasurer_this_month', 'Joe Schmo')),
+            ('fiscal', fy_data, ('current_fiscal_year', True)),
+            ('ledger', ldg_data, ('panel.memo', 'Test Memo')),
+            )
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for panel_name, setup_data, expected in data:
+                panel = self.fmf.panels[panel_name]
+                self.db.populate_panel_values(panel_name, panel, setup_data)
+                exists = self.db.collect_panel_values(panel)
+                field, value = expected
+                result = find_result(field, exists)
+                self.assertEqual(value, result, msg.format(value, result))
+                self.db.clear_panel(panel)
+                not_exists = self.db.collect_panel_values(panel)
+                result = find_result(field, not_exists)
+                self.assertNotEqual(value, result, msg.format(value, result))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_find_child_sets(self):
+        """
+        Test that the find_child_sets method correctly finds the children
+        in the panel that have data.
+        """
+        data = (
+            ('organization', 0, 6),
+            ('budget', 0, 36),
+            ('fiscal', 1, 4),
+            ('monthly', 1, 7),
+            )
+        msg = "Expected {}, found {}."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for panel_name, none_sets, expected in data:
+                panel = self.fmf.panels[panel_name]
+                widget_sets = 0
+                none_count = 0
+
+                for w0, w1 in self.db.find_child_sets(panel):
+                    self.assertIsNotNone(w0)
+                    widget_sets += 1
+
+                    if w1 is None:
+                        none_count += 1
+
+                self.assertEqual(expected, widget_sets, msg.format(
+                    expected, widget_sets))
+                self.assertEqual(none_sets, none_count, msg.format(
+                    none_sets, none_count))
 
     #@unittest.skip("Temporarily skipped")
     async def test__set_statusbar(self):
@@ -464,44 +544,14 @@ class TestPopulateCollect(BaseAsyncTests):
                         expected, result))
 
     #@unittest.skip("Temporarily skipped")
-    def test_find_child_sets(self):
-        """
-        Test that the find_child_sets method correctly finds the children
-        in the panel that have data.
-        """
-        data = (
-            ('organization', 0, 6),
-            ('budget', 0, 36),
-            ('fiscal', 1, 4),
-            ('monthly', 1, 7),
-            )
-        msg = "Expected {}, found {}."
-
-        with patch.object(self.db, '_mf', self.fmf):
-            for panel_name, none_sets, expected in data:
-                panel = self.fmf.panels[panel_name]
-                widget_sets = 0
-                none_count = 0
-
-                for w0, w1 in self.db.find_child_sets(panel):
-                    self.assertIsNotNone(w0)
-                    widget_sets += 1
-
-                    if w1 is None:
-                        none_count += 1
-
-                self.assertEqual(expected, widget_sets, msg.format(
-                    expected, widget_sets))
-                self.assertEqual(none_sets, none_count, msg.format(
-                    none_sets, none_count))
-
-    #@unittest.skip("Temporarily skipped")
-    def test__add_fiscal_year_choices(self):
+    async def test__add_fiscal_year_choices(self):
         """
         Test that the _add_fiscal_year_choices method correctly adds the
         fiscal years to the ComboBox choices.
         """
-        err_msg0 = "Can only pass the 'panel' or the 'w0' arguments."
+        await self.insert_fiscal_year()
+        await self.db.cache.load()
+        err_msg0 = "Can only pass the 'panel' or the 'w0' argument."
 
         with patch.object(self.db, '_mf', self.fmf):
             fiscal_panel = self.fmf.panels['fiscal']
@@ -683,7 +733,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
             for row, expected in data:
                 # Set the panel empty
-                self.db.clear_panel('ledger', panel)
+                self.db.clear_panel(panel)
                 items = self.db.convert_db_to_panel(row)
                 self.db.populate_panel_values('ledger', panel, items)
                 result = self.db.collect_panel_values(panel)
@@ -698,11 +748,13 @@ class TestPopulateCollect(BaseAsyncTests):
         pass
 
     #@unittest.skip("Temporarily skipped")
-    def test_populate_fiscal_panel(self):
+    async def test_populate_fiscal_panel(self):
         """
         Test that the populate_fiscal_panel method sets the correct
         ColorCheckBox with the current, work_on, or audit values.
         """
+        await self.insert_fiscal_year()
+        await self.db.cache.load()
         data = (
             (183, (True, True, False)),
             )

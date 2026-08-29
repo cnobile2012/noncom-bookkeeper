@@ -218,7 +218,7 @@ class MenuBar:
                 fullpath = dlg.GetPath()
 
                 try:
-                    with open(fullpath, 'r') as file:
+                    with open(fullpath, 'r') as _:
                         self.load_file(fullpath)
                 except IOError:
                     wx.LogError("Cannot open file '%s'." % fullpath)
@@ -252,9 +252,9 @@ class MenuBar:
 
     def edit_ledger_data(self, event):  # TODO Has screen fill issues
         if 'ledger' not in self.panels:
-            self.panels = ('ledger', LedgerDataEntry(self.parent))
+            self.panels = ('ledger', LedgerDataEntry(self.container))
 
-        self.db.clear_panel('ledger', self.panels['ledger'])
+        self.db.clear_panel(self.panels['ledger'])
         self._do_panel_switch('ledger')
 
     def edit_fiscal_year(self, event):  # TODO Has screen fill issues
@@ -303,20 +303,20 @@ class MenuBar:
 
     def tool_fields(self, event):
         if 'fields' not in self.panels:
-            self.panels = ('fields', FieldEdit(self.parent))
+            self.panels = ('fields', FieldEdit(self.container))
 
         self._do_panel_switch('fields', (
             [wx.ID_OPEN, True], [wx.ID_SAVE, True], [wx.ID_SAVEAS, True],))
 
     def settings_fiscal(self, event):  # Has screen fill issues
         if 'fiscal_settings' not in self.panels:
-            self.panels = ('fiscal_settings', FiscalSettings(self.parent))
+            self.panels = ('fiscal_settings', FiscalSettings(self.container))
 
         self._do_panel_switch('fiscal_settings')
 
     def settings_paths(self, event):  # Has screen fill issues
         if 'paths' not in self.panels:
-            self.panels = ('paths', Paths(self.parent))
+            self.panels = ('paths', Paths(self.container))
 
         self._do_panel_switch('paths')
 
@@ -337,29 +337,22 @@ class MenuBar:
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
 
-        # self._setup_sizer_height_correctly(self.sizer)
         self.panel.Show()
-        self.parent.Layout()
-        self.sizer.Layout()
-        self.panel.Layout()
+        self.panel.InvalidateBestSize()
+        #self.SendSizeEvent()
 
-        # self.panel.SetBackgroundColour("light blue")
-        # self.parent.SetBackgroundColour("orange")
-        # self.frame.SetBackgroundColour("green")
+        hasattr(self.panel, 'SetupScrolling') and self.panel.SetupScrolling(
+            rate_x=20, rate_y=40)
 
-        # print("Panel size:", self.panel.GetSize())
-        # print("Parent size:", self.parent.GetSize())
-        # print("Frame size:", self.frame.GetSize())
-        # print(self.frame.GetSize(), self.panel.GetSize())
+        # if hasattr(self.panel, 'refresh_scrolling'):
+        #     self.panel.refresh_scrolling()
 
-        # Force repaint after full layout
-        # wx.CallAfter(self._finalize_panel_display, self.panel)
+        wx.CallAfter(self.container.SendSizeEvent)
+        #self.container.SendSizeEvent()
 
-    # def _finalize_panel_display(self, panel):
-    #     panel.SetSize(536, 808)
-    #     panel.Layout()
-    #     panel.Refresh()
-    #     panel.Update()
+        # self.container.Layout()
+        # self.sizer.Layout()
+        # self.panel.Layout()
 
     def change_menu_items(self, menu_list: tuple=()) -> None:
         """
@@ -423,17 +416,6 @@ class MenuBar:
             help_ = item.GetHelp()
 
         event.Skip()
-
-    # def _setup_sizer_height_correctly(self, sizer: wx.Sizer,
-    #                                   swidth: int=None) -> None:
-    #     """
-    #     Add the height of the status bar to the Sizer height so that the
-    #     call to SetupScrolling creates the correct virtual window size.
-    #     """
-    #     width, height = sizer.GetMinSize()
-    #     width = swidth if swidth else width
-    #     height += self.frame.statusbar_size[1]
-    #     sizer.SetMinSize((width, height))
 
     @property
     def panel(self):

@@ -43,7 +43,7 @@ class DataPreperation:
                  "one expense and the amount and expenses must be equal.")
     _ERR_MSG7 = ("If Transaction Type (Expense) and Entry Reference (Receipt "
                  "and Number) you must enter a Cash On Hand (Disbursement "
-                 "and Amount) and at least one expense and the amount and "
+                 "and Amount) and at least one expense. The amount and total "
                  "expenses must be equal.")
     _ERR_MSG8 = ("If Transaction Type (Expense) and Entry Reference (OCS) "
                  "you must enter Bank (Withdrawal and Amount) and at least "
@@ -52,7 +52,7 @@ class DataPreperation:
                  "you must enter a Reference (Number).")
     _ERR_MSG10 = ("If Transaction Type->Other you must also enter a Memo "
                   "and Entry Reference->Receipt Number and Cash-on-Hand->"
-                  "Replenishment and Income->Local Fund.")
+                  "Replenishment and Income->Local Fund or Income->Other.")
 
     def __init__(self, db, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -187,14 +187,14 @@ class DataPreperation:
                     values = {'year': year, 'data': items}
                     rowcount = await self.db.cache.update(
                         self.db._T_MONTHLY, values)
-                    self._log.info("Updated %s table data: %s.",
-                                self.db._T_MONTHLY, values)
+                    self._log.info("Updated %s row in %s table data: %s.",
+                                   rowcount, self.db._T_MONTHLY, values)
                 else:
                     values = {'year': year, 'data': items}
                     rowcount = await self.db.cache.insert(
                         self.db._T_MONTHLY, values)
-                    self._log.info("Inserted %s table data: %s.",
-                                self.db._T_MONTHLY, values)
+                    self._log.info("Inserted %s row in %s table data: %s.",
+                                   rowcount, self.db._T_MONTHLY, values)
 
         return error
 
@@ -214,7 +214,6 @@ class DataPreperation:
             items = [(*date, data['current_fiscal_year'],
                       data['work_on_this_fiscal_year'],
                       data['audit_complete'])]
-            values = {'year': date[0], 'data': items}
             rowcount = await self.db.cache.update(self.db._T_FISCAL_YEAR,
                                                   {'data': items})
             self._log.debug("Updated %s row(s) of fiscal year data.", rowcount)
@@ -328,8 +327,8 @@ class DataPreperation:
 
                 if not (panel['memo'] and ref['receipt'] and ref['number']
                         and coh['replenishment'] and coh['amount']
-                        and income['local_fund'] and income['amount']
-                        and equal):
+                        and (income['local_fund'] or income['other'])
+                        and income['amount'] and equal):
                     error = self._ERR_MSG10
             else:
                 error = "Transaction Type fields are missing."

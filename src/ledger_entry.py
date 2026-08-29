@@ -145,7 +145,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         sizer.Add(btn_sizer, 0, wx.CENTER, 0)
 
         self.gbs = wx.GridBagSizer(2, 2)
-        sizer.Add(self.gbs, 1, wx.CENTER, 10)
+        sizer.Add(self.gbs, 0, wx.CENTER | wx.ALL, 10)
         pos = 0
 
         widget_01 = wx.StaticText(self, wx.ID_ANY, "Transaction ID:")
@@ -266,8 +266,22 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         panel_0.SetSizer(sizer_1)
         self.gbs.Add(panel_0, (pos, 0), (1, 1), wx.EXPAND, 0)
 
-        self.SetupScrolling(rate_x=20, rate_y=40)
+        self._scroll_rate = (20, 40)
+        self.SetupScrolling(rate_x=self._scroll_rate[0],
+                            rate_y=self._scroll_rate[1])
         self.Hide()
+
+    # def refresh_scrolling(self):
+    #     """
+    #     Recompute this panel's virtual scrolling size against its current
+    #     real allocation. ScrolledPanel.SetupScrolling() is only accurate
+    #     for whatever size the panel has *at the moment it's called* — since
+    #     it originally runs during __init__ before the panel has been sized
+    #     by its container's sizer, it must be re-run once the panel actually
+    #     has a real, final size (i.e. when it's shown).
+    #     """
+    #     rate_x, rate_y = self._scroll_rate
+    #     self.SetupScrolling(rate_x=rate_x, rate_y=rate_y)
 
     @property
     def ledger_labels(self) -> dict:
@@ -625,7 +639,7 @@ class SearchResult(wx.Dialog):
         data = db.convert_db_to_panel(row)
         panel = mf.panels['ledger']
         panel.initializing = True
-        db.clear_panel('ledger', mf.panels['ledger'])
+        db.clear_panel(mf.panels['ledger'])
         db.populate_panel_values('ledger', panel, data)
         panel.initializing = False
         event.Skip()

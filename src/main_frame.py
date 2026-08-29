@@ -7,17 +7,12 @@ __docformat__ = "restructuredtext en"
 import os
 import asyncio
 import logging
-
-from .config import TomlAppConfig
-from .utilities import StoreObjects, ConfirmationDialog
-from .custom_widgits import (BadiDatePickerCtrl, EVT_BADI_DATE_CHANGED,
-                             ColorCheckBox, EVT_COLOR_CHECKBOX)
-
 import wx
 import wx.adv
 
+from .config import TomlAppConfig
+from .utilities import StoreObjects, ConfirmationDialog
 from .menu import MenuBar
-# BaseGenerated is used by the factory created classes.
 from .bases import BaseGenerated, version
 from .panel_factory import PanelFactory
 
@@ -128,12 +123,12 @@ class MainFrame(wx.Frame, MenuBar):
                 panel.dirty = False
                 c_name = name.capitalize()
                 self.statusbar_message = f"Finished saving {c_name} data."
-            elif error and name in ('ledger',):
+            elif error and name == 'ledger':
                 self._log.warning(error)
                 cap = "Ledger Rule Error"
                 bg = wx.Colour('yellow')
                 dlg = ConfirmationDialog(
-                    panel, error, cap, enable=True, bg_color=bg,
+                    panel, error, cap, wrap=500, enable=False, bg_color=bg,
                     fg_color=panel.w_fg_color)
                 dlg.show()
             else:
@@ -152,11 +147,11 @@ class MainFrame(wx.Frame, MenuBar):
                             do_save(name, panel)
 
                             if name == 'ledger':
-                                self.db.clear_panel('ledger', panel)
+                                self.db.clear_panel(panel)
                                 panel.reset_buttons()
                         elif panel.cancel:
                             if name == 'ledger':
-                                self.db.clear_panel('ledger', panel)
+                                self.db.clear_panel(panel)
                                 panel.reset_buttons()
                             else:
                                 panel.cancel = False
@@ -205,7 +200,7 @@ class MainFrame(wx.Frame, MenuBar):
                 exec(code, globals())
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = globals(
-                    )[class_name](self.parent, *self.args, **self.kwargs)
+                    )[class_name](self.container, *self.args, **self.kwargs)
 
     def set_size(self, size, key='size'):
         """
@@ -253,10 +248,6 @@ class MainFrame(wx.Frame, MenuBar):
     @property
     def frame(self):
         return self
-
-    @property
-    def parent(self):
-        return self.container
 
     @property
     def sizer(self):

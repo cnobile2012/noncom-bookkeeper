@@ -196,12 +196,11 @@ class ConfirmationDialog(wx.Dialog):
     Create a generic dialog box.
     """
 
-    def __init__(self, parent, msg, cap, *, enable=False, bg_color=None,
-                 fg_color=None):
-        super().__init__(parent, wx.ID_ANY, cap,
+    def __init__(self, parent, msg, cap, *, wrap=500, enable=True,
+                 bg_color=None, fg_color=None):
+        super().__init__(parent, wx.ID_ANY, title=cap,
                          style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
         self.enable = enable
-        self.SetSize((300, 150))
         self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD, 0, ''))
         # Red-ish
@@ -211,11 +210,10 @@ class ConfirmationDialog(wx.Dialog):
         self.SetBackgroundColour(_bg_color)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(sizer)
         message = wx.StaticText(self, wx.ID_ANY, msg)
         message.SetBackgroundColour(wx.Colour(*_bg_color))
         message.SetForegroundColour(wx.Colour(*_fg_color))
-        message.Wrap(300)
+        message.Wrap(wrap)
         sizer.Add(message, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 10)
 
         line = wx.StaticLine(self, -1, size=(20, -1), style=wx.LI_HORIZONTAL)
@@ -224,7 +222,7 @@ class ConfirmationDialog(wx.Dialog):
         button_sizer = wx.StdDialogButtonSizer()
         sizer.Add(button_sizer, 0, wx.CENTER | wx.ALL, 6)
 
-        if not enable:
+        if enable:
             ok_button = wx.Button(self, wx.ID_OK)
             button_sizer.AddButton(ok_button)
 
@@ -233,15 +231,14 @@ class ConfirmationDialog(wx.Dialog):
         cancel_button.Bind(wx.EVT_BUTTON, self.cancel)
         button_sizer.AddButton(cancel_button)
         button_sizer.Realize()
-        sizer.Fit(self)
+        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
 
     def show(self):  # pragma: no cover
         self.CenterOnParent()
         ret = False
 
         if self.enable:
-            value = self.Show()
-        else:
             value = self.ShowModal()
 
             if value == wx.ID_OK:
@@ -250,6 +247,8 @@ class ConfirmationDialog(wx.Dialog):
                 ret = False
 
             self.Destroy()
+        else:
+            value = self.Show()
 
         return ret
 

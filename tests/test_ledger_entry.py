@@ -511,10 +511,6 @@ class TestSearchDialog(BaseAsyncTests):
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.fmf.panels.get('ledger')
 
-
-
-
-
     #@unittest.skip("Temporarily skipped")
     def test_button_cancel(self):
         """

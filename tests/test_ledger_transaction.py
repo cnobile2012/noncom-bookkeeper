@@ -202,28 +202,43 @@ class TestLedgerTransaction(BaseAsyncTests):
                                  'deposit': False, 'number': 'B1000'},
                    'coh': {'replenishment': True, 'disbursement': False,
                            'amount': 5000, 'balance': None},
+                   'income': {'local_fund': True, 'amount': 5000},
                    }
         lt = LedgerTransaction(self.db, rt_data)
         rowcount = await lt.insert_ledger_transaction(183)
-        expected_records = 6
+        expected_records = 8
         self.assertEqual(expected_records, rowcount, msg.format(
             expected_records, rowcount))
-        expect_data2 = (3, 183, date, "Description", 1, 3, 'B1000', None, None,
-                        1, 5000, None, None, 0)
+        expect_data2 = (3, 183, badidatetime.date(183, 3, 5), 'Description', 1,
+                        3, 'B1000', None, None, 1, 5000, 1, 5000, 0)
+        # b_type query
+        expect_data3 = (1, 183, badidatetime.date(183, 3, 5), 'Something', 2,
+                        1, '', 1, 5000, None, None, None, None, 0)
+        # c_type query
+        expect_data4 = (3, 183, badidatetime.date(183, 3, 5), 'Description', 1,
+                        3, 'B1000', None, None, 1, 5000, 1, 5000, 0)
+        # i_type query
+        expect_data5 = (3, 183, badidatetime.date(183, 3, 5), 'Description', 1,
+                        3, 'B1000', None, None, 1, 5000, 1, 5000, 0)
 
         data = (
-            (date, None, None, None, None, False, expect_data0),
-            (None, 1, None, None, None, False, expect_data0),
-            (None, None, 2, '1000', None, False, expect_data1),
-            (None, None, 3, 'B1000', None, False, expect_data2),
-            (None, None, None, None, 'Description', True,
+            (date, None, None, None, None, None, False, expect_data0),
+            (None, 1, None, None, None, None, False, expect_data0),
+            (None, None, 2, '1000', None, None, False, expect_data1),
+            (None, None, 3, 'B1000', None, None, False, expect_data2),
+            (None, None, None, None, 'Description', None, True,
              (expect_data1, expect_data2)),
+            (None, None, None, None, None, 'b_type', False, expect_data3),
+            (None, None, None, None, None, 'c_type', False, expect_data4),
+            (None, None, None, None, None, 'i_type', False, expect_data5),
             )
 
-        for date, trans_id, r_type, number, memo, multi, expected in data:
-            result = await lt.select_ledger_transaction(
-                183, **{'date': date, 'trans_id': trans_id, 'r_type': r_type,
-                        'number': number, 'memo': memo})
+        for (date, trans_id, r_type, number,
+             memo, types, multi, expected) in data:
+            kwargs = {'date': date, 'trans_id': trans_id, 'r_type': r_type,
+                      'number': number, 'memo': memo}
+            if types: kwargs[types] = None
+            result = await lt.select_ledger_transaction(183, **kwargs)
 
             if multi:
                 for idx, row in enumerate(result):
@@ -371,6 +386,34 @@ class TestLedgerTransaction(BaseAsyncTests):
             expect_data1, result))
 
     #@unittest.skip("Temporarily skipped")
+    async def test_insert_ledger_transaction_expenses_error(self):
+        """
+        Test that the insert_ledger_transaction method raises an error.
+        """
+        err_msg0 = "Expense fields missing in the '{}' table."
+        date = badidatetime.date(183, 3, 5)
+        expect_data0 = (1, 183, date, "Description", 3, 1, '', None, None,
+                        None, None, None, None, 0)
+        expect_data1 = [(1, 'national_baháí_fund', 10000),
+                        (1, 'regional_baháí_council', 5000)]
+        data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
+                'transaction': {'contribution': False, 'distribution': False,
+                                'expense': True, 'other': False},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
+                'expenses': {'national_baháí_fund': 10000,
+                             'regional_baháí_council': 5000,
+                             'bogus_field': 20000}
+                }
+        lt = LedgerTransaction(self.db, data)
+
+        with self.assertRaises(ValueError) as cm:
+            await lt.insert_ledger_transaction(date.year)
+
+        ex = str(cm.exception)
+        self.assertEqual(err_msg0.format(self.db._T_FIELD_TYPE), ex)
+
+    #@unittest.skip("Temporarily skipped")
     async def test_insert_ledger_transaction_error(self):
         """
         Test that the insert_ledger_transaction method reports errors properly.
@@ -485,6 +528,7 @@ class TestLedgerTransaction(BaseAsyncTests):
         """
         Test that the update_ledger_transaction method updates the coh data.
         """
+        msg = "Expected {}, found {}."
         trans_id = 1
         expected_records = 6
         date = badidatetime.date(183, 3, 5)
@@ -496,9 +540,16 @@ class TestLedgerTransaction(BaseAsyncTests):
                                 'expense': True, 'other': False},
                 'reference': {'ocs': False, 'check': False, 'receipt': True,
                               'deposit': False, 'number': 'STR9999'},
+                #'coh': {'replenishment': True, 'disbursement': False,
+                #        'amount': 5000},
                 'income': {'local_fund': False, 'contributed_expense': True,
                            'other': False, 'amount': 5000}
                 }
+        lt = LedgerTransaction(self.db, data)
+        rowcount = await lt.insert_ledger_transaction(date.year)
+        self.assertEqual(expected_records, rowcount, msg.format(
+            expected_records, rowcount))
+
         u_data = copy.deepcopy(data)
         u_data['panel']['memo'] = "Updated"
         u_data['transaction']['contribution'] = True
@@ -508,9 +559,6 @@ class TestLedgerTransaction(BaseAsyncTests):
         u_data['reference']['number'] = ''
         u_data['income']['local_fund'] = True
         u_data['income']['contributed_expense'] = False
-        msg = "Expected {}, found {}."
-        lt = LedgerTransaction(self.db, data)
-        await lt.insert_ledger_transaction(date.year)
         lt = LedgerTransaction(self.db, u_data)
         rowcount = await lt.update_ledger_transaction(trans_id)
         self.assertEqual(expected_records, rowcount, msg.format(
@@ -603,3 +651,87 @@ class TestLedgerTransaction(BaseAsyncTests):
         result = self.find_text(file_data, 'ledger_transaction update_ledger',
                                 1, err_msg1)
         self.assertIn(err_msg1, result)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_select_ledger_history(self):
+        """
+        Test that the select_ledger_history method selects history data.
+        """
+        expect0 = [(1, 1, 183, badidatetime.date(183, 9, 6),
+                    '{"panel": {"transaction_id": "", "date": "0183-09-06", '
+                    '"memo": "Test OSC distribution", "total_expenses": "", '
+                    '"purge": 0}, "transaction": {"contribution": false, '
+                    '"distribution": true, "expense": false, "other": false}, '
+                    '"reference": {"ocs": true, "check": false, '
+                    '"receipt": false, "deposit": false, "number": ""}, '
+                    '"bank": {"deposit": true, "withdrawal": false, '
+                    '"amount": 15000}, "coh": {"replenishment": false, '
+                    '"disbursement": false, "amount": ""}, '
+                    '"income": {"local_fund": false, '
+                    '"contributed_expense": false, "other": false, '
+                    '"amount": ""}, "expenses": {}}')]
+        expect1 = [(2, 2, 183, badidatetime.date(183, 9, 6),
+                    '{"panel": {"transaction_id": "", "date": "0183-09-06", '
+                    '"memo": "Test OSC contribution", "total_expenses": "", '
+                    '"purge": 0}, "transaction": {"contribution": true, '
+                    '"distribution": false, "expense": false, '
+                    '"other": false}, "reference": {"ocs": true, '
+                    '"check": false, "receipt": false, "deposit": false, '
+                    '"number": ""}, "bank": {"deposit": false, '
+                    '"withdrawal": false, "amount": ""}, '
+                    '"coh": {"replenishment": false, "disbursement": false, '
+                    '"amount": ""}, "income": {"local_fund": true, '
+                    '"contributed_expense": false, "other": false, '
+                    '"amount": 5000}, "expenses": {}}')]
+        expect2 = [(6, 5, 183, badidatetime.date(183, 9, 8),
+                    '{"panel": {"transaction_id": "5", "date": "0183-09-08", '
+                    '"memo": "Test OCS Distribution Update", '
+                    '"total_expenses": 0, "purge": 0}, '
+                    '"transaction": {"contribution": false, '
+                    '"distribution": true, "expense": false, "other": false}, '
+                    '"reference": {"ocs": true, "check": false, '
+                    '"receipt": false, "deposit": false, "number": ""}, '
+                    '"bank": {"deposit": true, "withdrawal": false, '
+                    '"amount": 50000, "balance": 40000}, '
+                    '"coh": {"replenishment": false, "disbursement": false, '
+                    '"amount": "", "balance": 2500}, '
+                    '"income": {"local_fund": false, '
+                    '"contributed_expense": false, "other": false, '
+                    '"amount": "", "balance": 7500}, "expenses": {}}')]
+        data = (
+            (1, None, expect0),
+            (None, 2, expect1),
+            (6, 5, expect2),
+            )
+        msg = "Expected {}, found {}."
+        lt = LedgerTransaction(self.db)
+
+        for history_id, trans_id, expected in data:
+            histories = await lt.select_ledger_history(history_id=history_id,
+                                                       trans_id=trans_id)
+
+            for idx, history in enumerate(histories):
+                self.assertEqual(expected[idx], history[:-2], msg.format(
+                    expected[idx], history[:-2]))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_select_select_transaction_balances(self):
+        """
+        Test that the select_transaction_balances method selects history data.
+        """
+        expect0 = [(183, 1, 90000), (183, 3, 7500), (183, 2, 2500),
+                   (183, 4, 25000)]
+        expect1 = [(183, 1, 90000)]
+        data = (
+            (183, None, expect0),
+            (183, 1, expect1),
+            )
+        msg = "Expected {}, found {}."
+        lt = LedgerTransaction(self.db)
+
+        for year, a_type, expected in data:
+            balances = await lt.select_transaction_balances(year, a_type)
+
+            for idx, balance in enumerate(balances):
+                self.assertEqual(expected[idx], balance[:-1], msg.format(
+                    expected[idx], balance[:-1]))

@@ -4,10 +4,11 @@
 #
 __docformat__ = "restructuredtext en"
 
+import os
 import unittest
 import wx
 
-from . import check_flag
+from . import check_flag, log
 from src.utilities import (Borg, StoreObjects, GridBagSizer,
                            ConfirmationDialog, _ClickPosition, EventStaticText)
 
@@ -138,7 +139,6 @@ class BaseTests(BaseAsyncTests):
         cls.create_objects(cls)
 
     def create_objects(self):
-        self.frame = wx.Frame(None)
         self.gbs = GridBagSizer()
         self.frame.SetSizer(self.gbs)
         widget = EventStaticText(self.frame, wx.ID_ANY,
@@ -200,15 +200,6 @@ class TestGridBagSizer(BaseTests):
                 self.assertIn(str(txt), label, msg.format(num, label))
             else:
                 break
-
-    # def check_children(self):
-    #     for idx in range(14):
-    #         item = self.gbs.GetItem(idx)
-    #         label = item.GetWindow().GetLabel()
-    #         pos = item.GetPos()
-    #         print(f"Label: {label}, Position: {pos}")
-
-    #     print()
 
     #@unittest.skip("Temporarily skipped")
     def test_gbs_swap_rows_3_items_in_row(self):
@@ -461,10 +452,15 @@ class TestEventStaticText(BaseTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        self.create_objects()
+        # Shrink footprint to near-nothing
+        self.frame.SetSize((1, 1))
+        # Fully transparent — still "shown" for ClientToScreen
+        transparent_ok = self.frame.SetTransparent(0)
+        self.frame.Show()
 
-    # def tearDown(self):
-    #     self.app.ExitMainLoop()
+        if not transparent_ok:
+            log.warning("No compositor active — window will be a small but "
+                        "visible dot.")
 
     def get_widget(self, index=0):
         return self.frame.GetChildren()[index]
@@ -495,7 +491,6 @@ class TestEventStaticText(BaseTests):
         Test that a new event is returned.
         """
         widget = self.get_widget()
-        #widget.new_event_type
         event = widget.EVT_CLICK_POSITION
         expected = 'wx.core.PyEventBinder'
         msg = f"Event expected '{expected}' found {event}."
@@ -520,12 +515,10 @@ class TestEventStaticText(BaseTests):
             label = window.GetLabel()
             msg = f"Label expected '{expected_label}' found '{label}'."
             self.assertEqual(expected_label, label, msg)
-            # Exit GUI
             self.app.ExitMainLoop()
 
         self.frame.Bind(widget.EVT_CLICK_POSITION, event_click,
                         id=widget.GetId())
-        # self.frame.Show()  # Not needed to pass tests.
         self.simulate_left_click(widget)
         wx.CallLater(250, self.app.ExitMainLoop)
         self.app.MainLoop()

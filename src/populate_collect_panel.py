@@ -147,9 +147,10 @@ class PopulateCollect(AsyncEventLoop):
 
         for w0, w1 in self.find_child_sets(panel):
             name0, field_name, widget0 = w0
-            if name0 in self._EXCLUDE_WIDGETS: continue
 
-            if name0 in ('RadioBox', 'ComboBox'):
+            if name0 in self._EXCLUDE_WIDGETS:
+                continue
+            elif name0 in ('RadioBox', 'ComboBox'):
                 if field_name == 'month_index':
                     push(field_name, widget0.GetStringSelection())
                 else:
@@ -240,8 +241,8 @@ class PopulateCollect(AsyncEventLoop):
 
                     widget1.SetValue(value)
 
-                    if (panel_name == 'ledger' and value
-                        and name1 == 'ColorCheckBox'):
+                    if (panel_name == 'ledger' and name1 == 'ColorCheckBox'
+                        and value):
                         widget1.Notify()
 
                 else:  # pragma: no cover
@@ -249,11 +250,10 @@ class PopulateCollect(AsyncEventLoop):
         elif panel_name == 'fiscal':  # First time run only.
             self._add_fiscal_year_choices(panel=panel)
 
-    def clear_panel(self, panel_name: str, panel: wx.Panel) -> None:
+    def clear_panel(self, panel: wx.Panel) -> None:
         """
         Clear all fields in a panel.
 
-        :param str name: The name of the panel.
         :param wx.Panel panel: The panel object.
         """
         balances = self._get_balances()
@@ -283,9 +283,6 @@ class PopulateCollect(AsyncEventLoop):
                     widget1.SetValue(wx.DateTime.Today())
                 elif name1 == 'ColorCheckBox':
                     widget1.SetValue(False)
-
-                    #if panel_name == 'ledger':
-                    #    widget1.Notify()
 
     def find_child_sets(self, panel: wx.Panel) -> list:
         """
@@ -402,7 +399,7 @@ class PopulateCollect(AsyncEventLoop):
         :param tuple w0: Widget information.
         """
         assert (panel, w0).count(None) == 1, (
-            "Can only pass the 'panel' or the 'w0' arguments.")
+            "Can only pass the 'panel' or the 'w0' argument.")
 
         if not w0:  # First time run.
             widget = [w0[2] for w0, w1 in self.find_child_sets(panel)
@@ -502,12 +499,11 @@ class PopulateCollect(AsyncEventLoop):
         """
         Get the balances and return a dict.
         """
-        bals = {}
         names = {1: 'bank', 2: 'coh', 3: 'income', 4: 'expenses'}
         lt = LedgerTransaction(self)
         balances = self.run_async(lt.select_transaction_balances(
             self.cache.year))
-        return {names[bal[1]]: bal[2] for bal in balances}
+        return {names[bal[1]]: f"{bal[2]/100:.2f}" for bal in balances}
 
     def isfloat(self, value: str) -> bool:
         return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True

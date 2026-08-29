@@ -386,11 +386,14 @@ TEST_DATA = {'fiscal_year': [(1, 183, 3, 5, 1, 1, 0,
                                 badidatetime.datetime(183, 9, 6, None, None, 5, 52, 53, 817600, tzinfo=badidatetime.timezone.utc)),
                                (4, 1, 2, 4, 4, 4, badidatetime.date(183, 9, 6),
                                 'Test expense', 0,
-                                badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 826400, tzinfo=badidatetime.timezone.utc))],
-             'ledger_transaction': [(1, 2), (2, 1), (3, 1), (4, 3)],
+                                badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 826400, tzinfo=badidatetime.timezone.utc)),
+                               (5, 1, 2, 5, 5, 5, badidatetime.date(183, 9, 8),
+                                'Test OCS Distribution Update', 0,
+                                badidatetime.datetime(183, 9, 7, None, None, 23, 6, 5, 515200, tzinfo=badidatetime.timezone.utc))],
+             'ledger_transaction': [(1, 2), (2, 1), (3, 1), (4, 3), (5, 2)],
              'ledger_reference': [(1, 1, ''), (2, 1, ''), (3, 3, 'R1000'),
-                                  (4, 1, '')],
-             'ledger_bank': [(1, 1, 15000), (4, 2, 25000)],
+                                  (4, 1, ''), (5, 1, '')],
+             'ledger_bank': [(1, 1, 15000), (4, 2, 25000), (5, 1, 50000)],
              'ledger_coh': [(3, 1, 2500)],
              'ledger_income': [(2, 1, 5000), (3, 1, 2500)],
              'ledger_expense': [(4, 30, 15000), (4, 39, 10000)],
@@ -481,9 +484,52 @@ TEST_DATA = {'fiscal_year': [(1, 183, 3, 5, 1, 1, 0,
                                              '15000, '
                                              '"shrine_of_abdul_bah\\u00e1": '
                                              '10000}}',
-                                             badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 837200, tzinfo=badidatetime.timezone.utc))],
-             'ledger_balances': [(1, 1, -10000,
-                                  badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 848000, tzinfo=badidatetime.timezone.utc)),
+                                             badidatetime.datetime(183, 9, 6, None, None, 5, 53, 58, 837200, tzinfo=badidatetime.timezone.utc)),
+                                            (5, 1, 5, 5,
+                                             '{"panel": {"transaction_id": "", '
+                                             '"date": "0183-09-08", "memo": "", '
+                                             '"total_expenses": "", "purge": 0}, '
+                                             '"transaction": {"contribution": '
+                                             'false, "distribution": true, '
+                                             '"expense": false, "other": false}, '
+                                             '"reference": {"ocs": true, '
+                                             '"check": false, "receipt": false, '
+                                             '"deposit": false, "number": ""}, '
+                                             '"bank": {"deposit": true, '
+                                             '"withdrawal": false, "amount": '
+                                             '50000, "balance": null}, "coh": '
+                                             '{"replenishment": false, '
+                                             '"disbursement": false, "amount": '
+                                             '"", "balance": 2500}, "income": '
+                                             '{"local_fund": false, '
+                                             '"contributed_expense": false, '
+                                             '"other": false, "amount": "", '
+                                             '"balance": 7500}, "expenses": {}}',
+                                             badidatetime.datetime(183, 9, 7, None, None, 23, 6, 5, 533200, tzinfo=badidatetime.timezone.utc)),
+                                            (5, 1, 6, 5,
+                                             '{"panel": {"transaction_id": "5", '
+                                             '"date": "0183-09-08", "memo": '
+                                             '"Test OCS Distribution Update", '
+                                             '"total_expenses": 0, "purge": 0}, '
+                                             '"transaction": {"contribution": '
+                                             'false, "distribution": true, '
+                                             '"expense": false, "other": false}, '
+                                             '"reference": {"ocs": true, '
+                                             '"check": false, "receipt": false, '
+                                             '"deposit": false, "number": ""}, '
+                                             '"bank": {"deposit": true, '
+                                             '"withdrawal": false, "amount": '
+                                             '50000, "balance": 40000}, "coh": '
+                                             '{"replenishment": false, '
+                                             '"disbursement": false, "amount": '
+                                             '"", "balance": 2500}, "income": '
+                                             '{"local_fund": false, '
+                                             '"contributed_expense": false, '
+                                             '"other": false, "amount": "", '
+                                             '"balance": 7500}, "expenses": {}}',
+                                             badidatetime.datetime(183, 9, 7, None, None, 23, 7, 30, 518400, tzinfo=badidatetime.timezone.utc))],
+             'ledger_balances': [(1, 1, 90000,
+                                  badidatetime.datetime(183, 9, 7, None, None, 23, 7, 30, 536400, tzinfo=badidatetime.timezone.utc)),
                                  (1, 3, 7500,
                                   badidatetime.datetime(183, 9, 6, None, None, 5, 52, 53, 860800, tzinfo=badidatetime.timezone.utc)),
                                  (1, 2, 2500,
