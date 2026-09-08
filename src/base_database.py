@@ -385,10 +385,6 @@ class BaseDatabase(PopulateCollect, Settings):
                 self.populate_panel_values(panel_name, panel, values)
                 panel.initializing = False
 
-            if panel_name == 'organization':
-                # Set the lat and lon for the badidatetime package is used.
-                self.set_local_coordinates()
-
     async def _populate_month(self, fy: tuple) -> None:
         """
         Populate the currently chosen month with that month's data.

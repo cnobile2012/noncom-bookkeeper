@@ -15,6 +15,7 @@ from .utilities import StoreObjects, ConfirmationDialog
 from .menu import MenuBar
 from .bases import BaseGenerated, version
 from .panel_factory import PanelFactory
+from .ledger_entry import LedgerDataEntry
 
 
 try:  # pragma: no cover
@@ -180,6 +181,7 @@ class MainFrame(wx.Frame, MenuBar):
         return data
 
     def load_panels(self):
+        self.db.set_local_coordinates()
         sf = PanelFactory()
         sf.parse()
 
@@ -201,6 +203,9 @@ class MainFrame(wx.Frame, MenuBar):
                 class_name = sf.get_class_name(panel)
                 self.__panel_classes[panel] = globals(
                     )[class_name](self.container, *self.args, **self.kwargs)
+
+        self.__panel_classes['ledger'] = LedgerDataEntry(
+            self.container, *self.args, **self.kwargs)
 
     def set_size(self, size, key='size'):
         """

@@ -190,7 +190,6 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
         nav_sizer.Add(self.header, 1, wx.ALL | wx.EXPAND)
         nav_sizer.Add(next_month, 0, wx.LEFT, self.FromDIP(8))
         nav_sizer.Add(next_year, 0, wx.LEFT, self.FromDIP(4))
-
         vbox.Add(nav_sizer, 0, wx.ALL | wx.EXPAND, self.FromDIP(5))
 
         # Grid of days
@@ -311,6 +310,9 @@ class BadiDatePickerCtrl(wx.Panel):
         self.text_ctrl.Bind(wx.EVT_TEXT, self.on_change)
         self.text_ctrl.Bind(wx.EVT_KILL_FOCUS, self.on_change)
         self.text_ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_change)
+
+        if not badidatetime.has_local_coords():
+            self.SetValue('')
 
         bmp = wx.ArtProvider.GetBitmap(wx.ART_GO_DOWN, wx.ART_BUTTON, (16, 16))
         self.calendar_btn = wx.BitmapButton(self, bitmap=bmp,

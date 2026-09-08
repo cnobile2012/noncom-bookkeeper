@@ -2,6 +2,7 @@
 # %load_ext autoreload
 import wx
 import badidatetime
+badidatetime.set_local_coordinates(35.388093, -78.8624963)
 from src.custom_widgits import (BadiDatePickerCtrl, ColorCheckBox,
                                 FlatArrowButton)
 from src.bahai_database import Database

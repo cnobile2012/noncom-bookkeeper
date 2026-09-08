@@ -10,7 +10,6 @@ import wx
 from wx.lib.inspection import InspectionTool
 
 from .config import TomlAppConfig, TomlMetaData
-from .ledger_entry import LedgerDataEntry
 from .tools import ShortCuts, FieldEdit
 from .settings import FiscalSettings, Paths
 
@@ -251,9 +250,6 @@ class MenuBar:
         self._do_panel_switch('monthly')
 
     def edit_ledger_data(self, event):  # TODO Has screen fill issues
-        if 'ledger' not in self.panels:
-            self.panels = ('ledger', LedgerDataEntry(self.container))
-
         self.db.clear_panel(self.panels['ledger'])
         self._do_panel_switch('ledger')
 

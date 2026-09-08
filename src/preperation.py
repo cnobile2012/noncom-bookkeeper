@@ -6,7 +6,6 @@ __docformat__ = "restructuredtext en"
 
 import logging
 import datetime
-import badidatetime
 
 from geopy.geocoders import Nominatim
 from geopy import exc

@@ -74,11 +74,15 @@ class Database(BaseDatabase):
         if None in (lat, lon):
             for rec in self.cache.get(self._T_DATA, r_type='organization'):
                 if rec[1] == 'latitude':
-                    lat = rec[2]
+                    lat = float(rec[2])
                 elif rec[1] == 'longitude':
-                    lon = rec[2]
+                    lon = float(rec[2])
 
         badidatetime.set_local_coordinates(lat, lon)
+
+    @property
+    def has_local_coords(self) -> bool:
+        return badidatetime.has_local_coords()
 
     #
     # Fiscal year SELECT, INSERT and UPDATE methods.
