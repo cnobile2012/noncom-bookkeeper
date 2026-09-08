@@ -6,10 +6,6 @@ Non Commercial Bookkeeper
    :target: https://en.wikipedia.org/wiki/MIT_License
    :alt: License
 
-.. image:: https://img.shields.io/pypi/v/noncom-bookkeeper.svg
-   :target: https://pypi.python.org/project/noncom-bookkeeper
-   :alt: PyPi Version
-
 .. image:: https://img.shields.io/pypi/pyversions/noncom-bookkeeper.svg
     :target: https://pypi.python.org/project/noncom-bookkeeper
     :alt: PY Versions

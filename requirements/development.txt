@@ -1,6 +1,7 @@
 # Include the bare minimum.
 -r base.txt
 
+setuptools
 wheel
 pytest
 coverage
