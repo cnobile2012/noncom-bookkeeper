@@ -21,17 +21,18 @@ jobs:
     env:
       TEST_RUNNING: true
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential python3-dev
-        # sudo apt-get install -y libpython3.11-dev libpython3.12-dev
-        # sudo apt-get install -y libpython3.13-dev libpython3.14-dev
+        sudo apt-get install -y build-essential python3-dev xvfb libgtk-3-0
+        # sudo apt-get install -y libpython3.10-dev libpython3.11-dev
+        # sudo apt-get install -y libpython3.12-dev libpython3.13-dev
+        # sudo apt-get install -y libpython3.14-dev
         python -m pip install --upgrade pip
         pip install -r requirements/development.txt
     - name: Lint with flake8
@@ -42,6 +43,6 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is
         # 127 chars wide, but Python is 80 characters.
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+    - name: Test with pytest under Xvfb
       run: |
-        make tests
+        vfb-run -a --server-args="-screen 0 1280x1024x24" make tests
