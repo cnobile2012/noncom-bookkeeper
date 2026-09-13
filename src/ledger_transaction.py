@@ -513,16 +513,30 @@ class LedgerTransaction:
         cursor = await con.execute(query, self._income)
         return cursor.rowcount
 
-    async def select_expenses(self, trans_id: int) -> list:
+    async def select_expenses(self, trans_id: int=None, year: int= None,
+                              field_name: str=None) -> list:
         """
         Select the expense records based on the header pk.
 
         :param int trans_id: The ledger_header transaction ID.
+        :param int year: The fiscal year.
+        :param str field_name: A field name to search for.
         :returns: A row of data relating to the ledger_header table.
         """
+        assert trans_id or (year and field_name), (
+            "Arguments must be either the trans_id or both the year and "
+            f"field_name, found ({trans_id}, {year}, {field_name}).")
+
+        if trans_id:
+            where = "trans_id = ?"
+            params = (trans_id,)
+        elif field_name and year:
+            where = "year = ? AND field = ?"
+            params = (year, field_name,)
+
         query = (f"SELECT * FROM {self.db._V_LEDGER_EXPENSE} "
-                 "WHERE trans_id = ?;")
-        return await self.db._do_select_query(query, (trans_id,))
+                 f"WHERE {where};")
+        return await self.db._do_select_query(query, params)
 
     async def _insert_expenses(self, con, header_pk: int) -> int:
         """

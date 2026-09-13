@@ -13,10 +13,11 @@
 
 [meta]
 title = "Bahá'í Bookkeeper"
-panels = [['Organization Info', 'organization'],
-          ['Budget', 'budget'],
-          ['Monthly', 'monthly'],
-          ['Choose Fiscal Year', 'fiscal']]
+#           Panel Title          Internam Name  Editable
+panels = [['Organization Info', 'organization', false],
+          ['Budget', 'budget', true],
+          ['Monthly', 'monthly', false],
+          ['Choose Fiscal Year', 'fiscal', false]]
 locale_prefix = {lsa="The Spiritual Assembly of the Bahá'ís of ", group="Bahá'í group of "}
 font_16_bold = [16, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
                 'FONTWEIGHT_BOLD', 0, '']
@@ -111,40 +112,40 @@ sizer_0 = ['BoxSizer', 'VERTICAL']
 sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
 
 [budget.widgets]
-widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Yearly Budget Worksheet'], font='font_16_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6], pos=[0, 0], span=[1, 2]}]
+widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Yearly Budget Worksheet'], font='font_16_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6], pos=[0, 0], span=[1, 2], hidable=false}]
 
-widget_01 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Rollover from Last Year'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[1, 0], span=[1, 1]}]
+widget_01 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Rollover from Last Year'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[1, 0], span=[1, 1], hidable=false}]
 
 widget_02 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[2, 0], span=[1, 2]}]
 
-widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Cash in Bank:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[3, 0], span=[1, 1]}]
+widget_03 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Cash in Bank:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[3, 0], span=[1, 1], hidable=false}]
 widget_04 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[3, 1], span=[1, 1], financial=true, mandatory=true}]
 
-widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'OCS Holdings:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[4, 0], span=[1, 1]}]
+widget_05 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'OCS Holdings:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[4, 0], span=[1, 1], hidable=false}]
 widget_06 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[4, 1], span=[1, 1], financial=true, mandatory=true}]
 
-widget_07 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Outstanding Bills (Previous Year):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1]}]
+widget_07 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Outstanding Bills (Previous Year):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 0], span=[1, 1], hidable=false}]
 widget_08 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[5, 1], span=[1, 1], financial=true, mandatory=true}]
 
-widget_09 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Membership (Beginning of Year):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[6, 0], span=[1, 1]}]
+widget_09 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Total Membership (Beginning of Year):"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[6, 0], span=[1, 1], hidable=false}]
 widget_10 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[50, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[6, 1], span=[1, 1], financial=false, mandatory=true}]
 
 # Skip position
 
-widget_11 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Budgeted Income'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[8, 0], span=[1, 2]}]
+widget_11 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Budgeted Income'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[8, 0], span=[1, 2], hidable=false}]
 
 widget_12 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[9, 0], span=[1, 2]}]
 
-widget_13 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monetary Contributions:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[10, 0], span=[1, 1]}]
+widget_13 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monetary Contributions:'], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[10, 0], span=[1, 1], hidable=false}]
 widget_14 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[10, 1], span=[1, 1], financial=true, mandatory=true}]
 
 # Skip position
 
-widget_15 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Expenses'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[12, 0], span=[1, 2]}]
+widget_15 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Expenses'], font='font_14_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[12, 0], span=[1, 2], hidable=false}]
 
 widget_16 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[13, 0], span=[1, 2]}]
 
-widget_17 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Local Bahá'í Expenses"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[14, 0], span=[1, 1]}]
+widget_17 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Local Bahá'í Expenses"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[14, 0], span=[1, 1], hidable=false}]
 
 widget_18 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[15, 0], span=[1, 1]}]
 
@@ -163,7 +164,7 @@ widget_26 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_27 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Teaching:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[20, 0], span=[1, 1]}]
 widget_28 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[20, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_29 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National Bahá'í Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[21, 0], span=[1, 1]}]
+widget_29 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "National Bahá'í Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[21, 0], span=[1, 1], hidable=false}]
 
 widget_30 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[22, 0], span=[1, 1]}]
 
@@ -200,7 +201,7 @@ widget_50 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_51 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Legal Defense for the Refugees in Turkey:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[33, 0], span=[1, 1]}]
 widget_52 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[33, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_53 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Continental and International Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[34, 0], span=[1, 1]}]
+widget_53 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Continental and International Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[34, 0], span=[1, 1], hidable=false}]
 
 widget_54 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[35, 0], span=[1, 1]}]
 
@@ -237,7 +238,7 @@ widget_74 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_75 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "US Deputization Fund - International Pioneering:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[46, 0], span=[1, 1]}]
 widget_76 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[46, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_77 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[47, 0], span=[1, 1]}]
+widget_77 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[47, 0], span=[1, 1], hidable=false}]
 
 widget_78 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[48, 0], span=[1, 1]}]
 
@@ -250,7 +251,7 @@ widget_82 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY'
 widget_83 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Regional Facilities Fund:"], min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[51, 0], span=[1, 1]}]
 widget_84 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[51, 1], span=[1, 1], financial=true, mandatory=false}]
 
-widget_85 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[52, 0], span=[1, 1]}]
+widget_85 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Funds"], font='font_12_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos=[52, 0], span=[1, 1], hidable=false}]
 
 widget_86 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND', 0], pos=[53, 0], span=[1, 1]}]
 
@@ -258,12 +259,12 @@ widget_87 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Teachi
 widget_88 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[54, 1], span=[1, 1], financial=true, mandatory=false}]
 
 [budget.buttons]
-widget_89 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 10], pos=[55, 0], span=[1, 2]}]
+line_1 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 10], pos=[55, 0], span=[1, 2]}]
 
 panel_0 = ['Panel', {args='self', add=[0, 'EXPAND | ALL', 10], pos=[56, 0], span=[1, 1]}]
 sizer_2 = ['StdDialogButtonSizer', {panel='panel_0'}]
-widget_91 = ['Button', 'w_bg_color_3', {args=['panel_0', 'ID_FORWARD', '&Save'], min=[-1, -1], callback='button_save'}]
-widget_92 = ['Button', 'w_bg_color_3', {args=['panel_0', 'ID_CANCEL', ''], min=[-1, -1], callback='button_cancel'}]
+button_00 = ['Button', 'w_bg_color_3', {args=['panel_0', 'ID_FORWARD', '&Save'], min=[-1, -1], callback='button_save'}]
+button_01 = ['Button', 'w_bg_color_3', {args=['panel_0', 'ID_CANCEL', ''], min=[-1, -1], callback='button_cancel'}]
 
 [monthly]
 

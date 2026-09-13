@@ -529,8 +529,8 @@ class TestTomlMetaData(BaseTomlTest):
         num_panels = len(panels)
         msg = f"There should be {self._NUM_PANELS}, found {num_panels}."
         self.assertEqual(self._NUM_PANELS, num_panels, msg)
-        num_in_panel = 2
-        msg = ("There should be 2 strings in each panel object, found {} "
+        num_in_panel = 3  # Panel Title, Internam Name, Editable (bool)
+        msg = ("There should be 3 fields in each panel object, found {} "
                "in panel {}.")
 
         for panel in panels:

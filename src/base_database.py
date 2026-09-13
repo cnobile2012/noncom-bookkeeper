@@ -192,7 +192,7 @@ class BaseDatabase(PopulateCollect, Settings):
             'trans_id', 'fy_year', 'date', 'memo', 't_type', 'r_type',
             'number', 'b_type', 'b_amount', 'c_type', 'c_amount', 'i_type',
             'i_amount', 'purge', 'ctime'),
-        _V_LEDGER_EXPENSE: ('trans_id', 'field', 'amount'),
+        _V_LEDGER_EXPENSE: ('trans_id', 'year', 'field', 'amount'),
         _V_LEDGER_HISTORY: (
             'history_id', 'trans_id', 'fy_year', 'date', 'details', 'ctime',
             'mtime'),
@@ -210,8 +210,9 @@ class BaseDatabase(PopulateCollect, Settings):
             f'LEFT JOIN {_T_LEDGER_COH} AS lc ON lh.pk = lc.lhfk '
             f'LEFT JOIN {_T_LEDGER_INCOME} AS li ON lh.pk = li.lhfk;'),
         _V_LEDGER_EXPENSE: (
-            'SELECT lh.trans_id, ft.field, le.amount '
+            'SELECT lh.trans_id, fy1.year, ft.field, le.amount '
             f'FROM {_T_LEDGER_HEADER} AS lh '
+            f'JOIN {_T_FISCAL_YEAR} AS fy1 ON lh.fy1fk = fy1.pk '
             f'JOIN {_T_LEDGER_EXPENSE} AS le ON lh.pk = le.lhfk '
             f'JOIN {_T_FIELD_TYPE} AS ft ON le.ftfk = ft.pk;'),
         _V_LEDGER_HISTORY: (

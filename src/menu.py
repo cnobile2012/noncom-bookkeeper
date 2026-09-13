@@ -88,7 +88,7 @@ class MenuBar:
                                            "Show the WX inspection tool.",
                                            'tool_inspection', None,
                                            True, None]),
-                           ('fields', [402, "&Edit Fields\tCTRL+D",
+                           ('fields', [402, "&Field Editor\tCTRL+D",
                                        "Edit fields on various screens.",
                                        'tool_fields', None, True, None]),
                            ('separator_1', []),

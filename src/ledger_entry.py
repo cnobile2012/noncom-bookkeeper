@@ -53,8 +53,8 @@ class _CreateWidgets:
                              wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, 0, ''))
         text.SetForegroundColour(self.w_fg_color)
         text.SetMinSize((-1, -1))
-        self.gbs.Add(text, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
+        self.gbs.Add(text, (pos, 0), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
 
         if btn:
             button = wx.Button(self, wx.ID_CLEAR, label='')
@@ -67,8 +67,8 @@ class _CreateWidgets:
 
         line = wx.StaticLine(self, wx.ID_ANY)
         line.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(line, (pos+1, 0), (1, span), wx.EXPAND | wx.TOP
-                     | wx.BOTTOM, 4)
+        self.gbs.Add(line, (pos+1, 0), (1, span),
+                     wx.EXPAND | wx.TOP | wx.BOTTOM, 4)
         return button, pos + 2
 
     def _next_title_and_labels(self, title_gen, label_gen) -> tuple:
@@ -151,8 +151,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         widget_01 = wx.StaticText(self, wx.ID_ANY, "Transaction ID:")
         widget_01.SetForegroundColour(self.w_fg_color)
         widget_01.SetMinSize((-1, -1))
-        self.gbs.Add(widget_01, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.gbs.Add(widget_01, (pos, 0), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
         widget_02 = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY,
                                 name='')
         widget_02.Enable(False)
@@ -160,15 +160,15 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         widget_02.SetForegroundColour(self.w_fg_color)
         widget_02.SetMinSize((self.tc_width+6, 26))
         widget_02.category = 'panel'
-        self.gbs.Add(widget_02, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.gbs.Add(widget_02, (pos, 1), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
         pos += 1
 
         widget_03 = wx.StaticText(self, wx.ID_ANY, "Date:")
         widget_03.SetForegroundColour(self.w_fg_color)
         widget_03.SetMinSize((-1, -1))
-        self.gbs.Add(widget_03, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.gbs.Add(widget_03, (pos, 0), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
         widget_04 = BadiDatePickerCtrl(self, wx.ID_ANY,
                                        bgcolor=self.w_bg_color)
         widget_04.SetBackgroundColour(self.w_bg_color)
@@ -178,8 +178,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         widget_04.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
         widget_04.mandatory = True
         widget_04.category = 'panel'
-        self.gbs.Add(widget_04, (pos, 1), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT | wx.BOTTOM, 6)
+        self.gbs.Add(widget_04, (pos, 1), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
         pos += 1
 
         sizer_1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -231,8 +231,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         balance_text = wx.StaticText(self, wx.ID_ANY, "Total Expenses:")
         balance_text.SetForegroundColour(self.w_fg_color)
         balance_text.SetMinSize((-1, -1))
-        self.gbs.Add(balance_text, (pos, 0), (1, 1), wx.ALIGN_CENTER_VERTICAL
-                     | wx.RIGHT, 6)
+        self.gbs.Add(balance_text, (pos, 0), (1, 1),
+                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         self.balance_ctrl = wx.TextCtrl(self, wx.ID_ANY, "",
                                         style=wx.TE_READONLY, name='')
         self.balance_ctrl.SetBackgroundColour(self.w1_bg_color)

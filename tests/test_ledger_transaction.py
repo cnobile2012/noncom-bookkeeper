@@ -361,8 +361,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, "Description", 3, 1, '', None, None,
                         None, None, None, None, 0)
-        expect_data1 = [(1, 'national_baháí_fund', 10000),
-                        (1, 'regional_baháí_council', 5000)]
+        expect_data1 = [(1, 183, 'national_baháí_fund', 10000),
+                        (1, 183, 'regional_baháí_council', 5000)]
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
                 'transaction': {'contribution': False, 'distribution': False,
                                 'expense': True, 'other': False},
@@ -583,8 +583,8 @@ class TestLedgerTransaction(BaseAsyncTests):
         date = badidatetime.date(183, 3, 5)
         expect_data0 = (1, 183, date, 'Updated', 3, 2, '1000', None, None,
                         None, None, None, None, 0)
-        expect_data1 = [(1, 'national_baháí_fund', 15000),
-                        (1, 'regional_baháí_council', 10000)]
+        expect_data1 = [(1, 183, 'national_baháí_fund', 15000),
+                        (1, 183, 'regional_baháí_council', 10000)]
         data = {'panel': {'date': date, 'purge': 0, 'memo': "Inserted"},
                 'transaction': {'contribution': True, 'distribution': False,
                                 'expense': False, 'other': False},
@@ -735,3 +735,53 @@ class TestLedgerTransaction(BaseAsyncTests):
             for idx, balance in enumerate(balances):
                 self.assertEqual(expected[idx], balance[:-1], msg.format(
                     expected[idx], balance[:-1]))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_select_expenses(self):
+        """
+        Test that the select_expenses method returns the correct expenses
+        based on the arguments provided.
+        """
+        msg = "Expected {}, found {}."
+        expected_records = 7
+        date = badidatetime.date(183, 3, 5)
+        data = {'panel': {'date': date, 'purge': 0, 'memo': "Description"},
+                'transaction': {'contribution': False, 'distribution': False,
+                                'expense': True, 'other': False},
+                'reference': {'ocs': True, 'check': False, 'receipt': False,
+                              'deposit': False, 'number': ''},
+                'expenses': {'national_baháí_fund': 10000,
+                             'regional_baháí_council': 5000}
+                }
+        lt = LedgerTransaction(self.db, data)
+        rowcount = await lt.insert_ledger_transaction(date.year)
+        self.assertEqual(expected_records, rowcount, msg.format(
+            expected_records, rowcount))
+        expect0 = [(1, 183, 'national_baháí_fund', 10000),
+                   (1, 183, 'regional_baháí_council', 5000)]
+        expect1 = [(1, 183, 'national_baháí_fund', 10000)]
+        err_msg0 = ("Arguments must be either the trans_id or both the year "
+                    "and field_name, found ({}, {}, {}).")
+        data = (
+            (1, None, None, True, expect0),
+            (None, 183, 'national_baháí_fund', True, expect1),
+            (None, 183, 'invalid_field_name', True, []),
+            (None, 183, None, False, err_msg0.format(None, 183, None)),
+            (None, 183, '', False, err_msg0.format(None, 183, '')),
+            )
+        lt = LedgerTransaction(self.db)
+
+        for trans_id, year, field_name, valid, expected in data:
+            if valid:
+                result = await lt.select_expenses(trans_id=trans_id, year=year,
+                                                  field_name=field_name)
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
+            else:
+                with self.assertRaises(AssertionError) as cm:
+                    await lt.select_expenses(trans_id=trans_id, year=year,
+                                             field_name=field_name)
+
+                result = str(cm.exception)
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))

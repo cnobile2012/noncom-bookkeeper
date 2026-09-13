@@ -846,7 +846,6 @@ class TestPopulateCollect(BaseAsyncTests):
         # Insert test data
         await self._insert_transactions()
 
-
         # Test 1
         test_data0 = {'panel.transaction_id': '', 'panel.date': '',
                       'panel.memo': '', 'transaction.contribution': False,
@@ -879,8 +878,8 @@ class TestPopulateCollect(BaseAsyncTests):
         test_data3['panel.date'] = badidatetime.date(183, 8, 10)
         expect3 = [((3, 183, badidatetime.date(183, 8, 10), 'Test expenses', 3,
                      1, '', 2, 30000, None, None, None, None, 0),
-                    [(3, 'national_baháí_fund', 20000),
-                     (3, 'regional_baháí_council', 10000)])]
+                    [(3, 183, 'national_baháí_fund', 20000),
+                     (3, 183, 'regional_baháí_council', 10000)])]
 
         data = (
             (test_data0, []),

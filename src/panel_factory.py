@@ -34,7 +34,7 @@ class PanelFactory(TomlMetaData):
         return self.__panels.get(panel)
 
     def parse(self):
-        for m_name, panel in self.panels:
+        for m_name, panel, _ in self.panels:
             try:
                 self.setup_panel(panel)
             except Exception as e:
@@ -222,65 +222,70 @@ class PanelFactory(TomlMetaData):
 
     def static_text(self, klass, panel, widget, value):
         dict_ = find_dict(value)
-        # mandatory = dict_.get('mandatory', False)
-        parent, id, label = dict_.get('args')
-        label = f"'''{label}'''"
-        style = dict_.get('style', 0)
-        style = style if style == 0 else self._fix_flags(style)
-        id = self._fix_flags(id)
-        klass.write(f"        {widget} = wx.StaticText("
-                    f"{parent}, {id}, {label}, style={style})\n")
-        wrap = dict_.get('wrap')
-        self._set_colors(klass, widget, value)
-        self._set_font(klass, widget, dict_)
-        min_size = dict_.get('min')
+        hidden = dict_.get('hidden', False)
 
-        if min_size:
-            klass.write(f"        {widget}.SetMinSize({min_size})\n")
+        if not hidden:
+            parent, id, label = dict_.get('args')
+            label = f"'''{label}'''"
+            style = dict_.get('style', 0)
+            style = style if style == 0 else self._fix_flags(style)
+            id = self._fix_flags(id)
+            klass.write(f"        {widget} = wx.StaticText("
+                        f"{parent}, {id}, {label}, style={style})\n")
+            wrap = dict_.get('wrap')
+            self._set_colors(klass, widget, value)
+            self._set_font(klass, widget, dict_)
+            min_size = dict_.get('min')
 
-        if dict_.get('focus', False):
-            klass.write(f"        {widget}.SetFocus()\n")
+            if min_size:
+                klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        if wrap:
-            klass.write(f"        {widget}.Wrap({wrap})\n")
+            if dict_.get('focus', False):
+                klass.write(f"        {widget}.SetFocus()\n")
 
-        self._set_add_to_sizer(klass, widget, value)
+            if wrap:
+                klass.write(f"        {widget}.Wrap({wrap})\n")
 
-        if dict_.get('instance'):
-            klass.write(f"        self.{widget} = {widget}\n")
+            self._set_add_to_sizer(klass, widget, value)
+
+            if dict_.get('instance'):
+                klass.write(f"        self.{widget} = {widget}\n")
 
     def text_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)
-        mandatory = dict_.get('mandatory', False)
-        parent, id, label = dict_.get('args')
-        label = f"'''{label}'''"
-        style = dict_.get('style', 0)
-        style = style if style == 0 else self._fix_flags(style)
-        id = self._fix_flags(id)
-        klass.write(f"        {widget} = wx.TextCtrl("
-                    f"{parent}, {id}, {label}, style={style})\n")
-        self._set_colors(klass, widget, value)
-        self._set_font(klass, widget, dict_)
-        min_size = dict_.get('min')
+        hidden = dict_.get('hidden', False)
 
-        if min_size:
-            klass.write(f"        {widget}.SetMinSize({min_size})\n")
+        if not hidden:
+            mandatory = dict_.get('mandatory', False)
+            parent, id, label = dict_.get('args')
+            label = f"'''{label}'''"
+            style = dict_.get('style', 0)
+            style = style if style == 0 else self._fix_flags(style)
+            id = self._fix_flags(id)
+            klass.write(f"        {widget} = wx.TextCtrl("
+                        f"{parent}, {id}, {label}, style={style})\n")
+            self._set_colors(klass, widget, value)
+            self._set_font(klass, widget, dict_)
+            min_size = dict_.get('min')
 
-        if dict_.get('focus', False):
-            klass.write(f"        {widget}.SetFocus()\n")
+            if min_size:
+                klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
-        if dict_.get('dirty_event', True):
-            klass.write(f"        {widget}.Bind(wx.EVT_TEXT, "
-                        "self.set_dirty_flag)\n")
+            if dict_.get('focus', False):
+                klass.write(f"        {widget}.SetFocus()\n")
 
-        self._set_add_to_sizer(klass, widget, value)
+            if dict_.get('dirty_event', True):
+                klass.write(f"        {widget}.Bind(wx.EVT_TEXT, "
+                            "self.set_dirty_flag)\n")
 
-        if dict_.get('instance'):
-            klass.write(f"        self.{widget} = {widget}\n")
+            self._set_add_to_sizer(klass, widget, value)
 
-        value = dict_.get('financial', False)
-        klass.write(f"        {widget}.financial = {value}\n")
-        klass.write(f"        {widget}.mandatory = {mandatory}\n")
+            if dict_.get('instance'):
+                klass.write(f"        self.{widget} = {widget}\n")
+
+            value = dict_.get('financial', False)
+            klass.write(f"        {widget}.financial = {value}\n")
+            klass.write(f"        {widget}.mandatory = {mandatory}\n")
 
     def date_picker_ctrl(self, klass, panel, widget, value):
         dict_ = find_dict(value)

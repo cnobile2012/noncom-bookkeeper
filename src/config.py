@@ -644,7 +644,7 @@ class TomlCreatePanel(BaseSystemData):
     Create an updated panel Toml file.
     """
     _KEY_NUM = re.compile(r"^.*_(?P<count>\d+)$")
-    _last_removed = None
+    _last_changed = None
     __panel = None
 
     def __init__(self, *args, **kwargs):
@@ -709,20 +709,20 @@ class TomlCreatePanel(BaseSystemData):
     def add_name(self, name: str, key_num: int=None) -> None:
         """
         Add the named StaticText and its companion the TextCtrl to the end
-        Toml file. If `key_num` is provided the `key_num is the x coordinate
-        and 0 will be the y continent.
+        of the current panel's section in the Toml file. If `key_num` is
+        provided the `key_num is the x coordinate and 0 will be the y
+        continent.
 
         :param str name: The value name of the StaticText widget.
         :param int key_num: The key number to use.
         """
-        assert self.__panel, "Current panel not set."
+        assert self.__panel, "Programming error: Current panel not set."
 
         if key_num is None:
-            x, y = self._find_widget_gbs_pos(key_num=self._next_widget_num)
-        else:
-            x, y = (key_num, 0)
+            key_num = self._next_widget_num
+            #x, y = self._find_widget_gbs_pos(key_num=key_num)
 
-        key_num = self._next_widget_num
+        x, y = (key_num, 0)
         key = self._make_key(key_num)
         self.__panel[key] = [
             'StaticText', 'w_fg_color_1',
@@ -731,7 +731,7 @@ class TomlCreatePanel(BaseSystemData):
              'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
              'pos': [x, y],
              'span': [1, 1]}]
-        key = self._make_key(key_num+1)
+        key = self._make_key(key_num + 1)
         self.__panel[key] = [
             'TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
@@ -740,60 +740,52 @@ class TomlCreatePanel(BaseSystemData):
              'pos': [x, y+1],
              'span': [1, 1]}]
 
-    def remove_name(self, name):
+    def hide_name(self, name):
         """
-        Remove the named StaticText and its companion the TextCtrl from
-        the Toml file.
+        Hide the named StaticText and its companion the TextCtrl in the
+        Toml file.
 
         :param name: The value name of the StaticText widget.
         :type name: str
         """
         for key, item in self.__panel.items():
-            list_ = find_dict(item).get('args', [])
+            dict_ = find_dict(item)
+            list_ = dict_.get('args', [])
             if name in list_: break
 
-        self._remove_two_consecutive_keys(key)
-        self._last_removed = (key, name)
+        # Update the StaticText
+        dict_['hidden'] = True
+        # Update the CtrlText
+        key_num = self._find_key_num(key)
+        key1 = self._make_key(key_num + 1)
+        item = self.__panel[key1]
+        dict_ = find_dict(item)
+        dict_['hidden'] = True
+        self._last_changed = (key, name, 'hide')
 
-    def undo_name(self, name):
+    def undo_name(self, name: str) -> None:
         """
-        Undo a removed field.
+        Undo a changed field.
 
-        :param name: The value name of the StaticText widget.
-        :type name: str
+        :param str name: The value name of the StaticText widget.
         """
         ret = None
 
-        if self._last_removed:
-            old_key, name = self._last_removed
-            self._create_hole(old_key+1)
+        if self._last_changed:
+            key, name, type_ = self._last_changed
 
-            #self.add_name(name, row_count)
-            self._last_removed = None
-            new_key = self._make_key(self._next_widget_num())
+            if type_ == 'hide':
+                self._create_hole(key + 1)
+                self._last_changed = None
+                new_key = self._make_key(self._next_widget_num())
 
         return ret
-
-    def _remove_two_consecutive_keys(self, key):
-        """
-        Remove two consecutive keys using the first key as a starting
-        point. This works because we are removing the StaticText widget
-        by name then the TextCtrl that will be right after it.
-
-        :param key: The Toml key.
-        :type key: str
-        """
-        key_num = self._find_key_num(key)
-        self.__panel.pop(key, None)
-        second_key = self._make_key(key_num+1)
-        self.__panel.pop(second_key, None)
 
     def _reorder(self, panel):
         """
         Re order the items in the Toml doc.
 
-        :param panel: This is the Toml doc for the panel that is being
-                      worked on.
+        :param panel: This is the currently worked on Toml doc for the panel.
         :type panel: Toml doc
         :return: A reordered Toml doc.
         :rtype: Toml doc
@@ -824,7 +816,7 @@ class TomlCreatePanel(BaseSystemData):
             if old_num != start:
                 doc[key] = value
             else:
-                new_key = self._make_key(old_num+1)
+                new_key = self._make_key(old_num + 1)
                 doc[new_key] = value
 
         self.__panel = doc
@@ -840,39 +832,45 @@ class TomlCreatePanel(BaseSystemData):
         last_key = list(self.__panel.keys())[-1]
         return self._find_key_num(last_key) + 1
 
-    def _find_widget_gbs_pos(self, *, name=None, key_num=None):
+    # def _find_widget_gbs_pos(self, *, name: str=None, key_num: int=None):
+    #     """
+    #     Find the GridBagSizer position for either the name or the key number.
+
+    #     :param str name: The value name of the StaticText widget.
+    #     :param int key_num: The number of the widget key.
+    #     """
+    #     assert (name, key_num).count(None) == 1, (
+    #         f"Either the name '{name}' or the key_num '{key_num}' must "
+    #         "be set.")
+    #     pos = ()
+
+    #     for value in self.__panel.values():
+    #         dict_ = find_dict(value)
+    #         print('POOP', name, dict_, value)
+
+    #         if name and name in dict_['args']:
+    #             pos = dict_['pos']
+    #             break
+    #         elif key_num is not None:
+    #             value = self.__panel.get(self._make_key(key_num), [])
+    #             #assert value, f"The key_num '{key_num}' is invalid."
+    #             dict_ = find_dict(value)
+    #             pos = dict_['pos']
+    #             break
+
+    #     return pos
+
+    def _find_key_num(self, key: int) -> int:
         """
-        Find the GridBagSizer position for either the name or the key number.
+        With the widget name (key) find the widget number (key_num).
 
-        :param name: The value name of the StaticText widget.
-        :type name: str
-        :param key_num: The number of the widget key.
-        :type key_num: int
+        :param int key: The widget name. eg widget_01
+        :returns: The number attached to the widget name. eg. For widget_01
+                  the value of 1 is returned.
+        :rtype: int
         """
-        assert name or key_num is not None, (
-            f"Either the name '{name}' or the key_num '{key_num}' must "
-            "be set.")
-        pos = ()
-
-        if name:
-            for value in self.__panel.value():
-                dict_ = find_dict(value)
-
-                if name in dict_['args']:
-                    pos = dict_['pos']
-                    break
-                elif key_num is not None:
-                    value = self.__panel.get(self._make_key(key_num), [])
-                    assert value, "An invalid key_num was provided."
-                    dict_ = find_dict(value)
-                    pos = dict_['pos']
-                    break
-
-        return pos
-
-    def _find_key_num(self, key):
         sre = self._KEY_NUM.search(key)
-        assert sre is not None, f"There was an invalid key: {key}."
+        assert sre is not None, f"The key '{key}' was an invalid."
         return int(sre.group('count'))
 
     def _make_key(self, key_num):
