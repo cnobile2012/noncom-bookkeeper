@@ -84,18 +84,26 @@ if __name__ == "__main__":
         Logger().config(logger_name=settings.logger_name,
                         file_path=settings.user_log_fullpath)
         tpc = TomlPanelConfig()
+        tpc.initializing_config()
         tac = TomlAppConfig()
+        tac.initializing_config()
 
         if not tpc.is_valid:
-            print(tpc.err_msg, file=sys.stderr)
-            print(f"See {tpc.user_log_fullpath}, for more information.",
-                  file=sys.stderr)
-            status = 1
+            tpc.recover_config()
+
+            if not tpc.is_valid:
+                print(tpc.err_msg, file=sys.stderr)
+                print(f"See {tpc.user_log_fullpath}, for more information.",
+                      file=sys.stderr)
+                status = 1
         elif not tac.is_valid:
-            print(tac.err_msg, file=sys.stderr)
-            print(f"See {tac.user_log_fullpath}, for more information.",
-                  file=sys.stderr)
-            status = 2
+            tac.recover_config()
+
+            if not tac.is_valid:
+                print(tac.err_msg, file=sys.stderr)
+                print(f"See {tac.user_log_fullpath}, for more information.",
+                      file=sys.stderr)
+                status = 2
         else:
             suppress_gtk_style_context_warnings()
             # Run the application.

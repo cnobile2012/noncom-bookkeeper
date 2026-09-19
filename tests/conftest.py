@@ -76,7 +76,8 @@ _glib_handler_keepalive = _install_glib_log_filter()
 s = Settings()
 s.testing = True
 s.create_dirs()
-_TMP_USER_CONFIG_FILE = s.user_config_fullpath
-_TMP_USER_APP_CONFIG_FILE = s.user_app_config_fullpath
-_TMP_LOCAL_CONFIG_FILE = os.path.join(s._testing_data_dir,
-                                      'default_bahai.toml')
+TMP_USER_CONFIG_FILE = s.user_config_fullpath
+TMP_USER_APP_CONFIG_FILE = s.user_app_config_fullpath
+TMP_LOCAL_CONFIG_FILE = os.path.join(s._testing_data_dir, 'default_bahai.toml')
+TMP_LOCAL_DOES_NOT_EXIST = os.path.join(s._testing_data_dir,
+                                        'non_existing.toml')

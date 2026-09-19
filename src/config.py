@@ -52,7 +52,7 @@ class Settings(AppDirs, Borg):
         self.__config_type = os.environ.get('NCB_TYPE', 'bahai')
         self.__user_toml = self._CONFIG_FILES['user'][self.__config_type]
         self.__local_toml = self._CONFIG_FILES['local'][self.__config_type]
-        # Setup the logger for this monule.
+        # Setup the logger for this module.
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
         self.log_level = logging.INFO
@@ -255,10 +255,14 @@ class BaseSystemData(Settings):
     ERR_FILE_NOT_FOUND = 1    # Cannot find file
     ERR_TOML_ERROR = 2        # TOML error, maybe corrupted
     ERR_ZERO_LENGTH_FILE = 3  # Zero length file
-    ERR_MESSAGES = {ERR_FILE_NOT_FOUND: "File '{}' not found.",
-                    ERR_TOML_ERROR: "Cannot parse file '{}' may be corrupted.",
-                    ERR_ZERO_LENGTH_FILE: "Cannot parse zero length file '{}'."
-                    }
+    ERR_UNKNOWN_ERROR = 4     # Could be any of PermissionError, IOError,
+                              # OSError
+    ERR_MESSAGES = {
+        ERR_FILE_NOT_FOUND: "File '{}' not found.",
+        ERR_TOML_ERROR: "Cannot parse file '{}' may be corrupted.",
+        ERR_ZERO_LENGTH_FILE: "Cannot parse zero length file '{}'.",
+        ERR_UNKNOWN_ERROR: "Critical unknown error."
+        }
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -297,7 +301,8 @@ class BaseSystemData(Settings):
         Open and read the specified TOML file.
 
         :param str filepath: The file to open and read.
-        :return: TOML doc if no error or a tuple (errmsg, errcode) if an error.
+        :returns: TOML doc if no error or a tuple (errmsg, errcode) if
+                  an error.
         :rtype: tk.TOMLDocument or int
         """
         error = doc = None
@@ -409,6 +414,7 @@ class TomlPanelConfig(BaseSystemData):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._backup_file = f"{self.user_config_fullpath}.bak"
 
     @property
     def _has_user_config(self) -> bool:
@@ -445,50 +451,76 @@ class TomlPanelConfig(BaseSystemData):
 
         return has
 
-    @property
-    def is_valid(self):
-        ret = True
-        backup_file = f"{self.user_config_fullpath}.bak"
-        count = 0
-
-        while self._has_user_config and count < 2:
-            count += 1
-            self._read_file(self.user_config_fullpath)
-
-            if self.error:
-                self.err_msg = self.ERR_MESSAGES[self.error].format(
-                    self.local_config_fullpath)
-
-                if count < 2:
-                    self._log.warning(
-                        "Error: %s is corrupted, using the backup file.",
-                        self.user_config_fullpath)
-                    self._copy_file(backup_file, self.user_config_fullpath)
-                else:  # pragma: no cover
-                    ret = False
-                    break
-        else:
+    def initializing_config(self) -> None:
+        """
+        Initialize the config files.
+        """
+        if not self._has_user_config:
             if self._has_local_config:
                 self._copy_file(self.local_config_fullpath,
                                 self.user_config_fullpath)
-                self._copy_file(self.local_config_fullpath, backup_file)
-                self._read_file(self.user_config_fullpath)
+                self._copy_file(self.local_config_fullpath, self._backup_file)
+            else:  # pragma: no cover
+                msg = ("The original config file could not be found, "
+                       "you may need to contact the developer.")
+                self._log.critical(msg)
 
-                if self.error:  # All these errors are critical.
+    def recover_config(self) -> None:
+        """
+        Try to recover from damaged or missing config files.
+        """
+        if self.error:
+            self._log.warning("Error: %s is corrupted, using the backup file.",
+                              self.user_config_fullpath)
+            # First try to copy the backup file to the user file.
+            self._copy_file(self._backup_file, self.user_config_fullpath)
+
+            if not self._validate():
+                if self.error:
                     self.err_msg = self.ERR_MESSAGES[self.error].format(
                         self.user_config_fullpath)
-                    ret = False
-            else:
-                ret = False
+
+                # Second try to copy the local file to the user file.
+                # We need to remove any corrupted file fist.
+                try:
+                    os.remove(self.user_config_fullpath)
+                except FileNotFoundError:
+                    pass
+                except Exception as e:  # pragma: no cover
+                    self._log.warning(
+                        "Error: %s could not remove the user file.",
+                        self.user_config_fullpath)
+
+                self.initializing_config()
+
+    @property
+    def is_valid(self) -> bool:
+        return self._validate()
+
+    def _validate(self) -> bool:
+        """
+        Read the TOML file and determine if it is valid.
+
+        :returns: `True` if the file is valid and `False` if it is invalid.
+        :rtype: bool
+        """
+        ret = True
+        fullpath = self.user_config_fullpath
+        self._read_toml_file(fullpath)
+
+        if self.error:
+            self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
+            ret = False
 
         return ret
 
-    def _read_file(self, filepath):
+    def _read_toml_file(self, filepath: str) -> None:
         """
         Open and read the local panel file.
+
+        :param str filepath: The full path to the file that will be parsed.
         """
         doc = self.parse_toml(filepath)
-        assert doc, "Invalid document--possible coding error."
 
         if isinstance(doc, int):  # Has an error
             self.error = doc  # If an error then doc is an error code.
@@ -496,13 +528,23 @@ class TomlPanelConfig(BaseSystemData):
             self.panel_config = doc
             self.error = None
 
-    def _copy_file(self, fname0, fname1):
+    def _copy_file(self, fname0: str, fname1: str) -> None:
+        """
+        Copy the TOML config files.
+
+        :param str fname0: File name that is to be copied.
+        :param str fname1: File name to copy to.
+        """
         try:
             shutil.copy2(fname0, fname1)
-        except Exception as e:
+        except FileNotFoundError as e:
             self._log.error("Could not copy file %s to %s, %s",
                             fname0, fname1, e)
-            raise e
+            self.error = self.ERR_FILE_NOT_FOUND
+        except Exception as e:  # pragma: no cover
+            self._log.error("Could not copy file %s to %s, %s",
+                            fname0, fname1, e)
+            self.error = self.ERR_UNKNOWN_ERROR
 
 
 class TomlAppConfig(BaseSystemData):
@@ -532,6 +574,24 @@ class TomlAppConfig(BaseSystemData):
 
         return has
 
+    def initializing_config(self) -> None:
+        """
+        Initialize the config files.
+        """
+        if not self._has_app_user_config:
+            self._create_app_config()
+
+    def recover_config(self) -> None:
+        """
+        Try to recover from damaged or missing config files.
+        """
+        if self.error:
+            fullpath = self.user_app_config_fullpath
+            self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
+            self._log.warning("Error: %s is corrupted, recreating file.",
+                              fullpath)
+            self._create_app_config()
+
     @property
     def is_valid(self) -> bool:
         """
@@ -542,25 +602,26 @@ class TomlAppConfig(BaseSystemData):
                   toml file.
         :rtype: bool
         """
+        return self._validate()
+
+    def _validate(self) -> bool:
+        """
+        Read the TOML file and determine if it is valid.
+
+        :returns: `True` if the file is valid and `False` if it is invalid.
+        :rtype: bool
+        """
         ret = True
         fullpath = self.user_app_config_fullpath
+        self._read_toml_file(fullpath)
 
-        if self._has_app_user_config:
-            self._read_file(fullpath)
-
-            if self.error:
-                self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
-                self._log.warning("Error: %s is corrupted, recreating file.",
-                                  fullpath)
-                self._create_app_config()
-                self._read_file(fullpath)
-        else:
-            self._create_app_config()
-            self._read_file(fullpath)
+        if self.error:
+            self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
+            ret = False
 
         return ret
 
-    def _read_file(self, filepath) -> None:
+    def _read_toml_file(self, filepath) -> None:
         """
         Open and read the local panel file. If successful store the toml
         document object.
@@ -644,11 +705,19 @@ class TomlCreatePanel(BaseSystemData):
     Create an updated panel Toml file.
     """
     _KEY_NUM = re.compile(r"^.*_(?P<count>\d+)$")
-    _last_changed = None
+    _LAST_CHANGED = None
     __panel = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    @property
+    def last_changed(self) -> tuple | None:
+        return self._LAST_CHANGED
+
+    @last_changed.setter
+    def last_changed(self, change: tuple) -> None:
+        self._LAST_CHANGED = change
 
     @property
     def current_panel(self):
@@ -660,7 +729,7 @@ class TomlCreatePanel(BaseSystemData):
     @current_panel.setter
     def current_panel(self, current) -> tk.TOMLDocument:
         """
-        Make a copy of the Toml doc of the current panel.
+        Make a copy of the Toml doc for the current panel.
 
         :param tk.TOMLDocument current: The current panel's Toml doc.
         """
@@ -678,7 +747,7 @@ class TomlCreatePanel(BaseSystemData):
         for item in self.__panel.values():
             list_ = find_dict(item).get('args', [])
 
-            if len(list_) >= 3:
+            if len(list_) >= 3 and list_[2] != '':
                 names.append(list_[2])
 
         return names
@@ -720,7 +789,6 @@ class TomlCreatePanel(BaseSystemData):
 
         if key_num is None:
             key_num = self._next_widget_num
-            #x, y = self._find_widget_gbs_pos(key_num=key_num)
 
         x, y = (key_num, 0)
         key = self._make_key(key_num)
@@ -739,56 +807,95 @@ class TomlCreatePanel(BaseSystemData):
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
              'pos': [x, y+1],
              'span': [1, 1]}]
+        self.last_changed = (name, key_num, 'add')
 
-    def hide_name(self, name):
+    def hide_widget(self, label: str, *, undo: bool=False) -> None:
         """
-        Hide the named StaticText and its companion the TextCtrl in the
-        Toml file.
+        Hide the StaticText with the provided label and its companion
+        the TextCtrl in the TOML doc.
 
-        :param name: The value name of the StaticText widget.
-        :type name: str
+        :param str label: The label of the StaticText widget.
+        :param bool undo: If `False` (default) hide the widgets, else `True`
+                          unhide the widgets.
         """
+        key0, dict_ = self._find_label_in_panel(label)
+
+        if key0 and dict_:
+            # Update the StaticText
+            dict_['hidden'] = False if undo else True
+            # Update the CtrlText
+            key_num = self._find_key_num(key0)
+            key1 = self._make_key(key_num + 1)
+            item = self.__panel[key1]
+            dict_ = find_dict(item)
+            dict_['hidden'] = False if undo else True
+            self.last_changed = (label, 'hide')
+
+    def rename_label(self, old_label: str, new_label: str) -> None:
+        """
+        Rename the field in the TOML doc.
+
+        :param str old_label: The field to rename.
+        :param str new_label: The new name for the field.
+        """
+        key, dict_ = self._find_label_in_panel(old_label)
+
+        if key and dict_:
+            list_ = dict_.get('args', [])
+            list_[2] = new_label
+            self.last_changed = (old_label, new_label, 'rename')
+
+    def undo_change(self) -> None:
+        """
+        Undo last changed field.
+        """
+        if self.last_changed:
+            type_ = self.last_changed[-1]
+
+            if type_ == 'add':
+                label, pos = self.last_changed[:2]
+                key, dict_ = self._find_label_in_panel(label)
+                w0 = self.__panel.pop(key)
+                key_num = self._find_key_num(key)
+                w1 = self.__panel.pop(self._make_key(key_num + 1))
+                self.last_changed = None
+            elif type_ == 'hide':
+                self.hide_widget(self.last_changed[0], undo=True)
+                self.last_changed = None
+            elif type_ == 'rename':
+                old_name, new_name = self.last_changed[:2]
+                self.rename_label(new_name, old_name)
+                self.last_changed = None
+
+    def _find_label_in_panel(self, label: str) -> tuple:
+        """
+        With the widget label return the key and the data.
+
+        :param str label: The widget label.
+        :returns: The widget name (key) and data.
+        :rtype: tuple
+        """
+        w_key = data = None
+
         for key, item in self.__panel.items():
             dict_ = find_dict(item)
             list_ = dict_.get('args', [])
-            if name in list_: break
 
-        # Update the StaticText
-        dict_['hidden'] = True
-        # Update the CtrlText
-        key_num = self._find_key_num(key)
-        key1 = self._make_key(key_num + 1)
-        item = self.__panel[key1]
-        dict_ = find_dict(item)
-        dict_['hidden'] = True
-        self._last_changed = (key, name, 'hide')
+            if label in list_:
+                w_key = key
+                data = dict_
+                break
 
-    def undo_name(self, name: str) -> None:
+        return w_key, data
+
+    def _reorder(self, panel: dict) -> tk.document:
         """
-        Undo a changed field.
+        Reorder the items in the TOML doc.
 
-        :param str name: The value name of the StaticText widget.
-        """
-        ret = None
-
-        if self._last_changed:
-            key, name, type_ = self._last_changed
-
-            if type_ == 'hide':
-                self._create_hole(key + 1)
-                self._last_changed = None
-                new_key = self._make_key(self._next_widget_num())
-
-        return ret
-
-    def _reorder(self, panel):
-        """
-        Re order the items in the Toml doc.
-
-        :param panel: This is the currently worked on Toml doc for the panel.
-        :type panel: Toml doc
-        :return: A reordered Toml doc.
-        :rtype: Toml doc
+        :param tk.document panel: This is the currently worked on Toml doc
+                                  for the panel.
+        :returns: A reordered the TOML doc.
+        :rtype: tk.document
         """
         keys = sorted(list(panel))
         doc = tk.document()
@@ -799,15 +906,15 @@ class TomlCreatePanel(BaseSystemData):
 
         return doc
 
-    def _create_hole(self, start):
+    def _create_hole(self, start: int) -> None:
         """
-        Create a hole in the widget panel. All widgets after the hole
-        will get its key bumped up by two.
+        Create a hole in the widget panel doc. All widgets after the hole
+        will get its key bumped up by two since there are always two widgets
+        created together.
 
-        :param start: Where to start the reordering. Should be the widget
-                      set that will be after the hole.
-        :type start: int
-        """
+        :param int start: Where to start the reordering. Should be the widget
+                          set that will be after the hole.
+         """
         doc = tk.document()
 
         for key, value in self.__panel.item():
@@ -822,43 +929,15 @@ class TomlCreatePanel(BaseSystemData):
         self.__panel = doc
 
     @property
-    def _next_widget_num(self):
+    def _next_widget_num(self) -> int:
         """
         Get the next widget key to be used when adding a new widget.
 
-        :return: The next widget number.
+        :returns: The next widget number.
         :rtype: int
         """
         last_key = list(self.__panel.keys())[-1]
         return self._find_key_num(last_key) + 1
-
-    # def _find_widget_gbs_pos(self, *, name: str=None, key_num: int=None):
-    #     """
-    #     Find the GridBagSizer position for either the name or the key number.
-
-    #     :param str name: The value name of the StaticText widget.
-    #     :param int key_num: The number of the widget key.
-    #     """
-    #     assert (name, key_num).count(None) == 1, (
-    #         f"Either the name '{name}' or the key_num '{key_num}' must "
-    #         "be set.")
-    #     pos = ()
-
-    #     for value in self.__panel.values():
-    #         dict_ = find_dict(value)
-    #         print('POOP', name, dict_, value)
-
-    #         if name and name in dict_['args']:
-    #             pos = dict_['pos']
-    #             break
-    #         elif key_num is not None:
-    #             value = self.__panel.get(self._make_key(key_num), [])
-    #             #assert value, f"The key_num '{key_num}' is invalid."
-    #             dict_ = find_dict(value)
-    #             pos = dict_['pos']
-    #             break
-
-    #     return pos
 
     def _find_key_num(self, key: int) -> int:
         """

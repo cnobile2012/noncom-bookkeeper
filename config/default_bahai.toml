@@ -91,12 +91,12 @@ widget_13 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Location (C
 widget_14 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[260, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[8, 1], span=[1, 1], financial=false, mandatory=true}]
 
 [organization.buttons]
-widget_15 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 10], pos=[9, 0], span=[1, 2]}]
+line_1 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 10], pos=[9, 0], span=[1, 2]}]
 
 panel_0 = ['Panel', {args='self', add=[0, 'EXPAND | ALL', 10], pos=[10, 1], span=[1, 2]}]
 sizer_2 = ['StdDialogButtonSizer', {panel='panel_0'}]
-widget_16 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_FORWARD', '&Save'], min=[-1, -1], callback='button_save'}]
-widget_17 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_CANCEL', ''], min=[-1, -1], callback='button_cancel'}]
+button_00 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_FORWARD', '&Save'], min=[-1, -1], callback='button_save'}]
+button_01 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_CANCEL', ''], min=[-1, -1], callback='button_cancel'}]
 
 [budget]
 

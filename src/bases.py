@@ -14,7 +14,7 @@ def find_dict(value: list) -> dict:
     Fine the dict in the Toml data that is in the widget value list.
 
     :param list value: A list that defines a widget from a TOML file.
-    :return: A dict with attributes that define a widget.
+    :returns: A dict with attributes that define a widget.
     :rtype: dict
     """
     for item in value:
@@ -31,7 +31,7 @@ def version() -> str:
     Opens the 'include.mk' file and reads the version information. If the
     `PR_TAG` environment variable exists the pre-release candidate is added.
 
-    :return: A formatted version number.
+    :returns: A formatted version number.
     :rtype: str
     """
     from .config import Settings

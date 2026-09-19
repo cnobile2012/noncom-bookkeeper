@@ -318,7 +318,7 @@ class EventStaticText(wx.StaticText):
         """
         Returns the new event type.
 
-        :return: New event Type.
+        :returns: New event Type.
         :rtype: wx.core.PyEventBinder
         """
         return self._cp.get_click_position(self.__type_name)

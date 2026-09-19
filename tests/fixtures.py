@@ -37,9 +37,13 @@ class FakeMainFrame(wx.Frame):
         settings = Settings()
         settings.testing = True
         settings.create_dirs()
+        # Setup panel config
         tpc = TomlPanelConfig()
+        tpc.initializing_config()
         tpc.is_valid
+        # Setup app config
         self.tac = TomlAppConfig()
+        self.tac.initializing_config()
         self.tac.is_valid
         super().__init__(parent, id=id, style=style, *args, **kwargs)
         StoreObjects().set_object('MainFrame', self)

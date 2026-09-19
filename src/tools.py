@@ -85,7 +85,7 @@ class FieldEdit(BasePanel, wx.Panel):
     _tcp = TomlCreatePanel()
     __previous_row = None
     __cl = None
-    _RENAMED_FIELDS = {}
+    _LAST_MOVED = None
     _NEW_FIELDS = []
 
     def __init__(self, parent, *args, **kwargs):
@@ -195,23 +195,26 @@ class FieldEdit(BasePanel, wx.Panel):
         grid_sizer.Add(embed_sizer, (4, 1), (1, 1), ctrl_btn_flags, 4)
         but_flags = wx.RIGHT
 
-        add_button = wx.Button(panel,  wx.ID_ANY, "Add")
-        add_button.SetMinSize((62, 32))
+        add_button = wx.Button(panel,  wx.ID_ANY, "Add Field")
+        add_button.SetMinSize((77, 32))
         add_button.SetBackgroundColour(w_bg_color)
         add_button.SetForegroundColour(w_fg_color_0)
         embed_sizer.Add(add_button, 0, but_flags, 6)
-        update_button = wx.Button(panel,  wx.ID_ANY, "Rename")
-        update_button.SetMinSize((62, 32))
-        update_button.SetBackgroundColour(w_bg_color)
-        update_button.SetForegroundColour(w_fg_color_0)
-        embed_sizer.Add(update_button, 0, but_flags, 6)
-        hide_button = wx.Button(panel,  wx.ID_ANY, "Hide")
-        hide_button.SetMinSize((62, 32))
+
+        hide_button = wx.Button(panel,  wx.ID_ANY, "Hide/Unhide")
+        hide_button.SetMinSize((77, 32))
         hide_button.SetBackgroundColour(w_bg_color)
         hide_button.SetForegroundColour(w_fg_color_0)
         embed_sizer.Add(hide_button, 0, but_flags, 6)
-        undo_button = wx.Button(panel,  wx.ID_ANY, "Undo")
-        undo_button.SetMinSize((62, 32))
+
+        update_button = wx.Button(panel,  wx.ID_ANY, "Rename")
+        update_button.SetMinSize((77, 32))
+        update_button.SetBackgroundColour(w_bg_color)
+        update_button.SetForegroundColour(w_fg_color_0)
+        embed_sizer.Add(update_button, 0, but_flags, 6)
+
+        undo_button = wx.Button(panel,  wx.ID_ANY, "Undo Last")
+        undo_button.SetMinSize((77, 32))
         undo_button.SetBackgroundColour(w_bg_color)
         undo_button.SetForegroundColour(w_fg_color_0)
         embed_sizer.Add(undo_button, 0, but_flags, 6)
@@ -240,9 +243,8 @@ class FieldEdit(BasePanel, wx.Panel):
 
     def _panel_bot(self, arg_dict):
         w_bg_color = arg_dict['w_bg_color']
-        w_fg_color_0 = arg_dict['w_fg_color_0']
-        #w_fg_color_1 = arg_dict['w_fg_color_1']
         spin_ctrl = arg_dict['spin_ctrl']
+        spin_ctrl.SetValue("")
         panel = ScrolledPanel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
         panel.SetSizer(sizer)
@@ -250,43 +252,29 @@ class FieldEdit(BasePanel, wx.Panel):
         panel.SetBackgroundColour(w_bg_color)
         sizer.Add(grid_sizer, 0, wx.EXPAND | wx.ALL, 6)
         widget_labels = arg_dict['widget_labels']
+        arg_dict['panel'] = panel
+        arg_dict['bot_grid_sizer'] = grid_sizer
 
-        for idx, (label, hidable) in enumerate(widget_labels):
-            widget = EventStaticText(panel, wx.ID_ANY, label)
-
+        for row, (label, hidable) in enumerate(widget_labels):
             if label.endswith(':'):
                 span = 1
-                ps = 12
-                width = -1
-                height = -1
+                fs = 12
+                wh = (-1, -1)
                 weight = wx.FONTWEIGHT_NORMAL
             else:
                 span = 2
-                ps = 12
+                fs = 12
                 width = 448
-                height = 50 if len(label) > width/8 else -1
+                wh = (width, 50 if len(label) > width/8 else -1)
                 weight = wx.FONTWEIGHT_BOLD
 
-            widget.SetFont(wx.Font(
-                ps, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, weight, 0, ''))
-            widget.SetForegroundColour(w_fg_color_0)
-            widget.SetMinSize((width, height))
-            widget.hidable = hidable
-            grid_sizer.Add(widget, (idx, 0), (1, span),
-                           wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT
-                           | wx.TOP, 6)
-            spin_ctrl.SetValue("")
-            self.Bind(widget.EVT_CLICK_POSITION, self.event_click_closure(
-                arg_dict, orig_color=w_bg_color), id=widget.GetId())
+            self._create_static_text(arg_dict, label, row, span=span, fs=fs,
+                                     wh=wh, weight=weight, hidable=hidable)
 
-        arg_dict['panel'] = panel
-        arg_dict['bot_grid_sizer'] = grid_sizer
         self.bind_events(arg_dict)
         return panel
 
     def bind_events(self, arg_dict):
-        #spin_ctrl = arg_dict['spin_ctrl']
-        #grid_sizer = arg_dict['bot_grid_sizer']
         w_bg_color = arg_dict['w_bg_color']
         add_button = arg_dict['add_button']
         update_button = arg_dict['update_button']
@@ -296,11 +284,11 @@ class FieldEdit(BasePanel, wx.Panel):
         #evt_b = add_button.Unbind(wx.EVT_BUTTON)
         add_button.Bind(wx.EVT_BUTTON, self.add_closuer(arg_dict))
 
-        #evt_u = update_button.Unbind(wx.EVT_BUTTON)
-        update_button.Bind(wx.EVT_BUTTON, self.rename_closuer(arg_dict))
-
         #evt_r = hide_button.Unbind(wx.EVT_BUTTON)
         hide_button.Bind(wx.EVT_BUTTON, self.hide_closuer(arg_dict))
+
+        #evt_u = update_button.Unbind(wx.EVT_BUTTON)
+        update_button.Bind(wx.EVT_BUTTON, self.rename_closuer(arg_dict))
 
         #evt_d = undo_button.Unbind(wx.EVT_BUTTON)
         undo_button.Bind(wx.EVT_BUTTON, self.undo_closuer(arg_dict))
@@ -334,7 +322,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
         return get_selection
 
-    def event_click_closure(self, arg_dict, orig_color=None,
+    def event_click_closure(self, arg_dict: dict, orig_color=None,
                             color='lightblue'):
         """
         Event to highlight the GBS row when a widget is clicked.
@@ -342,7 +330,7 @@ class FieldEdit(BasePanel, wx.Panel):
         hide_button = arg_dict['hide_button']
 
         def event_click(event):
-            self.stop_call_later()
+            self._stop_call_later()
             gbs = arg_dict.get('bot_grid_sizer')
             spin_ctrl = arg_dict['spin_ctrl']
             field_name = arg_dict['new_field_name']
@@ -355,21 +343,18 @@ class FieldEdit(BasePanel, wx.Panel):
                 hide_button.Hide()
 
             field_name.SetValue(widget.GetLabel())
-            pos = event.get_value()
-            row, col = pos
+            row, col = event.get_value()
             gbs.highlight_row(self.__previous_row, orig_color)
             gbs.highlight_row(row, color)
             self.__previous_row = row
             spin_ctrl.SetValue(row)
             spin_ctrl.SetRange(0, gbs.GetRows() - 1)
-            #self.__cl = wx.CallLater(
-            #    7000, self.turn_off_highlight, arg_dict, orig_color)
 
         return event_click
 
-    def swap_rows_closure(self, arg_dict, orig_color):
+    def swap_rows_closure(self, arg_dict: dict, orig_color):
         """
-        Event to swap the two rows.
+        Event to swap two rows.
         """
         def swap_rows(event):
             if self.__previous_row is not None:
@@ -380,15 +365,15 @@ class FieldEdit(BasePanel, wx.Panel):
 
                 if row0 != row1:
                     gbs = arg_dict.get('bot_grid_sizer')
-                    self.stop_call_later()
+                    self._stop_call_later()
                     gbs.swap_rows(row0, row1)
                     self.Layout()
                     self.__cl = wx.CallLater(
-                        7000, self.turn_off_highlight, arg_dict, orig_color)
+                        7000, self._turn_off_highlight, arg_dict, orig_color)
 
         return swap_rows
 
-    def _create_widgets(self, arg_dict):
+    def _create_widgets(self, arg_dict: dict):
         parent_sizer = arg_dict['parent_sizer']
         panel = arg_dict.get('panel')
         # Destroy previous panel if it exists.
@@ -405,69 +390,31 @@ class FieldEdit(BasePanel, wx.Panel):
             panel.Destroy()
             parent_sizer.Layout()
 
-    def add_closuer(self, arg_dict):
+    def add_closuer(self, arg_dict: dict):
         def add_button(event):
-            panel = arg_dict['panel']
-            w_bg_color = arg_dict['w_bg_color']
-            w_fg_color_0 = arg_dict['w_fg_color_0']
-            grid_sizer = arg_dict.get('bot_grid_sizer')
-            field_name = arg_dict['new_field_name']
-            #spin_ctrl = arg_dict['spin_ctrl']
-            name = field_name.GetValue()
+            fn_widget = arg_dict['new_field_name']
+            name = fn_widget.GetValue()
 
             if name:
-                name = name if name.endswith(':') else name + ':'
+                new_name = name if name.endswith(':') else name + ':'
 
-                if name not in self._tcp.field_names:
-                    row_count = grid_sizer.GetRows()
-                    widget = EventStaticText(panel, wx.ID_ANY, name)
-                    widget.SetFont(wx.Font(
-                        12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
-                        wx.FONTWEIGHT_NORMAL, 0, ''))
-                    widget.SetForegroundColour(w_fg_color_0)
-                    widget.SetMinSize((-1, -1))
-                    widget.hidable = True
-                    grid_sizer.Add(widget, (row_count, 0), (1, 1),
-                                   wx.ALIGN_CENTER_VERTICAL | wx.LEFT
-                                   | wx.RIGHT, 6)
-                    grid_sizer.Layout()
-                    self.Bind(
-                        widget.EVT_CLICK_POSITION, self.event_click_closure(
-                            arg_dict, orig_color=w_bg_color),
-                        id=widget.GetId())
-                    self.bind_events(arg_dict)
+                if (name not in self._tcp.all_field_names
+                    and new_name not in self._tcp.field_names):
+                    gbs = arg_dict.get('bot_grid_sizer')
+                    rows = gbs.GetRows()
+                    self._create_static_text(arg_dict, new_name, rows)
                     self._tcp.add_name(name)
                     self._update_screen_size(arg_dict)
-                    self._NEW_FIELDS.append(name)
+                    self._LAST_MOVED = (new_name, None, 'add')
                 else:
                     msg = f"Duplicate field name '{name}' found."
                     self.frame.statusbar_warning = msg
 
-                field_name.SetValue("")
+                fn_widget.SetValue("")
 
         return add_button
 
-    def rename_closuer(self, arg_dict):
-        def rename_button(event):
-            name = arg_dict['new_field_name'].GetValue()
-
-            if name.endswith(':'):
-                if name not in self._tcp.field_names:
-                    widget = arg_dict['current_widget']
-                    old_name = make_name(widget.GetLabel())
-                    widget.SetLabel(name)
-                    self._RENAMED_FIELDS[old_name] = make_name(name)
-                else:
-                    msg = f"Duplicate field name '{name}' found."
-                    self.frame.statusbar_warning = msg
-            elif name:
-                arg_dict['current_widget'].SetLabel(name)
-
-            arg_dict['new_field_name'].SetValue("")
-
-        return rename_button
-
-    def hide_closuer(self, arg_dict):
+    def hide_closuer(self, arg_dict: dict):
         def hide_button(event):
             name = arg_dict['new_field_name'].GetValue()
 
@@ -496,11 +443,9 @@ class FieldEdit(BasePanel, wx.Panel):
 
                     if row >= 0:
                         spin_ctrl.SetValue("")
-                        start_row = row
 
                         for count in range(rows-row-1):
-                            gbs.swap_rows(start_row, start_row+1)
-                            start_row += 1
+                            gbs.swap_rows(count+row, count+row+1)
 
                         windows = [(item.GetWindow())
                                    for item in gbs.GetChildren()
@@ -510,9 +455,11 @@ class FieldEdit(BasePanel, wx.Panel):
                             window.Unbind(window.EVT_CLICK_POSITION)
                             window.Destroy()
 
-                        self._tcp.hide_name(name)
+                        self._tcp.hide_widget(name)
                         gbs.Layout()
                         arg_dict['panel'].Layout()
+                        spin_ctrl = arg_dict['spin_ctrl']
+                        self._LAST_MOVED = (name, row, 'hide')
             elif name:
                 self.frame.statusbar_warning = "Cannot hide title fields."
 
@@ -520,16 +467,159 @@ class FieldEdit(BasePanel, wx.Panel):
 
         return hide_button
 
-    def undo_closuer(self, arg_dict):
-        def undo_button(event):
-            value = arg_dict['new_field_name'].GetValue()
+    def rename_closuer(self, arg_dict: dict):
+        def rename_button(event):
+            name = arg_dict['new_field_name'].GetValue()
 
-            # if value.endswith(':'):
-            #     self._tcp.undo_name(name)
+            if name.endswith(':'):
+                if name not in self._tcp.field_names:
+                    widget = arg_dict['current_widget']
+                    old_name = widget.GetLabel()
+                    widget.SetLabel(name)
+                    self._tcp.rename_label(old_name, name)
+                else:
+                    msg = f"Duplicate field name '{name}' found."
+                    self.frame.statusbar_warning = msg
+            elif name:
+                arg_dict['current_widget'].SetLabel(name)
+
+            arg_dict['new_field_name'].SetValue("")
+
+        return rename_button
+
+    def undo_closuer(self, arg_dict: dict):
+        def undo_button(event):
+            last = self._tcp.last_changed
+
+            if last:
+                type_ = last[-1]
+                self._tcp.undo_change()
+                # The property self._tcp.last_changed is None at this point.
+
+                if type_ == 'add' and self._LAST_MOVED[-1] == 'add':
+                    label, _ = self._LAST_MOVED[:2]
+                    row = self._find_widget_row(arg_dict, label)
+                    gbs = arg_dict.get('bot_grid_sizer')
+                    rows = gbs.GetRows()
+
+                    for count in range(row, rows):
+                        if (count + 1) < rows:
+                            gbs.swap_rows(count, count + 1)
+
+                    self._remove_by_position(arg_dict, count, 0)
+                    self._LAST_MOVED = None
+                elif type_ == 'hide' and self._LAST_MOVED[-1] == 'hide':
+                    name, row = self._LAST_MOVED[:2]
+                    gbs = arg_dict.get('bot_grid_sizer')
+                    rows = gbs.GetRows()
+                    self._create_static_text(arg_dict, name, rows)
+
+                    if row >= 0:
+                        for count in reversed(range(row, rows)):
+                            gbs.swap_rows(count+1, count)
+
+                    self._LAST_MOVED = None
+                elif type_ == 'rename':
+                    widget = arg_dict['current_widget']
+                    widget.SetLabel(last[0])
+                    self._LAST_MOVED = None
 
         return undo_button
 
-    def turn_off_highlight(self, arg_dict, orig_color):
+    def _create_static_text(self, arg_dict: dict, label: str, row: int, *,
+                            span: int=1, fs: int=12, wh: tuple=(-1, -1),
+                            weight: int=wx.FONTWEIGHT_NORMAL,
+                            hidable: bool=True) -> None:
+        """
+        Create the custom EventStaticText widget.
+
+        :param dict arg_dict: Internal dict that containes needed values
+                              and objects.
+        :param str label: The widget label.
+        :param int row: The row in the sizer.
+        :param int span: The span arg for the sizer.
+        :param int fs: The font size.
+        :param tuple wh: The width and height of the widget.
+        :param int weight: The font weight.
+        :param bool hidable: If the widget can be hidden.
+        """
+        panel = arg_dict['panel']
+        grid_sizer = arg_dict.get('bot_grid_sizer')
+        w_bg_color = arg_dict['w_bg_color']
+        w_fg_color_0 = arg_dict['w_fg_color_0']
+        widget = EventStaticText(panel, wx.ID_ANY, label)
+        widget.SetFont(wx.Font(fs, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                               weight, 0, ''))
+        widget.SetForegroundColour(w_fg_color_0)
+        widget.SetMinSize(wh)
+        widget.hidable = hidable
+        grid_sizer.Add(widget, (row, 0), (1, span), wx.ALIGN_CENTER_VERTICAL
+                       | wx.LEFT | wx.RIGHT | wx.TOP, 6)
+        grid_sizer.Layout()
+        self.Bind(widget.EVT_CLICK_POSITION, self.event_click_closure(
+            arg_dict, orig_color=w_bg_color), id=widget.GetId())
+
+    def _find_widget_row(self, arg_dict: dict, label: str) -> int:
+        """
+        Finf the row in the sizer of the widget.
+
+        :param dict arg_dict: Internal dict that containes needed values
+                              and objects.
+        :param str label: The label of the widget.
+        :returns: The pistion of the widget.
+        :rtype: int
+        """
+        gbs = arg_dict.get('bot_grid_sizer')
+        row = None
+
+        for item in gbs.GetChildren():
+            window = item.GetWindow()
+
+            if window:
+                tgt = window.GetLabel() if hasattr(window, 'GetLabel') else ""
+
+                if tgt == label:
+                    row = item.GetPos().GetRow()
+                    break
+
+        return row
+
+    def _remove_by_position(self, arg_dict: dict, row: int, col: int) -> bool:
+        """
+        Finds and removes the item at a specific (row, col).
+
+        :param dict arg_dict: Internal dict that containes needed values
+                              and objects.
+        :param int row: The row in the sizer.
+        :param int col: The column in the sizer.
+        :returns: If `True` the removal happened else if `False` it didn't.
+        :rtype: bool
+        """
+        ret = False
+        gbs = arg_dict['bot_grid_sizer']
+
+        for i, item in enumerate(gbs.GetChildren()):
+            pos = item.GetPos()
+
+            if pos.GetRow() == row and pos.GetCol() == col:
+                window = item.GetWindow()
+
+                if window:
+                    gbs.Detach(window)
+                    window.Destroy()
+
+                gbs.Layout()
+                panel = arg_dict['panel']
+
+                if panel:
+                    panel.Layout()
+                    panel.Refresh()
+
+                ret = True
+
+        return ret
+
+    def _turn_off_highlight(self, arg_dict, orig_color):
         gbs = arg_dict.get('bot_grid_sizer')
         arg_dict['spin_ctrl'].SetValue("")
         arg_dict['new_field_name'].SetValue("")
@@ -539,7 +629,7 @@ class FieldEdit(BasePanel, wx.Panel):
             gbs.highlight_row(row, orig_color)
             self.Layout()
 
-    def stop_call_later(self):
+    def _stop_call_later(self):
         if self.__cl and self.__cl.IsRunning():
             self.__cl.Stop()
             self.__cl = None
