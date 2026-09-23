@@ -236,7 +236,6 @@ class MainFrame(wx.Frame, MenuBar):
 
             for panel in self.panels.values():
                 panel.SetSize((width, height))
-                height = height - self.frame.statusbar_size[1]
                 panel.SetSizeHints(width, height)
 
     @property
@@ -282,10 +281,6 @@ class MainFrame(wx.Frame, MenuBar):
         self._statusbar.SetStatusText("", 0)
         self._statusbar.SetBackgroundColour(default_color)
         self._statusbar.SetForegroundColour(default_color)
-
-    @property
-    def statusbar_size(self):
-        return self._statusbar.GetSize()
 
     def add_status(self, key, status):
         self.statusbar_fields[key] = status

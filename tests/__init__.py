@@ -42,13 +42,17 @@ def initial_log_message(message, *args, **kwargs):
     log.info(message, *args, **kwargs)
 
 
-RUN_FLAG = {'TestBadiCalendarPopup': False,
-            'TestBadiDateChangedEvent': False,
-            'TestBaseFunctions': False,
+RUN_FLAG = {'TestBaseFunctions': False,
             'TestBasePanel': False,
             'TestBaseGenerated': False,
-            'TestCustomTextCtrl': False,
             'TestFunctions': False,
+            'TestCustomTextCtrl': False,
+            'TestBadiDateChangedEvent': False,
+            'TestBadiCalendarPopup': False,
+            'TestBadiDatePickerCtrl': False,
+            'TestColorCheckBox': False,
+            'TestFlatArrowClickEvent': False,
+            'TestFlatArrowButton': False,
             'TestLogger': False,
             'TestSettings': False,
             'TestSettingsBorg': False,

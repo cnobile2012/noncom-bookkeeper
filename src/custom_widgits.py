@@ -74,16 +74,6 @@ class CustomTextCtrl(wx.Control):
         self.SetFocus()
         event.Skip()
 
-    def on_focus(self, event):
-        self.has_focus = True
-        self.Refresh()
-        event.Skip()
-
-    def on_kill_focus(self, event):
-        self.has_focus = False
-        self.Refresh()
-        event.Skip()
-
     def on_char(self, event):
         key = event.GetKeyCode()
 
@@ -109,6 +99,16 @@ class CustomTextCtrl(wx.Control):
             event.Skip()
 
         self.Refresh()
+
+    def on_focus(self, event):
+        self.has_focus = True
+        self.Refresh()
+        event.Skip()
+
+    def on_kill_focus(self, event):
+        self.has_focus = False
+        self.Refresh()
+        event.Skip()
 
     def GetValue(self):
         return self.text
@@ -227,23 +227,14 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
                 btn.SetBackgroundColour(wx.Colour(180, 180, 180))
 
             btn.SetWindowStyle(wx.BORDER_NONE | wx.BU_EXACTFIT)
-            btn.Bind(wx.EVT_BUTTON, self._on_day_clicked)
+            btn.Bind(wx.EVT_BUTTON, self.on_day_clicked)
             btn.day = day
             self.grid_sizer.Add(btn, 0, wx.ALL, self.FromDIP(2))
-
-    def update_header(self):
-        label = ordered_month()[self.bdate.month]
-        self.header.SetLabel(f"{label} {self.bdate.year}")
-        self.header.Wrap(self.FromDIP(150))  # Prevent clipping if name is long
-        self._populate_days()
-        self.Layout()
-        self.panel.Layout()
-        self.Fit()
 
     def _max_days_in_month(self, year, month):
         return 4 + self.bdate._is_leap_year(year) if month == 0 else 19
 
-    def _on_day_clicked(self, event):
+    def on_day_clicked(self, event):
         day = event.GetEventObject().day
         new_date = badidatetime.date(self.bdate.year, self.bdate.month, day)
 
@@ -262,7 +253,13 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
                                        self.bdate.month, 1)
         self.update_header()
 
-    MONTH_ORDER = list(ordered_month().keys())  # [1..18, 0, 19]
+    def on_prev_month(self, event):
+        self._shift_month(-1)
+
+    def on_next_month(self, event):
+        self._shift_month(1)
+
+    MONTH_ORDER = list(ordered_month().keys())  # [1...18, 0, 19]
 
     def _shift_month(self, direction):
         idx = self.MONTH_ORDER.index(self.bdate.month)
@@ -278,11 +275,14 @@ class BadiCalendarPopup(wx.PopupTransientWindow):
         self.bdate = badidatetime.date(year, new_month, 1)
         self.update_header()
 
-    def on_prev_month(self, event):
-        self._shift_month(-1)
-
-    def on_next_month(self, event):
-        self._shift_month(1)
+    def update_header(self):
+        label = ordered_month()[self.bdate.month]
+        self.header.SetLabel(f"{label} {self.bdate.year}")
+        self.header.Wrap(self.FromDIP(150))  # Prevent clipping if name is long
+        self._populate_days()
+        self.Layout()
+        self.panel.Layout()
+        self.Fit()
 
 
 class BadiDatePickerCtrl(wx.Panel):
@@ -339,9 +339,6 @@ class BadiDatePickerCtrl(wx.Panel):
             gc.SetBrush(wx.Brush(self.GetBackgroundColour()))
             gc.SetPen(wx.Pen(wx.Colour(90, 90, 90), 1))
             gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 4)
-
-    def _max_days_in_month(self, year, month):
-        return 4 + self.bdate._is_leap_year(year) if month == 0 else 19
 
     def on_change(self, event):
         text = self.text_ctrl.GetValue()
@@ -425,20 +422,11 @@ class ColorCheckBox(wx.Panel):
         self.check_color = check_color
         self.disabled_color = disabled_color
 
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
-        self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
         self.SetSize()
 
-    def OnClick(self, event):
-        if self.enabled:
-            self.checked = not self.checked
-            self.Refresh()
-            evt = wx.CommandEvent(EVT_COLOR_CHECKBOX.typeId, self.GetId())
-            evt.SetEventObject(self)
-            evt.SetInt(int(self.checked))
-            wx.PostEvent(self, evt)
-
-    def OnPaint(self, event):
+    def on_paint(self, event):
         dc = wx.BufferedPaintDC(self)
         dc.Clear()
 
@@ -492,13 +480,14 @@ class ColorCheckBox(wx.Panel):
         dc.SetTextForeground(fg_color)
         dc.DrawText(self.label, text_x, text_y)
 
-    def GetValue(self):
-        return self.checked
-
-    def SetValue(self, value: bool):
-        if not self.read_only:
-            self.checked = bool(value)
+    def on_click(self, event):
+        if self.enabled:
+            self.checked = not self.checked
             self.Refresh()
+            evt = wx.CommandEvent(EVT_COLOR_CHECKBOX.typeId, self.GetId())
+            evt.SetEventObject(self)
+            evt.SetInt(int(self.checked))
+            wx.PostEvent(self, evt)
 
     def Notify(self):
         evt = ColorCheckBoxEvent()
@@ -509,6 +498,14 @@ class ColorCheckBox(wx.Panel):
     def SetReadOnly(self, value: bool=True):
         self.read_only = value
         self.Enable(False)
+
+    def GetValue(self):
+        return self.checked
+
+    def SetValue(self, value: bool):
+        if not self.read_only:
+            self.checked = bool(value)
+            self.Refresh()
 
     def IsEditable(self):
         return not self.read_only

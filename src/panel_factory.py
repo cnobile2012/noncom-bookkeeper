@@ -146,6 +146,7 @@ class PanelFactory(TomlMetaData):
             klass.write(f"        self.SetSizer({self.main_sizer})\n")
 
         klass.write("        self.SetupScrolling(rate_x=20, rate_y=40)\n")
+        klass.write("        self.Layout()\n")
         klass.write("        self.Hide()\n")
 
         # Add methods to specific panels.
@@ -466,16 +467,13 @@ class PanelFactory(TomlMetaData):
             if value[0] == 'Panel':
                 panel_parent = dict_.get('args')
                 items = dict_.get('add', ())
-                prop, flags, panel_border = items
+                panel_prop, flags, panel_border = items
                 panel_flags = self._fix_flags(flags)
-                panel_pos = dict_.get('pos')
-                panel_span = dict_.get('span')
                 btn_panel = name
-            elif value[0] == 'StdDialogButtonSizer':
+            elif value[0] == 'BoxSizer':
                 btn_sizer = name
             elif value[0] == 'Button':
                 prop, flags, label = dict_.get('args')
-                min_size = dict_.get('min')
                 callback = dict_.get('callback')
 
                 if 'ID_CANCEL' == flags:
@@ -498,26 +496,22 @@ class PanelFactory(TomlMetaData):
 
         self.static_line(klass, sl_widget, sl_value)
         klass.write(f"        {btn_panel} = wx.Panel({panel_parent})\n")
-        klass.write(f"        {btn_sizer} = wx.StdDialogButtonSizer()\n")
+        klass.write(f"        {btn_sizer} = wx.BoxSizer(wx.HORIZONTAL)\n")
         klass.write(f"        {f_widget} = wx.Button({f_parent}, {f_flags}, "
                     f"label='{f_label}')\n")
-        klass.write(f"        {f_widget}.SetMinSize({min_size})\n")
         self._set_colors(klass, f_widget, f_value)
         klass.write(f"        {f_widget}.Bind(wx.EVT_BUTTON, "
                     f"self.{button_save})\n")
+        klass.write(f"        {btn_sizer}.Add({f_widget}, 0, wx.ALL, 10)\n")
         klass.write(f"        {c_widget} = wx.Button({c_parent}, {c_flags}, "
                     f"label='{c_label}')\n")
-        klass.write(f"        {c_widget}.SetMinSize({min_size})\n")
         self._set_colors(klass, c_widget, c_value)
-        klass.write(f"        {btn_sizer}.AddButton({f_widget})\n")
         klass.write(f"        {c_widget}.Bind(wx.EVT_BUTTON, "
                     f"self.{button_cancel})\n")
-        klass.write(f"        {btn_sizer}.AddButton({c_widget})\n")
-        klass.write(f"        {btn_sizer}.Realize()\n")
+        klass.write(f"        {btn_sizer}.Add({c_widget}, 0, wx.ALL, 10)\n")
         klass.write(f"        {btn_panel}.SetSizer({btn_sizer})\n")
-        klass.write(f"        {self.second_sizer}.Add({btn_panel}, "
-                    f"{panel_pos}, {panel_span}, {panel_flags}, "
-                    f"{panel_border})\n")
+        klass.write(f"        {self.main_sizer}.Add({btn_panel}, "
+                    f"{panel_prop}, {panel_flags}, {panel_border})\n")
 
     def _create_save_cancel_events(self, klass):
         klass.write("\n    def button_save(self, event):\n")

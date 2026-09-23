@@ -349,8 +349,8 @@ class TestConfirmationDialog(unittest.TestCase):
         self.setup_config_dialog(dlg_msg, caption)
         dialog = self.frame.GetChildren()[0]
         # Test that the dialog has the proper properties.
-        default_bg_color = (220, 130, 143, 255)
-        default_fg_color = (50, 50, 204, 255)
+        default_bg_color = (255, 255, 127, 255)
+        default_fg_color = (255, 0, 0, 255)
         found_color = dialog.GetBackgroundColour()
         msg = (f"Background color expected '{default_bg_color}' "
                f"found '{found_color}'.")

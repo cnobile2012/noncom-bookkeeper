@@ -63,7 +63,7 @@ w_fg_color_1 = [50, 50, 204]
 
 [organization.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
+sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[0, 'CENTER | ALL', 10]}]
 
 [organization.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Organization Information'], font='font_16_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6], pos=[0, 0], span=[1, 2]}]
@@ -91,12 +91,12 @@ widget_13 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Location (C
 widget_14 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], min=[260, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[8, 1], span=[1, 1], financial=false, mandatory=true}]
 
 [organization.buttons]
-line_1 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 10], pos=[9, 0], span=[1, 2]}]
+line_1 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 20], pos=[9, 0], span=[1, 2]}]
 
-panel_0 = ['Panel', {args='self', add=[0, 'EXPAND | ALL', 10], pos=[10, 1], span=[1, 2]}]
-sizer_2 = ['StdDialogButtonSizer', {panel='panel_0'}]
-button_00 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_FORWARD', '&Save'], min=[-1, -1], callback='button_save'}]
-button_01 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_CANCEL', ''], min=[-1, -1], callback='button_cancel'}]
+panel_0 = ['Panel', {args='self', add=[0, 'CENTER', 0]}]
+sizer_2 = ['BoxSizer']
+button_00 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_SAVE', ''], callback='button_save'}]
+button_01 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_CANCEL', ''], callback='button_cancel'}]
 
 [budget]
 
@@ -109,7 +109,7 @@ w_fg_color_1 = [50, 50, 204]
 
 [budget.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
+sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[0, 'CENTER | ALL', 10]}]
 
 [budget.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Yearly Budget Worksheet'], font='font_16_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6], pos=[0, 0], span=[1, 2], hidable=false}]
@@ -259,12 +259,12 @@ widget_87 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', "Area Teachi
 widget_88 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_RIGHT', min=[-1, 26], add=[0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos=[54, 1], span=[1, 1], financial=true, mandatory=false}]
 
 [budget.buttons]
-line_1 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 10], pos=[55, 0], span=[1, 2]}]
+line_1 = ['StaticLine', 'w_bg_color_3', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 20], pos=[55, 0], span=[1, 2]}]
 
-panel_0 = ['Panel', {args='self', add=[0, 'EXPAND | ALL', 10], pos=[56, 0], span=[1, 1]}]
-sizer_2 = ['StdDialogButtonSizer', {panel='panel_0'}]
-button_00 = ['Button', 'w_bg_color_3', {args=['panel_0', 'ID_FORWARD', '&Save'], min=[-1, -1], callback='button_save'}]
-button_01 = ['Button', 'w_bg_color_3', {args=['panel_0', 'ID_CANCEL', ''], min=[-1, -1], callback='button_cancel'}]
+panel_0 = ['Panel', {args='self', add=[0, 'CENTER', 0]}]
+sizer_2 = ['BoxSizer']
+button_00 = ['Button', 'w_bg_color_3', {args=['panel_0', 'ID_SAVE', ''], callback='button_save'}]
+button_01 = ['Button', 'w_bg_color_3', {args=['panel_0', 'ID_CANCEL', ''], callback='button_cancel'}]
 
 [monthly]
 
@@ -276,7 +276,7 @@ w_fg_color_1 = [50, 50, 204]
 
 [monthly.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
+sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[0, 'CENTER | ALL', 10]}]
 
 [monthly.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Monthly Specific Settings'], font='font_16_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6], pos=[0, 0], span=[1, 2]}]
@@ -312,12 +312,12 @@ widget_17 = ['RadioBox', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Locality Pref
 widget_18 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args=['self', 'ID_ANY', ''], style='TE_READONLY', font='font_10_normal', min=[260, 26], wrap=240, add=[0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], pos=[12, 1], span=[1, 1], instance=true, dirty_event=false, financial=false}]
 
 [monthly.buttons]
-widget_89 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 10], pos=[13, 0], span=[1, 2]}]
+line_1 = ['StaticLine', 'w_bg_color_2', {args=['self', 'ID_ANY'], add=[0, 'EXPAND | TOP', 20], pos=[13, 0], span=[1, 2]}]
 
-panel_0 = ['Panel', {args='self', add=[0, 'EXPAND | ALL', 10], pos=[14, 0], span=[1, 1]}]
-sizer_2 = ['StdDialogButtonSizer', {panel='panel_0'}]
-widget_91 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_FORWARD', '&Save'], min=[-1, -1], callback='button_save'}]
-widget_92 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_CANCEL', ''], min=[-1, -1], callback='button_cancel'}]
+panel_0 = ['Panel', {args='self', add=[0, 'CENTER', 0]}]
+sizer_2 = ['BoxSizer']
+button_00 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_SAVE', ''], callback='button_save'}]
+button_01 = ['Button', 'w_bg_color_2', {args=['panel_0', 'ID_CANCEL', ''], callback='button_cancel'}]
 
 [fiscal]
 
@@ -328,7 +328,7 @@ w_fg_color_1 = [50, 50, 204]
 
 [fiscal.sizers]
 sizer_0 = ['BoxSizer', 'VERTICAL']
-sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[1, 'CENTER | ALL', 10]}]
+sizer_1 = ['GridBagSizer', {gap=[2, 2], add=[0, 'CENTER | ALL', 10]}]
 
 [fiscal.widgets]
 widget_00 = ['StaticText', 'w_fg_color_1', {args=['self', 'ID_ANY', 'Fiscal Year'], font='font_16_bold', min=[-1, -1], add=[0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6], pos=[0, 0], span=[1, 2]}]

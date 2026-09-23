@@ -361,13 +361,15 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
         self._bsd = BaseSystemData()
         self.log_path = os.path.join(self._bsd.user_log_fullpath, LOGFILE_NAME)
         self.backup_file = f"{TMP_USER_CONFIG_FILE}.bak"
+        self._bad_file = os.path.join(self._bsd._testing_data_dir,
+                                      'bad_file.toml')
 
     def tearDown(self):
         self.delete_files()
 
     def delete_files(self):
         files = (TMP_LOCAL_CONFIG_FILE, TMP_USER_APP_CONFIG_FILE,
-                 TMP_USER_CONFIG_FILE, self.backup_file)
+                 TMP_USER_CONFIG_FILE, self.backup_file, self._bad_file)
 
         for file in files:
             try:
@@ -382,6 +384,10 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
             result = ""
 
         return result
+
+    def make_file(self, filename, data):
+        with open(filename, 'w') as f:
+            f.write(data)
 
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.BaseSystemData.user_app_config_fullpath',
@@ -460,6 +466,41 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
             error = self._bsd.parse_toml(self._bsd.user_config_fullpath)
             self.assertEqual(expected_results, self._bsd.ERR_MESSAGES[error],
                              msg.format(expected_results, err_code, error))
+
+    #@unittest.skip("Temporarily skipped")
+    def test__read_toml_file(self):
+        """
+        Test that the _read_toml_file method properly reports the three
+        condition it handles.
+        """
+        data = (  # These tests must be executed in the order below.
+            (TMP_USER_CONFIG_FILE, '', True, True),
+            (self._bad_file, '', False, self._bsd. ERR_FILE_NOT_FOUND),
+            (self._bad_file, '', False, self._bsd.ERR_ZERO_LENGTH_FILE),
+            (self._bad_file, "[meta]\njunk = {key=value\n}", False,
+             self._bsd.ERR_TOML_ERROR),
+            )
+        msg = "Expected {}, found {}."
+
+        for filename, bad_data, valid, expected in data:
+            if valid:
+                shutil.copy2(self._bsd.local_config_fullpath,
+                             TMP_USER_CONFIG_FILE)
+                doc = self._bsd._read_toml_file(filename)
+                result = os.path.exists(filename)
+                self.assertTrue(result, msg.format(expected, result))
+                self.assertIsInstance(doc, dict)
+            elif expected == self._bsd. ERR_FILE_NOT_FOUND:
+                self._bsd._read_toml_file(filename)
+                result = self._bsd.error
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
+            else:
+                self.make_file(filename, bad_data)
+                self._bsd._read_toml_file(filename)
+                result = self._bsd.error
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
 
     #@unittest.skip("Temporarily skipped")
     def test_err_msg(self):
@@ -731,12 +772,10 @@ class TestTomlPanelConfig(BaseTomlTest):
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
         self.backup_file = f"{TMP_USER_CONFIG_FILE}.bak"
-        self._bad_file = os.path.join(self._tpc._testing_data_dir,
-                                      'bad_file.toml')
 
     def tearDown(self):
         files = (TMP_USER_CONFIG_FILE, TMP_LOCAL_CONFIG_FILE,
-                 self.backup_file, self._bad_file)
+                 self.backup_file)
         self.remove_test_files(files)
 
     #@unittest.skip("Temporarily skipped")
@@ -823,30 +862,32 @@ class TestTomlPanelConfig(BaseTomlTest):
         """
         err_msg0 = "Cannot parse file '{}' may be corrupted,"
         err_msg1 = "Cannot parse zero length file .{}'."
+        err_msg2 = "File '{}' not found."
         data0 = "[meta]\njunk = {key=value\n}"
         data = (
-            (data0, True, (self._tpc.ERR_TOML_ERROR, True, err_msg0)),
-            ('', True, (self._tpc.ERR_ZERO_LENGTH_FILE, True, err_msg1)),
+            (data0, (self._tpc.ERR_TOML_ERROR, True, err_msg0)),
+            ('', (self._tpc.ERR_ZERO_LENGTH_FILE, True, err_msg1)),
+            (None, (None, True, err_msg2)),
             )
         msg = "Expected {}, found {}."
 
-        for bad_data, valid, expected in data:
-            self.make_file(self._tpc.user_config_fullpath, bad_data)
+        for bad_data, expected in data:
+            if bad_data is not None:
+                self.make_file(self._tpc.user_config_fullpath, bad_data)
 
-            if valid:
-                self._tpc.is_valid
-                result = self._tpc.error
-                self.assertEqual(expected[0], result, msg.format(
-                    expected[0], result))
-                self._tpc.recover_config()
-                result = self._tpc.is_valid
-                self.assertEqual(expected[1], result, msg.format(
-                    expected[1], result))
-                file_data = self.read_text_file(self.log_path)
-                err_msg = expected[2].format(self._tpc.user_config_fullpath)
-                result = self.find_text(
-                    file_data, 'Start logging for TestTomlPanelConfig',
-                    10, expected[2])
+            self._tpc.is_valid
+            result = self._tpc.error
+            self.assertEqual(expected[0], result, msg.format(
+                expected[0], result))
+            self._tpc.recover_config()
+            result = self._tpc.is_valid
+            self.assertEqual(expected[1], result, msg.format(
+                expected[1], result))
+            file_data = self.read_text_file(self.log_path)
+            err_msg = expected[2].format(self._tpc.user_config_fullpath)
+            result = self.find_text(
+                file_data, 'Start logging for TestTomlPanelConfig',
+                10, expected[2])
 
     #@unittest.skip("Temporarily skipped")
     def test_is_valid_property(self):
@@ -884,40 +925,6 @@ class TestTomlPanelConfig(BaseTomlTest):
                 bad_data = "[meta]\njunk = {key=value\n}"
                 self.make_file(self._tpc.user_config_fullpath, bad_data)
                 result = self._tpc._validate()
-                self.assertEqual(expected, result, msg.format(
-                    expected, result))
-
-    #@unittest.skip("Temporarily skipped")
-    def test__read_toml_file(self):
-        """
-        Test that the _read_toml_file method properly reports the three
-        condition it handles.
-        """
-        data = (  # These tests must be executed in the order below.
-            (TMP_USER_CONFIG_FILE, '', True, True),
-            (self._bad_file, '', False, self._tpc. ERR_FILE_NOT_FOUND),
-            (self._bad_file, '', False, self._tpc.ERR_ZERO_LENGTH_FILE),
-            (self._bad_file, "[meta]\njunk = {key=value\n}", False,
-             self._tpc.ERR_TOML_ERROR),
-            )
-        msg = "Expected {}, found {}."
-
-        for filename, bad_data, valid, expected in data:
-            if valid:
-                shutil.copy2(self._tpc.local_config_fullpath,
-                             TMP_USER_CONFIG_FILE)
-                self._tpc._read_toml_file(filename)
-                result = os.path.exists(filename)
-                self.assertTrue(result, msg.format(expected, result))
-            elif expected == self._tpc. ERR_FILE_NOT_FOUND:
-                self._tpc._read_toml_file(filename)
-                result = self._tpc.error
-                self.assertEqual(expected, result, msg.format(
-                    expected, result))
-            else:
-                self.make_file(filename, bad_data)
-                self._tpc._read_toml_file(filename)
-                result = self._tpc.error
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
 
@@ -1102,24 +1109,22 @@ class TestTomlAppConfig(BaseTomlTest):
         Test that the application config file is created.
 
         File should contain the following data:
-        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        {'app_size': {'default': [530, 830], 'size': [530, 830]},
+         'app_config' : {'config_filename': }}
         """
+        data = (
+            ('app_size', 'default', [570, 830]),
+            ('app_size', 'size', [570, 830]),
+            ('app_config', 'config_filename', 'bahai.toml'),
+            )
+        msg = "Expected {}, found {}."
         ret = self.create_config()
-        msg = f"Expected True, found {ret}."
-        self.assertTrue(ret, msg)
-        outer_key_list = ('app_size',)
-        inner_key_list = ('default', 'size')
-        key_msg = "Key '{}' does not exist"
-        val_msg = "Value should be a list, found '{}'."
+        self.assertTrue(ret, msg.format(True, ret))
 
-        for j, (outer_key, values) in enumerate(self._tac.app_config.items()):
-            self.assertEqual(outer_key_list[j], outer_key,
-                             key_msg.format(outer_key))
-
-            for k, (inner_key, value) in enumerate(values.items()):
-                self.assertEqual(inner_key_list[k], inner_key,
-                                 key_msg.format(inner_key))
-                self.assertTrue(isinstance(value, list), val_msg.format(value))
+        for table, key, expected in data:
+            doc = self._tac.app_config
+            result = doc[table][key]
+            self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.TomlAppConfig.user_app_config_fullpath',
@@ -1465,7 +1470,7 @@ class TestTomlCreatePanel(BaseTomlTest):
     #@unittest.skip("Temporarily skipped")
     def test_undo_change(self):
         """
-        Test that the undo_change
+        Test that the undo_change method reverses the last change.
         """
         def get_data(label):
             values = self.widget_data_by_label()
@@ -1498,6 +1503,22 @@ class TestTomlCreatePanel(BaseTomlTest):
                 expected[0], result))
             lc = self._tcp.last_changed
             self.assertEqual(expected[1], lc, msg.format(expected[1], lc))
+
+    @unittest.skip("Temporarily skipped")
+    def test_save_updated_panel(self):
+        """
+        Test that the save_updated_panel method saves all changes to
+        the panels data.
+        """
+        
+
+    @unittest.skip("Temporarily skipped")
+    def test_cancel_updated_panel(self):
+        """
+        Test that the cancel_updated_panel method cancels all changes
+        to the panels data.
+        """
+        
 
     #@unittest.skip("Temporarily skipped")
     def test__find_label_in_panel(self):

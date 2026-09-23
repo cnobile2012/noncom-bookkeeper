@@ -6,6 +6,7 @@ __docformat__ = "restructuredtext en"
 
 import os
 import re
+import copy
 import logging
 import shutil
 from datetime import datetime
@@ -14,7 +15,7 @@ from appdirs import AppDirs
 import tomlkit as tk
 
 from .bases import find_dict
-from .utilities import Borg
+from .utilities import Borg, StoreObjects, make_name
 
 
 class Settings(AppDirs, Borg):
@@ -50,8 +51,8 @@ class Settings(AppDirs, Borg):
         # during the app build process. The default is to use the Baha'i
         # configuration.
         self.__config_type = os.environ.get('NCB_TYPE', 'bahai')
-        self.__user_toml = self._CONFIG_FILES['user'][self.__config_type]
         self.__local_toml = self._CONFIG_FILES['local'][self.__config_type]
+        self.__user_toml = self._CONFIG_FILES['user'][self.__config_type]
         # Setup the logger for this module.
         self.__app_toml = 'nc-bookkeeper.toml'
         self._log = logging.getLogger(self.logger_name)
@@ -143,6 +144,14 @@ class Settings(AppDirs, Borg):
         return self._APP_NAME
 
     @property
+    def user_toml_name(self):
+        return self.__user_toml
+
+    @user_toml_name.setter
+    def user_toml_name(self, name):
+        self.__user_toml = name
+
+    @property
     def primary_developer(self) -> str:
         return self._DEVELOPERS[0]
 
@@ -188,11 +197,11 @@ class Settings(AppDirs, Borg):
     @property
     def user_config_fullpath(self) -> str:
         if self.debug:
-            path = os.path.join(self._debug_data_dir, self.__user_toml)
+            path = os.path.join(self._debug_data_dir, self.user_toml_name)
         elif self.testing:
-            path = os.path.join(self._testing_data_dir, self.__user_toml)
+            path = os.path.join(self._testing_data_dir, self.user_toml_name)
         else:
-            path = os.path.join(self.user_config_dir, self.__user_toml)
+            path = os.path.join(self.user_config_dir, self.user_toml_name)
 
         assert 'data' in path or '.config' in path, (
             f"user_config_fullpath: {path}")
@@ -255,8 +264,7 @@ class BaseSystemData(Settings):
     ERR_FILE_NOT_FOUND = 1    # Cannot find file
     ERR_TOML_ERROR = 2        # TOML error, maybe corrupted
     ERR_ZERO_LENGTH_FILE = 3  # Zero length file
-    ERR_UNKNOWN_ERROR = 4     # Could be any of PermissionError, IOError,
-                              # OSError
+    ERR_UNKNOWN_ERROR = 4     # Could be PermissionError, IOError, OSError
     ERR_MESSAGES = {
         ERR_FILE_NOT_FOUND: "File '{}' not found.",
         ERR_TOML_ERROR: "Cannot parse file '{}' may be corrupted.",
@@ -330,6 +338,22 @@ class BaseSystemData(Settings):
                 error = self.ERR_ZERO_LENGTH_FILE
 
         return error if error else doc
+
+    def _read_toml_file(self, filepath: str) -> dict:
+        """
+        Open and read the local panel file.
+
+        :param str filepath: The full path to the file that will be parsed.
+        """
+        doc = self.parse_toml(filepath)
+
+        if isinstance(doc, int):  # Has an error
+            self.error = doc  # If an error then doc is an error code.
+            doc = None
+        else:
+            self.error = None
+
+        return doc
 
     @property
     def err_msg(self) -> str:
@@ -455,7 +479,7 @@ class TomlPanelConfig(BaseSystemData):
         """
         Initialize the config files.
         """
-        if not self._has_user_config:
+        if not self._has_user_config or self.debug:
             if self._has_local_config:
                 self._copy_file(self.local_config_fullpath,
                                 self.user_config_fullpath)
@@ -484,12 +508,13 @@ class TomlPanelConfig(BaseSystemData):
                 # We need to remove any corrupted file fist.
                 try:
                     os.remove(self.user_config_fullpath)
-                except FileNotFoundError:
+                except FileNotFoundError:  # This is a normal situation.
                     pass
                 except Exception as e:  # pragma: no cover
+                    self.error = self.ERR_UNKNOWN_ERROR
                     self._log.warning(
-                        "Error: %s could not remove the user file.",
-                        self.user_config_fullpath)
+                        "Error: %s could not remove the user file, %s",
+                        self.user_config_fullpath, e)
 
                 self.initializing_config()
 
@@ -506,27 +531,13 @@ class TomlPanelConfig(BaseSystemData):
         """
         ret = True
         fullpath = self.user_config_fullpath
-        self._read_toml_file(fullpath)
+        self.panel_config = self._read_toml_file(fullpath)
 
         if self.error:
             self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
             ret = False
 
         return ret
-
-    def _read_toml_file(self, filepath: str) -> None:
-        """
-        Open and read the local panel file.
-
-        :param str filepath: The full path to the file that will be parsed.
-        """
-        doc = self.parse_toml(filepath)
-
-        if isinstance(doc, int):  # Has an error
-            self.error = doc  # If an error then doc is an error code.
-        else:
-            self.panel_config = doc
-            self.error = None
 
     def _copy_file(self, fname0: str, fname1: str) -> None:
         """
@@ -613,29 +624,13 @@ class TomlAppConfig(BaseSystemData):
         """
         ret = True
         fullpath = self.user_app_config_fullpath
-        self._read_toml_file(fullpath)
+        self.app_config = self._read_toml_file(fullpath)
 
         if self.error:
             self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
             ret = False
 
         return ret
-
-    def _read_toml_file(self, filepath) -> None:
-        """
-        Open and read the local panel file. If successful store the toml
-        document object.
-
-        :param str filepath: The full path to the toml document file.
-        """
-        doc = self.parse_toml(filepath)
-        assert doc, "Invalid document--possible coding error."
-
-        if isinstance(doc, int):  # Has an error
-            self.error = doc  # If an error then doc is an error code.
-        else:
-            self.app_config = doc
-            self.error = None
 
     def _create_app_config(self) -> None:
         doc = tk.document()
@@ -651,7 +646,28 @@ class TomlAppConfig(BaseSystemData):
         app_size.add('default', self._DEFAULT_SCREEN_SIZE)
         app_size.add('size', self._DEFAULT_SCREEN_SIZE)
         doc.add('app_size', app_size)
+        # Create filename
+        app_config = tk.table()
+        app_config.add('config_filename', self.get_filename())
+        doc.add('app_config', app_config)
         self._write_file(tk.dumps(doc))
+
+    def get_filename(self) -> str:
+        """
+        """
+        db = StoreObjects().get_object('Database')
+        location = ''
+        filename = self.user_toml_name
+
+        if db:
+            for row in db.cache.get(db._T_DATA, r_type='organization'):
+                if row[1] == 'location_city_name':
+                    location = make_name(row[2])
+                    filename = f"{location}.toml"
+                    break
+
+        self.user_toml_name = filename
+        return filename
 
     def get_value(self, table: str, key: str) -> None:
         doc = self.app_config
@@ -733,7 +749,7 @@ class TomlCreatePanel(BaseSystemData):
 
         :param tk.TOMLDocument current: The current panel's Toml doc.
         """
-        self.__panel = current.copy()
+        self.__panel = copy.deepcopy(current)
 
     @property
     def all_field_names(self):
@@ -855,9 +871,9 @@ class TomlCreatePanel(BaseSystemData):
             if type_ == 'add':
                 label, pos = self.last_changed[:2]
                 key, dict_ = self._find_label_in_panel(label)
-                w0 = self.__panel.pop(key)
+                self.__panel.pop(key)
                 key_num = self._find_key_num(key)
-                w1 = self.__panel.pop(self._make_key(key_num + 1))
+                self.__panel.pop(self._make_key(key_num + 1))
                 self.last_changed = None
             elif type_ == 'hide':
                 self.hide_widget(self.last_changed[0], undo=True)
@@ -866,6 +882,20 @@ class TomlCreatePanel(BaseSystemData):
                 old_name, new_name = self.last_changed[:2]
                 self.rename_label(new_name, old_name)
                 self.last_changed = None
+
+    def save_updated_panel(self) -> bool:
+        """
+        """
+        ret = True
+        
+
+        return ret
+
+    def cancel_updated_panel(self):
+        """
+        Cancel update and reset the current panel to None.
+        """
+        self.__panel = None
 
     def _find_label_in_panel(self, label: str) -> tuple:
         """

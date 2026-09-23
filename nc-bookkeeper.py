@@ -88,20 +88,20 @@ if __name__ == "__main__":
         tac = TomlAppConfig()
         tac.initializing_config()
 
-        if not tpc.is_valid:
-            tpc.recover_config()
-
-            if not tpc.is_valid:
-                print(tpc.err_msg, file=sys.stderr)
-                print(f"See {tpc.user_log_fullpath}, for more information.",
-                      file=sys.stderr)
-                status = 1
-        elif not tac.is_valid:
+        if not tac.is_valid:
             tac.recover_config()
 
             if not tac.is_valid:
                 print(tac.err_msg, file=sys.stderr)
                 print(f"See {tac.user_log_fullpath}, for more information.",
+                      file=sys.stderr)
+                status = 1
+        elif not tpc.is_valid:
+            tpc.recover_config()
+
+            if not tpc.is_valid:
+                print(tpc.err_msg, file=sys.stderr)
+                print(f"See {tpc.user_log_fullpath}, for more information.",
                       file=sys.stderr)
                 status = 2
         else:

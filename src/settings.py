@@ -56,7 +56,6 @@ class FiscalSettings(wx.Panel):
         widget_02.SetForegroundColour(w_fg_color)
         widget_02.Bind(EVT_COLOR_CHECKBOX, self.enable_current)
         grid_sizer.Add(widget_02, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 6)
-        #grid_sizer.Add((0, 0), 1, wx.EXPAND, 6)
         self.Hide()
 
     def enable_current(self, event):

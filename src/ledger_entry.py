@@ -145,7 +145,6 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         sizer.Add(btn_sizer, 0, wx.CENTER, 0)
 
         self.gbs = wx.GridBagSizer(2, 2)
-        sizer.Add(self.gbs, 0, wx.CENTER | wx.ALL, 10)
         pos = 0
 
         widget_01 = wx.StaticText(self, wx.ID_ANY, "Transaction ID:")
@@ -247,24 +246,22 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
 
         line = wx.StaticLine(self, wx.ID_ANY)
         line.SetBackgroundColour(self.w_fg_color)
-        self.gbs.Add(line, (pos, 0), (1, 2), wx.EXPAND | wx.TOP | wx.BOTTOM, 4)
-        pos += 1
+        self.gbs.Add(line, (pos, 0), (1, 2), wx.EXPAND | wx.TOP, 20)
+
+        sizer.Add(self.gbs, 0, wx.CENTER | wx.ALL, 10)
 
         panel_0 = wx.Panel(self)
-        sizer_1 = wx.StdDialogButtonSizer()
-        save_wgt = wx.Button(panel_0, wx.ID_FORWARD, label='&Save')
-        save_wgt.SetMinSize((-1, -1))
-        save_wgt.SetBackgroundColour(wx.Colour(50, 50, 204))
+        sizer_1 = wx.BoxSizer(wx.HORIZONTAL)
+        save_wgt = wx.Button(panel_0, wx.ID_SAVE, label='')
+        save_wgt.SetBackgroundColour(self.w_fg_color)
         save_wgt.Bind(wx.EVT_BUTTON, self.button_save)
+        sizer_1.Add(save_wgt, 0, wx.ALL, 10)
         cancel_wgt = wx.Button(panel_0, wx.ID_CANCEL, label='')
-        cancel_wgt.SetMinSize((-1, -1))
-        cancel_wgt.SetBackgroundColour(wx.Colour(50, 50, 204))
-        sizer_1.AddButton(save_wgt)
+        cancel_wgt.SetBackgroundColour(self.w_fg_color)
         cancel_wgt.Bind(wx.EVT_BUTTON, self.button_cancel)
-        sizer_1.AddButton(cancel_wgt)
-        sizer_1.Realize()
+        sizer_1.Add(cancel_wgt, 0, wx.ALL, 10)
         panel_0.SetSizer(sizer_1)
-        self.gbs.Add(panel_0, (pos, 0), (1, 1), wx.EXPAND, 0)
+        sizer.Add(panel_0, 0, wx.CENTER, 0)
 
         self._scroll_rate = (20, 40)
         self.SetupScrolling(rate_x=self._scroll_rate[0],

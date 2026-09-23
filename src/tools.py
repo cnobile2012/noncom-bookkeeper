@@ -87,6 +87,7 @@ class FieldEdit(BasePanel, wx.Panel):
     __cl = None
     _LAST_MOVED = None
     _NEW_FIELDS = []
+    _CHANGE_COUNT = 0
 
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
@@ -135,7 +136,7 @@ class FieldEdit(BasePanel, wx.Panel):
                     width, height = self.parent.GetSize()
                     tgs_w, tgs_h = top_grid_sizer.GetMinSize()
                     tw, th = panel_top.GetSize()
-                    height = height - th + self.frame.statusbar_size[1]
+                    height = height - th
                     panel_bot.SetSizeHints((tgs_w, height))
                     self.parent.Layout()
 
@@ -155,12 +156,12 @@ class FieldEdit(BasePanel, wx.Panel):
         sizer.Add(grid_sizer, 0, wx.CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 6)
         title = wx.StaticText(panel, wx.ID_ANY, "Field Editor", style=0)
         title.SetForegroundColour(w_fg_color_1)
-        title.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+        title.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD, 0, ''))
         grid_sizer.Add(title, (0, 0), (1, 3), wx.ALIGN_CENTER | wx.ALL, 6)
 
         desc = wx.StaticText(panel, wx.ID_ANY, self._description, style=0)
-        desc.Wrap(450)
+        desc.Wrap(460)  # 510 id 9 point
         desc.SetForegroundColour(w_fg_color_1)
         desc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD, 0, ''))
@@ -232,7 +233,21 @@ class FieldEdit(BasePanel, wx.Panel):
         spin_ctrl.SetForegroundColour(w_fg_color_0)
         grid_sizer.Add(spin_ctrl, (5, 1), (1, 1), ctrl_btn_flags, 4)
 
+        panel_1 = wx.Panel(panel)
+        sizer_1 = wx.BoxSizer()
+        save_wgt = wx.Button(panel_1, wx.ID_APPLY)
+        save_wgt.SetBackgroundColour(w_fg_color_0)
+        save_wgt.Bind(wx.EVT_BUTTON, self.button_save_closure(arg_dict))
+        sizer_1.Add(save_wgt, 0, wx.ALL, 10)
+        cancel_wgt = wx.Button(panel_1, wx.ID_CANCEL)
+        cancel_wgt.SetBackgroundColour(w_fg_color_0)
+        cancel_wgt.Bind(wx.EVT_BUTTON, self.button_cancel_closure(arg_dict))
+        sizer_1.Add(cancel_wgt, 0, wx.ALL, 10)
+        panel_1.SetSizer(sizer_1)
+        sizer.Add(panel_1, 0, wx.CENTER, 0)
+
         arg_dict['top_grid_sizer'] = grid_sizer
+        arg_dict['combo_box'] = combo_box
         arg_dict['spin_ctrl'] = spin_ctrl
         arg_dict['new_field_name'] = field_name
         arg_dict['add_button'] = add_button
@@ -241,7 +256,48 @@ class FieldEdit(BasePanel, wx.Panel):
         arg_dict['undo_buttom'] = undo_button
         return panel
 
-    def _panel_bot(self, arg_dict):
+    def button_save_closure(self, arg_dict):
+        def button_save(event):
+            if self._CHANGE_COUNT > 0:
+                cap = "Apply Changes"
+                msg = "Apply all changes to your config file."
+                dlg = ConfirmationDialog(self, msg, cap,
+                                         callback=self.save_callback,
+                                         cb_args=(arg_dict,))
+                dlg.show()
+            event.Skip()
+        return button_save
+
+    def save_callback(self, arg_dict: dict) -> None:
+        self._tcp.save_updated_panel()
+        self._reset_panel(arg_dict)
+
+    def button_cancel_closure(self, arg_dict):
+        def button_cancel(event):
+            if self._CHANGE_COUNT > 0:
+                cap = "Cancel Changes"
+                msg = "Cancel all changes to this form?"
+                dlg = ConfirmationDialog(self, msg, cap,
+                                         callback=self.cancel_callback,
+                                         cb_args=(arg_dict,))
+                dlg.show()
+            event.Skip()
+        return button_cancel
+
+    def cancel_callback(self, arg_dict: dict) -> None:
+        self._tcp.cancel_updated_panel()
+        self._reset_panel(arg_dict)
+
+    def _reset_panel(self, arg_dict: dict) -> None:
+        combo_box = arg_dict['combo_box']
+        combo_box.SetSelection(0)
+        panel = arg_dict.get('panel')
+        parent_sizer = arg_dict['parent_sizer']
+        # Destroy previous panel if it exists.
+        self._destroy_panel(panel, parent_sizer)
+        self._CHANGE_COUNT = 0
+
+    def _panel_bot(self, arg_dict: dict):
         w_bg_color = arg_dict['w_bg_color']
         spin_ctrl = arg_dict['spin_ctrl']
         spin_ctrl.SetValue("")
@@ -274,7 +330,7 @@ class FieldEdit(BasePanel, wx.Panel):
         self.bind_events(arg_dict)
         return panel
 
-    def bind_events(self, arg_dict):
+    def bind_events(self, arg_dict: dict) -> None:
         w_bg_color = arg_dict['w_bg_color']
         add_button = arg_dict['add_button']
         update_button = arg_dict['update_button']
@@ -297,7 +353,7 @@ class FieldEdit(BasePanel, wx.Panel):
         self.Bind(wx.EVT_SPINCTRL, self.swap_rows_closure(
             arg_dict, w_bg_color))
 
-    def selection_closure(self, arg_dict):
+    def selection_closure(self, arg_dict: dict):
         def get_selection(event):
             edit_names = {m_name: name for m_name, name, _ in self._tmd.panels}
             chosen = edit_names.get(event.GetString())
@@ -374,8 +430,8 @@ class FieldEdit(BasePanel, wx.Panel):
         return swap_rows
 
     def _create_widgets(self, arg_dict: dict):
-        parent_sizer = arg_dict['parent_sizer']
         panel = arg_dict.get('panel')
+        parent_sizer = arg_dict['parent_sizer']
         # Destroy previous panel if it exists.
         self._destroy_panel(panel, parent_sizer)
         # Create new panel.
@@ -406,6 +462,7 @@ class FieldEdit(BasePanel, wx.Panel):
                     self._tcp.add_name(name)
                     self._update_screen_size(arg_dict)
                     self._LAST_MOVED = (new_name, None, 'add')
+                    self._CHANGE_COUNT += 1
                 else:
                     msg = f"Duplicate field name '{name}' found."
                     self.frame.statusbar_warning = msg
@@ -428,11 +485,10 @@ class FieldEdit(BasePanel, wx.Panel):
 
                 if data:
                     cap = "Data Found"
-                    msg = (f"Data found for the field '{name}' so it "
+                    msg = (f"Data was found for the field '{name}' so it "
                            "cannot be hidden.")
-                    w_fg_color = wx.Colour(w_fg_color_0)
-                    dlg = ConfirmationDialog(self, msg, cap, enable=False,
-                                             fg_color=w_fg_color)
+                    dlg = ConfirmationDialog(self, msg, cap, wrap=300,
+                                             enable=False)
                     dlg.show()
                 else:
                     gbs = arg_dict.get('bot_grid_sizer')
@@ -456,6 +512,7 @@ class FieldEdit(BasePanel, wx.Panel):
                             window.Destroy()
 
                         self._tcp.hide_widget(name)
+                        self._CHANGE_COUNT += 1
                         gbs.Layout()
                         arg_dict['panel'].Layout()
                         spin_ctrl = arg_dict['spin_ctrl']
@@ -477,11 +534,13 @@ class FieldEdit(BasePanel, wx.Panel):
                     old_name = widget.GetLabel()
                     widget.SetLabel(name)
                     self._tcp.rename_label(old_name, name)
+                    self._CHANGE_COUNT += 1
                 else:
                     msg = f"Duplicate field name '{name}' found."
                     self.frame.statusbar_warning = msg
             elif name:
                 arg_dict['current_widget'].SetLabel(name)
+                self._CHANGE_COUNT += 1
 
             arg_dict['new_field_name'].SetValue("")
 
@@ -508,6 +567,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
                     self._remove_by_position(arg_dict, count, 0)
                     self._LAST_MOVED = None
+                    self._CHANGE_COUNT -= 1
                 elif type_ == 'hide' and self._LAST_MOVED[-1] == 'hide':
                     name, row = self._LAST_MOVED[:2]
                     gbs = arg_dict.get('bot_grid_sizer')
@@ -519,10 +579,12 @@ class FieldEdit(BasePanel, wx.Panel):
                             gbs.swap_rows(count+1, count)
 
                     self._LAST_MOVED = None
+                    self._CHANGE_COUNT -= 1
                 elif type_ == 'rename':
                     widget = arg_dict['current_widget']
                     widget.SetLabel(last[0])
                     self._LAST_MOVED = None
+                    self._CHANGE_COUNT -= 1
 
         return undo_button
 
@@ -644,10 +706,9 @@ class FieldEdit(BasePanel, wx.Panel):
         buff = StringIO()
         buff.write("This page allows you to add, hide, or rename fields on ")
         buff.write("various data entry pages. Fields can never be deleted ")
-        buff.write("and should only be hidden at the start of a Fiscal Year ")
-        buff.write("before the field is used. If hidden later in the year ")
-        buff.write("valid data may be missing from reports and cause ")
-        buff.write("balences to not be correct.")
+        buff.write("and should only be hidden at the start of a Fiscal Year. ")
+        buff.write("You will not be permitted to hide a field if there is ")
+        buff.write("data in the database for the field.")
         value = buff.getvalue()
         buff.close()
         return value

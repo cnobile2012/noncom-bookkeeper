@@ -197,16 +197,18 @@ class ConfirmationDialog(wx.Dialog):
     """
 
     def __init__(self, parent, msg, cap, *, wrap=500, enable=True,
-                 bg_color=None, fg_color=None):
+                 bg_color=None, fg_color=None, callback=None, cb_args=None):
         super().__init__(parent, wx.ID_ANY, title=cap,
                          style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
         self.enable = enable
+        self.callback = callback
+        self.cb_args = cb_args
         self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD, 0, ''))
+        # Yellow-ish
+        _bg_color = bg_color if bg_color else wx.Colour(255, 255, 127)
         # Red-ish
-        _bg_color = bg_color if bg_color else wx.Colour(220, 130, 143)
-        # Blue-ish
-        _fg_color = fg_color if fg_color else wx.Colour(50, 50, 204)
+        _fg_color = fg_color if fg_color else wx.Colour(255, 0, 0)
         self.SetBackgroundColour(_bg_color)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -225,6 +227,7 @@ class ConfirmationDialog(wx.Dialog):
         if enable:
             ok_button = wx.Button(self, wx.ID_OK)
             button_sizer.AddButton(ok_button)
+            ok_button.Bind(wx.EVT_BUTTON, self.okay)
 
         cancel_button = wx.Button(self, wx.ID_CANCEL)
         cancel_button.SetDefault()
@@ -251,6 +254,10 @@ class ConfirmationDialog(wx.Dialog):
             value = self.Show()
 
         return ret
+
+    def okay(self, event):
+        self.callback(*self.cb_args)
+        event.Skip()
 
     def cancel(self, event):
         self.Destroy()

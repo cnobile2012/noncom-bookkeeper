@@ -333,22 +333,14 @@ class MenuBar:
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
 
-        self.panel.Show()
-        self.panel.InvalidateBestSize()
-        #self.SendSizeEvent()
-
-        hasattr(self.panel, 'SetupScrolling') and self.panel.SetupScrolling(
-            rate_x=20, rate_y=40)
-
-        # if hasattr(self.panel, 'refresh_scrolling'):
-        #     self.panel.refresh_scrolling()
-
-        wx.CallAfter(self.container.SendSizeEvent)
-        #self.container.SendSizeEvent()
-
-        # self.container.Layout()
-        # self.sizer.Layout()
-        # self.panel.Layout()
+        self.panel.Layout()
+        self.sizer.Show(self.panel, True)
+        self.container.SendSizeEvent()
+        # print(f"panel={panel_name}, "
+        #       f"container={self.container.GetSize()}, "
+        #       f"container_best={self.container.GetBestSize()}, "
+        #       f"panel={self.panel.GetSize()}, "
+        #       f"panel_best={self.panel.GetBestSize()}")
 
     def change_menu_items(self, menu_list: tuple=()) -> None:
         """
