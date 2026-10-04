@@ -9,6 +9,8 @@ import re
 import unittest
 import wx
 
+from unittest.mock import patch, MagicMock
+
 from . import check_flag, FakeFrame, FakeWidget, FakeEvent
 
 from src.bases import find_dict, version, BasePanel, BaseGenerated
@@ -25,7 +27,7 @@ class TestBaseFunctions(unittest.TestCase):
     #@unittest.skip("Temporarily skipped")
     def test_find_dict_found(self):
         """
-        Test that a dict that is arbitrarily placed in a list can be found.
+        Test that a dict which is arbitrarily placed in a list can be found.
         """
         list_ = ['stuff', 'more_stuff', {'a': 'A', 'b': 'B'}, 'yet_more_stuff']
         dict_ = find_dict(list_)
@@ -73,10 +75,16 @@ class TestBasePanel(unittest.TestCase):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        self.bp = BasePanel()
 
     def tearDown(self):
         if hasattr(self, 'widget_00'):
             setattr(self, 'widget_00', None)
+
+    def _make_event(self, wgt):
+        event = MagicMock()
+        event.GetEventObject.return_value = wgt
+        return event
 
     #@unittest.skip("Temporarily skipped")
     def test_background_color(self):
@@ -99,13 +107,125 @@ class TestBasePanel(unittest.TestCase):
         This is a test of the same function above. It is a redirect
         in the BasePanel class. We do not repeat the whole test.
         """
-        bp = BasePanel()
         list_ = ['stuff', 'more_stuff', {'a': 'A', 'b': 'B'}, 'yet_more_stuff']
-        dict_ = bp._find_dict(list_)
+        dict_ = self.bp._find_dict(list_)
         msg = f"Should find a 'dict' found {type(dict_)}"
         self.assertTrue(isinstance(dict_, dict), msg)
         msg = f"Should find a 'dict' of non zero length found {dict_}"
         self.assertEqual(len(dict_), 2, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_set_dirty_flag(self):
+        """
+        Test that the set_dirty_flag method functions correctly.
+        """
+        data = (
+            (False, True, False, True, True),
+            (False, False, False, True, False),
+            (False, False, False, None, True),
+            (False, False, False, False, True),
+            (True, True, False, True, False),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        for init, sel, dirt, dirt_flg, expected in data:
+            self.bp.initializing = init
+            self.bp.selected = sel
+            self.bp.dirty = dirt
+
+            if not all((init, sel, dirt)) and dirt_flg:  # For test two
+                self.bp.get_selection = MagicMock()
+
+            if dirt_flg is None:  # For test three
+                wgt = MagicMock(spec=[])
+            else:
+                wgt = MagicMock()
+                wgt.dirty_event = dirt_flg
+
+            event = self._make_event(wgt)
+            self.bp.set_dirty_flag(event)
+            self.assertEqual(expected, self.bp.dirty)
+            event.Skip.assert_called_once()
+
+    def test_set_dirty_flag_sel_true_when_no_get_selection(self):
+        """
+        Bind the real method onto a bare object that has no get_selection,
+        to exercise the hasattr(self, 'get_selection') False branch.
+        """
+        class Bare:
+            pass
+
+        bare = Bare()
+        bare.initializing = False
+        bare.selected = False  # irrelevant here — sel should default True
+        bare.dirty = False
+        bare.set_dirty_flag = self.bp.set_dirty_flag.__func__.__get__(bare)
+        wgt = MagicMock()
+        # even with this True, no get_selection -> sel=True
+        wgt.dirty_event = True
+        event = self._make_event(wgt)
+        bare.set_dirty_flag(event)
+        self.assertTrue(bare.dirty)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_dirty_getter_and_setter(self):
+        """
+        Test that the dirty getter and setter properties correctly sets
+        and gets the dirty property.
+        """
+        data = (
+            (None, False),
+            (False, False),
+            (True, True),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        for set_value, expected in data:
+            if set_value is not None:
+                self.bp.dirty = set_value
+
+            result = self.bp.dirty
+            self.assertEqual(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_initializing_getter_and_setter(self):
+        """
+        Test that the initializing getter and setter properties correctly sets
+        and gets the initializing property.
+        """
+        data = (
+            (None, False),
+            (False, False),
+            (True, True),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        for set_value, expected in data:
+            if set_value is not None:
+                self.bp.initializing = set_value
+
+            result = self.bp.initializing
+            self.assertEqual(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_selected_getter_and_setter(self):
+        """
+        Test that the selected getter and setter properties correctly sets
+        and gets the selected property.
+        """
+        data = (
+            (None, False),
+            (False, False),
+            (True, True),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        for set_value, expected in data:
+            if set_value is not None:
+                self.bp.selected = set_value
+
+            result = self.bp.selected
+            self.assertEqual(expected, result, msg.format(expected, result))
 
 
 class TestBaseGenerated(unittest.TestCase):

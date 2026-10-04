@@ -113,15 +113,36 @@ class AsyncEventLoop:
         # Panels cannot work with async directly, so we put all async
         # code in a separate thread.
         self.__loop = asyncio.new_event_loop()
-        threading.Thread(target=self.__start_event_loop, daemon=True).start()
+        self.__thread = threading.Thread(target=self.__start_event_loop,
+                                         daemon=True)
+        self.__thread.start()
 
     def __start_event_loop(self):
         asyncio.set_event_loop(self.__loop)
         self.__loop.run_forever()
+        asyncio.set_event_loop(None)
 
     def run_async(self, coro):
         return asyncio.run_coroutine_threadsafe(coro, self.__loop).result()
 
+    def stop(self):
+        async def cancel_tasks():
+            current = asyncio.current_task()
+            tasks = [task for task in asyncio.all_tasks()
+                     if task is not current]
+
+            for task in tasks:
+                task.cancel()
+
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+        if self.__loop.is_running():
+            future = asyncio.run_coroutine_threadsafe(
+                cancel_tasks(), self.__loop)
+            future.result()
+            self.__loop.call_soon_threadsafe(self.__loop.stop)
+            self.__thread.join()
+            self.__loop.close()
 
 class StoreObjects(Borg):
     _object_store = {}

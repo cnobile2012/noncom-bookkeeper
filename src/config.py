@@ -112,6 +112,14 @@ class Settings(AppDirs, Borg):
         self._log.info("Created, if necessary, the following paths: %s", paths)
 
     @property
+    def local_toml(self):
+        return self.__local_toml
+
+    @local_toml.setter
+    def local_toml(self, alt_path: str) -> None:
+        self.__local_toml = alt_path
+
+    @property
     def log_level(self) -> int:
         return self._log.level
 
@@ -247,7 +255,14 @@ class Settings(AppDirs, Borg):
 
     @property
     def local_config_fullpath(self) -> str:
-        return os.path.join(self._LOCAL_CONFIG, self.__local_toml)
+        head, tail = os.path.split(self.local_toml)
+
+        if tail == self._CONFIG_FILES['local'][self.__config_type]:
+            path = os.path.join(self._LOCAL_CONFIG, self.local_toml)
+        else:
+            path = self.local_toml
+
+        return path
 
     @property
     def config_type(self) -> str:
@@ -496,7 +511,7 @@ class TomlPanelConfig(BaseSystemData):
         if self.error:
             self._log.warning("Error: %s is corrupted, using the backup file.",
                               self.user_config_fullpath)
-            # First try to copy the backup file to the user file.
+            # First, try to copy the backup file to the user file.
             self._copy_file(self._backup_file, self.user_config_fullpath)
 
             if not self._validate():
@@ -504,7 +519,7 @@ class TomlPanelConfig(BaseSystemData):
                     self.err_msg = self.ERR_MESSAGES[self.error].format(
                         self.user_config_fullpath)
 
-                # Second try to copy the local file to the user file.
+                # Second, try to copy the local file to the user file.
                 # We need to remove any corrupted file fist.
                 try:
                     os.remove(self.user_config_fullpath)
@@ -749,7 +764,7 @@ class TomlCreatePanel(BaseSystemData):
 
         :param tk.TOMLDocument current: The current panel's Toml doc.
         """
-        self.__panel = copy.deepcopy(current)
+        self.__panel = current
 
     @property
     def all_field_names(self):
@@ -885,6 +900,7 @@ class TomlCreatePanel(BaseSystemData):
 
     def save_updated_panel(self) -> bool:
         """
+        Save the updated panel data.
         """
         ret = True
         
@@ -893,7 +909,7 @@ class TomlCreatePanel(BaseSystemData):
 
     def cancel_updated_panel(self):
         """
-        Cancel update and reset the current panel to None.
+        Cancel the update by seting the current panel to None.
         """
         self.__panel = None
 

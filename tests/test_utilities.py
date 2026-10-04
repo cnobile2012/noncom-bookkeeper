@@ -267,7 +267,7 @@ class TestGridBagSizer(BaseTests):
         row = 0
         # Test that the current color is the default.
         windows = find_widget(row)
-        expected_color = (42, 46, 50, 255)
+        expected_color = (32, 35, 38, 255)
 
         for w in windows:
             found_color = w.GetBackgroundColour()

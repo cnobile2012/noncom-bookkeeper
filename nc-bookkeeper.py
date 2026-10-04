@@ -63,6 +63,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=("Non-commercial organization bookkeeping application."))
     parser.add_argument(
+        '-c', '--alt-config', type=str, default=None, dest='alt_config',
+        help=("Use an alternative panel config TOML file."))
+    parser.add_argument(
         '-r', '--run', action='store_false', dest='run',
         help="Normal running mode.")
     parser.add_argument(
@@ -84,6 +87,10 @@ if __name__ == "__main__":
         Logger().config(logger_name=settings.logger_name,
                         file_path=settings.user_log_fullpath)
         tpc = TomlPanelConfig()
+
+        if options.alt_config:
+            tpc.local_toml = options.alt_config
+        
         tpc.initializing_config()
         tac = TomlAppConfig()
         tac.initializing_config()

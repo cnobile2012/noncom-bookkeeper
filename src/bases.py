@@ -9,21 +9,22 @@ import re
 from wx.lib.scrolledpanel import ScrolledPanel
 
 
-def find_dict(value: list) -> dict:
+def find_dict(values: list) -> dict:
     """
     Fine the dict in the Toml data that is in the widget value list.
 
-    :param list value: A list that defines a widget from a TOML file.
+    :param list values: A list that defines a widget from a TOML file.
     :returns: A dict with attributes that define a widget.
     :rtype: dict
     """
-    for item in value:
-        if isinstance(item, dict):
-            break
-        else:
-            item = {}
+    embed = {}
 
-    return item
+    for item in reversed(values):
+        if isinstance(item, dict):
+            embed = item
+            break
+
+    return embed
 
 
 def version() -> str:

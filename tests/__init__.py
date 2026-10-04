@@ -60,6 +60,7 @@ RUN_FLAG = {'TestBaseFunctions': False,
             'TestTomlMetaData': False,
             'TestTomlPanelConfig': False,
             'TestTomlAppConfig': False,
+            'TestTomlAppConfigAsync': False,
             'TestTomlCreatePanel': False,
             'TestExceptions': False,
             'TestFiscalSettings': False,
@@ -75,7 +76,8 @@ RUN_FLAG = {'TestBaseFunctions': False,
             'TestLedgerTransaction': False,
             'Test_CreateWidgets': False,
             'TestLedgerDataEntry': False,
-            'TestSearchDialog': False}
+            'TestSearchDialog': False,
+            'TestPanelFactory': False}
 
 
 def check_flag(name):

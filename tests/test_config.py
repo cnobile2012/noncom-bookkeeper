@@ -14,7 +14,7 @@ import tomlkit as tk
 
 from . import (BASE_DIR, PATH, LOGGER_NAME, LOGFILE_NAME, log, check_flag,
                patchers)
-from .base_database_test import BaseTests
+from .base_database_test import BaseTests, BaseAsyncTests
 from .conftest import (TMP_USER_CONFIG_FILE, TMP_USER_APP_CONFIG_FILE,
                        TMP_LOCAL_CONFIG_FILE, TMP_LOCAL_DOES_NOT_EXIST)
 from src.config import (Settings, BaseSystemData, TomlMetaData,
@@ -537,11 +537,11 @@ class BaseTomlTest(BaseTests, unittest.TestCase):
     def setUp(self):
         patchers(self)
 
-    def make_file(self, filename, data):
+    def _make_file(self, filename, data):
         with open(filename, 'w') as f:
             f.write(data)
 
-    def remove_test_files(self, files):
+    def _remove_test_files(self, files):
         for file in files:
             try:
                 os.remove(file)
@@ -569,7 +569,7 @@ class TestTomlMetaData(BaseTomlTest):
         self._tmd.panel_config = None
         self._tmd = None
         files = (TMP_USER_CONFIG_FILE,)
-        self.remove_test_files(files)
+        self._remove_test_files(files)
 
     #@unittest.skip("Temporarily skipped")
     def test_title(self):
@@ -776,7 +776,7 @@ class TestTomlPanelConfig(BaseTomlTest):
     def tearDown(self):
         files = (TMP_USER_CONFIG_FILE, TMP_LOCAL_CONFIG_FILE,
                  self.backup_file)
-        self.remove_test_files(files)
+        self._remove_test_files(files)
 
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.TomlPanelConfig.user_config_fullpath',
@@ -794,7 +794,7 @@ class TestTomlPanelConfig(BaseTomlTest):
 
         for expected in data:
             if expected:
-                self.make_file(good_file, "This is mostly an empty file.")
+                self._make_file(good_file, "This is mostly an empty file.")
 
                 with patch('src.config.TomlPanelConfig.user_config_fullpath',
                            good_file):
@@ -867,13 +867,17 @@ class TestTomlPanelConfig(BaseTomlTest):
         data = (
             (data0, (self._tpc.ERR_TOML_ERROR, True, err_msg0)),
             ('', (self._tpc.ERR_ZERO_LENGTH_FILE, True, err_msg1)),
-            (None, (None, True, err_msg2)),
+            (None, (self._tpc.ERR_FILE_NOT_FOUND, True, err_msg2)),
             )
         msg = "Expected {}, found {}."
 
         for bad_data, expected in data:
             if bad_data is not None:
-                self.make_file(self._tpc.user_config_fullpath, bad_data)
+                self._make_file(self._tpc.user_config_fullpath, bad_data)
+            else:
+                files = (TMP_USER_CONFIG_FILE, TMP_LOCAL_CONFIG_FILE,
+                         self.backup_file)
+                self._remove_test_files(files)
 
             self._tpc.is_valid
             result = self._tpc.error
@@ -923,7 +927,7 @@ class TestTomlPanelConfig(BaseTomlTest):
                     expected, result))
             else:
                 bad_data = "[meta]\njunk = {key=value\n}"
-                self.make_file(self._tpc.user_config_fullpath, bad_data)
+                self._make_file(self._tpc.user_config_fullpath, bad_data)
                 result = self._tpc._validate()
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
@@ -944,7 +948,7 @@ class TestTomlPanelConfig(BaseTomlTest):
 
         for f0, f1, expected in data:
             if f0:
-                self.make_file(f0, "Nothing much.")
+                self._make_file(f0, "Nothing much.")
                 self._tpc._copy_file(f0, f1)
                 result = os.path.exists(f1)
                 self.assertTrue(result, msg.format(expected, result))
@@ -975,9 +979,9 @@ class TestTomlAppConfig(BaseTomlTest):
 
     def tearDown(self):
         files = (self.TMP_USER_APP_FILE, TMP_USER_APP_CONFIG_FILE)
-        self.remove_test_files(files)
+        self._remove_test_files(files)
 
-    def create_config(self):
+    def _create_config(self):
         self._tac._create_app_config()
         return self._tac.is_valid
 
@@ -1045,7 +1049,7 @@ class TestTomlAppConfig(BaseTomlTest):
         msg = "Expected {}, found {}."
 
         for bad_data, valid, expected in data:
-            self.make_file(self._tac.user_app_config_fullpath, bad_data)
+            self._make_file(self._tac.user_app_config_fullpath, bad_data)
 
             if valid:
                 self._tac.is_valid
@@ -1096,7 +1100,7 @@ class TestTomlAppConfig(BaseTomlTest):
                     expected, result))
             else:
                 bad_data = "[meta]\njunk = {key=value\n}"
-                self.make_file(self._tac.user_app_config_fullpath, bad_data)
+                self._make_file(self._tac.user_app_config_fullpath, bad_data)
                 result = self._tac._validate()
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
@@ -1118,7 +1122,7 @@ class TestTomlAppConfig(BaseTomlTest):
             ('app_config', 'config_filename', 'bahai.toml'),
             )
         msg = "Expected {}, found {}."
-        ret = self.create_config()
+        ret = self._create_config()
         self.assertTrue(ret, msg.format(True, ret))
 
         for table, key, expected in data:
@@ -1136,7 +1140,7 @@ class TestTomlAppConfig(BaseTomlTest):
         File should contain the following data:
         {'app_size': {'default': [530, 830], 'size': [530, 830]}}
         """
-        self.create_config()
+        self._create_config()
         value = self._tac.get_value('app_size', 'default')
         msg = f"Value should be a list, found '{value}'."
         self.assertTrue(isinstance(value, list), msg)
@@ -1151,7 +1155,7 @@ class TestTomlAppConfig(BaseTomlTest):
         File should contain the following data:
         {'app_size': {'default': [530, 830], 'size': [530, 830]}}
         """
-        self.create_config()
+        self._create_config()
         invalid_key = 'invalid'
 
         with self.assertRaises(AssertionError) as cm:
@@ -1171,7 +1175,7 @@ class TestTomlAppConfig(BaseTomlTest):
         File should contain the following data:
         {'app_size': {'default': [530, 830], 'size': [530, 830]}}
         """
-        self.create_config()
+        self._create_config()
         # Test that the 'default' value is the default.
         value = self._tac.get_value('app_size', 'default')
         expected = TomlAppConfig._DEFAULT_SCREEN_SIZE
@@ -1195,7 +1199,7 @@ class TestTomlAppConfig(BaseTomlTest):
         File should contain the following data:
         {'app_size': {'default': [530, 830], 'size': [530, 830]}}
         """
-        self.create_config()
+        self._create_config()
         # Test that the new key does not exist yet.
         new_key = 'test_key'
 
@@ -1223,7 +1227,7 @@ class TestTomlAppConfig(BaseTomlTest):
         File should contain the following data:
         {'app_size': {'default': [530, 830], 'size': [530, 830]}}
         """
-        self.create_config()
+        self._create_config()
         # Test that the new table is not found.
         new_table = 'new_table'
         new_key = 'test_key'
@@ -1258,6 +1262,34 @@ class TestTomlAppConfig(BaseTomlTest):
         self.assertIn(self.TMP_UNWRITABLE_PATH, ex, msg)
 
 
+class TestTomlAppConfigAsync(BaseAsyncTests):
+
+    async def asyncTearDown(self):
+        self.db.cache._flush_cache()
+        await self.truncate_all_tables()
+
+    def setUp(self):
+        check_flag(self.__class__.__name__)
+        patchers(self)
+        self._tac = TomlAppConfig()
+
+    async def test_get_filename(self):
+        data = (
+            (False, 'bahai.toml'),
+            (True, 'new_york.toml'),
+            )
+        msg = "Expected {}, found {}."
+
+        for store, expected in data:
+            if store:
+                await self.db.create_db()
+                await self.insert_data()
+                await self.db.cache.load()
+
+            result = self._tac.get_filename()
+            self.assertEqual(expected, result, msg.format(expected, result))
+
+
 class TestTomlCreatePanel(BaseTomlTest):
 
     def __init__(self, name, *args, **kwargs):
@@ -1265,13 +1297,12 @@ class TestTomlCreatePanel(BaseTomlTest):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        super().setUp()
         self._tcp = TomlCreatePanel()
-        items = self.create_toml_doc('organization')
+        items = self._create_toml_doc('organization')
         self._tcp.current_panel = items
 
-    def create_toml_doc(self, panel_name: str=None):
-        full_path = os.path.join(BASE_DIR, 'tests', 'test_panel.toml')
+    def _create_toml_doc(self, panel_name: str=None):
+        full_path = os.path.join(BASE_DIR, 'tests', 'panels.toml')
 
         with open(full_path, mode='r') as f:
             data = f.read()
@@ -1283,7 +1314,7 @@ class TestTomlCreatePanel(BaseTomlTest):
 
         return doc
 
-    def widget_data_by_label(self) -> dict:
+    def _widget_data_by_label(self) -> dict:
         """
         Creates a dict where the key is the StaticText label. Since
         CtrlText widgets do not have labels they are not in the created dict.
@@ -1318,11 +1349,11 @@ class TestTomlCreatePanel(BaseTomlTest):
         """
         Test both the setter and getter for the current_panel properties.
         """
-        expect = self.create_toml_doc()
-        self._tcp.current_panel = expect
-        value = self._tcp.current_panel
-        msg = f"Expected {expect}, found {value}."
-        self.assertEqual(expect, value, msg)
+        expected = self._create_toml_doc()
+        self._tcp.current_panel = expected
+        result = self._tcp.current_panel
+        msg = f"Expected {expected}, found {result}."
+        self.assertEqual(expected, result, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_all_field_names(self):
@@ -1330,7 +1361,7 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the all_field_names property returns all the names of
         all panels.
         """
-        number_of_widgets = 7
+        number_of_widgets = 8
         err_msg = "There is no panel that is currently being worked on."
 
         try:
@@ -1399,7 +1430,7 @@ class TestTomlCreatePanel(BaseTomlTest):
 
         for label, key_num, expected in data:
             self._tcp.add_name(label, key_num)
-            values = self.widget_data_by_label()
+            values = self._widget_data_by_label()
             result = values[label]
             self.assertEqual(expected[0], result, msg.format(
                 expected[0], result))
@@ -1418,24 +1449,22 @@ class TestTomlCreatePanel(BaseTomlTest):
         """
         label = 'Total Membership:'
         w_key = 'widget_04'
-        expect0 = ('widget_04',
-                   ['StaticText', 'w_fg_color_1',
-                    {'args': ['self', 'ID_ANY', 'Total Membership:'],
-                     'min': [-1, -1],
-                     'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP',
-                             6],
-                     'pos': [2, 0], 'span': [1, 1], 'hidden': True}])
+        expect0 = ('widget_05', [
+            'StaticText', 'w_fg_color_1', {
+            'args': ['self', 'ID_ANY', 'Total Membership:'],
+            'min': [-1, -1],
+            'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+            'pos': [3, 0], 'span': [1, 1], 'hidden': True}])
         expect1 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
                    {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
-                    'min': [60, -1],
-                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP',
-                            6],
-                    'pos': [2, 1], 'span': [1, 1], 'financial': False,
-                    'hidden': True}]
+                    'min': [60, 26], 'add': [0, 'ALIGN_CENTER_VERTICAL | '
+                                             'LEFT | RIGHT | TOP', 6],
+                    'pos': [3, 1], 'span': [1, 1], 'financial': False,
+                    'mandatory': True, 'hidden': True}]
         expect2 = (label, 'hide')
         msg = "Expected {}, found {}."
         self._tcp.hide_widget(label)
-        values = self.widget_data_by_label()
+        values = self._widget_data_by_label()
         result = values[label]
         self.assertEqual(expect0, result, msg.format(expect0, result))
         w_key = result[0]
@@ -1453,15 +1482,15 @@ class TestTomlCreatePanel(BaseTomlTest):
         """
         old_label = "Locale Name:"
         new_label = "Area Name:"
-        expect0 = ('widget_02', [
+        expect0 = ('widget_03', [
             'StaticText', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', 'Area Name:'], 'min': [-1, -1],
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-             'pos': [1, 0], 'span': [1, 1], 'update': 'widget_1'}])
+             'pos': [2, 0], 'span': [1, 1]}])
         expect1 = (old_label, new_label, 'rename')
         msg = "Expected {}, found {}."
         self._tcp.rename_label(old_label, new_label)
-        values = self.widget_data_by_label()
+        values = self._widget_data_by_label()
         result = values[new_label]
         self.assertEqual(expect0, result, msg.format(expect0, result))
         lc = self._tcp.last_changed
@@ -1473,7 +1502,7 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the undo_change method reverses the last change.
         """
         def get_data(label):
-            values = self.widget_data_by_label()
+            values = self._widget_data_by_label()
             return values.get(label)
 
         data = (
@@ -1527,12 +1556,11 @@ class TestTomlCreatePanel(BaseTomlTest):
         """
         msg = "Expected {}, found {}."
         label = 'Total Membership:'
-        expect0 = ('widget_04',
+        expect0 = ('widget_05',
                    {'args': ['self', 'ID_ANY', 'Total Membership:'],
-                    'min': [-1, -1],
-                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP',
-                            6],
-                    'pos': [2, 0], 'span': [1, 1]})
+                    'min': [-1, -1], 'add': [0, 'ALIGN_CENTER_VERTICAL | '
+                                             'LEFT | RIGHT | TOP', 6],
+                    'pos': [3, 0], 'span': [1, 1]})
         expect1 = (None, None)
         result = self._tcp._find_label_in_panel(label)
         self.assertEqual(expect0, result, msg.format(expect0, result))
