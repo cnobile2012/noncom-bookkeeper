@@ -79,7 +79,7 @@ class TestPanelFactory(unittest.TestCase):
     #@unittest.skip("Temporarily skipped")
     def test_box_sizer(self):
         """
-        Test that the box_sizer method 
+        Test that the box_sizer method sets up the sizer.
         """
         sizer = 'sizer_0'
         values = ['BoxSizer', 'VERTICAL']
@@ -91,26 +91,28 @@ class TestPanelFactory(unittest.TestCase):
             result = buff.getvalue()
             self.assertEqual(expected, result, msg.format(expected, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_flex_grid_sizer(self):
         """
-        Test that the flex_grid_sizer method 
+        Test that the flex_grid_sizer method sets up the sizer.
         """
-        sizer = ''
-        values = []
-        expected = ("")
+        sizer = 'sizer_1'
+        values = ['FlexGridSizer', {'grid': [2, 2, 2, 2],
+                                    'add': [0, 'CENTER | ALL', 10]}]
+        expected = ("        sizer_1 = wx.FlexGridSizer(*[2, 2, 2, 2])\n"
+                    "        sizer_0.Add(sizer_1, 0, wx.CENTER | "
+                    "wx.ALL, 10)\n")
         msg = "Expected '{}', found '{}'."
 
         with StringIO() as buff:
             self.pf.flex_grid_sizer(buff, sizer, values)
             result = buff.getvalue()
-            print(result)
             self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
     def test_grid_bag_sizer(self):
         """
-        Test that the grid_bag_sizer method 
+        Test that the grid_bag_sizer method sets up the sizer.
         """
         sizer = 'sizer_1'
         values = ['GridBagSizer', {'gap': [2, 2],
@@ -592,5 +594,6 @@ class TestPanelFactory(unittest.TestCase):
     @unittest.skip("Temporarily skipped")
     def test__set_add_to_sizer(self):
         """
-        Test that the _set_add_to_sizer method 
+        Test that the _set_add_to_sizer method adds items to the specified
+        sizer.
         """

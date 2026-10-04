@@ -1451,10 +1451,10 @@ class TestTomlCreatePanel(BaseTomlTest):
         w_key = 'widget_04'
         expect0 = ('widget_05', [
             'StaticText', 'w_fg_color_1', {
-            'args': ['self', 'ID_ANY', 'Total Membership:'],
-            'min': [-1, -1],
-            'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-            'pos': [3, 0], 'span': [1, 1], 'hidden': True}])
+                'args': ['self', 'ID_ANY', 'Total Membership:'],
+                'min': [-1, -1],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+                'pos': [3, 0], 'span': [1, 1], 'hidden': True}])
         expect1 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
                    {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
                     'min': [60, 26], 'add': [0, 'ALIGN_CENTER_VERTICAL | '
@@ -1539,7 +1539,6 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the save_updated_panel method saves all changes to
         the panels data.
         """
-        
 
     @unittest.skip("Temporarily skipped")
     def test_cancel_updated_panel(self):
@@ -1547,7 +1546,6 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the cancel_updated_panel method cancels all changes
         to the panels data.
         """
-        
 
     #@unittest.skip("Temporarily skipped")
     def test__find_label_in_panel(self):

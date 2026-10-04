@@ -579,17 +579,17 @@ class PanelFactory(TomlMetaData):
 
         return item
 
-    def _set_add_to_sizer(self, klass: StringIO, widget: str, value: list
+    def _set_add_to_sizer(self, klass: StringIO, widget: str, values: list
                           ) -> None:
         """
-        Sets the item to the sizer add.
+        Adds the item to the specified sizer.
 
         :param StringIO klass: A `StringIO` object.
-        :param str item: Can be a widget, panel, or sizer.
-        :param list value: Various values used to add items to a sizer.
+        :param str widget: Can be a widget, panel, or sizer.
+        :param list values: Various values used to add items to a sizer.
         """
-        sizer = self.main_sizer if 'Sizer' in value[0] else self.second_sizer
-        dict_ = find_dict(value)
+        sizer = self.main_sizer if 'Sizer' in values[0] else self.second_sizer
+        dict_ = find_dict(values)
         prop, flags, border = dict_.get('add')
         flags = self._fix_flags(flags) if flags != 0 else flags
         pos = dict_.get('pos')
@@ -597,8 +597,6 @@ class PanelFactory(TomlMetaData):
 
         if pos and len(pos) == 1:
             pos.insert(0, self.v_pos)
-
-        #print(widget, pos, dict_)
 
         if pos and span:
             klass.write(f"        {sizer}.Add({widget}, {pos}, "

@@ -476,7 +476,7 @@ class FieldEdit(BasePanel, wx.Panel):
             name = arg_dict['new_field_name'].GetValue()
 
             if name.endswith(':'):
-                w_fg_color_0 = arg_dict['w_fg_color_0']
+                #w_fg_color_0 = arg_dict['w_fg_color_0']
                 year = self._db.cache.year
                 lt = LedgerTransaction(self._db)
                 field_name = make_name(name)

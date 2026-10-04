@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
         if options.alt_config:
             tpc.local_toml = options.alt_config
-        
+
         tpc.initializing_config()
         tac = TomlAppConfig()
         tac.initializing_config()

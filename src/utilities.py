@@ -144,6 +144,7 @@ class AsyncEventLoop:
             self.__thread.join()
             self.__loop.close()
 
+
 class StoreObjects(Borg):
     _object_store = {}
 
