@@ -237,7 +237,6 @@ class PanelFactory(TomlMetaData):
             id = self._fix_flags(id)
             klass.write(f"        {widget} = wx.StaticText("
                         f"{parent}, {id}, {label}, style={style})\n")
-            wrap = dict_.get('wrap')
             self._set_colors(klass, widget, values)
             self._set_font(klass, widget, dict_)
             min_size = dict_.get('min')
@@ -248,13 +247,7 @@ class PanelFactory(TomlMetaData):
             if dict_.get('focus', False):
                 klass.write(f"        {widget}.SetFocus()\n")
 
-            if wrap:
-                klass.write(f"        {widget}.Wrap({wrap})\n")
-
             self._set_add_to_sizer(klass, widget, values)
-
-            if dict_.get('instance'):
-                klass.write(f"        self.{widget} = {widget}\n")
 
     def text_ctrl(self, klass: StringIO, panel: str, widget: str, values: list
                   ) -> None:
@@ -579,13 +572,13 @@ class PanelFactory(TomlMetaData):
 
         return item
 
-    def _set_add_to_sizer(self, klass: StringIO, widget: str, values: list
+    def _set_add_to_sizer(self, klass: StringIO, item: str, values: list
                           ) -> None:
         """
         Adds the item to the specified sizer.
 
         :param StringIO klass: A `StringIO` object.
-        :param str widget: Can be a widget, panel, or sizer.
+        :param str item: Can be a widget, panel, or sizer.
         :param list values: Various values used to add items to a sizer.
         """
         sizer = self.main_sizer if 'Sizer' in values[0] else self.second_sizer
@@ -599,8 +592,8 @@ class PanelFactory(TomlMetaData):
             pos.insert(0, self.v_pos)
 
         if pos and span:
-            klass.write(f"        {sizer}.Add({widget}, {pos}, "
+            klass.write(f"        {sizer}.Add({item}, {pos}, "
                         f"{span}, {flags}, {border})\n")
         else:
-            klass.write(f"        {sizer}.Add({widget}, {prop}, "
+            klass.write(f"        {sizer}.Add({item}, {prop}, "
                         f"{flags}, {border})\n")

@@ -144,20 +144,29 @@ class TestPanelFactory(unittest.TestCase):
                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
                    'pos': [1, 0], 'span': [1, 1],
                    'callback': 'locality_prefix', 'update': 'widget_02'}]
-        expected = ("        widget_01 = wx.StaticText(self, wx.ID_ANY, "
-                    "'''Locality Prefix''', style=wx.RA_SPECIFY_ROWS)\n"
+        expected = ("        widget_01 = wx.RadioBox(self, wx.ID_ANY, "
+                    "'Locality Prefix', style=wx.RA_SPECIFY_ROWS, "
+                    "choices=['LSA', 'Group'], majorDimension=1)\n"
                     "        widget_01.SetForegroundColour("
                     "wx.Colour(*[50, 50, 204]))\n"
                     "        widget_01.SetFont(wx.Font(10, "
                     "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                     "wx.FONTWEIGHT_BOLD, 0, ''))\n"
+                    "        widget_01.SetToolTip('Choose if your community "
+                    "is an LSA or a group.')\n"
+                    "        widget_01.SetSelection(0)\n"
                     "        sizer_1.Add(widget_01, [1, 0], [1, 1], "
                     "wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | "
-                    "wx.TOP, 6)\n")
+                    "wx.TOP, 6)\n"
+                    "        widget_01.Bind(wx.EVT_RADIOBOX, "
+                    "self.locality_prefix('widget_02', True))\n"
+                    "        wx.CallLater(1000, self._locality_prefix, "
+                    "*(widget_01, 'widget_02'))\n"
+                    "        widget_01.mandatory = False\n")
         msg = "Expected '{}', found '{}'."
 
         with StringIO() as buff:
-            self.pf.static_text(buff, panel, widget, values)
+            self.pf.radio_box(buff, panel, widget, values)
             result = buff.getvalue()
             self.assertEqual(expected, result, msg.format(expected, result))
 
@@ -172,22 +181,20 @@ class TestPanelFactory(unittest.TestCase):
         values = ['StaticText', 'w_fg_color_1',
                   {'args': ['self', 'ID_ANY', 'Locale Name:'], 'min': [-1, -1],
                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-                   'pos': [2, 0], 'span': [1, 1]}]
-        expected = ("        widget_03 = wx.RadioBox(self, wx.ID_ANY, "
-                    "'Locale Name', style=0, choices=[], majorDimension=0)\n"
+                   'pos': [2, 0], 'span': [1, 1], 'focus': True}]
+        expected = ("        widget_03 = wx.StaticText(self, wx.ID_ANY, "
+                    "'''Locale Name:''', style=0)\n"
                     "        widget_03.SetForegroundColour("
                     "wx.Colour(*[50, 50, 204]))\n"
-                    "        widget_03.SetSelection(0)\n"
+                    "        widget_03.SetMinSize([-1, -1])\n"
+                    "        widget_03.SetFocus()\n"
                     "        sizer_1.Add(widget_03, [2, 0], [1, 1], "
                     "wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | "
-                    "wx.TOP, 6)\n"
-                    "        widget_03.Bind(wx.EVT_RADIOBOX, "
-                    "self.set_dirty_flag)\n"
-                    "        widget_03.mandatory = False\n")
+                    "wx.TOP, 6)\n")
         msg = "Expected '{}', found '{}'."
 
         with StringIO() as buff:
-            self.pf.radio_box(buff, panel, widget, values)
+            self.pf.static_text(buff, panel, widget, values)
             result = buff.getvalue()
             self.assertEqual(expected, result, msg.format(expected, result))
 
@@ -228,22 +235,36 @@ class TestPanelFactory(unittest.TestCase):
             result = buff.getvalue()
             self.assertEqual(expected, result, msg.format(expected, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_date_picker_ctrl(self):
         """
         Test that the date_picker_ctrl method returns the code for
         a DatePickerCtrl.
         """
-        panel = ''
-        widget = ''
-        values = []
-        expected = ("")
+        panel = 'organization'
+        widget = 'widget_10'
+        values = ['DatePickerCtrl', 'w_bg_color_1', 'w_fg_color_1',
+                  {'args': ['self', 'ID_ANY', ''], 'min': [130, 26],
+                   'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+                   'pos': [5, 1], 'span': [1, 1], 'mandatory': False}]
+        expected = ("        widget_10 = wx.adv.DatePickerCtrl(self, "
+                    "wx.ID_ANY)\n"
+                    "        widget_10.SetBackgroundColour("
+                    "wx.Colour(*[222, 237, 230]))\n"
+                    "        widget_10.SetForegroundColour("
+                    "wx.Colour(*[50, 50, 204]))\n"
+                    "        widget_10.SetMinSize([130, 26])\n"
+                    "        widget_10.Bind(wx.adv.EVT_DATE_CHANGED, "
+                    "self.set_dirty_flag)\n"
+                    "        widget_10.mandatory = False\n"
+                    "        sizer_1.Add(widget_10, [5, 1], [1, 1], "
+                    "wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | "
+                    "wx.TOP, 6)\n")
         msg = "Expected '{}', found '{}'."
 
         with StringIO() as buff:
             self.pf.date_picker_ctrl(buff, panel, widget, values)
             result = buff.getvalue()
-            print(result)
             self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
@@ -281,6 +302,8 @@ class TestPanelFactory(unittest.TestCase):
     def test_choice_combo_box(self):
         """
         Test that the choice_combo_box method returns the code for a ComboBox.
+
+        NOTE: Needs the db implimented in the tests before this test will work.
         """
         panel = 'monthly'
         widget = 'widget_01'
@@ -591,9 +614,36 @@ class TestPanelFactory(unittest.TestCase):
             result = self.pf._fix_flags(flags)
             self.assertEqual(expected, result, msg.format(expected, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test__set_add_to_sizer(self):
         """
         Test that the _set_add_to_sizer method adds items to the specified
         sizer.
         """
+        values0 = ['StaticText', 'w_fg_color_1',
+                   {'args': ['self', 'ID_ANY', 'Organization Information'],
+                    'font': 'font_16_bold', 'min': [-1, -1],
+                    'add': [0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6],
+                    'pos': [0, 0], 'span': [1, 2]}]
+        expect0 = ("        sizer_1.Add(widget_00, [0, 0], [1, 2], "
+                   "wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 6)\n")
+        values0 = ['StaticText', 'w_fg_color_1',
+                   {'args': ['self', 'ID_ANY', 'Organization Information'],
+                    'font': 'font_16_bold', 'min': [-1, -1],
+                    'add': [0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6],
+                    'pos': [0], 'span': [1, 2]}]
+        data = (
+            ('widget_00', values0, None, expect0),
+            ('widget_00', values0, 0, expect0),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        for item, values, v_pos, expected in data:
+            if v_pos is not None:
+                self.pf.v_pos = v_pos
+
+            with StringIO() as buff:
+                self.pf._set_add_to_sizer(buff, item, values)
+                result = buff.getvalue()
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
