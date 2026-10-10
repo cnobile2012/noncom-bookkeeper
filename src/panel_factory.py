@@ -43,6 +43,7 @@ class PanelFactory(TomlMetaData):
                                    str(e), exc_info=True)
 
     def _setup_panel(self, panel: str) -> None:
+        self.rn, self.vn, self.pn = self.toml_version
         class_name = f"{panel.capitalize()}Panel"
         self.__class_names[panel] = class_name
         panel_kwargs = self.panel_config.get(panel, {}).get('meta')
@@ -91,13 +92,12 @@ class PanelFactory(TomlMetaData):
         self.main_sizer = None
         self.second_sizer = None
         self.panel_data = self.panel_config.get(panel, {})
-        self.v_pos = 0
 
         # Create all the sizers.
         for sizer, value in self.panel_data.get('sizers', {}).items():
             if value[0] == 'BoxSizer':
                 self.box_sizer(klass, sizer, value)
-            elif value[0] == 'FlexGridSizer':
+            elif value[0] == 'FlexGridSizer':  # Not currently used.
                 self.flex_grid_sizer(klass, sizer, value)
             elif value[0] == 'GridBagSizer':
                 self.grid_bag_sizer(klass, sizer, value)
@@ -105,16 +105,24 @@ class PanelFactory(TomlMetaData):
         # Create all the widgets.
         panel_widgets = self.panel_data.get('widgets', {})
 
-        for widget, value in panel_widgets.items():
-            self._process_widgets(klass, panel, widget, value)
+        match self.rn:
+            case 1:
+                for widget, values in panel_widgets.items():
+                    self._process_widgets(klass, panel, widget, values)
+            case 2:
+                v_pos = 0
 
-        # for field_name, widgets in self._order.items():
-        #     for widget in widgets:
-        #         value = panel_widgets[widget]
-        #         self._process_widgets(klass, panel, widget, value)
-        #         #print(field_name, panel, widget)
+                for field_name, widgets in self._order.items():
+                    for widget in widgets:
+                        if widget == 'invisible_row':
+                            v_pos += 1
+                            break
 
-        #     self.v_pos += 1
+                        values = panel_widgets[widget]
+                        find_dict(values)['pos'].insert(0, v_pos)
+                        self._process_widgets(klass, panel, widget, values)
+
+                    v_pos += 1
 
         # Create all buttons.
         buttons = self.panel_data.get('buttons', {})
@@ -150,7 +158,7 @@ class PanelFactory(TomlMetaData):
             self.static_text(klass, panel, widget, value)
         elif value[0] == 'TextCtrl':
             self.text_ctrl(klass, panel, widget, value)
-        elif value[0] == 'DatePickerCtrl':
+        elif value[0] == 'DatePickerCtrl':  # Not currently used.
             self.date_picker_ctrl(klass, panel, widget, value)
         elif value[0] == 'BadiDatePickerCtrl':
             self.badi_date_picker_ctrl(klass, panel, widget, value)
@@ -348,7 +356,7 @@ class PanelFactory(TomlMetaData):
                 first = 'Choose Fiscal Year'
                 label = f"value='''{first}''',"
                 choices.insert(0, first)
-        else:
+        else:  # pragma: no cover
             label = ''
 
         style = dict_.get('style', 0)
@@ -446,11 +454,7 @@ class PanelFactory(TomlMetaData):
                     f_widget = name
                     button_save = callback
                     f_value = value
-            elif value[0] == 'StaticLine':
-                sl_value = value
-                sl_widget = name
 
-        self.static_line(klass, sl_widget, sl_value)
         klass.write(f"        {btn_panel} = wx.Panel({panel_parent})\n")
         klass.write(f"        {btn_sizer} = wx.BoxSizer(wx.HORIZONTAL)\n")
         klass.write(f"        {f_widget} = wx.Button({f_parent}, {f_flags}, "
@@ -587,9 +591,6 @@ class PanelFactory(TomlMetaData):
         flags = self._fix_flags(flags) if flags != 0 else flags
         pos = dict_.get('pos')
         span = dict_.get('span')
-
-        if pos and len(pos) == 1:
-            pos.insert(0, self.v_pos)
 
         if pos and span:
             klass.write(f"        {sizer}.Add({item}, {pos}, "

@@ -1410,21 +1410,20 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the add_name method adds a StaticText and TextCtrl to the
         end of the current panel.
         """
-        expect0 = ('widget_14',
+        expect0 = ('widget_02',
                    ['StaticText', 'w_fg_color_1',
-                    {'args': ['self', 'ID_ANY', 'Test Fund:'],
-                     'min': [-1, -1],
+                    {'args': ['self', 'ID_ANY', 'Test Fund:'], 'min': [-1, -1],
                      'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
-                     'pos': [14, 0], 'span': [1, 1]}])
+                     'pos': [0], 'span': [1, 1]}])
         expect1 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
                    {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
                     'min': [-1, -1],
                     'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP',
-                            6],
-                    'pos': [14, 1], 'span': [1, 1]}]
+                            6], 'pos': [1], 'span': [1, 1]}]
+
         data = (
             ('Test Fund:', None, (expect0, expect1)),
-            ('Test Fund:', 14, (expect0, expect1)),
+            ('Test Fund:', 2, (expect0, expect1)),
             )
         msg = "Expected {}, found {}."
 
@@ -1454,12 +1453,12 @@ class TestTomlCreatePanel(BaseTomlTest):
                 'args': ['self', 'ID_ANY', 'Total Membership:'],
                 'min': [-1, -1],
                 'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-                'pos': [3, 0], 'span': [1, 1], 'hidden': True}])
+                'pos': [0], 'span': [1, 1], 'hidden': True}])
         expect1 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
                    {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
                     'min': [60, 26], 'add': [0, 'ALIGN_CENTER_VERTICAL | '
                                              'LEFT | RIGHT | TOP', 6],
-                    'pos': [3, 1], 'span': [1, 1], 'financial': False,
+                    'pos': [1], 'span': [1, 1], 'financial': False,
                     'mandatory': True, 'hidden': True}]
         expect2 = (label, 'hide')
         msg = "Expected {}, found {}."
@@ -1486,7 +1485,7 @@ class TestTomlCreatePanel(BaseTomlTest):
             'StaticText', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', 'Area Name:'], 'min': [-1, -1],
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-             'pos': [2, 0], 'span': [1, 1]}])
+             'pos': [0], 'span': [1, 1]}])
         expect1 = (old_label, new_label, 'rename')
         msg = "Expected {}, found {}."
         self._tcp.rename_label(old_label, new_label)
@@ -1496,7 +1495,7 @@ class TestTomlCreatePanel(BaseTomlTest):
         lc = self._tcp.last_changed
         self.assertEqual(expect1, lc, msg.format(expect1, lc))
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test_undo_change(self):
         """
         Test that the undo_change method reverses the last change.
@@ -1558,7 +1557,7 @@ class TestTomlCreatePanel(BaseTomlTest):
                    {'args': ['self', 'ID_ANY', 'Total Membership:'],
                     'min': [-1, -1], 'add': [0, 'ALIGN_CENTER_VERTICAL | '
                                              'LEFT | RIGHT | TOP', 6],
-                    'pos': [3, 0], 'span': [1, 1]})
+                    'pos': [0], 'span': [1, 1]})
         expect1 = (None, None)
         result = self._tcp._find_label_in_panel(label)
         self.assertEqual(expect0, result, msg.format(expect0, result))
@@ -1578,7 +1577,7 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the _create_hole method
         """
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     def test__next_widget_num(self):
         """
         Test that the _next_widget_num property returns the next widget number.

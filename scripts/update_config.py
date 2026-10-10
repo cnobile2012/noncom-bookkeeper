@@ -20,6 +20,7 @@ from src.utilities import make_name
 
 class UpdateConfig:
     INLINE_TABLES = ("locale_prefix", "order")
+    VERSION = '2.0.0'
 
     def __init__(self, options):
         self._options = options
@@ -46,11 +47,13 @@ class UpdateConfig:
         for name, table in self._doc.items():
             if name == 'meta':
                 self._process_meta(name, table)
+
             else:
                 self._process_panels(name, table)
 
     def _process_meta(self, name, table):
         self._new_doc[name] = table
+        table['version'] = self.VERSION
 
     def _process_panels(self, name, table):
         sub_table = self._new_doc.setdefault(name, {})
@@ -76,12 +79,12 @@ class UpdateConfig:
                     field_name = wname
                     self._last_fn = ()
                     order.setdefault(field_name, [wname])
-                elif widget[0] == 'ColorCheckBox':
-                    label = dict_['args'][2]
-                    field_name = make_name(label)
-                    order.setdefault(field_name, [wname])
+                elif widget[0] == 'invisible_row':
+                    field_name = wname
                     self._last_fn = ()
-                elif widget[0] in ('TextCtrl', 'BadiDatePickerCtrl'):
+                    order.setdefault(field_name, [widget[0]])
+                elif widget[0] in ('TextCtrl', 'BadiDatePickerCtrl',
+                                   'ColorCheckBox'):
                     if self._last_fn[0] in ('StaticText', 'RadioBox'):
                         order.setdefault(self._last_fn[1]).append(wname)
 
@@ -91,11 +94,15 @@ class UpdateConfig:
             sub_table['meta']['order'] = order
 
     def _write_new_toml(self):
+        second_wdgt = ('TextCtrl', 'BadiDatePickerCtrl', 'ColorCheckBox')
+
         def add_table(parent, name, values):
             tbl = tk.table()
             parent.add(name, tbl)
+            last = None
+            items = list(values.items())
 
-            for key, value in values.items():
+            for i, (key, value) in enumerate(items):
                 if isinstance(value, dict):
                     if key in self.INLINE_TABLES:
                         itbl = tk.inline_table()
@@ -108,6 +115,28 @@ class UpdateConfig:
                         add_table(tbl, key, value)
                 else:
                     tbl.add(key, value)
+
+                    # Add a blank line after widget sets. There can be
+                    # one or two widgets in a set.
+                    if value[0] in ('StaticText', 'RadioBox', 'ComboBox'):
+                        # Look ahead to see if there not a grouping item. If
+                        # not then add an empty line.
+                        if (i + 1 < len(items)
+                            and items[i + 1][1][0] not in second_wdgt):
+                            tbl.add(tk.nl())
+                        else:
+                            last = value[0]
+                    elif value[0] == 'StaticLine':
+                        tbl.add(tk.nl())
+                        last = None
+                    elif value[0] == 'invisible_row':
+                        tbl.add(tk.nl())
+                        last = None
+                    elif value[0] in second_wdgt:
+                        if last in ('StaticText', 'RadioBox'):
+                            tbl.add(tk.nl())
+
+                        last = None
 
         doc = tk.document()
         # Create header
@@ -128,13 +157,9 @@ class UpdateConfig:
         doc.add(tk.nl())
 
         for key, value in self._new_doc.items():
-            if isinstance(value, dict):
-                add_table(doc, key, value)
-            else:
-                doc.add(key, value)
+            add_table(doc, key, value)
 
         self._write_file(tk.dumps(doc))
-        #print(self._new_doc)
 
     def _write_file(self, data) -> None:
         try:

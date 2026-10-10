@@ -396,6 +396,19 @@ class TomlMetaData(BaseSystemData):
         super().__init__(*args, **kwargs)
 
     @property
+    def toml_version(self) -> str:
+        version = self.panel_config.get('meta', {}).get('version').split('.')
+
+        if len(version) != 3:
+            raise ValueError(f"Invalid TOML config version number, {version}.")
+        else:
+            rn = int(version[0])
+            vn = int(version[1])
+            pn = int(version[2])
+
+        return rn, vn, pn
+
+    @property
     def title(self) -> str:
         return self.panel_config.get('meta', {}).get('title')
 
@@ -821,14 +834,13 @@ class TomlCreatePanel(BaseSystemData):
         if key_num is None:
             key_num = self._next_widget_num
 
-        x, y = (key_num, 0)
         key = self._make_key(key_num)
         self.__panel[key] = [
             'StaticText', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', name],
              'min': [-1, -1],
              'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
-             'pos': [x, y],
+             'pos': [0],
              'span': [1, 1]}]
         key = self._make_key(key_num + 1)
         self.__panel[key] = [
@@ -836,7 +848,7 @@ class TomlCreatePanel(BaseSystemData):
             {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
              'min': [-1, -1],
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-             'pos': [x, y+1],
+             'pos': [1],
              'span': [1, 1]}]
         self.last_changed = (name, key_num, 'add')
 

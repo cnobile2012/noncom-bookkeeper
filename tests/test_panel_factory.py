@@ -11,13 +11,14 @@ import wx
 
 from io import StringIO
 from collections.abc import KeysView
+from unittest.mock import patch
 
 from src.panel_factory import PanelFactory
-from . import (BASE_DIR, PATH, LOGGER_NAME, LOGFILE_NAME, log, check_flag,
-               patchers)
+from . import BASE_DIR, check_flag, patchers
+from .base_database_test import BaseAsyncTests
 
 
-class TestPanelFactory(unittest.TestCase):
+class TestPanelFactory(BaseAsyncTests):
 
     def __init__(self, name):
         super().__init__(name)
@@ -29,6 +30,15 @@ class TestPanelFactory(unittest.TestCase):
         full_path = os.path.join(BASE_DIR, 'tests', 'panels.toml')
         self.pf.panel_config = self.pf.parse_toml(full_path)
         self.pf.parse()
+
+    async def asyncSetUp(self):
+        await self.db.create_db()
+        await self.insert_data()
+        await self.db.cache.load()
+
+    async def asyncTearDown(self):
+        self.db.cache._flush_cache()
+        await self.truncate_all_tables()
 
     #@unittest.skip("Temporarily skipped")
     def test_class_name_keys(self):
@@ -62,12 +72,18 @@ class TestPanelFactory(unittest.TestCase):
         self.assertIn(expected, result)
 
     @unittest.skip("Temporarily skipped")
+    def test_parse(self):
+        """
+        Test that the parse method 
+        """
+
+
+    @unittest.skip("Temporarily skipped")
     def test__setup_panel(self):
         """
         Test that the _setup_panel method 
         """
         
-
 
     @unittest.skip("Temporarily skipped")
     def test__process_widgets(self):
@@ -135,40 +151,74 @@ class TestPanelFactory(unittest.TestCase):
         """
         panel = 'organization'
         widget = 'widget_01'
-        values = ['RadioBox', 'w_fg_color_1',
-                  {'args': ['self', 'ID_ANY', 'Locality Prefix'],
-                   'choices': ['LSA', 'Group'], 'dim': 1,
-                   'style': 'RA_SPECIFY_ROWS', 'font': 'font_10_bold',
-                   'tip': "Choose if your community is an LSA or a group.",
-                   'select': 0,
-                   'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-                   'pos': [1, 0], 'span': [1, 1],
-                   'callback': 'locality_prefix', 'update': 'widget_02'}]
-        expected = ("        widget_01 = wx.RadioBox(self, wx.ID_ANY, "
-                    "'Locality Prefix', style=wx.RA_SPECIFY_ROWS, "
-                    "choices=['LSA', 'Group'], majorDimension=1)\n"
-                    "        widget_01.SetForegroundColour("
-                    "wx.Colour(*[50, 50, 204]))\n"
-                    "        widget_01.SetFont(wx.Font(10, "
-                    "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
-                    "wx.FONTWEIGHT_BOLD, 0, ''))\n"
-                    "        widget_01.SetToolTip('Choose if your community "
-                    "is an LSA or a group.')\n"
-                    "        widget_01.SetSelection(0)\n"
-                    "        sizer_1.Add(widget_01, [1, 0], [1, 1], "
-                    "wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | "
-                    "wx.TOP, 6)\n"
-                    "        widget_01.Bind(wx.EVT_RADIOBOX, "
-                    "self.locality_prefix('widget_02', True))\n"
-                    "        wx.CallLater(1000, self._locality_prefix, "
-                    "*(widget_01, 'widget_02'))\n"
-                    "        widget_01.mandatory = False\n")
+        values0 = ['RadioBox', 'w_fg_color_1',
+                   {'args': ['self', 'ID_ANY', 'Locality Prefix'],
+                    'choices': ['LSA', 'Group'], 'dim': 1,
+                    'style': 'RA_SPECIFY_ROWS', 'font': 'font_10_bold',
+                    'tip': "Choose if your community is an LSA or a group.",
+                    'select': 0,
+                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP',
+                            6], 'pos': [1, 0], 'span': [1, 1],
+                    'callback': 'locality_prefix', 'update': 'widget_02'}]
+        expect0 = ("        widget_01 = wx.RadioBox(self, wx.ID_ANY, "
+                   "'Locality Prefix', style=wx.RA_SPECIFY_ROWS, "
+                   "choices=['LSA', 'Group'], majorDimension=1)\n"
+                   "        widget_01.SetForegroundColour("
+                   "wx.Colour(*[50, 50, 204]))\n"
+                   "        widget_01.SetFont(wx.Font(10, "
+                   "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
+                   "wx.FONTWEIGHT_BOLD, 0, ''))\n"
+                   "        widget_01.SetToolTip('Choose if your community "
+                   "is an LSA or a group.')\n"
+                   "        widget_01.SetSelection(0)\n"
+                   "        sizer_1.Add(widget_01, [1, 0], [1, 1], "
+                   "wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | "
+                   "wx.TOP, 6)\n"
+                   "        widget_01.Bind(wx.EVT_RADIOBOX, "
+                   "self.locality_prefix('widget_02', True))\n"
+                   "        wx.CallLater(1000, self._locality_prefix, "
+                   "*(widget_01, 'widget_02'))\n"
+                   "        widget_01.mandatory = False\n")
+        values1 = ['RadioBox', 'w_fg_color_1',
+                   {'args': ['self', 'ID_ANY', 'Locality Prefix'],
+                    'choices': ['LSA', 'Group'], 'dim': 1,
+                    'style': 'RA_SPECIFY_ROWS', 'font': 'font_10_bold',
+                    'tip': "Choose if your community is an LSA or a group.",
+                    'select': 0,
+                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP',
+                            6], 'pos': [1, 0], 'span': [1, 1],
+                    'dirty_event': True, 'focus': True}]
+        expect1 = ("        widget_01 = wx.RadioBox(self, wx.ID_ANY, "
+                   "'Locality Prefix', style=wx.RA_SPECIFY_ROWS, "
+                   "choices=['LSA', 'Group'], majorDimension=1)\n"
+                   "        widget_01.SetForegroundColour("
+                   "wx.Colour(*[50, 50, 204]))\n"
+                   "        widget_01.SetFont(wx.Font(10, "
+                   "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
+                   "wx.FONTWEIGHT_BOLD, 0, ''))\n"
+                   "        widget_01.SetToolTip('Choose if your community is "
+                   "an LSA or a group.')\n"
+                   "        widget_01.SetFocus()\n"
+                   "        widget_01.SetSelection(0)\n"
+                   "        sizer_1.Add(widget_01, [1, 0], [1, 1], "
+                   "wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | "
+                   "wx.TOP, 6)\n"
+                   "        widget_01.Bind(wx.EVT_RADIOBOX, "
+                   "self.set_dirty_flag)\n"
+                   "        widget_01.mandatory = False\n")
+
+        data = (
+            ('organization', 'widget_01', values0, expect0),
+            ('organization', 'widget_01', values1, expect1)
+            )
         msg = "Expected '{}', found '{}'."
 
-        with StringIO() as buff:
-            self.pf.radio_box(buff, panel, widget, values)
-            result = buff.getvalue()
-            self.assertEqual(expected, result, msg.format(expected, result))
+        for panel, widget, values, expected in data:
+            with StringIO() as buff:
+                self.pf.radio_box(buff, panel, widget, values)
+                result = buff.getvalue()
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
 
     #@unittest.skip("Temporarily skipped")
     def test_static_text(self):
@@ -298,7 +348,7 @@ class TestPanelFactory(unittest.TestCase):
             result = buff.getvalue()
             self.assertEqual(expected, result, msg.format(expected, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_choice_combo_box(self):
         """
         Test that the choice_combo_box method returns the code for a ComboBox.
@@ -311,8 +361,27 @@ class TestPanelFactory(unittest.TestCase):
                   {'args': ['self', 'ID_ANY', 'Month Index:'],
                    'style': 'CB_READONLY', 'min': [228, 26],
                    'add': [0, 'ALIGN_BOTTOM | ALL', 10], 'pos': [1, 0],
-                   'span': [1, 1], 'dirty_event': False, 'mandatory': True}]
-        expected = ("")
+                   'span': [1, 1], 'dirty_event': True, 'mandatory': True}]
+        expected = ("        widget_01 = wx.ComboBox(self, wx.ID_ANY, "
+                    "value='''183-03 Jamál''', choices=['183-03 Jamál', "
+                    "\"183-04 'Aẓamat\", '183-05 Núr', '183-06 Raḥmat', "
+                    "'183-07 Kalimát', '183-08 Kamál', \"183-09 Asmá'\", "
+                    "\"183-10 'Izzat\", '183-11 Mashíyyat', \"183-12 'Ilm\", "
+                    "'183-13 Qudrat', '183-14 Qawl', '183-15 Masá’il', "
+                    "'183-16 Sharaf', '183-17 Sulṭán', '183-18 Mulk', "
+                    "'183-00 Ayyám-i-Há', \"183-19 'Alá'\", '184-01 Bahá', "
+                    "'184-02 Jalál', '184-03 Jamál'], style=wx.CB_READONLY)\n"
+                    "        widget_01.SetLabel('Month Index:')\n"
+                    "        widget_01.SetBackgroundColour("
+                    "wx.Colour(*[222, 237, 230]))\n"
+                    "        widget_01.SetForegroundColour("
+                    "wx.Colour(*[50, 50, 204]))\n"
+                    "        widget_01.SetMinSize([228, 26])\n"
+                    "        widget_01.Bind(wx.EVT_COMBOBOX, "
+                    "self.set_dirty_flag)\n"
+                    "        widget_01.mandatory = True\n"
+                    "        sizer_1.Add(widget_01, [1, 0], [1, 1], "
+                    "wx.ALIGN_BOTTOM | wx.ALL, 10)\n")
         msg = "Expected '{}', found '{}'."
 
         with StringIO() as buff:
@@ -399,12 +468,7 @@ class TestPanelFactory(unittest.TestCase):
                    ['Button', 'w_bg_color_2',
                     {'args': ['panel_0', 'ID_CANCEL', ''],
                      'callback': 'button_cancel'}])]
-        expected = ("        line_01 = wx.StaticLine(self, wx.ID_ANY)\n"
-                    "        line_01.SetBackgroundColour("
-                    "wx.Colour(*[50, 50, 204]))\n"
-                    "        sizer_1.Add(line_01, [9, 0], [1, 2], "
-                    "wx.EXPAND | wx.TOP, 20)\n"
-                    "        panel_0 = wx.Panel(self)\n"
+        expected = ("        panel_0 = wx.Panel(self)\n"
                     "        sizer_2 = wx.BoxSizer(wx.HORIZONTAL)\n"
                     "        button_00 = wx.Button(panel_0, wx.ID_SAVE, "
                     "label='')\n"
@@ -627,21 +691,13 @@ class TestPanelFactory(unittest.TestCase):
                     'pos': [0, 0], 'span': [1, 2]}]
         expect0 = ("        sizer_1.Add(widget_00, [0, 0], [1, 2], "
                    "wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 6)\n")
-        values0 = ['StaticText', 'w_fg_color_1',
-                   {'args': ['self', 'ID_ANY', 'Organization Information'],
-                    'font': 'font_16_bold', 'min': [-1, -1],
-                    'add': [0, 'ALIGN_CENTER_HORIZONTAL | ALL', 6],
-                    'pos': [0], 'span': [1, 2]}]
+
         data = (
-            ('widget_00', values0, None, expect0),
-            ('widget_00', values0, 0, expect0),
+            ('widget_00', values0, expect0),
             )
         msg = "Expected '{}', found '{}'."
 
-        for item, values, v_pos, expected in data:
-            if v_pos is not None:
-                self.pf.v_pos = v_pos
-
+        for item, values, expected in data:
             with StringIO() as buff:
                 self.pf._set_add_to_sizer(buff, item, values)
                 result = buff.getvalue()
