@@ -11,6 +11,7 @@ import logging
 import shutil
 from datetime import datetime
 from appdirs import AppDirs
+from pathlib import Path
 
 import tomlkit as tk
 
@@ -112,11 +113,18 @@ class Settings(AppDirs, Borg):
         self._log.info("Created, if necessary, the following paths: %s", paths)
 
     @property
-    def local_toml(self):
+    def local_toml(self) -> str:
+        """
+        Get the current path to the local TOML config file.
+        """
         return self.__local_toml
 
     @local_toml.setter
     def local_toml(self, alt_path: str) -> None:
+        """
+        Set the current path to the local TOML config file.
+        Used during startup so a, alternate config file can be used.
+        """
         self.__local_toml = alt_path
 
     @property
@@ -133,6 +141,7 @@ class Settings(AppDirs, Borg):
 
     @debug.setter
     def debug(self, value: bool) -> None:
+        self._TESTING = False
         self._DEBUG = value
 
     @property
@@ -141,6 +150,7 @@ class Settings(AppDirs, Borg):
 
     @testing.setter
     def testing(self, value: bool) -> None:
+        self._DEBUG = False
         self._TESTING = value
 
     @staticmethod
@@ -190,14 +200,19 @@ class Settings(AppDirs, Borg):
         return self._PANEL_FACTORY_DIR
 
     @property
-    def user_data_fullpath(self) -> str:
+    def data_dir(self) -> str:
         if self.debug:
-            path = os.path.join(self._debug_data_dir, self.data_file_name)
+            path = self._debug_data_dir
         elif self.testing:
-            path = os.path.join(self._testing_data_dir, self.data_file_name)
+            path = self._testing_data_dir
         else:
-            path = os.path.join(self.user_data_dir, self.data_file_name)
+            path = self.user_data_dir
 
+        return path
+
+    @property
+    def user_data_fullpath(self) -> str:
+        path = os.path.join(self.data_dir, self.data_file_name)
         assert 'data' in path or '.local' in path, (
             f"user_data_fullpath: {path}")
         return path
@@ -259,7 +274,7 @@ class Settings(AppDirs, Borg):
 
         if tail == self._CONFIG_FILES['local'][self.__config_type]:
             path = os.path.join(self._LOCAL_CONFIG, self.local_toml)
-        else:
+        else:  # pragma: no cover
             path = self.local_toml
 
         return path
@@ -286,6 +301,7 @@ class BaseSystemData(Settings):
         ERR_ZERO_LENGTH_FILE: "Cannot parse zero length file '{}'.",
         ERR_UNKNOWN_ERROR: "Critical unknown error."
         }
+    _VERSION = (2, 0, 0)  # TOML config version currently being used.
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -399,7 +415,7 @@ class TomlMetaData(BaseSystemData):
     def toml_version(self) -> str:
         version = self.panel_config.get('meta', {}).get('version').split('.')
 
-        if len(version) != 3:
+        if len(version) != 3:  # pragma: no cover
             raise ValueError(f"Invalid TOML config version number, {version}.")
         else:
             rn = int(version[0])
@@ -750,10 +766,13 @@ class TomlCreatePanel(BaseSystemData):
     """
     _KEY_NUM = re.compile(r"^.*_(?P<count>\d+)$")
     _LAST_CHANGED = None
+    INLINE_TABLES = ("locale_prefix", "order")
     __panel = None
+    __changes = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._panel_name = None
 
     @property
     def last_changed(self) -> tuple | None:
@@ -778,6 +797,14 @@ class TomlCreatePanel(BaseSystemData):
         :param tk.TOMLDocument current: The current panel's Toml doc.
         """
         self.__panel = current
+
+    @property
+    def changes(self) -> dict:
+        return self.__changes
+
+    @changes.setter
+    def changes(self, changes: dict) -> None:
+        self.__changes = changes
 
     @property
     def all_field_names(self):
@@ -805,7 +832,13 @@ class TomlCreatePanel(BaseSystemData):
                 if name and name.endswith(':')]
 
     @property
-    def field_names_by_category(self):
+    def field_names_by_category(self) -> dict:
+        """
+        Get the field names by the category.
+
+        :returns: Field names by the category.
+        :rtype: dict
+        """
         items = {}
         last_name = 'no-cat'
 
@@ -819,7 +852,18 @@ class TomlCreatePanel(BaseSystemData):
 
         return items
 
-    def add_name(self, name: str, key_num: int=None) -> None:
+    def initialize_changes(self, panel_name: str, current: dict) -> None:
+        """
+        Initialize the changes made to a panel.
+
+        :param str panel_name: The name of the panel being changed.
+        :param dict current: The current panel data.
+        """
+        self._panel_name = panel_name
+        self.changes = {panel_name: {'widgets': {}}}
+        self. current_panel = current
+
+    def add_widgets(self, name: str, key_num: int=None) -> None:
         """
         Add the named StaticText and its companion the TextCtrl to the end
         of the current panel's section in the Toml file. If `key_num` is
@@ -835,7 +879,8 @@ class TomlCreatePanel(BaseSystemData):
             key_num = self._next_widget_num
 
         key = self._make_key(key_num)
-        self.__panel[key] = [
+        wdgt_tbl = self.changes[self._panel_name].setdefault('widgets', {})
+        wdgt_tbl[key] = [
             'StaticText', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', name],
              'min': [-1, -1],
@@ -843,7 +888,7 @@ class TomlCreatePanel(BaseSystemData):
              'pos': [0],
              'span': [1, 1]}]
         key = self._make_key(key_num + 1)
-        self.__panel[key] = [
+        wdgt_tbl[key] = [
             'TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
              'min': [-1, -1],
@@ -861,17 +906,24 @@ class TomlCreatePanel(BaseSystemData):
         :param bool undo: If `False` (default) hide the widgets, else `True`
                           unhide the widgets.
         """
-        key0, dict_ = self._find_label_in_panel(label)
+        key0, items = self._find_label_in_panel(label)
+        wdgt_tbl = self.changes[self._panel_name].setdefault('widgets', {})
 
-        if key0 and dict_:
+        if key0 and items:
             # Update the StaticText
-            dict_['hidden'] = False if undo else True
+            values = copy.deepcopy(items)
+            inner = find_dict(values)
+            inner['hidden'] = False if undo else True
+            wdgt_tbl[key0] = values
             # Update the CtrlText
             key_num = self._find_key_num(key0)
             key1 = self._make_key(key_num + 1)
-            item = self.__panel[key1]
-            dict_ = find_dict(item)
-            dict_['hidden'] = False if undo else True
+            items = self.current_panel[key1]
+            values = copy.deepcopy(items)
+            inner = find_dict(values)
+            inner['hidden'] = False if undo else True
+            wdgt_tbl[key1] = values
+            # Set last changed
             self.last_changed = (label, 'hide')
 
     def rename_label(self, old_label: str, new_label: str) -> None:
@@ -881,11 +933,13 @@ class TomlCreatePanel(BaseSystemData):
         :param str old_label: The field to rename.
         :param str new_label: The new name for the field.
         """
-        key, dict_ = self._find_label_in_panel(old_label)
+        key, items = self._find_label_in_panel(old_label)
+        wdgt_tbl = self.changes[self._panel_name].setdefault('widgets', {})
 
-        if key and dict_:
-            list_ = dict_.get('args', [])
-            list_[2] = new_label
+        if key and items:
+            values = copy.deepcopy(items)
+            find_dict(values)['args'][2] = new_label
+            wdgt_tbl[key] = values
             self.last_changed = (old_label, new_label, 'rename')
 
     def undo_change(self) -> None:
@@ -894,13 +948,13 @@ class TomlCreatePanel(BaseSystemData):
         """
         if self.last_changed:
             type_ = self.last_changed[-1]
+            wdgt_tbl = self.changes[self._panel_name].setdefault('widgets', {})
 
             if type_ == 'add':
-                label, pos = self.last_changed[:2]
-                key, dict_ = self._find_label_in_panel(label)
-                self.__panel.pop(key)
-                key_num = self._find_key_num(key)
-                self.__panel.pop(self._make_key(key_num + 1))
+                label, key_num = self.last_changed[:2]
+                key = self._make_key(key_num)
+                wdgt_tbl.pop(key)
+                wdgt_tbl.pop(self._make_key(key_num + 1))
                 self.last_changed = None
             elif type_ == 'hide':
                 self.hide_widget(self.last_changed[0], undo=True)
@@ -910,20 +964,74 @@ class TomlCreatePanel(BaseSystemData):
                 self.rename_label(new_name, old_name)
                 self.last_changed = None
 
-    def save_updated_panel(self) -> bool:
+    def save_updated_panel(self, panel_name: str) -> None:
         """
         Save the updated panel data.
         """
-        ret = True
-        
+        def dict_to_toml(doc, data):
+            def convert_value(value):
+                if isinstance(value, dict):
+                    result = tk.inline_table()
 
-        return ret
+                    for key, item in value.items():
+                        result[key] = convert_value(item)
+
+                    return result
+
+                if isinstance(value, list):
+                    result = tk.array()
+
+                    for item in value:
+                        result.append(convert_value(item))
+
+                    return result
+
+                return value
+
+            def add_values(parent, values):
+                for key, value in values.items():
+                    if isinstance(value, dict):
+                        child = tk.table()
+                        parent.add(key, child)
+                        add_values(child, value)
+                    else:
+                        parent.add(key, convert_value(value))
+
+            add_values(doc, data)
+
+        filename = f"{panel_name}_{self.config_type}.toml"
+        fullpath = os.path.join(self.data_dir, filename)
+        doc = tk.document()
+        doc.add(tk.comment("-*- coding: utf-8 -*-"))
+        doc.add(tk.comment(""))
+        doc.add(tk.comment(fullpath))
+        doc.add(tk.comment(""))
+        version = '.'.join(str(c) for c in self._VERSION)
+        doc.add(tk.comment(f"Version {version}"))
+        doc.add(tk.comment(""))
+        doc.add(tk.comment("This file provides updated definitions "
+                           f"to the {panel_name.capitalize()} panel."))
+        doc.add(tk.comment(""))
+        doc.add(tk.comment(f"Date Created: {datetime.now()}"))
+        doc.add(tk.comment(""))
+        doc.add(tk.comment("TOML field definitions: "
+                           "https://toml.io/en/v1.0.0"))
+        doc.add(tk.comment(""))
+        doc.add(tk.comment("Noncommercial Bookkeeper META data"))
+        doc.add(tk.comment("=================================="))
+        doc.add(tk.comment(""))
+        doc.add(tk.nl())
+        dict_to_toml(doc, self.changes)
+        Path(fullpath).write_text(doc.as_string(), encoding='utf-8')
+        self.__panel = None
+        self.__changes = None
 
     def cancel_updated_panel(self):
         """
         Cancel the update by seting the current panel to None.
         """
         self.__panel = None
+        self.__changes = None
 
     def _find_label_in_panel(self, label: str) -> tuple:
         """
@@ -936,55 +1044,15 @@ class TomlCreatePanel(BaseSystemData):
         w_key = data = None
 
         for key, item in self.__panel.items():
-            dict_ = find_dict(item)
-            list_ = dict_.get('args', [])
+            inner_tbl = find_dict(item)
+            list_ = inner_tbl.get('args', [])
 
             if label in list_:
                 w_key = key
-                data = dict_
+                data = item
                 break
 
         return w_key, data
-
-    def _reorder(self, panel: dict) -> tk.document:
-        """
-        Reorder the items in the TOML doc.
-
-        :param tk.document panel: This is the currently worked on Toml doc
-                                  for the panel.
-        :returns: A reordered the TOML doc.
-        :rtype: tk.document
-        """
-        keys = sorted(list(panel))
-        doc = tk.document()
-
-        for idx, key in enumerate(keys):
-            value = panel[key]
-            doc[self._make_key(idx)] = value
-
-        return doc
-
-    def _create_hole(self, start: int) -> None:
-        """
-        Create a hole in the widget panel doc. All widgets after the hole
-        will get its key bumped up by two since there are always two widgets
-        created together.
-
-        :param int start: Where to start the reordering. Should be the widget
-                          set that will be after the hole.
-         """
-        doc = tk.document()
-
-        for key, value in self.__panel.item():
-            old_num = self._find_key_num(key)
-
-            if old_num != start:
-                doc[key] = value
-            else:
-                new_key = self._make_key(old_num + 1)
-                doc[new_key] = value
-
-        self.__panel = doc
 
     @property
     def _next_widget_num(self) -> int:
@@ -994,8 +1062,9 @@ class TomlCreatePanel(BaseSystemData):
         :returns: The next widget number.
         :rtype: int
         """
-        last_key = list(self.__panel.keys())[-1]
-        return self._find_key_num(last_key) + 1
+        widget = [item for item in self.__panel.keys()
+                  if item.startswith('widget')][-1]
+        return self._find_key_num(widget) + 1
 
     def _find_key_num(self, key: int) -> int:
         """

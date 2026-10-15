@@ -169,7 +169,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
         # We only want the editable panels.
         edit_names = [panel[0] for panel in self._tmd.panels if panel[2]]
-        edit_names.insert(0, 'Choose the Page to Edit')
+        edit_names.insert(0, 'Choose the Form to Edit')
         combo_box = wx.ComboBox(panel, wx.ID_ANY, value=edit_names[0],
                                 choices=edit_names, style=wx.TE_READONLY)
         combo_box.SetBackgroundColour(w_bg_color)
@@ -260,7 +260,8 @@ class FieldEdit(BasePanel, wx.Panel):
         def button_save(event):
             if self._CHANGE_COUNT > 0:
                 cap = "Apply Changes"
-                msg = "Apply all changes to your config file."
+                msg = ("Apply all changes to the "
+                       f"{self.panel_name.capitalize()} form.")
                 dlg = ConfirmationDialog(self, msg, cap,
                                          callback=self.save_callback,
                                          cb_args=(arg_dict,))
@@ -269,14 +270,15 @@ class FieldEdit(BasePanel, wx.Panel):
         return button_save
 
     def save_callback(self, arg_dict: dict) -> None:
-        self._tcp.save_updated_panel()
+        self._tcp.save_updated_panel(self.panel_name)
         self._reset_panel(arg_dict)
 
     def button_cancel_closure(self, arg_dict):
         def button_cancel(event):
             if self._CHANGE_COUNT > 0:
                 cap = "Cancel Changes"
-                msg = "Cancel all changes to this form?"
+                msg = ("Cancel all changes to the "
+                       f"{self.panel_name.capitalize()} form?")
                 dlg = ConfirmationDialog(self, msg, cap,
                                          callback=self.cancel_callback,
                                          cb_args=(arg_dict,))
@@ -356,13 +358,13 @@ class FieldEdit(BasePanel, wx.Panel):
     def selection_closure(self, arg_dict: dict):
         def get_selection(event):
             edit_names = {m_name: name for m_name, name, _ in self._tmd.panels}
-            chosen = edit_names.get(event.GetString())
+            self.panel_name = edit_names.get(event.GetString())
             widget_labels = []
 
-            if chosen:
+            if self.panel_name:
                 items = self._tmd.panel_config.get(
-                    chosen, {}).get('widgets', {})
-                self._tcp.current_panel = items
+                    self.panel_name, {}).get('widgets', {})
+                self._tcp.initialize_changes(self.panel_name, items)
 
                 for value in items.values():
                     if (isinstance(value, list) and value[0] == 'StaticText'):
@@ -459,7 +461,7 @@ class FieldEdit(BasePanel, wx.Panel):
                     gbs = arg_dict.get('bot_grid_sizer')
                     rows = gbs.GetRows()
                     self._create_static_text(arg_dict, new_name, rows)
-                    self._tcp.add_name(name)
+                    self._tcp.add_widgets(name)
                     self._update_screen_size(arg_dict)
                     self._LAST_MOVED = (new_name, None, 'add')
                     self._CHANGE_COUNT += 1
@@ -476,7 +478,6 @@ class FieldEdit(BasePanel, wx.Panel):
             name = arg_dict['new_field_name'].GetValue()
 
             if name.endswith(':'):
-                #w_fg_color_0 = arg_dict['w_fg_color_0']
                 year = self._db.cache.year
                 lt = LedgerTransaction(self._db)
                 field_name = make_name(name)

@@ -8,6 +8,7 @@ import os
 import unittest
 import shutil
 
+from pathlib import Path
 from unittest.mock import patch
 
 import tomlkit as tk
@@ -31,9 +32,24 @@ class TestSettingsBorg(unittest.TestCase):
         check_flag(self.__class__.__name__)
         patchers(self)
         self._set = Settings()
+        self._set.testing = True
 
-    def tearDown(self):
-        self._set.debug = False
+    #@unittest.skip("Temporarily skipped")
+    def test_local_toml_setter_and_getter(self):
+        """
+        Tet that the local_toml setter and getter set and get an alternate
+        config file.
+        """
+        data = (
+            (False, False),
+            (True, True),
+            )
+        msg = "Expected {} found {}"
+
+        for set, expected in data:
+            self._set.local_toml = set
+            result = self._set.local_toml
+            self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
     def test_log_level_setter_getter(self):
@@ -131,9 +147,6 @@ class TestSettings(unittest.TestCase):
         check_flag(self.__class__.__name__)
         patchers(self)
         self._set = Settings()
-
-    def tearDown(self):
-        self._set.debug = False
         self._set.testing = True
 
     #@unittest.skip("Temporarily skipped")
@@ -233,6 +246,39 @@ class TestSettings(unittest.TestCase):
         self.assertEqual(expected, df, msg)
 
     #@unittest.skip("Temporarily skipped")
+    def test_panel_factory_name(self):
+        """
+        Test that the panel_factory_name property returns the directory
+        name for the panel factory files.
+        """
+        result = self._set.panel_factory_name
+        self.assertEqual('factory', result)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_data_dir(self):
+        """
+        Test that the data_dir property returns the correct system
+        directories depending on the environment.
+        """
+        self._set.testing = False
+        data = (
+            (None, 'user_data_dir'),
+            ('debug', '_debug_data_dir'),
+            ('testing', '_testing_data_dir'),
+            )
+        msg = "Expected {}, found {}"
+
+        for env, method in data:
+            if env is not None:
+                self._set.debug = False
+                setattr(self._set, env, True)
+
+            self._set.create_dirs()
+            expected = getattr(self._set, method)
+            result = self._set.data_dir
+            self.assertEqual(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
     def test_user_data_fullpath(self):
         """
         Test that the user data file path is returned.
@@ -283,7 +329,8 @@ class TestSettings(unittest.TestCase):
     #@unittest.skip("Temporarily skipped")
     def test_user_app_config_fullpath(self):
         """
-        Test that the user app config file path is returned.
+        Test that the user_app_config_fullpath property returns the
+        correct paths.
         """
         self._set.testing = False
         data = (
@@ -572,6 +619,15 @@ class TestTomlMetaData(BaseTomlTest):
         self._remove_test_files(files)
 
     #@unittest.skip("Temporarily skipped")
+    def test_toml_version(self):
+        """
+        Test that the toml_version property returns the version of the
+        TOML config files.
+        """
+        result = self._tmd.toml_version
+        self.assertEqual((2, 0, 0), result)
+
+    #@unittest.skip("Temporarily skipped")
     def test_title(self):
         """
         Test that the title property returns the META data title.
@@ -772,11 +828,13 @@ class TestTomlPanelConfig(BaseTomlTest):
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
         self.backup_file = f"{TMP_USER_CONFIG_FILE}.bak"
+        self._TESTING = True
 
     def tearDown(self):
         files = (TMP_USER_CONFIG_FILE, TMP_LOCAL_CONFIG_FILE,
                  self.backup_file)
         self._remove_test_files(files)
+        self._TESTING = False
 
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.TomlPanelConfig.user_config_fullpath',
@@ -976,10 +1034,12 @@ class TestTomlAppConfig(BaseTomlTest):
         super().setUp()
         self._tac = TomlAppConfig()
         self.log_path = os.path.join(self._tac.user_log_fullpath, LOGFILE_NAME)
+        self._TESTING = True
 
     def tearDown(self):
         files = (self.TMP_USER_APP_FILE, TMP_USER_APP_CONFIG_FILE)
         self._remove_test_files(files)
+        self._TESTING = False
 
     def _create_config(self):
         self._tac._create_app_config()
@@ -1291,6 +1351,7 @@ class TestTomlAppConfigAsync(BaseAsyncTests):
 
 
 class TestTomlCreatePanel(BaseTomlTest):
+    _TESTING_ENV_PATH = os.path.join(BASE_DIR, 'tests', 'data')
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -1298,15 +1359,16 @@ class TestTomlCreatePanel(BaseTomlTest):
     def setUp(self):
         check_flag(self.__class__.__name__)
         self._tcp = TomlCreatePanel()
-        items = self._create_toml_doc('organization')
-        self._tcp.current_panel = items
+        items = self._create_toml_doc('budget')  # This must be budget.
+        self._tcp.initialize_changes('budget', items)
+        self._TESTING = True
+
+    def tearDown(self):
+        self._TESTING = False
 
     def _create_toml_doc(self, panel_name: str=None):
         full_path = os.path.join(BASE_DIR, 'tests', 'panels.toml')
-
-        with open(full_path, mode='r') as f:
-            data = f.read()
-
+        data = Path(full_path).read_text()
         doc = tk.loads(data)
 
         if panel_name:
@@ -1314,7 +1376,7 @@ class TestTomlCreatePanel(BaseTomlTest):
 
         return doc
 
-    def _widget_data_by_label(self) -> dict:
+    def _widget_data_by_label(self, panel=False, hidden=False) -> dict:
         """
         Creates a dict where the key is the StaticText label. Since
         CtrlText widgets do not have labels they are not in the created dict.
@@ -1324,12 +1386,22 @@ class TestTomlCreatePanel(BaseTomlTest):
         """
         result = {}
 
-        for key, value in self._tcp.current_panel.items():
-            widget = find_dict(value)
-            args = widget.get('args', [])
+        if panel:
+            items = self._tcp.current_panel
+        else:
+            items = self._tcp.changes['budget']['widgets']
 
-            if len(args) > 2 and args[2]:
-                result[args[2]] = (key, value)
+        for key, value in items.items():
+            widget = find_dict(value)
+
+            if hidden:
+                hide = widget.get('hidden', False)
+                result[key] = widget
+            else:
+                args = widget.get('args', [])
+
+                if len(args) > 2 and args[2]:
+                    result[args[2]] = (key, value)
 
         return result
 
@@ -1345,7 +1417,7 @@ class TestTomlCreatePanel(BaseTomlTest):
         self.assertEqual(expected, result)
 
     #@unittest.skip("Temporarily skipped")
-    def test_set_and_get_current_panel(self):
+    def test_current_panel_getter_and_setter(self):
         """
         Test both the setter and getter for the current_panel properties.
         """
@@ -1356,12 +1428,43 @@ class TestTomlCreatePanel(BaseTomlTest):
         self.assertEqual(expected, result, msg)
 
     #@unittest.skip("Temporarily skipped")
+    def test_changes_getter_and_setter(self):
+        """
+        Test both the setter and getter for the changes properties.
+        """
+        changes = {'budget': {'widgets': {
+            'widget_28': ['StaticText', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY',
+                         "Bahá'í Chair for World Peace - Reserved Fund:"],
+                'min': [-1, -1],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
+                'pos': [0], 'span': [1, 1], 'hidden': True}],
+            'widget_29': ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
+                'min': [-1, 26],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+                'pos': [1], 'span': [1, 1], 'financial': True,
+                'mandatory': False, 'hidden': True}],
+            'widget_09': ['StaticText', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY', 'New Fund'], 'min': [-1, -1],
+                'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], 'pos': [0],
+                'span': [1, 1]}],
+            'widget_10': ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
+                'min': [-1, -1],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+                'pos': [1], 'span': [1, 1]}]}}}
+        self._tcp.changes = changes
+        result = self._tcp.changes
+        self.assertEqual(changes, result)
+
+    #@unittest.skip("Temporarily skipped")
     def test_all_field_names(self):
         """
         Test that the all_field_names property returns all the names of
         all panels.
         """
-        number_of_widgets = 8
+        number_of_widgets = 45
         err_msg = "There is no panel that is currently being worked on."
 
         try:
@@ -1379,7 +1482,7 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the field_names property returns the field names of a
         specified panel.
         """
-        number_of_widgets = 5
+        number_of_widgets = 36
         names = self._tcp.field_names
         msg = f"Expected {number_of_widgets}, found {len(names)}."
         self.assertEqual(number_of_widgets, len(names), msg)
@@ -1390,12 +1493,11 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the field_names_by_category property returns the field
         names by category.
         """
-        cat0 = 'Locality Prefix'
-        cat1 = ('The following Location field is needed to determine '
-                'the timezone.')
+        cat0 = 'Rollover from Last Year'
+        cat1 = "Local Bahá'í Expenses"
         data = (
             (cat0, 4),
-            (cat1, 1),
+            (cat1, 5),
             )
         msg = "Expected {}, found {}."
 
@@ -1405,12 +1507,12 @@ class TestTomlCreatePanel(BaseTomlTest):
                 expected_result, len(names)))
 
     #@unittest.skip("Temporarily skipped")
-    def test_add_name(self):
+    def test_add_widgets(self):
         """
-        Test that the add_name method adds a StaticText and TextCtrl to the
-        end of the current panel.
+        Test that the add_widgets method adds a StaticText and TextCtrl
+        to the end of the current panel.
         """
-        expect0 = ('widget_02',
+        expect0 = ('widget_81',
                    ['StaticText', 'w_fg_color_1',
                     {'args': ['self', 'ID_ANY', 'Test Fund:'], 'min': [-1, -1],
                      'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
@@ -1423,20 +1525,20 @@ class TestTomlCreatePanel(BaseTomlTest):
 
         data = (
             ('Test Fund:', None, (expect0, expect1)),
-            ('Test Fund:', 2, (expect0, expect1)),
+            ('Test Fund:', 81, (expect0, expect1)),
             )
         msg = "Expected {}, found {}."
 
         for label, key_num, expected in data:
-            self._tcp.add_name(label, key_num)
+            self._tcp.add_widgets(label, key_num)
             values = self._widget_data_by_label()
-            result = values[label]
+            result = values.get(label)
             self.assertEqual(expected[0], result, msg.format(
                 expected[0], result))
             w_key = result[0]
             kn = self._tcp._find_key_num(w_key)
             ct_key = self._tcp._make_key(kn + 1)
-            result = self._tcp.current_panel[ct_key]
+            result = self._tcp.changes['budget']['widgets'].get(ct_key)
             self.assertEqual(expected[1], result, msg.format(
                 expected[0], result))
 
@@ -1446,31 +1548,34 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the hide_widget method is able to hide the StaticText
         and CtrlText widget pair.
         """
-        label = 'Total Membership:'
-        w_key = 'widget_04'
-        expect0 = ('widget_05', [
-            'StaticText', 'w_fg_color_1', {
-                'args': ['self', 'ID_ANY', 'Total Membership:'],
-                'min': [-1, -1],
-                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-                'pos': [0], 'span': [1, 1], 'hidden': True}])
+        label = "Bahá'í Chair for World Peace - Reserved Fund:"
+        w_key = 'widget_28'
+        expect0 = ['StaticText', 'w_fg_color_1',
+                   {'args': ['self', 'ID_ANY',
+                             "Bahá'í Chair for World Peace - Reserved Fund:"],
+                    'min': [-1, -1],
+                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
+                    'pos': [0], 'span': [1, 1], 'hidden': True}]
         expect1 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
                    {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
-                    'min': [60, 26], 'add': [0, 'ALIGN_CENTER_VERTICAL | '
-                                             'LEFT | RIGHT | TOP', 6],
-                    'pos': [1], 'span': [1, 1], 'financial': False,
-                    'mandatory': True, 'hidden': True}]
+                    'min': [-1, 26],
+                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP',
+                            6], 'pos': [1], 'span': [1, 1], 'financial': True,
+                    'mandatory': False, 'hidden': True}]
         expect2 = (label, 'hide')
         msg = "Expected {}, found {}."
+
         self._tcp.hide_widget(label)
-        values = self._widget_data_by_label()
-        result = values[label]
+        widgets = self._tcp.changes['budget']['widgets']
+        # Test 1
+        result = widgets.get(w_key)
         self.assertEqual(expect0, result, msg.format(expect0, result))
-        w_key = result[0]
+        # Test 2
         kn = self._tcp._find_key_num(w_key)
         ct_key = self._tcp._make_key(kn + 1)
-        result = self._tcp.current_panel[ct_key]
+        result = widgets.get(ct_key)
         self.assertEqual(expect1, result, msg.format(expect1, result))
+        # Test 3
         lc = self._tcp.last_changed
         self.assertEqual(expect2, lc, msg.format(expect2, lc))
 
@@ -1479,52 +1584,56 @@ class TestTomlCreatePanel(BaseTomlTest):
         """
         Test that the rename_label method renames the StaticText widget.
         """
-        old_label = "Locale Name:"
-        new_label = "Area Name:"
-        expect0 = ('widget_03', [
-            'StaticText', 'w_fg_color_1',
-            {'args': ['self', 'ID_ANY', 'Area Name:'], 'min': [-1, -1],
-             'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-             'pos': [0], 'span': [1, 1]}])
+        old_label = "OCS Holdings:"
+        new_label = "Online Contribution Service Holdings:"
+        expect0 = ['StaticText', 'w_fg_color_1',
+                   {'args': ['self', 'ID_ANY',
+                             'Online Contribution Service Holdings:'],
+                    'min': [-1, -1],
+                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
+                    'pos': [0], 'span': [1, 1], 'hidable': False}]
         expect1 = (old_label, new_label, 'rename')
         msg = "Expected {}, found {}."
         self._tcp.rename_label(old_label, new_label)
-        values = self._widget_data_by_label()
-        result = values[new_label]
+        values = self._widget_data_by_label(panel=True).get(old_label)
+        key = values[0]
+        result = self._tcp.changes['budget']['widgets'].get(key)
         self.assertEqual(expect0, result, msg.format(expect0, result))
         lc = self._tcp.last_changed
         self.assertEqual(expect1, lc, msg.format(expect1, lc))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_undo_change(self):
         """
         Test that the undo_change method reverses the last change.
         """
-        def get_data(label):
-            values = self._widget_data_by_label()
+        def get_data(label, hidden=False):
+            values = self._widget_data_by_label(hidden=hidden)
             return values.get(label)
 
+        label = "Bahá'í Chair for World Peace - Reserved Fund:"
+        new_label = 'Online Contribution Service Holdings:'
         data = (
-            ('add', 'New Field', None, (None, None)),
-            ('hide', 'Total Membership:', None, (False, None)),
-            ('rename', 'Locale Name:', 'Area Name:', ('Locale Name:', None)),
+            ('add', 'New Fund:', None, None, (None, None)),
+            ('hide', label, 'widget_28', None, (False, None)),
+            ('rename', 'OCS Holdings:', None, new_label , (new_label, None)),
             )
         msg = "Expected {}, found {}."
 
-        for type_, label, new_label, expected in data:
+        for type_, label, widget, new_label, expected in data:
             if type_ == 'add':
-                self._tcp.add_name(label)
+                self._tcp.add_widgets(label)
                 self._tcp.undo_change()
                 result = get_data(label)
             elif type_ == 'hide':
                 self._tcp.hide_widget(label)
                 self._tcp.undo_change()
-                item = get_data(label)
-                result = item[1][2]['hidden']
+                item = get_data(widget, hidden=True)
+                result = item['hidden']
             elif type_ == 'rename':
                 self._tcp.rename_label(label, new_label)
                 self._tcp.undo_change()
-                item = get_data(label)
+                item = get_data(new_label)
                 result = item[1][2]['args'][2]
 
             self.assertEqual(expected[0], result, msg.format(
@@ -1532,19 +1641,56 @@ class TestTomlCreatePanel(BaseTomlTest):
             lc = self._tcp.last_changed
             self.assertEqual(expected[1], lc, msg.format(expected[1], lc))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_save_updated_panel(self):
         """
         Test that the save_updated_panel method saves all changes to
         the panels data.
         """
+        panel_name = 'budget'
+        label = "Bahá'í Chair for World Peace - Reserved Fund:"
+        items = {'budget': {'widgets': {
+            'widget_28': ['StaticText', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY',
+                         "Bahá'í Chair for World Peace - Reserved Fund:"],
+                'min': [-1, -1],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
+                'pos': [0], 'span': [1, 1], 'hidden': True}],
+            'widget_29': ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
+                'min': [-1, 26],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+                'pos': [1], 'span': [1, 1], 'financial': True,
+                'mandatory': False, 'hidden': True}],
+            'widget_09': ['StaticText', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY', 'New Fund'], 'min': [-1, -1],
+                'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6], 'pos': [0],
+                'span': [1, 1]}],
+            'widget_10': ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
+                'min': [-1, -1],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+                'pos': [1], 'span': [1, 1]}]}}}
+        self._tcp.changes = items
+        self._tcp.save_updated_panel(panel_name)
+        fullpath = os.path.join(self._TESTING_ENV_PATH, 'budget_bahai.toml')
+        file_data = self.read_text_file(fullpath)
 
-    @unittest.skip("Temporarily skipped")
+        for text in ('widget_28', 'widget_29', 'widget_09', 'widget_10'):
+            result = self.find_text(file_data, 'coding', 21, text)
+            self.assertIn(text, result)
+
+        os.remove(fullpath)
+
+    #@unittest.skip("Temporarily skipped")
     def test_cancel_updated_panel(self):
         """
         Test that the cancel_updated_panel method cancels all changes
         to the panels data.
         """
+        self.assertTrue(self._tcp.current_panel)
+        self._tcp.cancel_updated_panel()
+        self.assertFalse(self._tcp.current_panel)
 
     #@unittest.skip("Temporarily skipped")
     def test__find_label_in_panel(self):
@@ -1552,12 +1698,13 @@ class TestTomlCreatePanel(BaseTomlTest):
         Test that the _find_label_in_panel method returns the key and data.
         """
         msg = "Expected {}, found {}."
-        label = 'Total Membership:'
-        expect0 = ('widget_05',
-                   {'args': ['self', 'ID_ANY', 'Total Membership:'],
-                    'min': [-1, -1], 'add': [0, 'ALIGN_CENTER_VERTICAL | '
-                                             'LEFT | RIGHT | TOP', 6],
-                    'pos': [0], 'span': [1, 1]})
+        label = 'Expenses'
+        expect0 = ('widget_13', [
+            'StaticText', 'w_fg_color_1',
+            {'args': ['self', 'ID_ANY', 'Expenses'], 'font': 'font_14_bold',
+             'min': [-1, -1],
+             'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+             'pos': [0], 'span': [1, 2], 'hidable': False}])
         expect1 = (None, None)
         result = self._tcp._find_label_in_panel(label)
         self.assertEqual(expect0, result, msg.format(expect0, result))
@@ -1565,25 +1712,13 @@ class TestTomlCreatePanel(BaseTomlTest):
         result = self._tcp._find_label_in_panel(label)
         self.assertEqual(expect1, result, msg.format(expect1, result))
 
-    @unittest.skip("Temporarily skipped")
-    def test__reorder(self):
-        """
-        Test that the _reorder method reorders the widgets in the TOML doc.
-        """
-
-    @unittest.skip("Temporarily skipped")
-    def test__create_hole(self):
-        """
-        Test that the _create_hole method
-        """
-
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test__next_widget_num(self):
         """
         Test that the _next_widget_num property returns the next widget number.
         """
         msg = "Expected {}, found {}."
-        expect0 = 14
+        expect0 = 81
         result = self._tcp._next_widget_num
         self.assertEqual(expect0, result, msg.format(expect0, result))
 
