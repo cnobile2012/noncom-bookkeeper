@@ -17,7 +17,7 @@ from src.utilities import StoreObjects
 from .sample_data import TEST_DATA
 from .fixtures import FakeMainFrame, Options
 
-__all__ = ('BaseAsyncTests',)
+__all__ = ('BaseAsyncTests', 'BaseTests')
 
 
 class BaseTests:

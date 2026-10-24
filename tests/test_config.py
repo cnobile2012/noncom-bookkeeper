@@ -515,9 +515,9 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
                              msg.format(expected_results, err_code, error))
 
     #@unittest.skip("Temporarily skipped")
-    def test__read_toml_file(self):
+    def test_read_toml_file(self):
         """
-        Test that the _read_toml_file method properly reports the three
+        Test that the read_toml_file method properly reports the three
         condition it handles.
         """
         data = (  # These tests must be executed in the order below.
@@ -533,18 +533,18 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
             if valid:
                 shutil.copy2(self._bsd.local_config_fullpath,
                              TMP_USER_CONFIG_FILE)
-                doc = self._bsd._read_toml_file(filename)
+                doc = self._bsd.read_toml_file(filename)
                 result = os.path.exists(filename)
                 self.assertTrue(result, msg.format(expected, result))
                 self.assertIsInstance(doc, dict)
             elif expected == self._bsd. ERR_FILE_NOT_FOUND:
-                self._bsd._read_toml_file(filename)
+                self._bsd.read_toml_file(filename)
                 result = self._bsd.error
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
             else:
                 self.make_file(filename, bad_data)
-                self._bsd._read_toml_file(filename)
+                self._bsd.read_toml_file(filename)
                 result = self._bsd.error
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
@@ -1616,7 +1616,7 @@ class TestTomlCreatePanel(BaseTomlTest):
         data = (
             ('add', 'New Fund:', None, None, (None, None)),
             ('hide', label, 'widget_28', None, (False, None)),
-            ('rename', 'OCS Holdings:', None, new_label , (new_label, None)),
+            ('rename', 'OCS Holdings:', None, new_label, (new_label, None)),
             )
         msg = "Expected {}, found {}."
 

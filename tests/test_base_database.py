@@ -126,7 +126,6 @@ class TestBaseDatabase(BaseAsyncTests):
                     self.db, _SCHEMA_TABLES=mis_tables,
                     _SCHEMA_INDICES=mis_indices,
                     _mf=StoreObjects().get_object('MainFrame')):
-
                     os.remove(self.db.user_data_fullpath)
                     await self.db.create_db()
                     result = await self.db.has_schema

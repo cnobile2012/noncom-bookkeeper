@@ -111,9 +111,10 @@ After tests are done running they will dump to the screen a basic coverage
 report. You can also point your browser to a more complete HTML report in
 *docs/htmlcov/index.html*.
 
-There will be log files in the *logs* directory that are created
-during the tests one for each test class. They may have minimal use if all
-the tests pass, but will be invaluable if any fail.
+There will be a log file in the *logs* directory that is created during the tests.
+It may have minimal use if all the tests pass, but will be invaluable if any fail.
+There will be many ERROR messages in the file which is normal as many error
+conditions are tested.
 
 .. code-block:: console
 

@@ -15,4 +15,4 @@ per-file-ignores =
     tests/create_test_data.py: E252, E402, E701
     tests/*: E125, E252, E265, F401, E501, E701, E741, F821, F841
     tests/individual/*: E252, E402, E701
-    scripts/*: E402, E701
+    scripts/*: E129, E402, E701

@@ -8,152 +8,137 @@ import io
 import logging
 import os
 import unittest
-from contextlib import redirect_stdout
 from testfixtures import LogCapture
 
-from . import check_flag
+from . import check_flag, BASE_DIR
 from src import Logger
 
+from .base_database_test import BaseTests
 
-class TestLogger(unittest.TestCase):
+
+class TestLogger(BaseTests, unittest.TestCase):
     """
     https://testfixtures.readthedocs.io/en/latest/logging.html
     """
-    _TMP_LOGGER_FILE = '/tmp/test_logger.log'
+    LOG_PATH = os.path.join(BASE_DIR, 'logs')
+    LOGGER_NAMES = ['test_logger', 'root']
 
     def __init__(self, name):
         super().__init__(name)
 
     def setUp(self):
         check_flag(self.__class__.__name__)
+        self.logger = Logger()
 
     def tearDown(self):
+        self.logger = None
         logging.shutdown()
 
-        try:
-            os.remove(self._TMP_LOGGER_FILE)
-        except FileNotFoundError:
-            pass
+        for log_name in self.LOGGER_NAMES:
+            log = logging.getLogger(log_name)
+            log.handlers.clear()
 
-    def create_buffer(self, **kwargs):
-        """
-        Creates a StringIO buffer for tests.
-        """
-        logger_name = kwargs.pop('logger_name', '')
-        test_msg_1 = kwargs.pop('test_msg_1', '')
-        test_msg_2 = kwargs.pop('test_msg_2', '')
-        cb = kwargs.pop('callback', None)
-        data = ''
+        for file in [file for file in os.listdir(self.LOG_PATH)
+                     if file.startswith('testfile_')]:
+            path = os.path.join(self.LOG_PATH, file)
 
-        with io.StringIO() as buff:
-            with redirect_stdout(buff) as buff:
-                logger = Logger()
-                logger.config(**kwargs)
-                log = logging.getLogger(logger_name)
-                if test_msg_1: log.info(test_msg_1)
-                result = cb(logger, log, test_msg_2) if cb else None
-
-            data = buff.getvalue()
-
-        return data, result
+            try:
+                os.remove(path)
+            except FileNotFoundError:
+                pass
 
     #@unittest.skip("Temporarily skipped")
-    def test_config_normal_usage(self):
+    def test_config_rotating_logger(self):
         """
-        Test that with both the 'loger_name' and 'file_path' arguments
-        a logger object is created.
+        Test that the config method properly configures the rotating file
+        logging system.
         """
-        name = 'TestName'
-
-        with LogCapture() as l:
-            Logger().config(logger_name=name, file_path=self._TMP_LOGGER_FILE,
-                            initial_msg=False)
-
-            log = logging.getLogger(name)
-            test_msg = "Test logging"
-            log.info(test_msg)
-            data = ""
-
-            with open(self._TMP_LOGGER_FILE, 'r') as f:
-                data = f.read()
-
-            msg = (f"Should find a {name} logger with {test_msg} found "
-                   f"in {data}")
-            self.assertIn(test_msg, data, msg)
-            self.assertIn(name, data, msg)
-
-        l.uninstall()
+        name = 'test_logger'
+        filepath = os.path.join(self.LOG_PATH, 'testfile_rotate.log')
+        log_msg = ("Test" * 20 + " ") * 100
+        expected = 3
+        msg = "Expected '{}', found '{}'."
+        self.logger.config(name, filepath, 500, 2)
+        log = logging.getLogger(name)
+        [log.info(m) for m in log_msg.split(' ')]
+        files = [file for file in os.listdir(self.LOG_PATH)
+                 if file.startswith('testfile_')]
+        self.assertEqual(expected, len(files), msg.format(
+            expected, len(files)))
 
     #@unittest.skip("Temporarily skipped")
-    def test_config_root_logger_to_file(self):
+    def test_config_basic_file_logger(self):
         """
-        Test that with only the 'file_path' argument a root logger
-        object is created.
+        Test that the config method properly configures the basic file
+        logging systems.
         """
-        Logger().config(file_path=self._TMP_LOGGER_FILE, initial_msg=False)
+        filepath = os.path.join(self.LOG_PATH, 'testfile_basic_file.log')
+        msg = "Expected '{}', found '{}'."
+        self.logger.config(file_path=filepath)
         log = logging.getLogger()
-        test_msg = "Test logging to file."
-        log.info(test_msg)
-        data = ""
+        log_msg = "Testing the basic file logger."
+        log.warning(log_msg)
+        full_log = self.read_text_file(filepath)
+        result = self.find_text(full_log, log_msg, 1, full_log)
+        self.assertIn(log_msg, result, msg.format(log_msg, result))
 
-        with open(self._TMP_LOGGER_FILE, 'r') as f:
-            data = f.read()
-
-        name = 'root'
-        msg = (f"Should find a {name} logger with {test_msg} found "
-               f"in {data}")
-        self.assertIn(test_msg, data, msg)
-        self.assertIn(name, data, msg)
-
-    @unittest.skip("Temporarily skipped")
-    def test_config_root_logger_to_stdout(self):
+    #@unittest.skip("Temporarily skipped")
+    def test_config_basic_stdout_logger(self):
         """
-        Test that with neither 'loger_name' or 'file_path' arguments
-        a root logger object is created to stdout.
+        Test that the config method properly configures the basic stdout
+        logging systems.
         """
-        test_msg_1 = "Test logging to stream."
-        kwargs = {'test_msg_1': test_msg_1, 'initial_msg': False}
-        data, result = self.create_buffer(**kwargs)
-        name = 'root'
-        msg = (f"Should find a {name} logger with '{test_msg_1}' "
-               f"found in {data}")
-        self.assertIn(test_msg_1, data, msg)
-        self.assertIn(name, data, msg)
+        msg = "Expected '{}', found '{}'."
+        log_msg = "Testing the basic file logger."
+        self.logger.config(initial_msg=False)
 
-    @unittest.skip("Temporarily skipped")
-    def test_level_get(self):
-        """
-        Test that getting a new level works properly.
-        """
-        def callback(logger, log, msg):
-            return logging.getLevelName(logger.level)
+        with self.assertLogs(level="DEBUG") as cm:
+            log = logging.getLogger()
+            log.warning(log_msg)
 
-        name = 'TestName'
-        kwargs = {'callback': callback, 'logger_name': name,
-                  'initial_msg': False}
-        data, found_level = self.create_buffer(**kwargs)
-        should_be_level = logging.getLevelName(logging.INFO)
-        msg = (f"The logging level should be '{should_be_level}' "
-               f"found '{found_level}'")
-        self.assertEqual(should_be_level, found_level, msg)
+        result = "\n".join(cm.output)
+        self.assertIn(log_msg, result, msg.format(log_msg, result))
 
-    @unittest.skip("Temporarily skipped")
-    def test_level_set(self):
+    #@unittest.skip("Temporarily skipped")
+    def test__make_log_dir(self):
         """
-        Test that setting a new level works properly.
+        Test that the _make_log_dir method creates the logging path if needed.
         """
-        def callback(logger, log, msg):
-            logger.level = logging.WARNING
-            log.info(msg)  # should_not_be_in_log message
+        fullpath = os.path.join(BASE_DIR, 'tests', 'delete', 'no_file.log')
+        self.logger._make_log_dir(fullpath)
+        path, filename = os.path.split(fullpath)
+        stats = os.stat(path)
+        self.assertEqual(4096, stats.st_size)
+        os.rmdir(path)
 
-        name = 'TestLoggerName'
-        should_be_in_log = "This message should be in the log file."
-        should_not_be_in_log = "This message should not be in the log file."
-        kwargs = {'callback': callback, 'test_msg_1': should_be_in_log,
-                  'test_msg_2': should_not_be_in_log, 'logger_name': name,
-                  'initial_msg': False}
-        data, result = self.create_buffer(**kwargs)
-        msg = f"Could not fine '{should_be_in_log}' in log file '{data}'"
-        self.assertIn(should_be_in_log, data, msg)
-        msg = f"Could not fine '{should_not_be_in_log}' in log file '{data}'"
-        self.assertNotIn(should_not_be_in_log, data, msg)
+    #@unittest.skip("Temporarily skipped")
+    def test_level_setter_and_getter(self):
+        """
+        Test that the level setter and getter work properly.
+        """
+        err_msg = self.logger._ASSERT_MSG
+        data = (
+            (True, False, None, err_msg),
+            (False, True, None, err_msg),
+            (None, None, logging.DEBUG, logging.DEBUG),
+            (None, None, logging.INFO, logging.INFO),
+            )
+        msg = "Expected '{}', found '{}'."
+
+        for set_err, get_err, level, expected in data:
+            if set_err:
+                with self.assertRaises(AssertionError) as cm:
+                    self.logger.level = logging.DEBUG
+
+                result = str(cm.exception)
+            elif get_err:
+                with self.assertRaises(AssertionError) as cm:
+                    self.logger.level
+
+                result = str(cm.exception)
+            else:
+                self.logger.config(initial_msg=False)
+                self.logger.level = level
+                result = self.logger.level
+
+            self.assertEqual(expected, result, msg.format(expected, result))

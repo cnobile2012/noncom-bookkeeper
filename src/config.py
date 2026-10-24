@@ -370,7 +370,7 @@ class BaseSystemData(Settings):
 
         return error if error else doc
 
-    def _read_toml_file(self, filepath: str) -> dict:
+    def read_toml_file(self, filepath: str) -> dict:
         """
         Open and read the local panel file.
 
@@ -477,7 +477,7 @@ class TomlMetaData(BaseSystemData):
 
 class TomlPanelConfig(BaseSystemData):
     """
-    Read and write the TOML panel config file.
+    Read and write the TOML panel config files.
     """
 
     def __init__(self, *args, **kwargs):
@@ -492,11 +492,9 @@ class TomlPanelConfig(BaseSystemData):
         :returns: True if file exists and False if it does not exist.
         :rtype: bool
          """
-        fullpath = self.user_config_fullpath
-
-        if not (has := os.path.exists(fullpath)):
+        if not (has := os.path.exists(self.user_config_fullpath)):
             msg = "The path '%s' does not exist, file will be copied."
-            self._log.info(msg, fullpath)
+            self._log.info(msg, self.user_config_fullpath)
             self.err_msg = msg
 
         return has
@@ -510,11 +508,9 @@ class TomlPanelConfig(BaseSystemData):
         :returns: True if file exists and False if it does not exist.
         :rtype: bool
         """
-        fullpath = self.local_config_fullpath
-
-        if not (has := os.path.exists(fullpath)):
+        if not (has := os.path.exists(self.local_config_fullpath)):
             msg = "The path '%s' does not exist, exiting application."
-            self._log.critical(msg, fullpath)
+            self._log.critical(msg, self.local_config_fullpath)
             self.err_msg = msg
 
         return has
@@ -575,7 +571,7 @@ class TomlPanelConfig(BaseSystemData):
         """
         ret = True
         fullpath = self.user_config_fullpath
-        self.panel_config = self._read_toml_file(fullpath)
+        self.panel_config = self.read_toml_file(fullpath)
 
         if self.error:
             self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
@@ -620,11 +616,9 @@ class TomlAppConfig(BaseSystemData):
         :returns: True if file exists and False if it does not exist.
         :rtype: bool
         """
-        fullpath = self.user_app_config_fullpath
-
-        if not (has := os.path.exists(fullpath)):
+        if not (has := os.path.exists(self.user_app_config_fullpath)):
             msg = "The path '%s' does not exist, file will be created."
-            self._log.info(msg, fullpath)
+            self._log.info(msg, self.user_app_config_fullpath)
             self.err_msg = msg
 
         return has
@@ -668,7 +662,7 @@ class TomlAppConfig(BaseSystemData):
         """
         ret = True
         fullpath = self.user_app_config_fullpath
-        self.app_config = self._read_toml_file(fullpath)
+        self.app_config = self.read_toml_file(fullpath)
 
         if self.error:
             self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
@@ -852,6 +846,21 @@ class TomlCreatePanel(BaseSystemData):
 
         return items
 
+    def _has_change_file(self, fullpath: str) -> bool:
+        """
+        Check if a panel change config TOML file exists.
+
+        :returns: True if file exists and False if it does not exist.
+        :rtype: bool
+        """
+        if not (has := os.path.exists(fullpath)):
+            msg = ("The path '%s' does not exist, if no panel changes have "
+                   "been made this would be normal.")
+            self._log.warning(msg, fullpath)
+            self.err_msg = msg
+
+        return has
+
     def initialize_changes(self, panel_name: str, current: dict) -> None:
         """
         Initialize the changes made to a panel.
@@ -860,7 +869,14 @@ class TomlCreatePanel(BaseSystemData):
         :param dict current: The current panel data.
         """
         self._panel_name = panel_name
-        self.changes = {panel_name: {'widgets': {}}}
+        filename = f"{panel_name}_{self.config_type}.toml"
+        fullpath = os.path.join(self.data_dir, filename)
+
+        if self._has_change_file(fullpath):
+            self.changes = self.read_toml_file(fullpath)
+        else:
+            self.changes = {panel_name: {'widgets': {}}}
+
         self. current_panel = current
 
     def add_widgets(self, name: str, key_num: int=None) -> None:
@@ -967,6 +983,8 @@ class TomlCreatePanel(BaseSystemData):
     def save_updated_panel(self, panel_name: str) -> None:
         """
         Save the updated panel data.
+
+        :param str panel_name: The lower case panel name.
         """
         def dict_to_toml(doc, data):
             def convert_value(value):

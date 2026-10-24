@@ -13,7 +13,7 @@ sys.path.append(BASE_DIR)
 
 __all__ = ('FakeFrame', 'FakeWidget', 'FakeEvent', 'FakePanel', 'log',
            'check_flag', 'Settings', 'BaseSystemData', 'TomlMetaData',
-           'TomlPanelConfig', 'TomlAppConfig', 'TomlCreatePanel')
+           'TomlPanelConfig', 'TomlAppConfig', 'TomlCreatePanel', 'BASE_DIR')
 
 LOGGER_NAME = 'testing'
 LOGFILE_NAME = 'testing.log'
@@ -31,7 +31,8 @@ def setup_logging():
 
     full_path = os.path.abspath(os.path.join(log_path, LOGFILE_NAME))
     logger = Logger()
-    logger.config(LOGGER_NAME, full_path, logging.DEBUG, initial_msg=False)
+    logger.config(logger_name=LOGGER_NAME, file_path=full_path,
+                  level=logging.DEBUG, initial_msg=False)
     return logging.getLogger(LOGGER_NAME)
 
 
