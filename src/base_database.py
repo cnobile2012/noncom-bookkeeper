@@ -10,8 +10,9 @@ import ast
 import sqlite3
 import aiosqlite
 
-from .config import Settings
-from .utilities import StoreObjects
+from .config import Settings, TomlPanelConfig
+from .bases import find_dict
+from .utilities import make_name, StoreObjects
 from .populate_collect_panel import PopulateCollect
 from .preperation import DataPreperation
 from .cache import Cache
@@ -352,6 +353,30 @@ class BaseDatabase(PopulateCollect, Settings):
     #
     # Initialization methods
     #
+    async def rename_fields(self) -> None:
+        """
+        """
+        tpc = TomlPanelConfig()
+        config = tpc.panel_config
+        panels = config.get('meta', {}).get('panels')
+        p_names = [panel_name for _, panel_name, can_mod in panels if can_mod]
+
+        for panel_name in p_names:
+            for widget, values in config[panel_name]['widgets'].items():
+                inner = find_dict(values)
+
+                if old_label := inner.get('old_label'):
+                    old_label = make_name(old_label)
+                    new_label = make_name(inner['args'][2])
+                    if new_label in self.cache.budget_fields: continue
+                    data = {'data': [{'old_field': old_label,
+                                      'new_field': new_label}]}
+                    rc = await self.cache.update(self._T_FIELD_TYPE, data)
+
+                    if rc == 0:
+                        self._log.error("The '%s' panel should have had a "
+                                        "name change on label '%s' widget "
+                                        "'%s'.", panel_name, old_label, widget)
 
     async def populate_panels(self) -> None:
         """
@@ -380,7 +405,7 @@ class BaseDatabase(PopulateCollect, Settings):
                 items = self.cache.get(self._T_DATA, year=year,
                                        r_type=panel_name)
                 # Add any new fields to the database.
-                await self._add_fields_to_field_type_table(data)
+                await self.add_fields_to_field_type_table(data)
                 panel.initializing = True
                 values = {item[1]: item[2] for item in items}
                 self.populate_panel_values(panel_name, panel, values)
@@ -460,7 +485,7 @@ class BaseDatabase(PopulateCollect, Settings):
     # Database access methods.
     #
 
-    async def _add_fields_to_field_type_table(self, data: dict) -> int:
+    async def add_fields_to_field_type_table(self, data: dict) -> int:
         """
         Add fields to the field_type table if they don't already exist.
 
@@ -579,5 +604,6 @@ class BaseDatabase(PopulateCollect, Settings):
                 await db.rollback()
                 self._log.error("Error with queries %s and data %s, %s",
                                 queries, data, e, exc_info=True)
+                raise
 
         return rowcount

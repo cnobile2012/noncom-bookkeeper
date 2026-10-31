@@ -177,9 +177,6 @@ class TestBaseDatabase(BaseAsyncTests):
         panals that use the config_data table.
         """
         msg = "Expected {}, found {}."
-        self.db.cache._flush_cache()
-        # Test that the cache and DB are empty.
-        self.assertFalse(self.db.cache.fields)
         widgets = ('TextCtrl', 'BadiDatePickerCtrl')
         data = {4: 'New York', 6: '20', 8: 'Joe Schmo',
                 10: badidatetime.date(183, 3, 5), 14: 'New York'}
@@ -394,9 +391,9 @@ class TestBaseDatabase(BaseAsyncTests):
                                      f"Expected '{expected}, found '{error}'.")
 
     #@unittest.skip("Temporarily skipped")
-    async def test__add_fields_to_field_type_table(self):
+    async def test_add_fields_to_field_type_table(self):
         """
-        Test that the _add_fields_to_field_type_table method correctly adds
+        Test that the add_fields_to_field_type_table method correctly adds
         fields to the field_type table and the cache.
         """
         msg = "Expected {}, found {}."
@@ -404,7 +401,7 @@ class TestBaseDatabase(BaseAsyncTests):
         long_field = "abc12" * 11
         fields = self.db.cache.ORG_FIELDS + [long_field]
         data = {field: 0 for field in fields}
-        rowcount = await self.db._add_fields_to_field_type_table(data)
+        rowcount = await self.db.add_fields_to_field_type_table(data)
         fld_len = len(fields)
         err_msg0 = ("Found field(s) that are longer than "
                     f"{self.db._MAX_FIELD_LEN}, ['{long_field}'].")

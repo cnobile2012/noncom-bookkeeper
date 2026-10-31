@@ -141,8 +141,7 @@ class Database(BaseDatabase):
 
         query = (f"SELECT * FROM {self._T_FISCAL_YEAR} {where};")
         data = await self._do_select_query(query)
-        # Return the list of a single record or a list of all records
-        # based on the query.
+        # Return a tuple for a single record or a list of all records.
         return data[0] if len(data) == 1 else data
 
     async def insert_into_fiscal_year_table(self, data: list) -> int:
@@ -155,7 +154,7 @@ class Database(BaseDatabase):
         """
         fields = "year, month, day, current, work_on, audit, ctime, mtime"
 
-        if isinstance(data[0], tuple) and len(data[0]) == 9:
+        if isinstance(data[0], tuple) and len(data[0]) == 9:  # Bulk data load
             items = data
             fields = "pk, " + fields
             values = "?, ?, ?, ?, ?, ?, ?, ?, ?"
@@ -201,46 +200,46 @@ class Database(BaseDatabase):
     # Fiscal year balences methods.
     #
 
-    async def select_fiscal_year_balances(self, year: int, a_type: int
-                                          ) -> tuple:
-        """
-        Select from the `fiscal_year_balances` table.
+    # async def select_fiscal_year_balances(self, year: int, a_type: int
+    #                                       ) -> tuple:
+    #     """
+    #     Select from the `fiscal_year_balances` table.
 
-        :param int year: The beginning fiscal year.
-        :param int a_type: An integer indicating the type of balance to
-                           retrive.
-        :returns: The balance data queried.
-        """
-        query = (f"SELECT * FROM {self._T_FISCAL_YEAR_BALANCES} AS fyb "
-                 f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = fyb.fy1fk "
-                 "WHERE fy.year = ? AND fyb.a_type = ?;")
-        rows = await self._do_select_query(query, (year, a_type))
-        return rows[0] if len(rows) == 1 else ()
+    #     :param int year: The beginning fiscal year.
+    #     :param int a_type: An integer indicating the type of balance to
+    #                        retrive.
+    #     :returns: The balance data queried.
+    #     """
+    #     query = (f"SELECT * FROM {self._T_FISCAL_YEAR_BALANCES} AS fyb "
+    #              f"JOIN {self._T_FISCAL_YEAR} AS fy ON fy.pk = fyb.fy1fk "
+    #              "WHERE fy.year = ? AND fyb.a_type = ?;")
+    #     rows = await self._do_select_query(query, (year, a_type))
+    #     return rows[0] if len(rows) == 1 else ()
 
-    async def insert_fiscal_year_balances(self, year: int, data: dict) -> int:
-        """
-        Insert into the `fiscal_year_balances` table.
+    # async def insert_fiscal_year_balances(self, year: int, data: dict) -> int:
+    #     """
+    #     Insert into the `fiscal_year_balances` table.
 
-        :param int year: The beginning fiscal year.
-        :param dict data: The data to insert in this form:
-                          {'a_type': 1, 'balance': 10000}
-        :returns: The rowcount of the update.
-        :rtype: int
-        """
-        fy1 = await self.select_from_fiscal_year_table(year=year)
+    #     :param int year: The beginning fiscal year.
+    #     :param dict data: The data to insert in this form:
+    #                       {'a_type': 1, 'balance': 10000}
+    #     :returns: The rowcount of the update.
+    #     :rtype: int
+    #     """
+    #     fy1 = await self.select_from_fiscal_year_table(year=year)
 
-        if fy1:
-            data['fy1fk'] = fy1[0]
-            now = badidatetime.datetime.now(self.utc_tzinfo)
-            data['mtime'] = now
-            query = (f"INSERT INTO {self._T_FISCAL_YEAR_BALANCES} (fy1fk, "
-                     "a_type, balance, mtime) VALUES (:fy1fk, :a_type, "
-                     ":balance, :mtime);")
-            rowcount = await self._do_insert_query(query, data)
-        else:
-            rowcount = 0
+    #     if fy1:
+    #         data['fy1fk'] = fy1[0]
+    #         now = badidatetime.datetime.now(self.utc_tzinfo)
+    #         data['mtime'] = now
+    #         query = (f"INSERT INTO {self._T_FISCAL_YEAR_BALANCES} (fy1fk, "
+    #                  "a_type, balance, mtime) VALUES (:fy1fk, :a_type, "
+    #                  ":balance, :mtime);")
+    #         rowcount = await self._do_insert_query(query, data)
+    #     else:
+    #         rowcount = 0
 
-        return rowcount
+    #     return rowcount
 
     #
     # Month SELECT and INSERT methods.
@@ -250,17 +249,23 @@ class Database(BaseDatabase):
                                       pk: int=None) -> list | tuple:
         """
         Select from the `month` table.
+
+        :param str name: The month's name.
+        :param int order: The numerical order of the month [0, 20].
+        :param int pk: The primary key of the table.
+        :returns: A row or rows of data.
+        :rtype: list or tuple
         """
         assert len([arg for arg in (name, order, pk) if arg is None]) >= 2, (
                 "Cannot query for more than one or none of the arguments.")
 
-        if name:
+        if name is not None:
             where = "WHERE month = ?"
             params = (name,)
-        elif order:
+        elif order is not None:
             where = "WHERE ord = ?"
             params = (order,)
-        elif pk:
+        elif pk is not None:
             where = "WHERE pk = ?"
             params = (pk,)
         else:
@@ -326,7 +331,7 @@ class Database(BaseDatabase):
         :returns: The row count caused by the insert.
         :rtype: int
         """
-        if isinstance(data[0], tuple) and len(data[0]) == 4:
+        if isinstance(data[0], tuple) and len(data[0]) == 4:  # Bulk load
             items = data
             fields = 'pk, field, ctime, mtime'
             values = '?, ?, ?, ?'
@@ -340,6 +345,22 @@ class Database(BaseDatabase):
                  f"VALUES ({values});")
         return await self._do_insert_query(query, items)
 
+    async def update_field_type_table(self, data: list) -> int:
+        """
+        Update field type names in the firld_type table.
+
+        :param list data: A list of dicts in this form:
+                          [{'old_field': <old_field_name>,
+                            'new_field': <new_field_name>}, {...}, ...]
+        :returns: The row count caused by the insert.
+        :rtype: int
+        """
+        mtime = badidatetime.datetime.now(self.utc_tzinfo)
+        for row in data: row['mtime'] = mtime
+        query = (f"UPDATE {self._T_FIELD_TYPE} SET field = :new_field, "
+                 "mtime = :mtime WHERE field = :old_field;")
+        return await self._do_update_query(query, data)
+
     #
     # Config data SELECT, INSERT and, UPDATE methods.
     #
@@ -350,8 +371,8 @@ class Database(BaseDatabase):
         Reads a row or rows from the config data table.
 
         :param dict data: The data from the any panel in the form of:
-                          {<field name>: <value>,...}.
-        :param int year: A Baha'i year used to select the current fiscal year.
+                          [<field_name_0>, <field_name_1> ...].
+        :param int year: A Baha'i year in the current fiscal year.
         :returns: A list of rows from the Data table.
         :rtype: list
 
@@ -394,15 +415,13 @@ class Database(BaseDatabase):
 
     async def insert_all_into_config_data_table(self, data: list) -> int:
         """
-        Insert all values into the config data table.
+        Insert all values into the config data table. This is for bulk data.
 
-        :param list data: Multi-row data.
+        :param list data: In the following form:
+                          [(pk, value, fy1fk, fy2fk, mfk, ffk, ctime, mtime),
+                           ...]
         :returns: The row count caused by the insert.
         :rtype: int
-
-        .. note::
-
-           Incoming data: (pk, value, fy1fk, fy2fk, mfk, ffk, ctime, mtime)
         """
         query = (f"INSERT INTO {self._T_DATA} (pk, value, fy1fk, fy2fk, mfk, "
                  "ffk, ctime, mtime) VALUES (?, ?, ?, ?, ?, ?, ?, ?);")
@@ -416,7 +435,7 @@ class Database(BaseDatabase):
         :param int year: A Baha'i year of the transaction.
         :param int month: A Baha'i month of the transaction. This is the order
                           of the Baha'i month not the name.
-        :param dict data: The data from the any panel in the form of:
+        :param dict data: The data from any panel in the form of:
                           {<field_name>: <value>, ...}.
         :returns: The row count caused by the insert.
         :rtype: int
@@ -432,7 +451,6 @@ class Database(BaseDatabase):
             fy2_year = fy1[1]+1  # Get next year
             fy2 = await self.select_from_fiscal_year_table(year=fy2_year)
             assert fy2, "Programming error, no 2nd year fiscal year data."
-
             query = (
                 f"INSERT INTO {self._T_DATA} (value, fy1fk, fy2fk, mfk, ffk, "
                 "ctime, mtime) VALUES (:value, :fy1fk, :fy2fk, :mfk, :ffk, "
@@ -461,7 +479,7 @@ class Database(BaseDatabase):
         Update the config data table.
 
         :param list data: The data from the any panel  in the form of:
-                          [(<pk>, <value>), ...}.
+                          [(<pk>, <value>), ...].
         :returns: The row count caused by the update.
         :rtype: int
         """
@@ -519,9 +537,9 @@ class Database(BaseDatabase):
         Insert all data into the monthly table.
 
         :param list data: The data from the any panel  in the form of:
-                          [(pk, fy1fk, participation, outstanding, coh,
-                            membership, treasurer, locality, ctime,
-                            mtime), ...].
+                          [(pk, fy1fk, cal_year_month, participation,
+                            outstanding, coh, membership, treasurer, locality,
+                            ctime, mtime), ...].
         """
         query = (f"INSERT INTO {self._T_MONTHLY} (pk, fy1fk, cal_year_month, "
                  "participation, outstanding, coh, membership, treasurer, "
@@ -535,7 +553,8 @@ class Database(BaseDatabase):
 
         :param int year: The Badi year of the transaction.
         :param dict data: The data from any panel in the form of:
-                          {'participation': <value>, ...}.
+                          {'cal_year_month': <value>,
+                           'participation': <value>, ...}.
         :returns: The rowcount caused by the insert.
         :rtype: int
         """
@@ -556,15 +575,19 @@ class Database(BaseDatabase):
 
         :param int year: A fiscal year of the transaction.
         :param dict data: The data from the any panel  in the form of:
-                          [(pk, <value>), ...}.
+                          {'participation': <value>, ...}.
         :returns: The row count caused by the update.
         :rtype: int
+
+        ..note::
+
+          The 'cal_year_month' column is never updated.
         """
         data['year'] = year
         data['mtime'] = badidatetime.datetime.now(self.utc_tzinfo)
         query = (f"UPDATE {self._T_MONTHLY} AS m SET "
                  "participation = :participation, outstanding = :outstanding, "
-                 "coh = :coh, membership = :membership, "
+                 "coh = :coh, membership = :membership,  "
                  "treasurer = :treasurer, locality = :locality, "
                  f"mtime = :mtime FROM {self._T_FISCAL_YEAR} AS fy "
                  "WHERE fy.pk = m.fy1fk AND fy.year = :year "
@@ -615,16 +638,26 @@ class Database(BaseDatabase):
         return badidatetime.date.today()
 
     @property
-    def utc_tzinfo(self):
+    def utc_tzinfo(self) -> badidatetime.datetime.TZWithCoords:
+        """
+        Return the UTC coordinates in a time zone object.
+
+        :returns: A TZWithCoords object.
+        :rtype: badidatetime.datetime.TZWithCoords
+        """
         return badidatetime.UTC
 
     @property
-    def tzinfo(self) -> badidatetime.TZWithCoords:
-        lat = self.organization_data.get('latitude')
-        lon = self.organization_data.get('longitude')
-        iana_name = self.organization_data.get('iana_name')
+    def tzinfo(self) -> badidatetime.datetime.TZWithCoords:
+        """
+        Return the local coordinates in a time zone object.
+
+        :returns: A TZWithCoords object.
+        :rtype: badidatetime.datetime.TZWithCoords
+        """
+        lat, lon, iana_name = self.cache.local_coordinates
         offset = self._get_standard_offset(iana_name)
-        return badidatetime.TZWithCoords(lat, lon, offset/3600)
+        return badidatetime.TZWithCoords(float(lat), float(lon), offset/3600)
 
     def _get_standard_offset(self, iana_key: str) -> datetime.timedelta:
         """
@@ -637,23 +670,29 @@ class Database(BaseDatabase):
         assert iana_key, "The IANA key has not been set."
         tz = ZoneInfo(iana_key)
         now = datetime.datetime.now(tz)
+        td = None
 
-        # Try every month and find the offset where DST is 0 (standard time)
+        # Try every Gregorian month and find the offset where DST is 0
+        # (standard time)
         for month in range(1, 13):
             dt = datetime.datetime(now.year, month, 15, tzinfo=tz)
 
             # No DST active = standard time
             if dt.dst() == datetime.timedelta(0):
-                return dt.utcoffset()
+                td = dt.utcoffset()
 
-        # Zone has no DST at all — any offset is the standard offset
-        return datetime.datetime(now.year, 1, 15, tzinfo=tz).utcoffset()
+        if not td:  # pragma: no cover
+            # As of 2026-10-30 no place on Earth has only a DST time.
+            # Zone has no STD at all — any offset will be a DST.
+            td = datetime.datetime(now.year, 1, 15, tzinfo=tz).utcoffset()
+
+        return td.total_seconds()
 
     def index_of_calendar_year(self, date: tuple, year: int=None) -> int:
         """
-        Get the index of the calendar year.
+        Get the index of the calendar year. The count starts at 0.
 
-        :param tuple date: The calendar date of the monthly record.
+        :param tuple date: The calendar year and month of the monthly record.
         :returns: The index of the calendar year in the fiscal year.
         :rtype: int
         """
@@ -667,7 +706,7 @@ class Database(BaseDatabase):
 
     def year_month_by_index(self, idx: int, year: int) -> str:
         """
-        Get the text used in the monthly drop down.
+        Get the text used in the monthly drop down for the fiscal year.
 
         :param int idx: The index used in the dropdown widget.
         :param int year: The fiscal year.
@@ -698,11 +737,11 @@ class Database(BaseDatabase):
             fy1 = self.cache.get(self._T_FISCAL_YEAR, year=year+1)
 
             if fy0 and fy1:
-                year_month = self.fiscal_year_months(fy0[0], fy1[0])
+                year_month = self._fiscal_year_months(fy0[0], fy1[0])
 
         return year_month
 
-    def fiscal_year_months(self, start_rec: tuple, end_rec: tuple) -> list:
+    def _fiscal_year_months(self, start_rec: tuple, end_rec: tuple) -> list:
         """
         Create a list of tuples that are in sequential order of the Badi
         calendar year and month for the entire fiscal year.
@@ -751,9 +790,21 @@ class Database(BaseDatabase):
 
         return result
 
-    def populate_monthly_data(self, month_idx: int,  item: tuple,
-                              data: dict={}) -> dict:
-        # month_idx sets the dropdown to the current month.
+    def populate_monthly_data(self, month_idx: int,  item: tuple, data: dict
+                              ) -> dict:
+        """
+        Create the data structure for the monthly panel.
+
+        :param int month_idx: The index of the fiscal year month.
+        :param tuple item: The items to populate in the data structure.
+        :param dict data: The structure to populate.
+        :returns: The data object.
+        :rtype: dict
+
+        .. note::
+
+           The month_idx argument sets the dropdown to the current month.
+        """
         data['month_index'] = month_idx
 
         if item:
@@ -772,8 +823,8 @@ class Database(BaseDatabase):
         if data['treasurer_this_month'] == "" and self.dp.organization_data:
             data['treasurer_this_month'] = self.dp.organization_data[
                 'treasurer']
-            data['total_membership_this_month'] = self.dp.organization_data[
-                'total_membership']
+            data['total_membership_this_month'] = int(
+                self.dp.organization_data['total_membership'])
 
         return data
 

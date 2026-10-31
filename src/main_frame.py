@@ -92,6 +92,7 @@ class MainFrame(wx.Frame, MenuBar):
         if not self.db.cache.has_cache:
             await self.db.cache.load()
 
+        await self.db.rename_fields()
         self.load_panels()
         await self.db.populate_panels()
 

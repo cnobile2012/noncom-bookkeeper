@@ -12,7 +12,6 @@ import badidatetime
 
 from src.bahai_database import Database
 from src.utilities import StoreObjects
-#from src.ledger_transaction import LedgerTransaction
 
 from .sample_data import TEST_DATA
 from .fixtures import FakeMainFrame, Options
@@ -96,7 +95,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                  'latitude': None, 'longitude': None}
     _ORG_EMPTY = {'locality_prefix': 0, 'locale_name': '',
                   'total_membership': '', 'treasurer': '',
-                  'start_of_fiscal_year': badidatetime.date(183, 3, 5),
+                  'start_of_fiscal_year': None,
                   'location_city_name': '', 'iana_name': None,
                   'latitude': None, 'longitude': None}
     _BGT_DATA = {'cash_in_bank': '200000', 'ocs_holdings': '10000',
@@ -113,7 +112,7 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                  'total_membership_this_month': '20',
                  'treasurer_this_month': 'Joe Schmo',
                  'locality_prefix_month': 0}
-    _MTH_EMPTY = {'month_index': '183-03 Jamál', 'participation': '',
+    _MTH_EMPTY = {'month_index': '', 'participation': '',
                   'outstanding_bills': '',
                   'end_of_month_cash_on_hand': '',
                   'total_membership_this_month': '',

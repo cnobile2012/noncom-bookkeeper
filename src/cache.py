@@ -18,6 +18,7 @@ class Cache:
                   'locality_prefix', 'start_of_fiscal_year', 'locale_name',
                   'treasurer', 'total_membership', 'iana_name']
     ORG_FIELDS.sort()
+    _COORDINATE_DATA = ('latitude', 'longitude', 'iana_name')
 
     def __init__(self, db, *args, **kwargs) -> None:
         """
@@ -268,6 +269,19 @@ class Cache:
 
         return fy
 
+    @property
+    def local_coordinates(self) -> tuple:
+        """
+        Get the latitude, longitude, and IANA name of the locale.
+
+        :returns: A tuple of the latitude, longitude, and IANA name.
+        :rtype: tuple
+        """
+        items = self.get(self.db._T_DATA, r_type='organization')
+        data = dict([(item[1], item[2]) for item in items
+                     if item[1] in self._COORDINATE_DATA])
+        return [data[field] for field in self._COORDINATE_DATA]
+
     def get(self, table_name: str, *, year: int=None, r_type: str | tuple=None
             ) -> list:
         """
@@ -385,11 +399,10 @@ class Cache:
         """
         data = changes.get('data')
 
-        # Then persist to DB
         match table_name:
-            # case self.db._T_FIELD_TYPE:
-            # *** TODO *** What if a field name is spelled wrong and
-            # needs to be fixed? How will that affect the whole system.
+            case self.db._T_FIELD_TYPE:
+                rowcount = await self.db.update_field_type_table(data)
+                await self._load_field_type()
             case self.db._T_FISCAL_YEAR:
                 rowcount = await self.db.update_fiscal_year_table(data)
                 await self._load_fiscal_year()

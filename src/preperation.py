@@ -444,7 +444,7 @@ class DataPreperation:
         for name, panel in self.db._mf.panels.items():
             if name not in ('organization', 'budget'): continue
             panel_data = self.db.collect_panel_values(panel)
-            await self.db._add_fields_to_field_type_table(panel_data)
+            await self.db.add_fields_to_field_type_table(panel_data)
 
     async def _enter_previous_year(self, year: int, month: int, day: int
                                    ) -> int:
@@ -617,9 +617,9 @@ class DataPreperation:
             items = {item[1]: item[0] for item in values}
 
             for field, value in data.items():  # Loop through incoming data
-                pk = items.get(field, None)  # pk
+                pk = items.get(field, None)    # pk
 
-                if pk is None:      # Error condition
+                if pk is None:                 # Error condition
                     error = f"Could not find field {field} in {data}."
                     self.db._mf.statusbar_error = error
                     self._log.error(error)

@@ -106,23 +106,32 @@ class PanelFactory(TomlMetaData):
         panel_widgets = self.panel_data.get('widgets', {})
 
         match self.rn:
-            case 1:
+            case 1:  # No longer used.
                 for widget, values in panel_widgets.items():
                     self._process_widgets(klass, panel, widget, values)
             case 2:
                 v_pos = 0
 
                 for field_name, widgets in self._order.items():
+                    hide = False
+
                     for widget in widgets:
                         if widget == 'invisible_row':
                             v_pos += 1
                             break
 
                         values = panel_widgets[widget]
-                        find_dict(values)['pos'].insert(0, v_pos)
+                        inner = find_dict(values)
+                        inner['pos'].insert(0, v_pos)
+
+                        if inner.get('hidden', False):
+                            hide = True
+                            break
+
                         self._process_widgets(klass, panel, widget, values)
 
-                    v_pos += 1
+                    if not hide:
+                        v_pos += 1
 
         # Create all buttons.
         buttons = self.panel_data.get('buttons', {})

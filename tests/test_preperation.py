@@ -49,6 +49,8 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the organization method inserts or updates the config_date,
         fiscal_year, and field_type tables.
         """
+        self.db.cache._flush_cache()
+        await self.truncate_all_tables()
         sofy = badidatetime.date(183, 3, 5)
         err_msg0 = ("Organization Information data must be entered before "
                     "any other data can be entered.")
@@ -960,7 +962,7 @@ class TestDataPreperation(BaseAsyncTests):
         await self.insert_months()
         err_msg0 = "Could not find field {} in {}."
         data = {field: 0 for field in self.db.cache.ORG_FIELDS}
-        await self.db._add_fields_to_field_type_table(data)
+        await self.db.add_fields_to_field_type_table(data)
         org_data = {'locality_prefix': 0, 'locale_name': 'New York',
                     'total_membership': '20', 'treasurer': 'Joe Schmo',
                     'start_of_fiscal_year': '0183-03-05',

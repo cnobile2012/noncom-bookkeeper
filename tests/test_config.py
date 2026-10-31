@@ -1591,7 +1591,8 @@ class TestTomlCreatePanel(BaseTomlTest):
                              'Online Contribution Service Holdings:'],
                     'min': [-1, -1],
                     'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
-                    'pos': [0], 'span': [1, 1], 'hidable': False}]
+                    'pos': [0], 'span': [1, 1], 'hidable': False,
+                    'old_label': 'OCS Holdings:'}]
         expect1 = (old_label, new_label, 'rename')
         msg = "Expected {}, found {}."
         self._tcp.rename_label(old_label, new_label)

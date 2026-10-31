@@ -16,7 +16,7 @@ from pathlib import Path
 import tomlkit as tk
 
 from .bases import find_dict
-from .utilities import Borg, StoreObjects, make_name
+from .utilities import make_name, Borg, StoreObjects
 
 
 class Settings(AppDirs, Borg):
@@ -281,6 +281,10 @@ class Settings(AppDirs, Borg):
 
     @property
     def config_type(self) -> str:
+        """
+        The type of config file. There are only two, either 'bahai' or
+        'generic'.
+        """
         return self.__config_type
 
 
@@ -429,11 +433,17 @@ class TomlMetaData(BaseSystemData):
         return self.panel_config.get('meta', {}).get('title')
 
     @property
-    def panels(self):
+    def panels(self) -> list:
+        """
+        Returns a list of lists. Each sub-list containes three values. The
+        1st is a text representation of the panel, the 2nd is the internal
+        panel name, and the 3rd is a boolean indicating if the panel fields
+        are editable.
+        """
         return self.panel_config.get('meta', {}).get('panels')
 
     @property
-    def locale_prefix(self):
+    def locale_prefix(self) -> dict:
         return self.panel_config.get('meta', {}).get('locale_prefix')
 
     @property
@@ -491,7 +501,7 @@ class TomlPanelConfig(BaseSystemData):
 
         :returns: True if file exists and False if it does not exist.
         :rtype: bool
-         """
+        """
         if not (has := os.path.exists(self.user_config_fullpath)):
             msg = "The path '%s' does not exist, file will be copied."
             self._log.info(msg, self.user_config_fullpath)
@@ -564,19 +574,41 @@ class TomlPanelConfig(BaseSystemData):
 
     def _validate(self) -> bool:
         """
-        Read the TOML file and determine if it is valid.
+        Read the TOML file and determine if it is valid. This method will
+        also try to read and change files and merge the results into the
+        original file.
 
         :returns: `True` if the file is valid and `False` if it is invalid.
         :rtype: bool
         """
+        def handle_error(path, ret):
+            if self.error:
+                self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
+                ret = False
+
+            return ret
+
         ret = True
         fullpath = self.user_config_fullpath
-        self.panel_config = self.read_toml_file(fullpath)
+        config = self.read_toml_file(fullpath)
+        ret = handle_error(fullpath, ret)
 
-        if self.error:
-            self.err_msg = self.ERR_MESSAGES[self.error].format(fullpath)
-            ret = False
+        if ret:
+            panels = config.get('meta', {}).get('panels')
 
+            for text_name, panel_name, can_mod in panels:
+                if can_mod:
+                    org_data = config[panel_name]['widgets']
+                    doc = self.find_change_file(panel_name)
+
+                    if doc and (chg_data := doc.get(panel_name)):
+                        ret = handle_error(fullpath, ret)
+
+                        if ret:
+                            for widget, value in chg_data['widgets'].items():
+                                org_data[widget] = value
+
+        self.panel_config = config
         return ret
 
     def _copy_file(self, fname0: str, fname1: str) -> None:
@@ -596,6 +628,18 @@ class TomlPanelConfig(BaseSystemData):
             self._log.error("Could not copy file %s to %s, %s",
                             fname0, fname1, e)
             self.error = self.ERR_UNKNOWN_ERROR
+
+    def find_change_file(self, panel_name: str) -> dict:
+        """
+        Return the data from the change file.
+
+        :param str panel_name: The panel name used in the change file name.
+        :returns: The data from the change file.
+        :rtype: dict
+        """
+        filename = f"{panel_name}_{self.config_type}.toml"
+        fullpath = os.path.join(self.data_dir, filename)
+        return self.read_toml_file(fullpath)
 
 
 class TomlAppConfig(BaseSystemData):
@@ -938,8 +982,11 @@ class TomlCreatePanel(BaseSystemData):
             values = copy.deepcopy(items)
             inner = find_dict(values)
             inner['hidden'] = False if undo else True
+
+            if len(inner['pos']) > 1:
+                inner['pos'] = [inner['pos'][1]]
+
             wdgt_tbl[key1] = values
-            # Set last changed
             self.last_changed = (label, 'hide')
 
     def rename_label(self, old_label: str, new_label: str) -> None:
@@ -954,7 +1001,13 @@ class TomlCreatePanel(BaseSystemData):
 
         if key and items:
             values = copy.deepcopy(items)
-            find_dict(values)['args'][2] = new_label
+            inner = find_dict(values)
+            inner['old_label'] = inner['args'][2]
+            inner['args'][2] = new_label
+
+            if len(inner['pos']) > 1:
+                inner['pos'] = [inner['pos'][1]]
+
             wdgt_tbl[key] = values
             self.last_changed = (old_label, new_label, 'rename')
 
@@ -985,6 +1038,35 @@ class TomlCreatePanel(BaseSystemData):
         Save the updated panel data.
 
         :param str panel_name: The lower case panel name.
+
+        Example data:
+        {'budget': {'widgets': {
+           'widget_04': ['StaticText', 'w_fg_color_1',
+            {'args': ['self', 'ID_ANY',
+             'Online Contribution Service Holdings:'],
+             'min': [-1, -1],
+             'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
+             'pos': [4, 0],
+             'span': [1, 1],
+             'hidable': False}],
+           'widget_28': ['StaticText', 'w_fg_color_1',
+            {'args': ['self', 'ID_ANY',
+             "Bahá'í Chair for World Peace - Reserved Fund:"],
+             'min': [-1, -1],
+             'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
+             'pos': [26, 0],
+             'span': [1, 1],
+             'hidden': True}],
+           'widget_29': ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
+            {'args': ['self', 'ID_ANY', ''],
+             'style': 'TE_RIGHT',
+             'min': [-1, 26],
+             'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+             'pos': [26, 1],
+             'span': [1, 1],
+             'financial': True,
+             'mandatory': False,
+             'hidden': True}]}}}
         """
         def dict_to_toml(doc, data):
             def convert_value(value):
@@ -1006,17 +1088,20 @@ class TomlCreatePanel(BaseSystemData):
 
                 return value
 
-            def add_values(parent, values):
+            def add_tables(parent, values):
                 for key, value in values.items():
+                    key = str(key)
+
                     if isinstance(value, dict):
                         child = tk.table()
                         parent.add(key, child)
-                        add_values(child, value)
+                        add_tables(child, value)
                     else:
                         parent.add(key, convert_value(value))
 
-            add_values(doc, data)
+            add_tables(doc, data)
 
+        # Example: budget_bahai.toml
         filename = f"{panel_name}_{self.config_type}.toml"
         fullpath = os.path.join(self.data_dir, filename)
         doc = tk.document()
