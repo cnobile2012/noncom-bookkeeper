@@ -8,8 +8,11 @@ import random
 
 from string import ascii_lowercase, ascii_uppercase, digits
 
+from .utilities import AsyncEventLoop
+from .ledger_transaction import LedgerTransaction
 
-class Cache:
+
+class Cache(AsyncEventLoop):
     """
     Write-through cache, loaded once at startup, persists for the app lifetime.
     Supports write-through DB updates.
@@ -30,6 +33,8 @@ class Cache:
         self.db = db
         self._log = db._log
         self._flush_cache()
+        self._lt = LedgerTransaction(db)
+        self._center_trans_id = 0
 
     @property
     def has_cache(self):
@@ -282,16 +287,17 @@ class Cache:
                      if item[1] in self._COORDINATE_DATA])
         return [data[field] for field in self._COORDINATE_DATA]
 
-    def get(self, table_name: str, *, year: int=None, r_type: str | tuple=None
-            ) -> list:
+    def get(self, table_name: str, *, year: int=None, r_type: str=None,
+            trans_id: int=None) -> list:
         """
         Get records of the `table_name`. If a `r_type` is provided return
         just that record based on the `table_name` type.
 
         :param int year: The fiscal year.
         :param str table_name: The DB table to query.
-        :param str or tuple r_type: This determines a specific record in
-                                    the entity.
+        :param str r_type: This determines a specific record in the entity.
+        :param int trans_id: The transaction ID. Only used for fetching
+                             transactions.
         :returns: Records based on the `table_name`.
         :rtype: list
 
@@ -340,6 +346,22 @@ class Cache:
                     for month in data:
                         if month[2] == r_type:
                             data = [month]
+            case self.db._V_LEDGER_TRANSACTION:
+                data = self._store.get(self.db._V_LEDGER_TRANSACTION, [])
+                trans_ids = [item[0] for item in data]
+
+                if data == []:
+                    data = self.run_async(
+                        self._lt.select_ledger_transaction_search(
+                            self.year, trans_id))
+                    self._store[self.db._V_LEDGER_TRANSACTION] = data
+                elif ((self._center_trans_id - trans_ids[-1]) <= 2
+                      or (self._center_trans_id + trans_ids[0]) <= 2):
+                    self._center_trans_id = trans_id
+                    data = self.run_async(
+                        self._lt.select_ledger_transaction_search(
+                            self.year, trans_id))
+                    self._store[self.db._V_LEDGER_TRANSACTION] = data
             case _:
                 data = []
 

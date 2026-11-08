@@ -6,14 +6,17 @@ __docformat__ = "restructuredtext en"
 
 import os
 import wx
+import copy
 import unittest
 import badidatetime
 
 from unittest.mock import patch
 
-from src.config import Settings
-from src.utilities import StoreObjects
+from src.bases import find_dict
+from src.config import Settings, TomlCreatePanel
+from src.utilities import make_name, StoreObjects
 from src.base_database import BaseDatabase, adapt_tuple, convert_tuple
+from src.ledger_transaction import LedgerTransaction
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
@@ -23,6 +26,7 @@ class TestBaseDatabase(BaseAsyncTests):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
+        self._tcp = TomlCreatePanel()
 
     def setUp(self):
         check_flag(self.__class__.__name__)
@@ -105,6 +109,7 @@ class TestBaseDatabase(BaseAsyncTests):
         """
         err_msg0 = "Database table count is wrong it should be "
         err_msg1 = "Database index count is wrong it should be "
+        err_msg2 = "Database view count is wrong it should be '{}' found '{}'"
         data = (
             (False, True),
             (True, False),
@@ -115,17 +120,22 @@ class TestBaseDatabase(BaseAsyncTests):
             if delete:
                 # Remove one item from both tables and indexes so a failure
                 # situation can be tested.
-                all_tables = dict(self.db._SCHEMA_TABLES)
+                all_tables = copy.deepcopy(self.db._SCHEMA_TABLES)
                 mis_tables = all_tables
                 mis_tables.pop(self.db._T_LEDGER_EXPENSE)
                 all_indices = list(self.db._SCHEMA_INDICES)
                 mis_indices = all_indices
                 mis_indices.pop()
+                all_views = copy.deepcopy(self.db._SCHEMA_VIEWS)
+                mis_views = all_views
+                mis_views.pop(self.db._V_LEDGER_HISTORY)
 
                 with patch.multiple(
                     self.db, _SCHEMA_TABLES=mis_tables,
                     _SCHEMA_INDICES=mis_indices,
-                    _mf=StoreObjects().get_object('MainFrame')):
+                    _mf=StoreObjects().get_object('MainFrame'),
+                    _SCHEMA_VIEWS=mis_views):
+
                     os.remove(self.db.user_data_fullpath)
                     await self.db.create_db()
                     result = await self.db.has_schema
@@ -135,10 +145,46 @@ class TestBaseDatabase(BaseAsyncTests):
                     self.assertIn(err_msg0, result)
                     result = self.find_text(file_data, err_msg1, 1, err_msg1)
                     self.assertIn(err_msg1, result)
+                    err_msg = err_msg2.format(
+                        ['vw_ledger_expense', 'vw_ledger_history',
+                         'vw_ledger_transaction'],
+                        ['vw_ledger_expense', 'vw_ledger_transaction'])
+                    result = self.find_text(file_data, err_msg, 1, err_msg)
+                    self.assertIn(err_msg, result)
             else:
                 result = await self.db.has_schema
                 self.assertEqual(expected, result, msg.format(
                     expected, delete, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_rename_fields(self):
+        """
+        Test that the rename_fields method updates widget names in the DB
+        and the cache. We use the field name created with the
+        utilities.make_name() function from the widget name.
+        """
+        widget = ['StaticText', 'w_fg_color_1', {
+            'args': ['self', 'ID_ANY', ''], 'min': [-1, -1],
+            'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], 'pos': [0],
+            'span': [1, 1], 'hidable': False, 'old_label': ''}]
+        data = (
+            ('budget', 'Administration:', 'Admin:'),
+            ('budget', 'Regional Facilities Fund:', 'Facilities Fund:'),
+            )
+        msg = "Expected {}, found {}."
+
+        for panel_name, old_label, new_label in data:
+            inner_tbl = find_dict(widget)
+            inner_tbl['args'][2] = new_label
+            inner_tbl['old_label'] = old_label
+            self._tcp.current_panel = self._tcp.panel_config[
+                panel_name]['widgets']
+            w_key, list_ = self._tcp._find_label_in_panel(old_label)
+            self._tcp.current_panel[w_key] = widget
+            await self.db.rename_fields()
+            field_name = make_name(new_label)
+            self.assertIn(field_name, self.db.cache.budget_fields, msg.format(
+                field_name, self.db.cache.budget_fields))
 
     #@unittest.skip("Temporarily skipped")
     async def test_populate_panels(self):
@@ -206,20 +252,15 @@ class TestBaseDatabase(BaseAsyncTests):
         chosen month with that months data.
         """
         data = (
-            (False, False, ''),  # This must be 1st
-            (True, False, 'Joe Schmo'),
-            #(True, True, ),
+            (False, ''),  # This must be 1st
+            (True, 'Joe Schmo'),
             )
         msg = "Expexted {}, found {}."
 
         with patch.object(self.db, '_mf', self.fmf):
             panel = self.db._mf.panels.get('monthly')
 
-            for valid, insert, expected in data:
-                if insert:
-                    # Insert a row of monthly data
-                    pass
-
+            for valid, expected in data:
                 if valid:
                     await self.asyncTearDown()
                     await self.insert_data()
@@ -251,7 +292,7 @@ class TestBaseDatabase(BaseAsyncTests):
     async def test_save_to_database_config_data(self):
         """
         Test that the save_to_database method inserts or updates organization
-         and budget panel data in the database.
+        and budget panel data in the database.
         """
         await self.asyncTearDown()
         await self.insert_months()
@@ -259,7 +300,7 @@ class TestBaseDatabase(BaseAsyncTests):
         fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
         year, month = fy[1:3]
         err_msg0 = "The '{}' field(s) must not be empty."
-        org_data = dict(self._ORG_DATA)
+        org_data = copy.deepcopy(self._ORG_DATA)
         org_data['locality_prefix'] = str(org_data['locality_prefix'])
         org_data['start_of_fiscal_year'] = str(
             org_data['start_of_fiscal_year'])
@@ -315,7 +356,7 @@ class TestBaseDatabase(BaseAsyncTests):
         fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
         year, month = fy[1:3]
         err_msg0 = "The '{}' field(s) must not be empty."
-        mth_data = dict(self._MTH_DATA)
+        mth_data = copy.deepcopy(self._MTH_DATA)
         mth_data['month_index'] = 1
         data = (
             ('monthly', self._MTH_EMPTY, {}, False, err_msg0.format(
@@ -330,7 +371,6 @@ class TestBaseDatabase(BaseAsyncTests):
 
                 if valid:
                     self.db.populate_panel_values(panel_name, panel, values)
-                    items = self.db.collect_panel_values(panel)
                     error = await self.db.save_to_database(panel_name, panel)
                     self.assertIsNone(error, f"Expected 'none', found {error}")
                     result = self.db.cache.get(self.db._T_MONTHLY, year=year)
@@ -345,13 +385,13 @@ class TestBaseDatabase(BaseAsyncTests):
     #@unittest.skip("Temporarily skipped")
     async def test_save_to_database_fiscal(self):
         """
-        Test that the save_to_database method inserts or updates panel
-        data in the database.
+        Test that the save_to_database method inserts or updates fiscal
+        year panel data in the database.
         """
         await self.asyncTearDown()
         await self.insert_months()
         err_msg0 = "Failed to update any fiscal year data."
-        fy_data = dict(self._FY_DATA)
+        fy_data = copy.deepcopy(self._FY_DATA)
         fy_data['work_on_this_fiscal_year'] = True
         fy_data['audit_complete'] = True
         field_names = [name for name in fy_data if not name.startswith('fisc')]
@@ -371,7 +411,6 @@ class TestBaseDatabase(BaseAsyncTests):
                     fy = self.db.cache.get(self.db._T_FISCAL_YEAR)[0]
                     year, month = fy[1:3]
                     self.db.populate_panel_values(panel_name, panel, values)
-                    items = self.db.collect_panel_values(panel)
                     error = await self.db.save_to_database(panel_name, panel)
                     self.assertIsNone(error, f"Expected 'none', found {error}")
                     result = self.db.cache.get(self.db._T_FISCAL_YEAR,
@@ -389,6 +428,51 @@ class TestBaseDatabase(BaseAsyncTests):
                     error = await self.db.save_to_database(panel_name, panel)
                     self.assertEqual(expected, error,
                                      f"Expected '{expected}, found '{error}'.")
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_save_to_database_ledger(self):
+        """
+        Test that the save_to_database method inserts or updates ledger
+        panel data in the database.
+        """
+        await self.asyncTearDown()
+        await self.insert_months()
+        await self.insert_fiscal_year()
+        err_msg0 = "The 'date' field must not be empty."
+        lt = LedgerTransaction(self.db)
+        date = badidatetime.date(183, 3, 5)
+        bk_data = copy.deepcopy(self._LDG_DATA)
+        bk_data['panel']['date'] = date
+        bk_data['panel']['memo'] = "Description"
+        bk_data['transaction']['distribution'] = True
+        bk_data['reference']['ocs'] = True
+        bk_data['bank']['deposit'] = True
+        bk_data['bank']['amount'] = 5000
+        bk_error = copy.deepcopy(bk_data)
+        bk_error['panel']['date'] = None
+        expect0 = (1, 183, date, 'Description', 2, 1, '', 1, 5000, None, None,
+                   None, None, 0)
+        data = (
+            #('ledger', bk_data, 183, True, expect0),
+            ('ledger', bk_error, 183, False, err_msg0.format('date')),
+            )
+        msg = "Expexted '{}', found '{}'."
+
+        with patch.object(self.db, '_mf', self.fmf):
+            for panel_name, values, year, valid, expected in data:
+                panel = self.db._mf.panels.get(panel_name)
+
+                if valid:
+                    self.db.populate_panel_values(panel_name, panel, values)
+                    error = await self.db.save_to_database(panel_name, panel)
+                    self.assertIsNone(error, msg.format(None, error))
+                    result = await lt.select_ledger_transaction(year)
+                    self.assertEqual(expected, result[0][:-1], msg.format(
+                        expected, result[0][:-1]))
+                else:
+                    error = await self.db.save_to_database(panel_name, panel)
+                    self.assertEqual(expected, error, msg.format(
+                        expected, error))
 
     #@unittest.skip("Temporarily skipped")
     async def test_add_fields_to_field_type_table(self):

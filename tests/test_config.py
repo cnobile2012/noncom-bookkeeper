@@ -647,13 +647,13 @@ class TestTomlMetaData(BaseTomlTest):
         num_panels = len(panels)
         msg = f"There should be {self._NUM_PANELS}, found {num_panels}."
         self.assertEqual(self._NUM_PANELS, num_panels, msg)
-        num_in_panel = 3  # Panel Title, Internam Name, Editable (bool)
-        msg = ("There should be 3 fields in each panel object, found {} "
-               "in panel {}.")
+        expected = 4  # Panel Title, Internam Name, Editable (bool)
+        msg = (f"There should be {expected} fields in each panel object, "
+               "found {} in panel {}.")
 
         for panel in panels:
-            num = len(panel)
-            self.assertEqual(num_in_panel, num, msg.format(num, panel))
+            result = len(panel)
+            self.assertEqual(expected, result, msg.format(result, panel))
 
     #@unittest.skip("Temporarily skipped")
     def test_locale_prefix_property(self):

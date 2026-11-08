@@ -14,10 +14,10 @@
 [meta]
 version = "2.0.0"
 title = "Bahá'í Bookkeeper"
-panels = [['Organization Info', 'organization', false],
-          ['Budget', 'budget', true],
-          ['Monthly', 'monthly', false],
-          ['Choose Fiscal Year', 'fiscal', false]]
+panels = [['Organization Info', 'organization', false, 0],
+          ['Budget', 'budget', true, 8],
+          ['Monthly', 'monthly', false, 0],
+          ['Choose Fiscal Year', 'fiscal', false, 0]]
 locale_prefix = {lsa = "The Spiritual Assembly of the Bahá'ís of ", group = "Bahá'í group of "}
 font_16_bold = [16, 'FONTFAMILY_DEFAULT', 'FONTSTYLE_NORMAL',
                 'FONTWEIGHT_BOLD', 0, '']

@@ -97,7 +97,9 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         super().__init__(parent, id, *args, **kwargs)
         BasePanel.__init__(self, *args, **kwargs)
         self.sd = None
-        self._so = StoreObjects()
+        so = StoreObjects()
+        self.db = so.get_object('Database')
+        self.mf = so.get_object('MainFrame')
         self.frame = parent.GetParent()
         self.dirty = False
         self.create_display()
@@ -152,14 +154,14 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         widget_01.SetMinSize((-1, -1))
         self.gbs.Add(widget_01, (pos, 0), (1, 1),
                      wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
-        widget_02 = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY,
-                                name='')
-        widget_02.Enable(False)
-        widget_02.SetBackgroundColour(self.w1_bg_color)
-        widget_02.SetForegroundColour(self.w_fg_color)
-        widget_02.SetMinSize((self.tc_width+6, 26))
-        widget_02.category = 'panel'
-        self.gbs.Add(widget_02, (pos, 1), (1, 1),
+        self.widget_02 = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY,
+                                     name='')
+        self.widget_02.Enable(False)
+        self.widget_02.SetBackgroundColour(self.w1_bg_color)
+        self.widget_02.SetForegroundColour(self.w_fg_color)
+        self.widget_02.SetMinSize((self.tc_width + 6, 26))
+        self.widget_02.category = 'panel'
+        self.gbs.Add(self.widget_02, (pos, 1), (1, 1),
                      wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
         pos += 1
 
@@ -172,7 +174,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
                                        bgcolor=self.w_bg_color)
         widget_04.SetBackgroundColour(self.w_bg_color)
         widget_04.SetForegroundColour(self.w_fg_color)
-        widget_04.SetMinSize((self.tc_width+6, 28))
+        widget_04.SetMinSize((self.tc_width + 6, 28))
         widget_04.SetFocus()
         widget_04.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
         widget_04.mandatory = True
@@ -316,8 +318,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
     @save.setter
     def save(self, value):
         if self.dirty:
-            mf = self._so.get_object('MainFrame')
-            mf.statusbar_message = 'Saving data.'
+            self.mf.statusbar_message = 'Saving data.'
 
         self._save = value
 
@@ -332,8 +333,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
     @cancel.setter
     def cancel(self, value):
         if self.dirty:
-            mf = self._so.get_object('MainFrame')
-            mf.statusbar_message = 'Restoring data.'
+            self.mf.statusbar_message = 'Restoring data.'
             self.reset_buttons()
 
         self._cancel = value
@@ -370,13 +370,32 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
 
     def on_arrow(self, event) -> None:
         direction = event.GetDirection()
-        print(f"{direction.capitalize()} arrow clicked")
+        ct_trans_id = int(self.widget_02.GetValue())
+        rows = self.db.cache.get(self.db._V_LEDGER_TRANSACTION,
+                                 trans_id=ct_trans_id)
+        ids = [row[0] for row in rows]
+        # If the panel is empty ct_trans_id will be the next Transaction ID.
+        trans_id = max(ids) if ct_trans_id > max(ids) else ct_trans_id
+
+        if (direction == 'left' and trans_id > ids[0]
+            and not ct_trans_id > max(ids)):
+            get_id = trans_id - 1
+        elif direction == 'right' and trans_id < ids[-1]:
+            get_id = trans_id + 1
+        else:
+            get_id = trans_id
+
+        for row in rows:
+            if get_id == row[0]:
+                break
+
+        self.db.ledger_arrow_populate(row)
         event.Skip()
 
     @property
     def background_color(self) -> wx.Colour:
         """
-        This is for the ShortCuts panel.
+        Used by the ShortCuts panel.
         """
         return self.bg_color
 
@@ -391,7 +410,8 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
                  fg_color=None, **kwargs):
         super().__init__(parent, id, *args, **kwargs)
         self.parent = parent
-        self._so = StoreObjects()
+        so = StoreObjects()
+        self.db = so.get_object('Database')
         self.w_fg_color = wx.Colour(50, 50, 204)     # Dark Blue
         self.w_bg_color = wx.Colour(255, 253, 208)   # Cream
         self.w1_bg_color = wx.Colour(222, 237, 230)  # Gray
@@ -509,8 +529,7 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         self.SetupScrolling(rate_x=20, rate_y=40)
 
     def button_search(self, event):
-        db = self._so.get_object('Database')
-        rows = db.ledger_search_panel(self)
+        rows = self.db.ledger_search_panel(self)
         bg = self.parent.Parent.bg_color
         fgw = self.parent.Parent.w_fg_color
         msg = "Choose Search Results"

@@ -233,6 +233,7 @@ class BaseDatabase(PopulateCollect, Settings):
          'WHERE work_on = 1;'),
         ('one_current_fiscal_year ON fiscal_year(current) WHERE current = 1;'),
         ('one_work_on_fiscal_year ON fiscal_year(work_on) WHERE work_on = 1;'),
+        ('trans_id_ledger_header ON ledger_header(trans_id);'),
         )
     _TABLES = list(_SCHEMA_TABLES)
     _TABLES.sort()
@@ -355,11 +356,13 @@ class BaseDatabase(PopulateCollect, Settings):
     #
     async def rename_fields(self) -> None:
         """
+        Rename a field in the DB and cache. We expect the field name created
+        with the utilities.make_name() function from the widget name.
         """
         tpc = TomlPanelConfig()
         config = tpc.panel_config
         panels = config.get('meta', {}).get('panels')
-        p_names = [panel_name for _, panel_name, can_mod in panels if can_mod]
+        p_names = [panel[1] for panel in panels if panel[2]]
 
         for panel_name in p_names:
             for widget, values in config[panel_name]['widgets'].items():
@@ -373,10 +376,11 @@ class BaseDatabase(PopulateCollect, Settings):
                                       'new_field': new_label}]}
                     rc = await self.cache.update(self._T_FIELD_TYPE, data)
 
-                    if rc == 0:
-                        self._log.error("The '%s' panel should have had a "
-                                        "name change on label '%s' widget "
-                                        "'%s'.", panel_name, old_label, widget)
+                    if rc == 0:  # pragma: no cover
+                        self._log.error(
+                            "The '%s' panel widget '%s' should have had a "
+                            "name change on label '%s'.",
+                            panel_name, widget, old_label)
 
     async def populate_panels(self) -> None:
         """
@@ -426,6 +430,7 @@ class BaseDatabase(PopulateCollect, Settings):
         values = ()  # Used when all monthly panels are empty.
 
         for item in self.cache.get(self._T_MONTHLY, year=fy_year):
+            # Calendar year and month; and fiscal year PK
             if item[2] == date and fy[0] == item[1]:
                 values = item
                 break
@@ -524,6 +529,22 @@ class BaseDatabase(PopulateCollect, Settings):
                                      detect_types=self._DETECT_TYPES) as db:
             async with db.execute(query, params) as cursor:
                 values = await cursor.fetchall()
+
+        return values
+
+    async def _do_fetch_one(self, query: str, params: tuple=()) -> tuple:
+        """
+        Do a fetch one query and return the results.
+
+        :param str query: The SQL query to do.
+        :params tuple params: Parameters to query.
+        :returns: One row of data.
+        :rtype: tuple
+        """
+        async with aiosqlite.connect(self.user_data_fullpath,
+                                     detect_types=self._DETECT_TYPES) as db:
+            async with db.execute(query, params) as cursor:
+                values = await cursor.fetchone()
 
         return values
 

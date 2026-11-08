@@ -706,8 +706,8 @@ class TestPopulateCollect(BaseAsyncTests):
         expect2['coh']['amount'] = row2[0][10]
         row3 = ((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
                  3, 1, '', 2, 30000, None, None, None, None),
-                [(5, 'national_baháí_fund', 20000),
-                 (5, 'regional_baháí_council', 10000)])
+                [(5, 183, 'national_baháí_fund', 20000),
+                 (5, 183, 'regional_baháí_council', 10000)])
         expect3 = copy.deepcopy(self._LDG_DATA)
         expect3['panel']['transaction_id'] = str(row3[0][0])
         expect3['panel']['date'] = row3[0][2]
@@ -716,9 +716,9 @@ class TestPopulateCollect(BaseAsyncTests):
         expect3['reference']['ocs'] = True
         expect3['bank']['withdrawal'] = True
         expect3['bank']['amount'] = row3[0][8]
-        expect3['expenses']['national_baháí_fund'] = row3[1][0][2]
-        expect3['expenses']['regional_baháí_council'] = row3[1][1][2]
-        expect3['panel']['total_expenses'] = row3[1][0][2] + row3[1][1][2]
+        expect3['expenses']['national_baháí_fund'] = row3[1][0][3]
+        expect3['expenses']['regional_baháí_council'] = row3[1][1][3]
+        expect3['panel']['total_expenses'] = row3[1][0][3] + row3[1][1][3]
 
         data = (
             (row0, expect0),
@@ -840,12 +840,9 @@ class TestPopulateCollect(BaseAsyncTests):
         """
         Test that the ledger_search_panel method returns data for either the
         LedgerDataEntry or SearchResult panels.
-
-        *** TODO *** Insert test records, don't rely on the DB records.
         """
         # Insert test data
         await self._insert_transactions()
-
         # Test 1
         test_data0 = {'panel.transaction_id': '', 'panel.date': '',
                       'panel.memo': '', 'transaction.contribution': False,

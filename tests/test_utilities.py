@@ -95,9 +95,6 @@ class TestStoreObjects(unittest.TestCase):
     def __init__(self, name):
         super().__init__(name)
 
-    def setUp(self):
-        StoreObjects().clear_state()
-
     #@unittest.skip("Temporarily skipped")
     def test_shared_state(self):
         a = StoreObjects()

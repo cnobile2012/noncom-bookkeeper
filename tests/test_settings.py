@@ -100,8 +100,6 @@ class TestPaths(unittest.TestCase):
         if self.app:
             self.app.Destroy()
 
-        Settings().clear_state()
-
     #@unittest.skip("Temporarily skipped")
     def test_constructor(self):
         """

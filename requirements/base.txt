@@ -1,5 +1,6 @@
 # Non-Com Financial
 
+pip
 wxPython
 appdirs
 tomlkit

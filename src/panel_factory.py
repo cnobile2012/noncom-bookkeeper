@@ -34,9 +34,9 @@ class PanelFactory(TomlMetaData):
         return self.__panels.get(panel)
 
     def parse(self) -> None:
-        for m_name, panel, _ in self.panels:
+        for panel in self.panels:
             try:
-                self._setup_panel(panel)
+                self._setup_panel(panel[1])
             except Exception as e:
                 self._log.critical("Critical error, cannot start application "
                                    "please contact the developer for help, %s",

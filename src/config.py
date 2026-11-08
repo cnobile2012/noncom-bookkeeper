@@ -435,10 +435,17 @@ class TomlMetaData(BaseSystemData):
     @property
     def panels(self) -> list:
         """
-        Returns a list of lists. Each sub-list containes three values. The
+        Returns a list of lists. Each sub-list containes four values. The
         1st is a text representation of the panel, the 2nd is the internal
-        panel name, and the 3rd is a boolean indicating if the panel fields
-        are editable.
+        panel name, the 3rd is a boolean indicating if the panel fields are
+        editable, and the 4th is number of the row that lower numbers cannot
+        be moved above and higher numbers cannot be moved below. If the last
+        number is 0 then that panel cannot be modified.
+
+        .. note::
+
+           Name,  Internal Name, Editable, Move Boundry
+           ex. ['Budget', 'budget', True, 8]
         """
         return self.panel_config.get('meta', {}).get('panels')
 
@@ -596,7 +603,7 @@ class TomlPanelConfig(BaseSystemData):
         if ret:
             panels = config.get('meta', {}).get('panels')
 
-            for text_name, panel_name, can_mod in panels:
+            for text_name, panel_name, can_mod, move_boundry in panels:
                 if can_mod:
                     org_data = config[panel_name]['widgets']
                     doc = self.find_change_file(panel_name)
@@ -804,7 +811,6 @@ class TomlCreatePanel(BaseSystemData):
     """
     _KEY_NUM = re.compile(r"^.*_(?P<count>\d+)$")
     _LAST_CHANGED = None
-    INLINE_TABLES = ("locale_prefix", "order")
     __panel = None
     __changes = None
 
@@ -849,11 +855,11 @@ class TomlCreatePanel(BaseSystemData):
         """
         Get all field names.
         """
-        assert self.__panel, (
+        assert self.current_panel, (
             "There is no panel that is currently being worked on.")
         names = []
 
-        for item in self.__panel.values():
+        for item in self.current_panel.values():
             list_ = find_dict(item).get('args', [])
 
             if len(list_) >= 3 and list_[2] != '':
@@ -921,7 +927,7 @@ class TomlCreatePanel(BaseSystemData):
         else:
             self.changes = {panel_name: {'widgets': {}}}
 
-        self. current_panel = current
+        self.current_panel = current
 
     def add_widgets(self, name: str, key_num: int=None) -> None:
         """
@@ -933,7 +939,7 @@ class TomlCreatePanel(BaseSystemData):
         :param str name: The value name of the StaticText widget.
         :param int key_num: The key number to use.
         """
-        assert self.__panel, "Programming error: Current panel not set."
+        assert self.current_panel, "Programming error: Current panel not set."
 
         if key_num is None:
             key_num = self._next_widget_num
@@ -1126,14 +1132,14 @@ class TomlCreatePanel(BaseSystemData):
         doc.add(tk.nl())
         dict_to_toml(doc, self.changes)
         Path(fullpath).write_text(doc.as_string(), encoding='utf-8')
-        self.__panel = None
+        self.current_panel = None
         self.__changes = None
 
     def cancel_updated_panel(self):
         """
         Cancel the update by seting the current panel to None.
         """
-        self.__panel = None
+        self.current_panel = None
         self.__changes = None
 
     def _find_label_in_panel(self, label: str) -> tuple:
@@ -1146,7 +1152,7 @@ class TomlCreatePanel(BaseSystemData):
         """
         w_key = data = None
 
-        for key, item in self.__panel.items():
+        for key, item in self.current_panel.items():
             inner_tbl = find_dict(item)
             list_ = inner_tbl.get('args', [])
 
@@ -1165,7 +1171,7 @@ class TomlCreatePanel(BaseSystemData):
         :returns: The next widget number.
         :rtype: int
         """
-        widget = [item for item in self.__panel.keys()
+        widget = [item for item in self.current_panel.keys()
                   if item.startswith('widget')][-1]
         return self._find_key_num(widget) + 1
 

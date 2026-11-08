@@ -145,9 +145,9 @@ class LedgerTransaction:
         def make_where(column, value):
             if value:
                 if column in ('memo', 'number'):
-                    where = f"AND {column} LIKE '%' || :{column} || '%' "
+                    where = f" AND {column} LIKE '%' || :{column} || '%' "
                 else:
-                    where = f"AND {column} = :{column} "
+                    where = f" AND {column} = :{column} "
             elif value is None and column in ('b_type', 'c_type', 'i_type'):
                 match column:
                     case 'b_type':
@@ -157,7 +157,7 @@ class LedgerTransaction:
                     case 'i_type':
                         types = "1, 2, 3"
 
-                where = f"AND {column} IN ({types}) "
+                where = f" AND {column} IN ({types}) "
             else:
                 where = ''
 
@@ -169,9 +169,32 @@ class LedgerTransaction:
             where += make_where(column, value)
 
         query = (f"SELECT * FROM {self.db._V_LEDGER_TRANSACTION} WHERE "
-                 f"fy_year = :year {where.strip()};")
+                 f"fy_year = :year{where.rstrip()};")
         kwargs['year'] = year
         return await self.db._do_select_query(query, kwargs)
+
+    async def select_ledger_transaction_search(self, year: int, trans_id: int,
+                                               cache_size: int=10) -> list:
+        """
+        Select multiple rows from the vw_ledger_transaction view. The
+        'cache_size' value determines the number of rows on ether side of
+        the provided 'trans_id'.
+
+        :param int year: The fiscal year.
+        :param int trans_id: Transaction ID to select for.
+        :param int cache_size: The number of transactions to select.
+        :returns: The row of data.
+        :rtype: list
+        """
+        query = (f"SELECT * FROM {self.db._V_LEDGER_TRANSACTION} WHERE "
+                 "fy_year = :year AND trans_id BETWEEN :start AND :end "
+                 "ORDER BY trans_id;")
+        params = {}
+        params['year'] = year
+        params['trans_id'] = trans_id
+        params['start'] = trans_id - cache_size
+        params['end'] = trans_id + cache_size
+        return await self.db._do_select_query(query, params)
 
     async def insert_ledger_transaction(self, year: int) -> int:
         """
@@ -689,3 +712,16 @@ class LedgerTransaction:
         params.update({'balance': balance})
         cursor = await con.execute(query, params)
         return cursor.rowcount
+
+    async def get_last_trans_id(self, year: int) -> int:
+        """
+        Get the last transaction ID used from the vw_ledger_header view.
+
+        :param: int year: The work on fiscal year.
+        :returns: The last transaction ID used.
+        :rtype: int
+        """
+        query = ("SELECT MAX(trans_id) AS last_trans_id "
+                 f"FROM {self.db._V_LEDGER_TRANSACTION} WHERE fy_year = ?;")
+        row = await self.db._do_fetch_one(query, (year,))
+        return row[0] or 0

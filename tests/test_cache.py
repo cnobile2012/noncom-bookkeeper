@@ -271,6 +271,17 @@ class TestCache(BaseAsyncTests):
                 expected, result[:-2]))
 
     #@unittest.skip("Temporarily skipped")
+    def test_local_coordinates(self):
+        """
+        Test that the local_coordinates property returns the latitude,
+        longitude and the IANA name in a tuple.
+        """
+        msg = "Expected {} found {}"
+        expected = ['40.7127281', '-74.0060152', 'America/New_York']
+        result = self.db.cache.local_coordinates
+        self.assertEqual(expected, result, msg.format(expected, result))
+
+    #@unittest.skip("Temporarily skipped")
     def test_get(self):
         """
         Test that the get method returns the correct data depending on the
@@ -286,6 +297,8 @@ class TestCache(BaseAsyncTests):
             (183, self.db._T_MONTH, None, True, 'Ayyám-i-Há'),
             (183, self.db._T_MONTHLY, None, True, 'Joe Schmo'),
             (183, self.db._T_MONTHLY, (183, 6), True, 'Joe Schmo'),
+            (183, self.db._V_LEDGER_TRANSACTION, 3, True, [1, 2, 3, 4, 5]),
+            (None, None, None, True, ''),
             (183, self.db._T_DATA, 'invalid', False,
              err_msg0.format('invalid')),
             )
@@ -293,8 +306,12 @@ class TestCache(BaseAsyncTests):
 
         for year, table_name, record_type, valid, expected in data:
             if valid:
-                result = self.db.cache.get(table_name, year=year,
-                                           r_type=record_type)
+                if isinstance(record_type, str):
+                    result = self.db.cache.get(table_name, year=year,
+                                               r_type=record_type)
+                else:  # Only used for ledger transactions.
+                    result = self.db.cache.get(table_name, year=year,
+                                               trans_id=record_type)
 
                 match table_name:
                     case self.db._T_FIELD_TYPE:
@@ -307,6 +324,10 @@ class TestCache(BaseAsyncTests):
                         test_fields = [item[1] for item in result]  # month
                     case self.db._T_MONTHLY:
                         test_fields = [item[7] for item in result]  # treasurer
+                    case self.db._V_LEDGER_TRANSACTION:
+                        test_fields = [item[0] for item in result]  # trans_id
+                    case _:
+                        test_fields = ''
 
                 if isinstance(expected, tuple):
                     self.assertIn(expected[0], test_fields, msg.format(
@@ -314,8 +335,12 @@ class TestCache(BaseAsyncTests):
                     self.assertIn(expected[1], test_fields, msg.format(
                         expected[1], test_fields))
                 else:
-                    self.assertIn(expected, test_fields, msg.format(
-                        expected, test_fields))
+                    if isinstance(expected, list):
+                        self.assertEqual(expected, test_fields, msg.format(
+                            expected, test_fields))
+                    else:
+                        self.assertIn(expected, test_fields, msg.format(
+                            expected, test_fields))
             else:
                 with self.assertRaises(AssertionError) as cm:
                     self.db.cache.get(table_name, year=year,
@@ -370,6 +395,8 @@ class TestCache(BaseAsyncTests):
         Test that the update method updates data in the database
         and cache.
         """
+        c_ft = {'data': [{'old_field': 'administration',
+                          'new_field': 'admin'}]}
         t_fs = {'data': [(183, 3, 5, 1, 1, 0), (184, 3, 5, 0, 0, 0)]}
         data = self.db.cache.get(self.db._T_DATA, year=183,
                                  r_type='organization')
@@ -392,6 +419,7 @@ class TestCache(BaseAsyncTests):
         mth_data['participation'] = '4'
 
         data = (
+            (self.db._T_FIELD_TYPE, c_ft, 1),
             (self.db._T_FISCAL_YEAR, t_fs, 2),
             (self.db._T_DATA, t_data, 2),
             (self.db._T_MONTHLY, mth_data, 1),

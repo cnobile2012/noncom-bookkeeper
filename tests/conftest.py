@@ -18,7 +18,7 @@ tracemalloc.start()
 
 start = time.perf_counter()
 _test_times = {}
-SLOW_THRESHOLD = 2.0  # seconds
+SLOW_THRESHOLD = 1.5  # seconds
 
 
 def pytest_sessionfinish(session, exitstatus):

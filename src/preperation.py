@@ -235,7 +235,8 @@ class DataPreperation:
         :rtype: str or None
         """
         # Only the date is mandatory, and it always defaults to today.
-        error = self._empty_fields('ledger', data)
+        error = ("The 'date' field must not be empty."
+                 if data['panel']['date'] in (None, '') else '')
 
         if not error:
             pd = data['panel']['date']
@@ -408,7 +409,7 @@ class DataPreperation:
                 mandatory.append(w0[1])
 
         empty_fields = [field for field, value in data.items()
-                        if value == '' and field in mandatory]
+                        if value in (None, '') and field in mandatory]
 
         if len(empty_fields) != 0:
             ef = ', '.join([f for f in empty_fields])

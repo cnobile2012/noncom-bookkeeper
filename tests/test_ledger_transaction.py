@@ -251,6 +251,33 @@ class TestLedgerTransaction(BaseAsyncTests):
                     expected, result))
 
     #@unittest.skip("Temporarily skipped")
+    async def test_select_ledger_transaction_search(self):
+        """
+        Test that the select_ledger_transaction_search method returns
+        a window of data for the search buttons.
+        """
+        await self.asyncTearDown()
+        await self.insert_data()
+
+        data = (
+            (183, 4, 2, (4, 2, 5)),
+            (183, 2, 2, (4, 1, 4)),
+            )
+
+        msg = "Expected {}, found {}."
+        lt = LedgerTransaction(self.db)
+
+        for year, trans_id, cache_size, expected in data:
+            result = await lt.select_ledger_transaction_search(
+                year, trans_id, cache_size=cache_size)
+            self.assertEqual(expected[0], len(result), msg.format(
+                expected, len(result)))
+            start, end = result[0][0], result[-1][0]
+            self.assertEqual(expected[1], start, msg.format(
+                expected[1], start))
+            self.assertEqual(expected[2], end, msg.format(expected[2], end))
+
+    #@unittest.skip("Temporarily skipped")
     async def test_insert_ledger_transaction_bank(self):
         """
         Test that the insert_ledger_transaction method inserts

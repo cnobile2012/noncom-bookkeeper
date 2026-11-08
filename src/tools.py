@@ -357,7 +357,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
     def selection_closure(self, arg_dict: dict):
         def get_selection(event):
-            edit_names = {m_name: name for m_name, name, _ in self._tmd.panels}
+            edit_names = {panel[0]: panel[1] for panel in self._tmd.panels}
             self.panel_name = edit_names.get(event.GetString())
             widget_labels = []
 
@@ -416,18 +416,26 @@ class FieldEdit(BasePanel, wx.Panel):
         """
         def swap_rows(event):
             if self.__previous_row is not None:
+                move_boundry = 0
+
+                for panel in self._tmd.panels:
+                    if panel[1] == self.panel_name:
+                        move_boundry = panel[3]
+                        break
+
                 row0 = self.__previous_row
                 obj = event.GetEventObject()
                 row1 = obj.GetValue()
                 self.__previous_row = row1
 
-                if row0 != row1:
+                if row0 != row1 and row1 > move_boundry < row1 - 1:
                     gbs = arg_dict.get('bot_grid_sizer')
                     self._stop_call_later()
                     gbs.swap_rows(row0, row1)
                     self.Layout()
-                    self.__cl = wx.CallLater(
-                        7000, self._turn_off_highlight, arg_dict, orig_color)
+
+                self.__cl = wx.CallLater(
+                    7000, self._turn_off_highlight, arg_dict, orig_color)
 
         return swap_rows
 
@@ -502,11 +510,11 @@ class FieldEdit(BasePanel, wx.Panel):
                         spin_ctrl.SetValue("")
 
                         for count in range(rows-row-1):
-                            gbs.swap_rows(count+row, count+row+1)
+                            gbs.swap_rows(count + row, count + row + 1)
 
                         windows = [(item.GetWindow())
                                    for item in gbs.GetChildren()
-                                   if item and item.GetPos()[0] == rows-1]
+                                   if item and item.GetPos()[0] == rows - 1]
 
                         for window in windows:
                             window.Unbind(window.EVT_CLICK_POSITION)
@@ -577,7 +585,7 @@ class FieldEdit(BasePanel, wx.Panel):
 
                     if row >= 0:
                         for count in reversed(range(row, rows)):
-                            gbs.swap_rows(count+1, count)
+                            gbs.swap_rows(count + 1, count)
 
                     self._LAST_MOVED = None
                     self._CHANGE_COUNT -= 1

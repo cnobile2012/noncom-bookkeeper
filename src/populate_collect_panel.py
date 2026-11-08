@@ -81,7 +81,10 @@ class PopulateCollect(AsyncEventLoop):
             if name == 'ledger':
                 for cat, subcat in data.items():
                     for fn, val in subcat.items():
-                        if fn == 'date' or not val: continue
+
+                        if fn in ('date', 'transaction_id') or not val:
+                            continue
+
                         items.append(val)
             else:
                 items.append(data[field_name])
@@ -257,6 +260,7 @@ class PopulateCollect(AsyncEventLoop):
         :param wx.Panel panel: The panel object.
         """
         balances = self._get_balances()
+        trans_id = self._get_next_trans_id()
 
         for w0, w1 in self.find_child_sets(panel):
             name0, field_name, widget0 = w0
@@ -275,6 +279,8 @@ class PopulateCollect(AsyncEventLoop):
                 if name1 == 'TextCtrl':
                     if balances and field_name == 'balance':
                         widget1.SetValue(str(balances[widget1.category]))
+                    elif field_name == 'transaction_id':
+                        widget1.SetValue(str(trans_id))
                     else:
                         widget1.SetValue('')
                 elif name1 == 'BadiDatePickerCtrl':
@@ -505,6 +511,14 @@ class PopulateCollect(AsyncEventLoop):
             self.cache.year))
         return {names[bal[1]]: f"{bal[2]/100:.2f}" for bal in balances}
 
+    def _get_next_trans_id(self) -> int:
+        """
+        Get the next transaction ID.
+        """
+        lt = LedgerTransaction(self)
+        last_trans_id = self.run_async(lt.get_last_trans_id(self.cache.year))
+        return last_trans_id + 1
+
     def isfloat(self, value: str) -> bool:
         return False if re.match(r'^-?\d+(?:\.\d+)$', value) is None else True
 
@@ -519,8 +533,8 @@ class PopulateCollect(AsyncEventLoop):
               ((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
                 3, 1, '', 2, 30000, None, None, None, None, 0,
                 <badidatetime.datetime>, <badidatetime.datetime>),
-               [(5, 'national_baháí_fund', 20000),
-                (5, 'regional_baháí_council', 10000)])
+               [(5, 183, 'national_baháí_fund', 20000),
+                (5, 183, 'regional_baháí_council', 10000)])
         """
         def db_to_panel(fn: str, value: str | int, mapping: dict) -> bool:
             return fn == mapping[value]
@@ -570,7 +584,7 @@ class PopulateCollect(AsyncEventLoop):
         data['income']['other'] = db_to_panel('other', trans[11], inc_map)
         data['income']['amount'] = trans[12]
 
-        for _, fn, amount in expenses:
+        for trans_id, year, fn, amount in expenses:
             data['expenses'][fn] = amount
             data['panel']['total_expenses'] += amount
 
@@ -718,3 +732,18 @@ class PopulateCollect(AsyncEventLoop):
                 rows.append((row, e_rows))
 
         return rows
+
+    def ledger_arrow_populate(self, row: tuple) -> None:
+        """
+        Populate the ledger panel with left and right arrow data.
+
+        :param tuple row: Row of from vw_ledger_transaction view data.
+        """
+        lt = LedgerTransaction(self)
+        item = (row, self.run_async(lt.select_expenses(row[0])))
+        data = self.convert_db_to_panel(item)
+        panel = self._mf.panels['ledger']
+        panel.initializing = True
+        self.clear_panel(self._mf.panels['ledger'])
+        self.populate_panel_values('ledger', panel, data)
+        panel.initializing = False
