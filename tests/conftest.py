@@ -81,3 +81,4 @@ TMP_USER_APP_CONFIG_FILE = s.user_app_config_fullpath
 TMP_LOCAL_CONFIG_FILE = os.path.join(s._testing_data_dir, 'default_bahai.toml')
 TMP_LOCAL_DOES_NOT_EXIST = os.path.join(s._testing_data_dir,
                                         'non_existing.toml')
+TMP_TESTING_DATA_DIR = s.data_dir

@@ -78,7 +78,8 @@ class MainFrame(wx.Frame, MenuBar):
 
         self.db = Database()
         StoreObjects().set_object(self.db.__class__.__name__, self.db)
-        asyncio.run(self.start(), debug=options.debug)
+        debug = options.debug if options else False
+        asyncio.run(self.start(), debug=debug)
 
     async def start(self):
         """
@@ -182,6 +183,7 @@ class MainFrame(wx.Frame, MenuBar):
         return data
 
     def load_panels(self):
+        # This makes the badidatetime package happy.
         self.db.set_local_coordinates()
         sf = PanelFactory()
         sf.parse()
@@ -191,7 +193,7 @@ class MainFrame(wx.Frame, MenuBar):
 
             if code:
                 # Write the code files to the cache, only used for debugging.
-                if self.options.file_dump:
+                if self.options and self.options.file_dump:
                     filename = f"{panel}.py"
                     dir = self._tac.cached_factory_dir
                     pathname = os.path.join(dir, filename)

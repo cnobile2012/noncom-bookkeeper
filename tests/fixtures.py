@@ -142,6 +142,7 @@ class FakeWidget:
 
 
 class FakeEvent:
+    direction = None  # Will be either 'left' or 'right'.
 
     def __init__(self, event_object=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -150,6 +151,12 @@ class FakeEvent:
     def GetEventObject(self):
         return self.event_object
 
+    def GetDirection(self):
+        return self.direction
+
+    def Skip(self):
+        pass
+
 
 class FakePanel(BaseGenerated):
 
@@ -157,9 +164,6 @@ class FakePanel(BaseGenerated):
         super().__init__(parent, *args, **kwargs)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         widget_00 = ColorCheckBox(self, wx.ID_ANY, label='', name='current')
-        widget_00.SetBackgroundColour(wx.Colour(*[210, 190, 255]))
-        widget_00.SetForegroundColour(wx.Colour(*[50, 50, 204]))
-        widget_00.SetMinSize([80, 20])
         widget_00.Bind(EVT_COLOR_CHECKBOX, self.set_dirty_flag)
         widget_00.Enable(False)
         self.sizer.Add(widget_00, 0, wx.CENTER | wx.ALL, 10)

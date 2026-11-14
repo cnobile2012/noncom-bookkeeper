@@ -294,6 +294,7 @@ class BaseSystemData(Settings):
     in all the types of config sub-classes.
     """
     SYS_FILES = {'data': None, 'panel_config': None, 'app_config': None}
+    CHG_FILES = {}
     # Error conditions
     ERR_FILE_NOT_FOUND = 1    # Cannot find file
     ERR_TOML_ERROR = 2        # TOML error, maybe corrupted
@@ -330,6 +331,24 @@ class BaseSystemData(Settings):
         :param tk.TOMLDocument value: The TOML doc.
         """
         self.SYS_FILES['panel_config'] = value
+
+    def get_panel_chg_config(self, panel_name: str) -> dict:
+        """
+        Get the change data for the given panel name.
+
+        :param str panel_name: The panel name.
+        :returns: The data from the TOML change file.
+        :rtype: dict
+        """
+        return self.CHG_FILES.get(panel_name, {})
+
+    def set_panel_chg_config(self, panel_name: str, doc: dict) -> None:
+        """
+        Set the change data for a given panel name.
+
+        :param str panel_name: The panel name.
+        """
+        self.CHG_FILES[panel_name] = doc
 
     @property
     def app_config(self):
@@ -607,6 +626,7 @@ class TomlPanelConfig(BaseSystemData):
                 if can_mod:
                     org_data = config[panel_name]['widgets']
                     doc = self.find_change_file(panel_name)
+                    self.set_panel_chg_config(panel_name, copy.deepcopy(doc))
 
                     if doc and (chg_data := doc.get(panel_name)):
                         ret = handle_error(fullpath, ret)
@@ -816,7 +836,7 @@ class TomlCreatePanel(BaseSystemData):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._panel_name = None
+        self.panel_name = None
 
     @property
     def last_changed(self) -> tuple | None:
@@ -918,7 +938,7 @@ class TomlCreatePanel(BaseSystemData):
         :param str panel_name: The name of the panel being changed.
         :param dict current: The current panel data.
         """
-        self._panel_name = panel_name
+        self.panel_name = panel_name
         filename = f"{panel_name}_{self.config_type}.toml"
         fullpath = os.path.join(self.data_dir, filename)
 
@@ -945,7 +965,7 @@ class TomlCreatePanel(BaseSystemData):
             key_num = self._next_widget_num
 
         key = self._make_key(key_num)
-        wdgt_tbl = self.changes[self._panel_name].setdefault('widgets', {})
+        wdgt_tbl = self.changes[self.panel_name].setdefault('widgets', {})
         wdgt_tbl[key] = [
             'StaticText', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY', name],
@@ -973,7 +993,7 @@ class TomlCreatePanel(BaseSystemData):
                           unhide the widgets.
         """
         key0, items = self._find_label_in_panel(label)
-        wdgt_tbl = self.changes[self._panel_name].setdefault('widgets', {})
+        wdgt_tbl = self.changes[self.panel_name].setdefault('widgets', {})
 
         if key0 and items:
             # Update the StaticText
@@ -991,6 +1011,8 @@ class TomlCreatePanel(BaseSystemData):
 
             if len(inner['pos']) > 1:
                 inner['pos'] = [inner['pos'][1]]
+                self._log.warning("The 'pos' key for '%s' still has a "
+                                  "vertical parameter.", label)
 
             wdgt_tbl[key1] = values
             self.last_changed = (label, 'hide')
@@ -1002,18 +1024,25 @@ class TomlCreatePanel(BaseSystemData):
         :param str old_label: The field to rename.
         :param str new_label: The new name for the field.
         """
+        def check_pos(inner, old_label):
+            if len(inner['pos']) > 1:
+                inner['pos'] = [inner['pos'][1]]
+                self._log.warning("The 'pos' key for '%s' still has a "
+                                  "vertical parameter.", old_label)
+
         key, items = self._find_label_in_panel(old_label)
-        wdgt_tbl = self.changes[self._panel_name].setdefault('widgets', {})
+        wdgt_tbl = self.changes[self.panel_name].setdefault('widgets', {})
 
         if key and items:
             values = copy.deepcopy(items)
             inner = find_dict(values)
-            inner['old_label'] = inner['args'][2]
+
+            # We never change the original label.
+            if inner.get('old_label') is None:
+                inner['old_label'] = old_label
+
             inner['args'][2] = new_label
-
-            if len(inner['pos']) > 1:
-                inner['pos'] = [inner['pos'][1]]
-
+            check_pos(inner, old_label)
             wdgt_tbl[key] = values
             self.last_changed = (old_label, new_label, 'rename')
 
@@ -1023,7 +1052,7 @@ class TomlCreatePanel(BaseSystemData):
         """
         if self.last_changed:
             type_ = self.last_changed[-1]
-            wdgt_tbl = self.changes[self._panel_name].setdefault('widgets', {})
+            wdgt_tbl = self.changes[self.panel_name].setdefault('widgets', {})
 
             if type_ == 'add':
                 label, key_num = self.last_changed[:2]
@@ -1052,26 +1081,18 @@ class TomlCreatePanel(BaseSystemData):
              'Online Contribution Service Holdings:'],
              'min': [-1, -1],
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
-             'pos': [4, 0],
-             'span': [1, 1],
-             'hidable': False}],
+             'pos': [0], 'span': [1, 1], 'hidable': False}],
            'widget_28': ['StaticText', 'w_fg_color_1',
             {'args': ['self', 'ID_ANY',
              "Bahá'í Chair for World Peace - Reserved Fund:"],
              'min': [-1, -1],
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
-             'pos': [26, 0],
-             'span': [1, 1],
-             'hidden': True}],
+             'pos': [0], 'span': [1, 1], 'hidden': True}],
            'widget_29': ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1',
-            {'args': ['self', 'ID_ANY', ''],
-             'style': 'TE_RIGHT',
+            {'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
              'min': [-1, 26],
              'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
-             'pos': [26, 1],
-             'span': [1, 1],
-             'financial': True,
-             'mandatory': False,
+             'pos': [1], 'span': [1, 1], 'financial': True, 'mandatory': False,
              'hidden': True}]}}}
         """
         def dict_to_toml(doc, data):

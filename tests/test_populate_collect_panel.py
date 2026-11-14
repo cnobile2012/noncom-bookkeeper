@@ -33,7 +33,6 @@ class TestPopulateCollect(BaseAsyncTests):
         patchers(self)
         self._set = Settings()
         self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
-        self.fmf = StoreObjects().get_object('MainFrame')
 
     async def asyncSetUp(self):
         await self.db.create_db()
@@ -117,8 +116,8 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels['organization']
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels['organization']
             self.db.clear_panel(panel)
 
             for values, expected in data:
@@ -126,6 +125,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 result = self.db.has_org_info_data
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
+                self.db.clear_panel(panel)
 
     #@unittest.skip("Temporarily skipped")
     async def test_has_budget_data(self):
@@ -139,8 +139,8 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels['budget']
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels['budget']
             self.db.clear_panel(panel)
 
             for values, expected in data:
@@ -148,6 +148,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 result = self.db.has_budget_data
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
+                self.db.clear_panel(panel)
 
     #@unittest.skip("Temporarily skipped")
     async def test_has_ledger_data(self):
@@ -169,8 +170,8 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels['ledger']
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels['ledger']
             self.db.clear_panel(panel)
 
             for ldg_data, expected in data:
@@ -178,6 +179,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 result = self.db.has_ledger_data
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
+                self.db.clear_panel(panel)
 
     #@unittest.skip("Temporarily skipped")
     async def test__check_panels_for_entries(self):
@@ -203,14 +205,15 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, values, expected in data:
-                panel = self.fmf.panels[panel_name]
+                panel = self.frame.panels[panel_name]
                 self.db.clear_panel(panel)
                 self.db.populate_panel_values(panel_name, panel, values)
                 result = self.db._check_panels_for_entries(panel_name)
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
+                self.db.clear_panel(panel)
 
     #@unittest.skip("Temporarily skipped")
     async def test__lde_push(self):
@@ -259,8 +262,8 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels['ledger']
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels['ledger']
 
             for key, value, items, expected in data:
                 values = {}
@@ -300,8 +303,8 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels['ledger']
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels['ledger']
 
             for key, items, expected in data:
                 result = self.db._lde_pop(key, panel, items)
@@ -336,13 +339,14 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected '{}', panel_name '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, num_flds, values, expected in data:
-                panel = self.fmf.panels[panel_name]
+                panel = self.frame.panels[panel_name]
                 self.db.populate_panel_values(panel_name, panel, values)
                 result = self.db.collect_panel_values(panel)
                 self.assertEqual(num_flds, len(result), msg.format(
                     num_flds, panel_name, len(result)))
+                self.db.clear_panel(panel)
 
                 for field_name, value in expected.items():
                     self.assertEqual(value, result[field_name], msg.format(
@@ -378,9 +382,9 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, field_name '{}', found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, values, first_run, expected in data:
-                panel = self.fmf.panels[panel_name]
+                panel = self.frame.panels[panel_name]
                 self.db.populate_panel_values(panel_name, panel, values)
                 result = self.db.collect_panel_values(panel)
 
@@ -430,9 +434,9 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, setup_data, expected in data:
-                panel = self.fmf.panels[panel_name]
+                panel = self.frame.panels[panel_name]
                 self.db.populate_panel_values(panel_name, panel, setup_data)
                 exists = self.db.collect_panel_values(panel)
                 field, value = expected
@@ -442,6 +446,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 not_exists = self.db.collect_panel_values(panel)
                 result = find_result(field, not_exists)
                 self.assertNotEqual(value, result, msg.format(value, result))
+                self.db.clear_panel(panel)
 
     #@unittest.skip("Temporarily skipped")
     def test_find_child_sets(self):
@@ -457,9 +462,9 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, none_sets, expected in data:
-                panel = self.fmf.panels[panel_name]
+                panel = self.frame.panels[panel_name]
                 widget_sets = 0
                 none_count = 0
 
@@ -492,11 +497,11 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for widget, add_msg, expected in data:
-                self.fmf.statusbar_error = None
+                self.frame.statusbar_error = None
                 self.db._set_statusbar(widget, add_msg)
-                error = self.fmf.statusbar_error
+                error = self.frame.statusbar_error
                 self.assertEqual(expected[0], error, msg.format(
                     expected[0], error))
                 file_data = self.read_text_file(self.log_path)
@@ -528,7 +533,7 @@ class TestPopulateCollect(BaseAsyncTests):
 
         for wgt_name, field_name, choices, value, valid, expected in data:
             obj = getattr(wx, wgt_name)(
-                self.fmf, wx.ID_ANY, 'Locality Prefix (Month)',
+                self.frame, wx.ID_ANY, 'Locality Prefix (Month)',
                 style=wx.RA_SPECIFY_ROWS, choices=choices)
 
             if valid:
@@ -536,10 +541,10 @@ class TestPopulateCollect(BaseAsyncTests):
                 self.assertIsInstance(result, expected, msg.format(
                     expected, result))
             else:
-                with patch.object(self.db, '_mf', self.fmf):
+                with patch.object(self.db, 'mf', self.frame):
                     result = self.db._process_box_value(obj, field_name, value)
                     self.assertIsNone(result, msg.format(None, result))
-                    result = self.fmf.statusbar_warning
+                    result = self.frame.statusbar_warning
                     self.assertEqual(expected, result, msg.format(
                         expected, result))
 
@@ -553,8 +558,8 @@ class TestPopulateCollect(BaseAsyncTests):
         await self.db.cache.load()
         err_msg0 = "Can only pass the 'panel' or the 'w0' argument."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            fiscal_panel = self.fmf.panels['fiscal']
+        with patch.object(self.db, 'mf', self.frame):
+            fiscal_panel = self.frame.panels['fiscal']
             combobox = fiscal_panel.GetChildren()[3]
             w0 = ('ComboBox', 'choose_fiscal_year', combobox)
             data = (
@@ -728,8 +733,8 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels['ledger']
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels['ledger']
 
             for row, expected in data:
                 # Set the panel empty
@@ -739,6 +744,7 @@ class TestPopulateCollect(BaseAsyncTests):
                 result = self.db.collect_panel_values(panel)
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
+                self.db.clear_panel(panel)
 
     @unittest.skip("Temporarily skipped")
     def test_get_prev_and_next(self):
@@ -760,10 +766,10 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for year, expected in data:
                 self.db.populate_fiscal_panel(year)
-                fiscal = self.fmf.panels['fiscal']
+                fiscal = self.frame.panels['fiscal']
                 index = -1
 
                 for w0, w1 in self.db.find_child_sets(fiscal):
@@ -786,10 +792,10 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for current, work_on, audit, expected in data:
                 self.db.set_fiscal_panel(current, work_on, audit)
-                fiscal = self.fmf.panels['fiscal']
+                fiscal = self.frame.panels['fiscal']
 
                 for w0, w1 in self.db.find_child_sets(fiscal):
                     if w0[1] == expected[0]:
@@ -818,10 +824,10 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected '{}', field_name '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for date_str, expected in data:
                 self.db.update_monthly_panel(date_str)
-                monthly = self.fmf.panels['monthly']
+                monthly = self.frame.panels['monthly']
 
                 for w0, w1 in self.db.find_child_sets(monthly):
                     if w1 is not None:
@@ -886,10 +892,11 @@ class TestPopulateCollect(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = SearchDialog(self.fmf)
+        with patch.object(self.db, 'mf', self.frame):
+            panel = SearchDialog(self.frame)
 
             for test_data, expected in data:
+                self.db.clear_panel(panel)
                 self.db.populate_panel_values('search_dialog', panel,
                                               test_data)
                 items = self.db.ledger_search_panel(panel)
@@ -902,3 +909,4 @@ class TestPopulateCollect(BaseAsyncTests):
 
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
+                self.db.clear_panel(panel)

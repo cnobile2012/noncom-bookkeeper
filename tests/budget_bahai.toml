@@ -1,0 +1,20 @@
+# -*- coding: utf-8 -*-
+#
+# /home/cnobile/src/GitHub/noncom-bookkeeper/data/budget_bahai.toml
+#
+# Version 2.0.0
+#
+# This file provides updated definitions to the Budget panel.
+#
+# Date Created: 2026-10-26 20:46:41.176799
+#
+# TOML field definitions: https://toml.io/en/v1.0.0
+#
+# Noncommercial Bookkeeper META data
+# ==================================
+#
+
+[budget.widgets]
+widget_04 = ['StaticText', 'w_fg_color_1', {args = ['self', 'ID_ANY', "Online Contribution Service Holdings:"], min = [-1, -1], add = [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos = [0], span = [1, 1], hidable = false, old_label = 'OCS Holdings:'}]
+widget_28 = ['StaticText', 'w_fg_color_1', {args = ['self', 'ID_ANY', "Bahá'í Chair for World Peace - Reserved Fund:"], min = [-1, -1], add = [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], pos = [0], span = [1, 1], hidden = true}]
+widget_29 = ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {args = ['self', 'ID_ANY', ''], style = 'TE_RIGHT', min = [-1, 26], add = [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6], pos = [1], span = [1, 1], financial = true, mandatory = false, hidden = true}]

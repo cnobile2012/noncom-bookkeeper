@@ -4,11 +4,13 @@
 #
 __docformat__ = "restructuredtext en"
 
+import copy
 import wx
 import unittest
 import types
+import badidatetime
 
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from wx.lib.scrolledpanel import ScrolledPanel
 
 from src.ledger_entry import (_CreateWidgets, LedgerDataEntry, SearchDialog,
@@ -18,7 +20,7 @@ from src.custom_widgits import ColorCheckBox
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
-from .fixtures import FakeFrame
+from .fixtures import FakeEvent
 
 
 class CreateWidgetsPanel(ScrolledPanel, _CreateWidgets):
@@ -37,11 +39,9 @@ class Test_CreateWidgets(BaseAsyncTests):
     def setUp(self):
         check_flag(self.__class__.__name__)
         patchers(self)
-        self.fmf = StoreObjects().get_object('MainFrame')
-        self.cw = CreateWidgetsPanel(FakeFrame())
+        self.cw = CreateWidgetsPanel(self.frame)
 
     def tearDown(self):
-        self.fmf = None
         self.cw = None
 
     #@unittest.skip("Temporarily skipped")
@@ -66,7 +66,7 @@ class Test_CreateWidgets(BaseAsyncTests):
         msg = "Expected '{}', found '{}'."
         items = []
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             gen = self.cw._title_generator()
 
             while gen:
@@ -104,7 +104,7 @@ class Test_CreateWidgets(BaseAsyncTests):
         msg = "Expected '{}', found '{}'."
         items = []
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             gen = self.cw._label_generator()
 
             while gen:
@@ -219,13 +219,12 @@ class TestLedgerDataEntry(BaseAsyncTests):
         check_flag(self.__class__.__name__)
         patchers(self)
         self.frame.create_panels()
-        fmf = StoreObjects().get_object('MainFrame')
 
-        with patch.object(self.db, '_mf', fmf):
-            self.panel = fmf.panels.get('ledger')
+        with patch.object(self.db, 'mf', self.frame):
+            self.panel = self.frame.panels.get('ledger')
 
     def tearDown(self):
-        self.fmf = None
+        self.panel = None
 
     #@unittest.skip("Temporarily skipped")
     def test_ledger_labels(self):
@@ -315,7 +314,7 @@ class TestLedgerDataEntry(BaseAsyncTests):
 
             if dirty:
                 e_msg = 'Saving data.'
-                s_msg = self.db._mf.statusbar_message
+                s_msg = self.db.mf.statusbar_message
                 self.assertEqual(e_msg, s_msg, msg.format(e_msg, s_msg))
 
     #@unittest.skip("Temporarily skipped")
@@ -358,7 +357,7 @@ class TestLedgerDataEntry(BaseAsyncTests):
 
             if dirty:
                 e_msg = 'Restoring data.'
-                s_msg = self.db._mf.statusbar_message
+                s_msg = self.db.mf.statusbar_message
                 self.assertEqual(e_msg, s_msg, msg.format(e_msg, s_msg))
 
     #@unittest.skip("Temporarily skipped")
@@ -435,13 +434,62 @@ class TestLedgerDataEntry(BaseAsyncTests):
             fields[field].SetValue(amount)
             self.assertEqual(balance, total_expenses.GetValue())
 
-    @unittest.skip("Temporarily skipped")
-    def test_on_arrow(self):
+    #@unittest.skip("Temporarily skipped")
+    async def test_on_arrow(self):
         """
         Test that the on_arrow method gets the next or previous transaction
         by the transaction ID.
         """
-        pass
+        await self.db.create_db()
+        await self.insert_data()
+        await self.db.cache.load()
+        expect0 = copy.deepcopy(self._LDG_DATA)
+        expect0['panel']['transaction_id'] = '5'
+        expect0['panel']['date'] = badidatetime.date(183, 9, 8)
+        expect0['panel']['memo'] = 'Test OCS Distribution Update'
+        expect0['panel']['total_expenses'] = 0
+        expect0['transaction']['distribution'] = True
+        expect0['reference']['ocs'] = True
+        expect0['bank']['deposit'] = True
+        expect0['bank']['amount'] = 50000
+        expect0['bank']['balance'] = 90000
+        expect0['coh']['balance'] = 2500
+        expect0['income']['balance'] = 7500
+        expect1 = copy.deepcopy(self._LDG_DATA)
+        expect1['panel']['transaction_id'] = '4'
+        expect1['panel']['date'] = badidatetime.date(183, 9, 6)
+        expect1['panel']['memo'] = 'Test expense'
+        expect1['panel']['total_expenses'] = 25000
+        expect1['transaction']['expense'] = True
+        expect1['reference']['ocs'] = True
+        expect1['bank']['withdrawal'] = True
+        expect1['bank']['amount'] = 25000
+        expect1['bank']['balance'] = 90000
+        expect1['coh']['balance'] = 2500
+        expect1['income']['balance'] = 7500
+        expect1['expenses']['national_baháí_fund'] = 15000
+        expect1['expenses']['shrine_of_abdul_bahá'] = 10000
+        data = (
+            (FakeEvent(), 'right', '6', expect0),
+            (FakeEvent(), 'left', '6', expect0),
+            (FakeEvent(), 'left', '5', expect1),
+            )
+        msg = "Expected {} found {}"
+
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels.get('ledger')
+
+            for event, fe_value, fp_value, expected in data:
+                event.direction = fe_value
+                panel.widget_02.SetValue(fp_value)
+                panel.on_arrow(event)
+                result = self.db.collect_panel_values(panel)
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
+                self.db.clear_panel(panel)
+
+        self.db.cache._flush_cache()
+        await self.truncate_all_tables()
 
     #@unittest.skip("Temporarily skipped")
     def test_background_color(self):
@@ -460,37 +508,77 @@ class TestSearchDialog(BaseAsyncTests):
     def setUp(self):
         check_flag(self.__class__.__name__)
         patchers(self)
-        self.fmf = StoreObjects().get_object('MainFrame')
         self.frame.create_panels()
 
-    def tearDown(self):
-        self.fmf = None
-        self.lde = None
+    def _setup_panel(self):
+        panel = SearchDialog(self.frame)
+        parent = MagicMock()
+        parent.Parent.bg_color = wx.Colour(10, 20, 30)
+        parent.Parent.w_fg_color = wx.Colour(200, 210, 220)
+        panel.parent = parent
+        return panel
 
-    def simulate_left_click(self, widget):
+    #@unittest.skip("Temporarily skipped")
+    def test_button_search_with_rows_shows_result_dialog(self):
         """
-        Thanks to OpenAI for this method.
+        Test that the button_search method shows the dialog with rows of data.
         """
-        simulator = wx.UIActionSimulator()
-        rect = widget.GetScreenRect()
-        center = rect.GetPosition() + rect.GetSize() / 2
-        simulator.MouseMove(center)
-        simulator.MouseClick()
+        panel = self._setup_panel()
+        now = badidatetime.datetime.now()
+        rows = [((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
+                 3, 1, '', 2, 30000, None, None, None, None, 0, now, now),
+                [(5, 183, 'national_baháí_fund', 20000),
+                 (5, 183, 'regional_baháí_council', 10000)])]
+        event = MagicMock()
 
-    @unittest.skip("Temporarily skipped")
-    def test_button_search(self):
+        with (patch.object(self.db, 'ledger_search_panel',
+                           return_value=rows) as mock_search,
+              patch('src.ledger_entry.SearchResult') as mock_dlg_cls,
+              patch.object(panel, 'warn_text') as mock_warn):
+            panel.button_search(event)
+
+        mock_search.assert_called_once_with(panel)
+        mock_dlg_cls.assert_called_once_with(
+            panel.parent, "Choose Search Results", "Search Results", rows=rows,
+            bg_color=panel.parent.Parent.bg_color,
+            fg_color=panel.parent.Parent.w_fg_color)
+        self.assertIs(panel._dlg, mock_dlg_cls.return_value)
+        panel.parent.Hide.assert_called_once()
+        mock_dlg_cls.return_value.ShowModal.assert_called_once()
+        mock_warn.SetLabel.assert_not_called()
+        event.Skip.assert_called_once()
+        # Needed to keep the Borg state from affecting other tests.
+        self.db.clear_state()
+
+    #@unittest.skip("Temporarily skipped")
+    def test_button_search_no_rows_shows_warning(self):
         """
-        Test that the button_search method shows the result screen or
-        displays a "Found no results." message.
+        Test that the button_search method shows warning without rows of data.
         """
+        panel = self._setup_panel()
+        event = MagicMock()
+
+        with (patch.object(self.db, 'ledger_search_panel', return_value=[]),
+              patch('src.ledger_entry.SearchResult') as mock_dlg_cls,
+              patch.object(panel, 'warn_text') as mock_warn,
+              patch.object(panel, 'Layout') as mock_layout):
+            panel.button_search(event)
+
+        mock_dlg_cls.assert_not_called()
+        panel.parent.Hide.assert_not_called()
+        mock_warn.SetLabel.assert_called_once_with("Found no results.")
+        mock_warn.Wrap.assert_called_once_with(250)
+        mock_warn.Show.assert_called_once()
+        mock_layout.assert_called_once()
+        event.Skip.assert_called_once()
 
     #@unittest.skip("Temporarily skipped")
     def test_button_cancel(self):
         """
         Test that the button_cancel method closes the search dialog.
         """
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels.get('ledger')
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels.get('ledger')
 
         with (patch.object(wx.Frame, "Show") as mock_show,
               patch.object(wx.Frame, "Destroy") as mock_destroy):

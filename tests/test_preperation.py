@@ -29,7 +29,6 @@ class TestDataPreperation(BaseAsyncTests):
         patchers(self)
         self._set = Settings()
         self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
-        self.fmf = StoreObjects().get_object('MainFrame')
 
     async def asyncSetUp(self):
         await self.db.create_db()
@@ -74,7 +73,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expexted {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for items, date, valid, expected in data:
                 error = await self.tdp.organization(items, date)
 
@@ -127,7 +126,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expexted {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for date, fy_date, years, expected in data:
                 org_data['start_of_fiscal_year'] = date
                 error = await self.tdp.organization(org_data, fy_date)
@@ -168,7 +167,7 @@ class TestDataPreperation(BaseAsyncTests):
         await self.insert_field_data(data)
         await self.insert_months()
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             error = await self.tdp.organization(data, (year, month, day))
 
         for year in (year, year+1):
@@ -197,8 +196,8 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels['budget']
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels['budget']
             items = self.db.collect_panel_values(panel)
             await self.insert_field_data(items)
 
@@ -237,7 +236,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for year, mth_data, valid, expected in data:
                 if valid:
                     error = await self.tdp.monthly(mth_data, year)
@@ -324,7 +323,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for ldg_data, expected in data:
                 error = await self.tdp.ledger(ldg_data, (183, 3, 5))
                 self.assertEqual(expected, error, msg.format(expected, error))
@@ -401,7 +400,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected '{}' with search {}, found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for ldg_data, search, expected in data:
                 error = await self.tdp.ledger(ldg_data, (183, 3, 5))
 
@@ -470,7 +469,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected '{}' with search {}, found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for ldg_data, search, expected in data:
                 error = await self.tdp.ledger(ldg_data, (183, 3, 5))
 
@@ -556,7 +555,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected '{}' with search {}, found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for ldg_data, search, expected in data:
                 error = await self.tdp.ledger(ldg_data, (183, 3, 5))
 
@@ -614,7 +613,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected '{}' with search {}, found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for ldg_data, search, expected in data:
                 error = await self.tdp.ledger(ldg_data, (183, 3, 5))
 
@@ -657,7 +656,7 @@ class TestDataPreperation(BaseAsyncTests):
         dt_data['panel']['transaction_id'] = '1'
         dt_data['panel']['memo'] = "Something Changed"
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             error = await self.tdp.ledger(dt_data, (183, 3, 5))
             self.assertIsNone(error)
 
@@ -768,7 +767,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, values, expected in data:
                 result = self.tdp._empty_fields(panel_name, values)
                 self.assertEqual(expected, result, msg.format(
@@ -791,7 +790,7 @@ class TestDataPreperation(BaseAsyncTests):
             (True, 1, 1, 20, 45),
             )
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for after, current, audit, num_mon, num_flds in data:
                 if after:
                     await self.tdp._first_run_initialization(year, month, day)
@@ -983,7 +982,7 @@ class TestDataPreperation(BaseAsyncTests):
             )
         msg = "Expected {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for year, month, r_type, items, expected in data:
                 error, rc = await self.tdp._insert_update_config_data_table(
                     year, month=month, r_type=r_type, data=items)
@@ -1056,8 +1055,8 @@ class TestDataPreperation(BaseAsyncTests):
         mth_data = dict(self._MTH_DATA)
         mth_data['month_index'] = 0
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.fmf.panels['monthly']
+        with patch.object(self.db, 'mf', self.frame):
+            panel = self.frame.panels['monthly']
             self.db.populate_panel_values('monthly', panel, mth_data)
             result = self.tdp.monthly_data
             fields = result.keys()

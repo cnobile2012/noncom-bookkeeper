@@ -17,7 +17,8 @@ from . import (BASE_DIR, PATH, LOGGER_NAME, LOGFILE_NAME, log, check_flag,
                patchers)
 from .base_database_test import BaseTests, BaseAsyncTests
 from .conftest import (TMP_USER_CONFIG_FILE, TMP_USER_APP_CONFIG_FILE,
-                       TMP_LOCAL_CONFIG_FILE, TMP_LOCAL_DOES_NOT_EXIST)
+                       TMP_LOCAL_CONFIG_FILE, TMP_LOCAL_DOES_NOT_EXIST,
+                       TMP_TESTING_DATA_DIR)
 from src.config import (Settings, BaseSystemData, TomlMetaData,
                         TomlPanelConfig, TomlAppConfig, TomlCreatePanel)
 from src.bases import find_dict
@@ -818,6 +819,8 @@ class TestTomlMetaData(BaseTomlTest):
 
 
 class TestTomlPanelConfig(BaseTomlTest):
+    BUDGET_CHANGE_FILE = 'budget_bahai.toml'
+    BUDGET_CHANGE_PATH = os.path.join(TMP_TESTING_DATA_DIR, BUDGET_CHANGE_FILE)
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -1020,6 +1023,22 @@ class TestTomlPanelConfig(BaseTomlTest):
                     file_data, 'Start logging for TestTomlPanelConfig',
                     10, err_msg)
                 self.assertIn(err_msg, result)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_find_change_file(self):
+        """
+        Test that a change file is found and has the correct format and data.
+        """
+        from_path = os.path.join(TMP_TESTING_DATA_DIR, '..',
+                                 self.BUDGET_CHANGE_FILE)
+        shutil.copy2(from_path, self.BUDGET_CHANGE_PATH)
+        panel_name = 'budget'
+        result = self._tpc.find_change_file(panel_name)
+        self.assertNotEqual(result, {})
+
+        for widget, values in result[panel_name]['widgets'].items():
+            inner = find_dict(values)
+            self.assertEqual(1, len(inner['pos']))
 
 
 class TestTomlAppConfig(BaseTomlTest):
@@ -1587,21 +1606,26 @@ class TestTomlCreatePanel(BaseTomlTest):
         old_label = "OCS Holdings:"
         new_label = "Online Contribution Service Holdings:"
         expect0 = ['StaticText', 'w_fg_color_1',
-                   {'args': ['self', 'ID_ANY',
-                             'Online Contribution Service Holdings:'],
+                   {'args': ['self', 'ID_ANY', new_label],
                     'min': [-1, -1],
                     'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
                     'pos': [0], 'span': [1, 1], 'hidable': False,
-                    'old_label': 'OCS Holdings:'}]
+                    'old_label': old_label}]
         expect1 = (old_label, new_label, 'rename')
+        data = (
+            (old_label, new_label, (expect0, expect1)),
+            )
         msg = "Expected {}, found {}."
-        self._tcp.rename_label(old_label, new_label)
-        values = self._widget_data_by_label(panel=True).get(old_label)
-        key = values[0]
-        result = self._tcp.changes['budget']['widgets'].get(key)
-        self.assertEqual(expect0, result, msg.format(expect0, result))
-        lc = self._tcp.last_changed
-        self.assertEqual(expect1, lc, msg.format(expect1, lc))
+
+        for old, new, expected in data:
+            self._tcp.rename_label(old, new)
+            values = self._widget_data_by_label(panel=True).get(old)
+            key = values[0]
+            result = self._tcp.changes['budget']['widgets'].get(key)
+            self.assertEqual(expected[0], result, msg.format(
+                expected[0], result))
+            lc = self._tcp.last_changed
+            self.assertEqual(expected[1], lc, msg.format(expected[1], lc))
 
     #@unittest.skip("Temporarily skipped")
     def test_undo_change(self):

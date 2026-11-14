@@ -402,7 +402,7 @@ class DataPreperation:
         error = None
         mandatory = []
 
-        for w0, w1 in self.db.find_child_sets(self.db._mf.panels[panel_name]):
+        for w0, w1 in self.db.find_child_sets(self.db.mf.panels[panel_name]):
             if getattr(w0[2], 'mandatory', False):
                 mandatory.append(w0[1])
             elif w1 and getattr(w1[2], 'mandatory', False):
@@ -442,7 +442,7 @@ class DataPreperation:
         await self.db.cache.insert(self.db._T_MONTH, data)
 
         # Populate all panel fields in the database.
-        for name, panel in self.db._mf.panels.items():
+        for name, panel in self.db.mf.panels.items():
             if name not in ('organization', 'budget'): continue
             panel_data = self.db.collect_panel_values(panel)
             await self.db.add_fields_to_field_type_table(panel_data)
@@ -622,7 +622,7 @@ class DataPreperation:
 
                 if pk is None:                 # Error condition
                     error = f"Could not find field {field} in {data}."
-                    self.db._mf.statusbar_error = error
+                    self.db.mf.statusbar_error = error
                     self._log.error(error)
                     break
 
@@ -680,7 +680,7 @@ class DataPreperation:
         :returns: The monthly panel data as defined by {<field name>: <value>}.
         :rtype: dict
         """
-        panel = self.db._mf.panels['monthly']
+        panel = self.db.mf.panels['monthly']
         data = self.db.collect_panel_values(panel)
         date = self.db.convert_str_date(data['month_index'])
         items = self.db.cache.get(self.db._T_MONTHLY, r_type=date)

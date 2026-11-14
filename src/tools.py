@@ -55,18 +55,18 @@ class ShortCuts(wx.Frame):
         for item in map_:
             values = map_[item]
             if len(values) == 0: continue  # seperator
-            id, nk, disc, cb, mo, tf, od = values
+            id, nk, disc, cb, tf, od = values
             if not tf: continue
             name, tab, key = nk.partition('\t')
             name = name.replace('&', '') + ':'
 
-            if not id and nk and not cb and mo and tf and od:
+            if not id and nk and not cb and tf and od:
                 buff.write(f"\n{name:<11}{key:<7}{disc}\n")
                 buff.write("--------------\n")
                 self.__recurse_menu(od, buff)
-            elif id and nk and cb and not mo and tf and not od:
+            elif id and nk and cb and tf and not od:
                 buff.write(f"\t{indent}{name:<20}{key:<7}{disc}\n")
-            elif id and nk and not cb and mo and tf and od:
+            elif id and nk and not cb and tf and od:
                 buff.write(f"\t{name:<20}{key:<7}{disc}\n")
                 buff.write("\t--------------\n")
                 self.__recurse_menu(od, buff, indent='\t')

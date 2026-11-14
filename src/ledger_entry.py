@@ -191,7 +191,7 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         widget_06 = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
         widget_06.SetBackgroundColour(self.w_bg_color)
         widget_06.SetForegroundColour(self.w_fg_color)
-        widget_06.SetMinSize((470, 26))
+        widget_06.SetMinSize((478, 26))
         widget_06.category = 'panel'
         sizer_1.Add(widget_06, 0, wx.EXPAND | wx.TOP, 4)
         self.gbs.Add(sizer_1, (pos, 0), (1, 2), wx.EXPAND, 0)
@@ -269,18 +269,6 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         self.SetupScrolling(rate_x=self._scroll_rate[0],
                             rate_y=self._scroll_rate[1])
         self.Hide()
-
-    # def refresh_scrolling(self):
-    #     """
-    #     Recompute this panel's virtual scrolling size against its current
-    #     real allocation. ScrolledPanel.SetupScrolling() is only accurate
-    #     for whatever size the panel has *at the moment it's called* — since
-    #     it originally runs during __init__ before the panel has been sized
-    #     by its container's sizer, it must be re-run once the panel actually
-    #     has a real, final size (i.e. when it's shown).
-    #     """
-    #     rate_x, rate_y = self._scroll_rate
-    #     self.SetupScrolling(rate_x=rate_x, rate_y=rate_y)
 
     @property
     def ledger_labels(self) -> dict:

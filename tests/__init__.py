@@ -79,7 +79,8 @@ RUN_FLAG = {'TestBaseFunctions': False,
             'TestLedgerDataEntry': False,
             'TestSearchDialog': False,
             'TestPanelFactory': False,
-            'TestDatabase': False}
+            'TestDatabase': False,
+            'TestMainFrame': False}
 
 
 def check_flag(name):

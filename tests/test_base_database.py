@@ -19,10 +19,13 @@ from src.base_database import BaseDatabase, adapt_tuple, convert_tuple
 from src.ledger_transaction import LedgerTransaction
 
 from . import LOGFILE_NAME, check_flag, patchers
+from .conftest import TMP_TESTING_DATA_DIR
 from .base_database_test import BaseAsyncTests
 
 
 class TestBaseDatabase(BaseAsyncTests):
+    CHANGE_FILE = 'budget_bahai.toml'
+    CHANGE_FILE_FULLPATH = os.path.join(TMP_TESTING_DATA_DIR, CHANGE_FILE)
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -35,8 +38,11 @@ class TestBaseDatabase(BaseAsyncTests):
         self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
         self.fmf = StoreObjects().get_object('MainFrame')
 
+    def tearDown(self):
+        self.delete_files()
+
     async def asyncSetUp(self):
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.fmf):
             await self.db.create_db()
 
         await self.insert_data()
@@ -46,6 +52,15 @@ class TestBaseDatabase(BaseAsyncTests):
     async def asyncTearDown(self):
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
+
+    def delete_files(self):
+        files = (self.CHANGE_FILE_FULLPATH,)
+
+        for file in files:
+            try:
+                os.remove(file)
+            except FileNotFoundError:
+                pass
 
     #@unittest.skip("Temporarily skipped")
     def test_adapt_tuple(self):
@@ -133,7 +148,7 @@ class TestBaseDatabase(BaseAsyncTests):
                 with patch.multiple(
                     self.db, _SCHEMA_TABLES=mis_tables,
                     _SCHEMA_INDICES=mis_indices,
-                    _mf=StoreObjects().get_object('MainFrame'),
+                    mf=StoreObjects().get_object('MainFrame'),
                     _SCHEMA_VIEWS=mis_views):
 
                     os.remove(self.db.user_data_fullpath)
@@ -163,17 +178,38 @@ class TestBaseDatabase(BaseAsyncTests):
         and the cache. We use the field name created with the
         utilities.make_name() function from the widget name.
         """
+        not_in_file = 'widget_04'
+        chg_data = {'widgets': {
+            'widget_04': ['StaticText', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY', 'Administration:'], 'min': [-1, -1],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
+                'pos': [0], 'span': [1, 1], 'hidable': False,
+                'old_label': 'Administration:'}],
+            'widget_28': ['StaticText', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY',
+                        "Bahá'í Chair for World Peace - Reserved Fund:"],
+                'min': [-1, -1],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6],
+                'pos': [0], 'span': [1, 1], 'hidden': True}],
+            'widget_29': ['TextCtrl', 'w_bg_color_1', 'w_fg_color_1', {
+                'args': ['self', 'ID_ANY', ''], 'style': 'TE_RIGHT',
+                'min': [-1, 26],
+                'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
+                'pos': [1], 'span': [1, 1], 'financial': True,
+                'mandatory': False, 'hidden': True}]}}
         widget = ['StaticText', 'w_fg_color_1', {
             'args': ['self', 'ID_ANY', ''], 'min': [-1, -1],
             'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT', 6], 'pos': [0],
             'span': [1, 1], 'hidable': False, 'old_label': ''}]
+
         data = (
-            ('budget', 'Administration:', 'Admin:'),
-            ('budget', 'Regional Facilities Fund:', 'Facilities Fund:'),
+            (None, 'budget', 'Administration:', 'Admin:'),
+            (None, 'budget', 'Regional Facilities Fund:', 'Facilities Fund:'),
+            (chg_data, 'budget', 'Admin:', 'Administration:'),
             )
         msg = "Expected {}, found {}."
 
-        for panel_name, old_label, new_label in data:
+        for change, panel_name, old_label, new_label in data:
             inner_tbl = find_dict(widget)
             inner_tbl['args'][2] = new_label
             inner_tbl['old_label'] = old_label
@@ -181,10 +217,20 @@ class TestBaseDatabase(BaseAsyncTests):
                 panel_name]['widgets']
             w_key, list_ = self._tcp._find_label_in_panel(old_label)
             self._tcp.current_panel[w_key] = widget
-            await self.db.rename_fields()
-            field_name = make_name(new_label)
-            self.assertIn(field_name, self.db.cache.budget_fields, msg.format(
-                field_name, self.db.cache.budget_fields))
+
+            if change:
+                self._tcp.set_panel_chg_config(panel_name, change)
+                await self.db.rename_fields()
+                file_data = self.read_text_file(self.CHANGE_FILE_FULLPATH)
+                result = self.find_text(file_data, 'Noncommercial', 7,
+                                        not_in_file)
+                self.assertNotIn(not_in_file, result)
+            else:
+                await self.db.rename_fields()
+                field_name = make_name(new_label)
+                self.assertIn(field_name, self.db.cache.budget_fields,
+                              msg.format(field_name,
+                                         self.db.cache.budget_fields))
 
     #@unittest.skip("Temporarily skipped")
     async def test_populate_panels(self):
@@ -204,7 +250,7 @@ class TestBaseDatabase(BaseAsyncTests):
             if not load:
                 await self.asyncTearDown()
 
-            with patch.object(self.db, '_mf', self.fmf):
+            with patch.object(self.db, 'mf', self.fmf):
                 result = await self.db.populate_panels()
 
             if load:
@@ -227,14 +273,14 @@ class TestBaseDatabase(BaseAsyncTests):
         data = {4: 'New York', 6: '20', 8: 'Joe Schmo',
                 10: badidatetime.date(183, 3, 5), 14: 'New York'}
 
-        with patch.object(self.db, '_mf', self.fmf):
-            await self.db._populate_config_data_panels(183, self.db._mf.panels)
+        with patch.object(self.db, 'mf', self.fmf):
+            await self.db._populate_config_data_panels(183, self.db.mf.panels)
             # Test that fields have be repopulated.
             self.assertTrue(self.db.cache.fields)
             # Now reload the data and test that the data is in the panels.
             await self.db.cache.load()
-            await self.db._populate_config_data_panels(183, self.db._mf.panels)
-            org_panel = self.db._mf.panels['organization']
+            await self.db._populate_config_data_panels(183, self.db.mf.panels)
+            org_panel = self.db.mf.panels['organization']
 
             for idx, child in enumerate(org_panel.GetChildren()):
                 if child.__class__.__name__ in widgets:
@@ -257,8 +303,8 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted {}, found {}."
 
-        with patch.object(self.db, '_mf', self.fmf):
-            panel = self.db._mf.panels.get('monthly')
+        with patch.object(self.db, 'mf', self.fmf):
+            panel = self.db.mf.panels.get('monthly')
 
             for valid, expected in data:
                 if valid:
@@ -283,9 +329,9 @@ class TestBaseDatabase(BaseAsyncTests):
         Test that the _populate_fiscal method sets the choices in the
         ComboBox widget in the fical panel.
         """
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.fmf):
             self.db._populate_fiscal()
-            panel = self.db._mf.panels.get('fiscal')
+            panel = self.db.mf.panels.get('fiscal')
             self.assertEqual('183-184', panel.GetChildren()[3].GetString(1))
 
     #@unittest.skip("Temporarily skipped")
@@ -321,9 +367,9 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.fmf):
             for panel_name, pre_poplt, values, valid, expected in data:
-                panel = self.db._mf.panels.get(panel_name)
+                panel = self.db.mf.panels.get(panel_name)
 
                 if valid:
                     self.db.populate_panel_values(panel_name, panel, values)
@@ -332,6 +378,7 @@ class TestBaseDatabase(BaseAsyncTests):
                     self.assertIsNone(error, f"Expected 'none', found {error}")
                     result = self.db.cache.get(self.db._T_DATA, year=year,
                                                r_type=panel_name)
+                    self.db.clear_panel(panel)
 
                     for field, value in values.items():
                         for record in result:
@@ -343,6 +390,7 @@ class TestBaseDatabase(BaseAsyncTests):
                     error = await self.db.save_to_database(panel_name, panel)
                     self.assertEqual(expected, error, msg.format(
                         expected, error))
+                    self.db.clear_panel(panel)
 
     #@unittest.skip("Temporarily skipped")
     async def test_save_to_database_monthly(self):
@@ -365,9 +413,9 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.fmf):
             for panel_name, pre_poplt, values, valid, expected in data:
-                panel = self.db._mf.panels.get(panel_name)
+                panel = self.db.mf.panels.get(panel_name)
 
                 if valid:
                     self.db.populate_panel_values(panel_name, panel, values)
@@ -381,6 +429,7 @@ class TestBaseDatabase(BaseAsyncTests):
                     error = await self.db.save_to_database(panel_name, panel)
                     self.assertEqual(expected, error, msg.format(
                         expected, error))
+                    self.db.clear_panel(panel)
 
     #@unittest.skip("Temporarily skipped")
     async def test_save_to_database_fiscal(self):
@@ -402,9 +451,9 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted '{}', field_name '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.fmf):
             for panel_name, values, valid, expected in data:
-                panel = self.db._mf.panels.get(panel_name)
+                panel = self.db.mf.panels.get(panel_name)
 
                 if valid:
                     await self.insert_fiscal_year()
@@ -418,6 +467,7 @@ class TestBaseDatabase(BaseAsyncTests):
                     size = len(result)
                     self.assertEqual(expected, size,
                                      f"Expected {expected}, found {size}.")
+                    self.db.clear_panel(panel)
 
                     for fn, idx in field_name_idx:
                         value0 = values[fn]
@@ -458,9 +508,9 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted '{}', found '{}'."
 
-        with patch.object(self.db, '_mf', self.fmf):
+        with patch.object(self.db, 'mf', self.fmf):
             for panel_name, values, year, valid, expected in data:
-                panel = self.db._mf.panels.get(panel_name)
+                panel = self.db.mf.panels.get(panel_name)
 
                 if valid:
                     self.db.populate_panel_values(panel_name, panel, values)
@@ -469,6 +519,7 @@ class TestBaseDatabase(BaseAsyncTests):
                     result = await lt.select_ledger_transaction(year)
                     self.assertEqual(expected, result[0][:-1], msg.format(
                         expected, result[0][:-1]))
+                    self.db.clear_panel(panel)
                 else:
                     error = await self.db.save_to_database(panel_name, panel)
                     self.assertEqual(expected, error, msg.format(

@@ -7,10 +7,11 @@ __docformat__ = "restructuredtext en"
 import os
 import wx
 import ast
+import copy
 import sqlite3
 import aiosqlite
 
-from .config import Settings, TomlPanelConfig
+from .config import Settings, TomlCreatePanel
 from .bases import find_dict
 from .utilities import make_name, StoreObjects
 from .populate_collect_panel import PopulateCollect
@@ -247,7 +248,8 @@ class BaseDatabase(PopulateCollect, Settings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.dp = DataPreperation(self)
-        self._mf = StoreObjects().get_object('MainFrame')
+        self.mf = StoreObjects().get_object('MainFrame')
+        self._tcp = TomlCreatePanel()
         self._cache = Cache(self)
 
     def set_local_coordinates(self, lat: float=None, lon: float=None) -> None:
@@ -335,19 +337,19 @@ class BaseDatabase(PopulateCollect, Settings):
             msg = ("Database table count is wrong it should be "
                    f"'{self._TABLES}' found '{table_names}'")
             self._log.error(msg)
-            self._mf.statusbar_error = msg
+            self.mf.statusbar_error = msg
 
         if not i_check:
             msg = ("Database index count is wrong it should be "
                    f"'{self._INDICES}' found '{index_names}'")
             self._log.error(msg)
-            self._mf.statusbar_error = msg
+            self.mf.statusbar_error = msg
 
         if not v_check:
             msg = ("Database view count is wrong it should be "
                    f"'{self._VIEWS}' found '{view_names}'")
             self._log.error(msg)
-            self._mf.statusbar_error = msg
+            self.mf.statusbar_error = msg
 
         return t_check + i_check == 2
 
@@ -359,21 +361,22 @@ class BaseDatabase(PopulateCollect, Settings):
         Rename a field in the DB and cache. We expect the field name created
         with the utilities.make_name() function from the widget name.
         """
-        tpc = TomlPanelConfig()
-        config = tpc.panel_config
+        config = self._tcp.panel_config
         panels = config.get('meta', {}).get('panels')
         p_names = [panel[1] for panel in panels if panel[2]]
+        rm_chg_wdgts = {}
 
         for panel_name in p_names:
             for widget, values in config[panel_name]['widgets'].items():
                 inner = find_dict(values)
 
                 if old_label := inner.get('old_label'):
-                    old_label = make_name(old_label)
-                    new_label = make_name(inner['args'][2])
+                    old_field = make_name(old_label)
+                    new_label = inner['args'][2]
+                    new_field = make_name(new_label)
                     if new_label in self.cache.budget_fields: continue
-                    data = {'data': [{'old_field': old_label,
-                                      'new_field': new_label}]}
+                    data = {'data': [{'old_field': old_field,
+                                      'new_field': new_field}]}
                     rc = await self.cache.update(self._T_FIELD_TYPE, data)
 
                     if rc == 0:  # pragma: no cover
@@ -381,6 +384,25 @@ class BaseDatabase(PopulateCollect, Settings):
                             "The '%s' panel widget '%s' should have had a "
                             "name change on label '%s'.",
                             panel_name, widget, old_label)
+                    else:
+                        items = rm_chg_wdgts.setdefault(panel_name, [])
+                        items.append((widget, new_label))
+
+        for panel_name, widgets in rm_chg_wdgts.items():
+            data = self._tcp.get_panel_chg_config(panel_name)
+
+            if data:
+                chg_data = data.get('widgets', {})
+
+                for widget, new_label in widgets:
+                    for widget, values in copy.deepcopy(chg_data).items():
+                        inner = find_dict(values)
+
+                        if new_label == inner.get('old_label'):
+                            chg_data.pop(widget)
+
+                self._tcp.changes = chg_data
+                self._tcp.save_updated_panel(panel_name)
 
     async def populate_panels(self) -> None:
         """
@@ -391,7 +413,7 @@ class BaseDatabase(PopulateCollect, Settings):
 
         if None not in (year, month):
             self._log.info("Populating all panels in %04d-%02d.", year, month)
-            await self._populate_config_data_panels(year, self._mf.panels)
+            await self._populate_config_data_panels(year, self.mf.panels)
             await self._populate_month(fy)
             self._populate_fiscal()
 
@@ -425,7 +447,7 @@ class BaseDatabase(PopulateCollect, Settings):
         today = self.today()
         date = (today.year, today.month)
         mon_idx = self.index_of_calendar_year(date, fy_year)
-        panel = self._mf.panels.get('monthly')
+        panel = self.mf.panels.get('monthly')
         data = self.collect_panel_values(panel)
         values = ()  # Used when all monthly panels are empty.
 
@@ -444,7 +466,7 @@ class BaseDatabase(PopulateCollect, Settings):
         """
         Populate the fiscal panel.
         """
-        panel = self._mf.panels.get('fiscal')
+        panel = self.mf.panels.get('fiscal')
         panel.initializing = True
         self.populate_panel_values('fiscal', panel, {})
         panel.initializing = False

@@ -67,7 +67,7 @@ class PopulateCollect(AsyncEventLoop):
         :returns: True if data has been saved in the DB and False if not saved.
         :rtype: bool
         """
-        panel = self._mf.panels[name]
+        panel = self.mf.panels[name]
         data = self.collect_panel_values(panel)
         items = []
 
@@ -370,7 +370,7 @@ class PopulateCollect(AsyncEventLoop):
             sb_msg = lg_msg
 
         self._log.error(lg_msg)
-        self._mf.statusbar_error = sb_msg
+        self.mf.statusbar_error = sb_msg
 
     def _process_box_value(self, widget, field_name: str, value: str | int
                            ) -> str:
@@ -390,7 +390,7 @@ class PopulateCollect(AsyncEventLoop):
             if value is None:
                 error = error.format(field_name)
                 self._log.warning(error)
-                self._mf.statusbar_warning = error
+                self.mf.statusbar_warning = error
             else:
                 widget.SetSelection(value)
 
@@ -607,7 +607,7 @@ class PopulateCollect(AsyncEventLoop):
 
     def set_fiscal_panel(self, current: bool, work_on: bool, audit: bool
                          ) -> None:
-        for w0, w1 in self.find_child_sets(self._mf.panels['fiscal']):
+        for w0, w1 in self.find_child_sets(self.mf.panels['fiscal']):
             if w1 is None:  # Only on a ComboBox
                 continue
 
@@ -629,7 +629,7 @@ class PopulateCollect(AsyncEventLoop):
 
         :param str date_str: The string value from the ComboBox.
         """
-        panel = self._mf.panels['monthly']
+        panel = self.mf.panels['monthly']
         date = self.convert_str_date(date_str)
         mon_idx = self.index_of_calendar_year(date)
         values = ()  # Used when no monthly data has been generated.
@@ -672,8 +672,8 @@ class PopulateCollect(AsyncEventLoop):
               [((5, 183, badidatetime.date(183, 8, 10), 'Test expenses',
                  3, 1, '', 2, 30000, None, None, None, None, 0,
                  <badidatetime.datetime>, <badidatetime.datetime>),
-                [(5, 'national_baháí_fund', 20000),
-                 (5, 'regional_baháí_council', 10000)])]
+                [(5, 183, 'national_baháí_fund', 20000),
+                 (5, 183, 'regional_baháí_council', 10000)])]
         """
         data = self.collect_panel_values(panel)
         data['panel.purge'] = None  # Temporary
@@ -742,8 +742,8 @@ class PopulateCollect(AsyncEventLoop):
         lt = LedgerTransaction(self)
         item = (row, self.run_async(lt.select_expenses(row[0])))
         data = self.convert_db_to_panel(item)
-        panel = self._mf.panels['ledger']
+        panel = self.mf.panels['ledger']
         panel.initializing = True
-        self.clear_panel(self._mf.panels['ledger'])
+        self.clear_panel(self.mf.panels['ledger'])
         self.populate_panel_values('ledger', panel, data)
         panel.initializing = False

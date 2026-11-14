@@ -32,97 +32,96 @@ class MenuBar:
 
         self.__item_map = OrderedDict([
             ('file', [None, '&File\tALT+F', "File and App operations.",
-                      None, wx.Menu(), True, OrderedDict([
+                      None, True, OrderedDict([
                           ('open', [wx.ID_OPEN, '&Open\tCTRL+O',
                                     "Open TOML configuration file.",
-                                    'file_picker', None,  False, None]),
+                                    'file_picker',  False, None]),
                           ('save', [wx.ID_SAVE, "&Save\tCTRL+S",
                                     "Save TOML configuration file.",
-                                    'file_save', None, False, None]),
+                                    'file_save', False, None]),
                           ('save_as', [wx.ID_SAVEAS, "&Save As\tCTRL+A",
                                        "Save a TOML configuration file with "
                                        "a different name.", 'file_save_as',
-                                       None, False, None]),
+                                       False, None]),
                           ('separator_0', []),
                           ('close', [wx.ID_CLOSE, "&Close\tCTRL+C",
                                      "Close the current frame.",
-                                     'file_close', None, True, None]),
+                                     'file_close', True, None]),
                           ('quit', [wx.ID_EXIT, "&Quit\tCTRL+Q",
                                     "Quit this application.",
-                                    'app_quit', None, True, None]),
+                                    'app_quit', True, None]),
                           ])]),
             ('edit', [None, '&Edit\tALT+E', "Screen editing operations.",
-                      None, wx.Menu(), True, OrderedDict([
+                      None, True, OrderedDict([
                           ('conf', [200, f"&{names[0]}\tCTRL+F",
                                     "Edit basic organization configuration.",
-                                    'edit_config', None, True, None]),
+                                    'edit_config', True, None]),
                           ('budget', [201, f"&{names[1]}\tCTRL+B",
                                       "Edit yearly budget.",
-                                      'edit_budget', None, True, None]),
+                                      'edit_budget', True, None]),
                           ('monthly', [202, f"&{names[2]}\tCTRL+M",
                                        "Edit monthy data.",
-                                       'edit_monthly', None, True, None]),
+                                       'edit_monthly', True, None]),
                           ('ledger', [203, "&Ledget Data Entry\tCTRL+L",
                                       "Ledger Data Entry", 'edit_ledger_data',
-                                      None, True, None]),
+                                      True, None]),
                           ('fiscal', [204, f"&{names[3]}\tCTRL+O",
                                       "Choose Fiscal Year",
-                                      'edit_fiscal_year', None, True, None]),
+                                      'edit_fiscal_year', True, None]),
                           ('hide', [205, "&Close All",
                                     "Close all panels.",
-                                    'edit_hide_all', None, True, None]),
+                                    'edit_hide_all', True, None]),
                           ])]),
             ('reports', [None, '&Reports\tALT+R', "Print reports.",
-                         None, wx.Menu(), True, OrderedDict([
+                         None, True, OrderedDict([
                              ('budget', [300, "&Budget Worksheet\tCTRL+W",
                                          "Yearly budget report.",
-                                         'report_budget', None, True, None]),
+                                         'report_budget', True, None]),
                              ])]),
             ('tools', [None, '&Tools\tALT+T',
                        "Various tool to help with productivity.",
-                       None, wx.Menu(), True, OrderedDict([
+                       None, True, OrderedDict([
                            ('short', [400, "&Short Cuts\tCTRL+H",
                                       "Show the short cut screen.",
-                                      'tool_short_cuts', None, True, None]),
+                                      'tool_short_cuts', True, None]),
                            ('inspection', [401, "&Inspection\tCTRL+I",
                                            "Show the WX inspection tool.",
-                                           'tool_inspection', None,
-                                           True, None]),
+                                           'tool_inspection', True, None]),
                            ('fields', [402, "&Field Editor\tCTRL+D",
                                        "Edit fields on various screens.",
-                                       'tool_fields', None, True, None]),
+                                       'tool_fields', True, None]),
                            ('separator_1', []),
                            ('reset', [403, "Reset",
                                       "Reset some default settings.",
-                                      None, wx.Menu(), True, OrderedDict([
+                                      None, True, OrderedDict([
                                           ('window_size', [
                                               4031, "&Window Size\tALT+W",
                                               "Reset default window size.",
                                               'tool_reset_window',
-                                              None, True, None]),
+                                              True, None]),
                                           ])]),
                            ])]),
             ('settings', [None, '&Settings\tALT+S', "Application settings",
-                          None, wx.Menu(), True, OrderedDict([
+                          None, True, OrderedDict([
                               ('fiscal_settings',
                                [500, "&Fiscal Year Settings\tCTRL+Y",
                                 "Show Fiscal Year Page Settings",
-                                'settings_fiscal', None, True, None]),
+                                'settings_fiscal', True, None]),
                               ('paths', [501, "&Application Paths\tCTRL+P",
                                          "Show the application paths.",
-                                         'settings_paths', None, True, None]),
+                                         'settings_paths', True, None]),
                               ])]),
             ('help', [None, '&Help\tALT+H', "Documentation",
-                      None, wx.Menu(), True, OrderedDict([
+                      None, True, OrderedDict([
                           ('manual', [600, "&Manual\tCTRL+N",
                                       "Open an online manual.",
-                                      'app_manual', None, True, None]),
+                                      'app_manual', True, None]),
                           ('releases', [601, "&Releases\tCTRL+R",
                                         "Open the online release page.",
-                                        'app_manual', None, True, None]),
+                                        'app_manual', True, None]),
                           ('about', [wx.ID_ABOUT, "&About\tCTRL+T",
                                      "Display the about screen.",
-                                     'app_about', None, True, None]),
+                                     'app_about', True, None]),
                           ])]),
             ])
         self._create_menu()
@@ -173,31 +172,36 @@ class MenuBar:
             v_size = len(values)
 
             try:
-                assert v_size in (0, 7), f"Item '{item}' is wrong length."
+                assert v_size in (0, 6), (
+                    f"Item '{values}' is wrong length, found: '{v_size}'.")
 
                 if v_size == 0:
                     if used != 0: menu.AppendSeparator()
                 else:
-                    id, nk, disc, cb, mo, tf, od = values
+                    id, nk, disc, cb, tf, od = values
 
-                    if not id and nk and not cb and mo and tf and od:
+                    if not id and nk and not cb and tf and od:
                         # Top level menu item.
                         name, tab, key = nk.partition('\t')
-                        menu.Append(mo, name)
-                        self.__recurse_menu(od, bind_map, menu=mo)
-                    elif id and nk and cb and not mo and not od:
+                        submenu = wx.Menu()
+                        menu.Append(submenu, name)
+                        self.__recurse_menu(od, bind_map, menu=submenu)
+                    elif id and nk and cb and not od:
                         # Normal menu item.
                         menu_item = menu.Append(id, nk, disc)
                         bind_map.setdefault(nk, [getattr(self, cb), menu_item])
                         used += 1
                         self._menu.Enable(id, tf)
-                    elif id and nk and not cb and mo and od:
+                    elif id and nk and not cb and od:
                         # Submenu
-                        menu_item = menu.Append(id, nk, mo, disc)
+                        submenu = wx.Menu()
+                        menu_item = wx.MenuItem(menu, id, nk, disc,
+                                                subMenu=submenu)
+                        menu.Append(menu_item)
                         bind_map.setdefault(nk, [None, menu_item])
                         used += 1
                         self._menu.Enable(id, tf)
-                        self.__recurse_menu(od, bind_map, menu=mo)
+                        self.__recurse_menu(od, bind_map, menu=submenu)
             except Exception:
                 self._log.error("One of the menu items failed: %s, %s",
                                 values, menu, exc_info=True)
@@ -240,20 +244,20 @@ class MenuBar:
         # *** TODO *** We need to check for unsaved panels.
         self.frame.Destroy()
 
-    def edit_config(self, event) -> None:  # TODO No fill screen issues
+    def edit_config(self, event) -> None:
         self._do_panel_switch('organization')
 
-    def edit_budget(self, event):  # TODO No fill screen issues
+    def edit_budget(self, event):
         self._do_panel_switch('budget')
 
-    def edit_monthly(self, event):  # TODO No fill screen issues
+    def edit_monthly(self, event):
         self._do_panel_switch('monthly')
 
-    def edit_ledger_data(self, event):  # TODO Has screen fill issues
+    def edit_ledger_data(self, event):
         self.db.clear_panel(self.panels['ledger'])
         self._do_panel_switch('ledger')
 
-    def edit_fiscal_year(self, event):  # TODO Has screen fill issues
+    def edit_fiscal_year(self, event):
         self._do_panel_switch('fiscal')
 
     def edit_hide_all(self, event):
@@ -304,13 +308,13 @@ class MenuBar:
         self._do_panel_switch('fields', (
             [wx.ID_OPEN, True], [wx.ID_SAVE, True], [wx.ID_SAVEAS, True],))
 
-    def settings_fiscal(self, event):  # Has screen fill issues
+    def settings_fiscal(self, event):
         if 'fiscal_settings' not in self.panels:
             self.panels = ('fiscal_settings', FiscalSettings(self.container))
 
         self._do_panel_switch('fiscal_settings')
 
-    def settings_paths(self, event):  # Has screen fill issues
+    def settings_paths(self, event):
         if 'paths' not in self.panels:
             self.panels = ('paths', Paths(self.container))
 
@@ -324,23 +328,21 @@ class MenuBar:
         if menu_items:
             self.change_menu_items(menu_items)
 
+        # Remove the panel from the sizer if it's already there.
         if self.panel in [c.GetWindow() for c in self.sizer.GetChildren()]:
             self.sizer.Detach(self.panel)
 
+        # Add the panel if not in the sizer.
         if self.panel not in [c.GetWindow() for c in self.sizer.GetChildren()]:
             self.sizer.Add(self.panel, 1, wx.EXPAND)
 
+        # Update the short cut background color.
         if self.__short_cut:
             self._update_short_cuts(self.panel.background_color)
 
         self.panel.Layout()
         self.sizer.Show(self.panel, True)
         self.container.SendSizeEvent()
-        # print(f"panel={panel_name}, "
-        #       f"container={self.container.GetSize()}, "
-        #       f"container_best={self.container.GetBestSize()}, "
-        #       f"panel={self.panel.GetSize()}, "
-        #       f"panel_best={self.panel.GetBestSize()}")
 
     def change_menu_items(self, menu_list: tuple=()) -> None:
         """
