@@ -37,7 +37,7 @@ class CustomTextCtrl(wx.Control):
         self.cursor_pos = len(self.text)
 
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        self.SetMinSize((130, 36))
+        self.SetMinSize((130, 26))
         self.SetWindowStyle(self.GetWindowStyle() | wx.TE_PROCESS_ENTER)
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -322,8 +322,7 @@ class BadiDatePickerCtrl(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.text_ctrl, 1, wx.EXPAND)
-        self.text_ctrl.SetMinSize((90, -1))  # Set the minimum size
-        self.SetMinSize((1, 28))
+        self.text_ctrl.SetMinSize((110, 26))
         sizer.AddStretchSpacer()
         sizer.Add(self.calendar_btn, 1, wx.EXPAND | wx.ALL, 2)
         self.SetSizer(sizer)

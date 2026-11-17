@@ -22,6 +22,8 @@ class PanelFactory(TomlMetaData):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._so = StoreObjects()
+        fm = self._so.get_object('MainFrame')
+        self.scale_factor = fm.scale_factor
 
     @property
     def class_name_keys(self):
@@ -32,6 +34,9 @@ class PanelFactory(TomlMetaData):
 
     def get_panel_code(self, panel: str) -> str:
         return self.__panels.get(panel)
+
+    def get_min_size(self, min_size):
+        return [int(round(v * self.scale_factor)) for v in min_size]
 
     def parse(self) -> None:
         for panel in self.panels:
@@ -86,6 +91,7 @@ class PanelFactory(TomlMetaData):
         self._order = panel_kwargs.get('order', {})
         # Set default font.
         ps, fam, style, weight, ul, fn = self._parse_font('font_12_normal')
+        ps = round(ps * self.scale_factor)
         klass.write(f"        self.SetFont(wx.Font({ps}, {fam}, {style}, "
                     f"{weight}, {ul}, '{fn}'))\n")
         klass.write(f"        self.locale_prefix = {self.locale_prefix}\n")
@@ -259,6 +265,7 @@ class PanelFactory(TomlMetaData):
             min_size = dict_.get('min')
 
             if min_size:
+                min_size = self.get_min_size(min_size)
                 klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
             if dict_.get('focus', False):
@@ -285,6 +292,7 @@ class PanelFactory(TomlMetaData):
             min_size = dict_.get('min')
 
             if min_size:
+                min_size = self.get_min_size(min_size)
                 klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
             if dict_.get('focus', False):
@@ -315,6 +323,7 @@ class PanelFactory(TomlMetaData):
         min_size = dict_.get('min')
 
         if min_size:
+            min_size = self.get_min_size(min_size)
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
         klass.write(f"        {widget}.Bind(wx.adv.EVT_DATE_CHANGED, "
@@ -328,12 +337,12 @@ class PanelFactory(TomlMetaData):
         mandatory = dict_.get('mandatory', False)
         parent, id, _ = dict_.get('args')
         id = self._fix_flags(id)
-        klass.write(f"        {widget} = BadiDatePickerCtrl({parent}, "
-                    f"{id})\n")
+        min_size = dict_.get('min', (-1, -1))
+        klass.write(f"        {widget} = BadiDatePickerCtrl({parent}, {id})\n")
         self._set_colors(klass, widget, values)
-        min_size = dict_.get('min')
 
         if min_size:
+            min_size = self.get_min_size(min_size)
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
         klass.write(f"        {widget}.Bind(EVT_BADI_DATE_CHANGED, "
@@ -378,6 +387,7 @@ class PanelFactory(TomlMetaData):
         min_size = dict_.get('min')
 
         if min_size:
+            min_size = self.get_min_size(min_size)
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
         if dict_.get('dirty_event', True):
@@ -403,6 +413,7 @@ class PanelFactory(TomlMetaData):
         enabled = dict_.get('enabled', True)
 
         if min_size:
+            min_size = self.get_min_size(min_size)
             klass.write(f"        {widget}.SetMinSize({min_size})\n")
 
         if dict_.get('dirty_event', True):
@@ -441,6 +452,7 @@ class PanelFactory(TomlMetaData):
                 panel_parent = dict_.get('args')
                 items = dict_.get('add', ())
                 panel_prop, flags, panel_border = items
+                panel_border = int(round(panel_border * self.scale_factor))
                 panel_flags = self._fix_flags(flags)
                 btn_panel = name
             elif value[0] == 'BoxSizer':
@@ -571,6 +583,7 @@ class PanelFactory(TomlMetaData):
     def _parse_font(self, font_type: str) -> tuple:
         font = self.get_font(font_type)
         ps, fam, style, weight, ul, fn = font
+        ps = round(ps * self.scale_factor)
         fam = self._fix_flags(fam)
         style = self._fix_flags(style)
         weight = self._fix_flags(weight)

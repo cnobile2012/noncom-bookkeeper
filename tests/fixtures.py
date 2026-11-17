@@ -43,8 +43,11 @@ class FakeMainFrame(wx.Frame):
         tpc.is_valid
         # Setup app config
         self.tac = TomlAppConfig()
-        self.tac.initializing_config()
+        display = wx.Display()
+        rect = display.GetClientArea()
+        self.tac.initializing_config(rect.width, rect.height)
         self.tac.is_valid
+        self.scale_factor = self.tac.scale_factor
         super().__init__(parent, id=id, style=style, *args, **kwargs)
         StoreObjects().set_object('MainFrame', self)
         self._warning = None
@@ -78,6 +81,12 @@ class FakeMainFrame(wx.Frame):
 
             self.__panel_classes['ledger'] = LedgerDataEntry(self, *self.args,
                                                              **self.kwargs)
+
+    def get_size(self, size):
+        return [int(round(v * self.scale_factor)) for v in size]
+
+    def get_font_size(self, ps):
+        return round(ps * self.scale_factor)
 
     @property
     def panels(self):

@@ -20,7 +20,7 @@ from src.custom_widgits import ColorCheckBox
 
 from . import LOGFILE_NAME, check_flag, patchers
 from .base_database_test import BaseAsyncTests
-from .fixtures import FakeEvent
+from .fixtures import FakeEvent, FakePanel
 
 
 class CreateWidgetsPanel(ScrolledPanel, _CreateWidgets):
@@ -136,11 +136,27 @@ class Test_CreateWidgets(BaseAsyncTests):
             )
         msg = "Expected '{}', found '{}'."
 
-        for title, o_pos, span, btn, expected in data:
-            obj, pos = self.cw._make_heading(title, o_pos, span=span, btn=btn)
-            wdg, new_pos = expected
-            self.assertIsInstance(obj, wdg, msg.format(obj, wdg))
-            self.assertEqual(new_pos, pos)
+        with patch.object(self.cw, 'scale_factor', 1.0, create=True):
+            for title, o_pos, span, btn, expected in data:
+                with self.subTest(title=title):
+                    obj, pos = self.cw._make_heading(title, o_pos, span=span,
+                                                     btn=btn)
+                wdg, new_pos = expected
+                self.assertIsInstance(obj, wdg, msg.format(obj, wdg))
+                self.assertEqual(new_pos, pos)
+
+    def test__make_heading_scale_factor_from_parent(self):
+        parent = MagicMock()
+        parent.Parent.scale_factor = 1.5
+        # The method assigns self.scale_factor itself, so remove it afterward.
+        self.addCleanup(self.cw.__dict__.pop, 'scale_factor', None)
+
+        with patch.object(self.cw, 'parent', parent, create=True):
+            self.assertFalse(hasattr(self.cw, 'scale_factor'))
+            button, pos = self.cw._make_heading('Title', 0)
+
+        self.assertEqual(self.cw.scale_factor, 1.5)
+        self.assertEqual(button.GetMinSize(), wx.Size(72, 39))  # 48*1.5, 26*1.5
 
     #@unittest.skip("Temporarily skipped")
     def test__next_title_and_labels(self):
@@ -511,7 +527,8 @@ class TestSearchDialog(BaseAsyncTests):
         self.frame.create_panels()
 
     def _setup_panel(self):
-        panel = SearchDialog(self.frame)
+        parent = FakePanel(self.frame)
+        panel = SearchDialog(parent)
         parent = MagicMock()
         parent.Parent.bg_color = wx.Colour(10, 20, 30)
         parent.Parent.w_fg_color = wx.Colour(200, 210, 220)

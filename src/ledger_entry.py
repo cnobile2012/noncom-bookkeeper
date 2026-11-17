@@ -48,8 +48,12 @@ class _CreateWidgets:
 
     def _make_heading(self, title: str, pos: int, *, span: int=2,
                       btn: bool=True) -> tuple:
+        if not hasattr(self, 'scale_factor'):
+            self.scale_factor = self.parent.Parent.scale_factor
+
         text = wx.StaticText(self, wx.ID_ANY, title)
-        text.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT,
+        ps14 = round(14 * self.scale_factor)
+        text.SetFont(wx.Font(ps14, wx.FONTFAMILY_DEFAULT,
                              wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, 0, ''))
         text.SetForegroundColour(self.w_fg_color)
         text.SetMinSize((-1, -1))
@@ -59,7 +63,8 @@ class _CreateWidgets:
         if btn:
             button = wx.Button(self, wx.ID_CLEAR, label='')
             button.SetBackgroundColour(self.w_fg_color)
-            button.SetMinSize((48, 24))
+            min_size = [int(v * self.scale_factor) for v in (48, 26)]
+            button.SetMinSize(min_size)
             self.gbs.Add(button, (pos, 1), (1, 1),
                          wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
         else:
@@ -100,9 +105,13 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         so = StoreObjects()
         self.db = so.get_object('Database')
         self.mf = so.get_object('MainFrame')
+        self.scale_factor = self.mf.scale_factor
         self.frame = parent.GetParent()
         self.dirty = False
         self.create_display()
+
+    def get_size(self, min_size):
+        return [int(round(v * self.scale_factor)) for v in min_size]
 
     def create_display(self):
         self.title = "Ledger Data Entry"
@@ -112,21 +121,25 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         self.w1_bg_color = wx.Colour(222, 237, 230)  # Gray
         self.tc_width = 130
         self.SetBackgroundColour(self.bg_color)
-        self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+        ps12 = round(12 * self.scale_factor)
+        ps16 = round(16 * self.scale_factor)
+        self.SetFont(wx.Font(ps12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_NORMAL, 0, ''))
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
 
-        title_font = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+        title_font = wx.Font(ps16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD)
         title_widget = wx.StaticText(self, wx.ID_ANY, self.title)
         title_widget.SetFont(title_font)
         title_widget.SetForegroundColour(self.w_fg_color)
         sizer.Add(title_widget, 0, wx.CENTER, 0)
         search = wx.Button(self, wx.BU_EXACTFIT, label='Search')
-        search.SetMinSize((-1, 26))
-        search.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
-                               wx.FONTWEIGHT_NORMAL, 0, ''))
+        min_size = self.get_size((-1, 26))
+        search.SetMinSize(min_size)
+        search.SetFont(wx.Font(ps12, wx.FONTFAMILY_DEFAULT,
+                               wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL,
+                               0, ''))
         search.SetBackgroundColour(self.w1_bg_color)
         search.SetForegroundColour(self.w_fg_color)
         search.Bind(wx.EVT_BUTTON, self.search_box)
@@ -159,7 +172,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         self.widget_02.Enable(False)
         self.widget_02.SetBackgroundColour(self.w1_bg_color)
         self.widget_02.SetForegroundColour(self.w_fg_color)
-        self.widget_02.SetMinSize((self.tc_width + 6, 26))
+        min_size = self.get_size((self.tc_width + 6, 24))
+        self.widget_02.SetMinSize(min_size)
         self.widget_02.category = 'panel'
         self.gbs.Add(self.widget_02, (pos, 1), (1, 1),
                      wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
@@ -174,7 +188,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
                                        bgcolor=self.w_bg_color)
         widget_04.SetBackgroundColour(self.w_bg_color)
         widget_04.SetForegroundColour(self.w_fg_color)
-        widget_04.SetMinSize((self.tc_width + 6, 28))
+        min_size = self.get_size((self.tc_width + 6, 26))
+        widget_04.SetMinSize(min_size)
         widget_04.SetFocus()
         widget_04.Bind(EVT_BADI_DATE_CHANGED, self.set_dirty_flag)
         widget_04.mandatory = True
@@ -191,7 +206,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         widget_06 = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
         widget_06.SetBackgroundColour(self.w_bg_color)
         widget_06.SetForegroundColour(self.w_fg_color)
-        widget_06.SetMinSize((478, 26))
+        min_size = self.get_size((478, 26))
+        widget_06.SetMinSize(min_size)
         widget_06.category = 'panel'
         sizer_1.Add(widget_06, 0, wx.EXPAND | wx.TOP, 4)
         self.gbs.Add(sizer_1, (pos, 0), (1, 2), wx.EXPAND, 0)
@@ -238,7 +254,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
                                         style=wx.TE_READONLY, name='')
         self.balance_ctrl.SetBackgroundColour(self.w1_bg_color)
         self.balance_ctrl.SetForegroundColour(self.w_fg_color)
-        self.balance_ctrl.SetMinSize((self.tc_width, 26))
+        min_size = self.get_size((122, 24))
+        self.balance_ctrl.SetMinSize(min_size)
         self.balance_ctrl.category = 'panel'
         self.balance_ctrl.financial = True
         self.gbs.Add(self.balance_ctrl, (pos, 1), (1, 1),
@@ -263,7 +280,8 @@ class LedgerDataEntry(ScrolledPanel, BasePanel, _CreateWidgets,
         cancel_wgt.Bind(wx.EVT_BUTTON, self.button_cancel)
         sizer_1.Add(cancel_wgt, 0, wx.ALL, 10)
         panel_0.SetSizer(sizer_1)
-        sizer.Add(panel_0, 0, wx.CENTER, 0)
+        border = int(round(30 * self.scale_factor))
+        sizer.Add(panel_0, 0, wx.CENTER | wx.BOTTOM, border)
 
         self._scroll_rate = (20, 40)
         self.SetupScrolling(rate_x=self._scroll_rate[0],
@@ -408,13 +426,15 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         self.tc_width = 130
         self.SetBackgroundColour(bg_color)
         self.SetForegroundColour(fg_color)
-        self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+        ps12 = round(12 * parent.Parent.scale_factor)
+        ps16 = round(16 * parent.Parent.scale_factor)
+        self.SetFont(wx.Font(ps12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_NORMAL, 0, ''))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
 
-        title_font = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+        title_font = wx.Font(ps16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD)
         message = wx.StaticText(self, wx.ID_ANY, title)
         message.SetBackgroundColour(bg_color)
@@ -433,7 +453,8 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         trans_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
         trans_ctrl.SetBackgroundColour(self.w_bg_color)
         trans_ctrl.SetForegroundColour(fg_color)
-        trans_ctrl.SetMinSize((self.tc_width, 26))
+        min_size = parent.Parent.get_size((self.tc_width + 6, 26))
+        trans_ctrl.SetMinSize(min_size)
         trans_ctrl.category = 'panel'
         self.gbs.Add(trans_ctrl, (pos, 1), (1, 1),
                      wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
@@ -447,7 +468,8 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         self.srch_ctrl = BadiDatePickerCtrl(self, wx.ID_ANY)
         self.srch_ctrl.SetBackgroundColour(self.w_bg_color)
         self.srch_ctrl.SetForegroundColour(fg_color)
-        self.srch_ctrl.SetMinSize((130, 28))
+        min_size = parent.Parent.get_size((130, 26))
+        self.srch_ctrl.SetMinSize(min_size)
         self.srch_ctrl.SetValue('')
         self.srch_ctrl.category = 'panel'
         self.gbs.Add(self.srch_ctrl, (pos, 1), (1, 1),
@@ -461,7 +483,8 @@ class SearchDialog(ScrolledPanel, BasePanel, _CreateWidgets,
         memo_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=0, name='')
         memo_ctrl.SetBackgroundColour(self.w_bg_color)
         memo_ctrl.SetForegroundColour(fg_color)
-        memo_ctrl.SetMinSize((self.tc_width, 26))
+        min_size = parent.Parent.get_size((self.tc_width + 6, 26))
+        memo_ctrl.SetMinSize(min_size)
         memo_ctrl.category = 'panel'
         self.gbs.Add(memo_ctrl, (pos, 1), (1, 1),
                      wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.BOTTOM, 6)
@@ -555,8 +578,10 @@ class SearchResult(wx.Dialog):
         self.parent = parent
         self.rows = rows
         self._so = StoreObjects()
-        self.SetSize((1500, 600))
-        self.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+        min_size = parent.Parent.get_size((1500, 600))
+        self.SetSize(min_size)
+        ps12 = round(12 * parent.Parent.scale_factor)
+        self.SetFont(wx.Font(ps12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
                              wx.FONTWEIGHT_BOLD, 0, ''))
         # Red-ish
         _bg_color = bg_color if bg_color else wx.Colour(220, 130, 143)
@@ -576,7 +601,8 @@ class SearchResult(wx.Dialog):
         sizer.Add(line0, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 6)
 
         self.list_ctrl = DataViewListCtrl(self, wx.ID_ANY, style=DV_SINGLE)
-        self.list_ctrl.SetMinSize((1600, 200))
+        min_size = parent.Parent.get_size((1600, 200))
+        self.list_ctrl.SetMinSize(min_size)
         headers = ["Trans ID", "Fiscal Year", "Date", "Memo", "Trans Type",
                    "Entry Ref", "Number", "Bank Type", "Bank Amount",
                    "CoH Type", "Coh Amount", "Income Type", "Income Amount"]

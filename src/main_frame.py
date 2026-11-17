@@ -40,8 +40,9 @@ class MainFrame(wx.Frame, MenuBar):
         self.args = args
         self.kwargs = kwargs
         self.options = options
-        self._tac = TomlAppConfig()
-        self._log = logging.getLogger(self._tac.logger_name)
+        self.tac = TomlAppConfig()
+        self.scale_factor = self.tac.scale_factor
+        self._log = logging.getLogger(self.tac.logger_name)
         self.SetTitle(self._tmd.title)
         self.frame_bg_color = (128, 128, 128)  # Gray
         self.SetBackgroundColour(wx.Colour(*self.frame_bg_color))
@@ -71,7 +72,7 @@ class MainFrame(wx.Frame, MenuBar):
         StoreObjects().set_object(self.__class__.__name__, self)
 
         # Create and store the Database
-        if self._tac.config_type == 'bahai':
+        if self.tac.config_type == 'bahai':
             from .bahai_database import Database
         else:  # generic
             pass
@@ -195,7 +196,7 @@ class MainFrame(wx.Frame, MenuBar):
                 # Write the code files to the cache, only used for debugging.
                 if self.options and self.options.file_dump:
                     filename = f"{panel}.py"
-                    dir = self._tac.cached_factory_dir
+                    dir = self.tac.cached_factory_dir
                     pathname = os.path.join(dir, filename)
 
                     with open(pathname, 'w') as f:
@@ -218,7 +219,7 @@ class MainFrame(wx.Frame, MenuBar):
         :param str key: The key in the TOML config file. Can be 'size' or
                         'default'. The default is 'size'.
         """
-        value = self._tac.get_value('app_size', key)
+        value = self.tac.get_value('app-size', key)
         self.SetSize(wx.Size(value if value else size))
 
     def setup_resize_event(self):
@@ -234,7 +235,7 @@ class MainFrame(wx.Frame, MenuBar):
     def on_idle(self, event):
         if self.__resized:
             width, height = self.GetSize()
-            self._tac.update_app_config('app_size', 'size', (width, height))
+            self.tac.update_app_config('app-size', 'size', (width, height))
             self.__resized = False
 
             for panel in self.panels.values():

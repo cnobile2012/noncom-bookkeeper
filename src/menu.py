@@ -298,7 +298,7 @@ class MenuBar:
 
     def tool_reset_window(self, event):
         tac = TomlAppConfig()
-        size = tac.get_value('app_size', 'size')
+        size = tac.get_value('app-size', 'size')
         self.set_size(size, 'default')
 
     def tool_fields(self, event):

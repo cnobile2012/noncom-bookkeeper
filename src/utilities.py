@@ -100,6 +100,7 @@ class Borg:
 
             for inst in root._instances:
                 keys = [k for k in inst.__dict__ if not k.startswith('_')]
+
                 for k in keys:
                     del inst.__dict__[k]
 

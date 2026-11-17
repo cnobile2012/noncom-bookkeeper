@@ -7,6 +7,7 @@ __docformat__ = "restructuredtext en"
 import os
 import unittest
 import shutil
+import wx
 
 from pathlib import Path
 from unittest.mock import patch
@@ -1048,17 +1049,28 @@ class TestTomlAppConfig(BaseTomlTest):
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
+    @classmethod
+    def setUpClass(cls):
+        if not wx.GetApp():
+            cls.app = wx.App(False)
+
+        display = wx.Display()
+        cls.rect = display.GetClientArea()
+
+    @classmethod
+    def tearDownClass(cls):
+        if wx.GetApp():
+            wx.GetApp().Destroy()
+
     def setUp(self):
         check_flag(self.__class__.__name__)
         super().setUp()
         self._tac = TomlAppConfig()
         self.log_path = os.path.join(self._tac.user_log_fullpath, LOGFILE_NAME)
-        self._TESTING = True
 
     def tearDown(self):
         files = (self.TMP_USER_APP_FILE, TMP_USER_APP_CONFIG_FILE)
         self._remove_test_files(files)
-        self._TESTING = False
 
     def _create_config(self):
         self._tac._create_app_config()
@@ -1108,7 +1120,7 @@ class TestTomlAppConfig(BaseTomlTest):
         to the user location.
         """
         msg = "Expected {}, found {}."
-        self._tac.initializing_config()
+        self._tac.initializing_config(self.rect.width, self.rect.height)
         result = os.path.exists(self._tac.user_app_config_fullpath)
         self.assertTrue(result, msg.format(True, result))
 
@@ -1153,7 +1165,7 @@ class TestTomlAppConfig(BaseTomlTest):
         operation.
         """
         # Create file
-        self._tac.initializing_config()
+        self._tac.initializing_config(self.rect.width, self.rect.height)
         # Run test
         ret = self._tac.is_valid
         msg = f"Expected True, found {ret}."
@@ -1173,7 +1185,8 @@ class TestTomlAppConfig(BaseTomlTest):
 
         for valid, expected in data:
             if valid:
-                self._tac.initializing_config()
+                self._tac.initializing_config(self.rect.width,
+                                              self.rect.height)
                 result = self._tac._validate()
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
@@ -1192,22 +1205,28 @@ class TestTomlAppConfig(BaseTomlTest):
         Test that the application config file is created.
 
         File should contain the following data:
-        {'app_size': {'default': [530, 830], 'size': [530, 830]},
-         'app_config' : {'config_filename': }}
+        {'app-size': {'default': <depends on monitor>,
+                      'size': <depends on monitor>,
+                      'scale-factor': <depends on monitor>},
+         'app-config': {'config-filename': 'bahai.toml'}}
         """
+        self._tac.initializing_config(self.rect.width, self.rect.height)
+        scaled = [int(round(v * self._tac.scale_factor)) for v in (645, 850)]
         data = (
-            ('app_size', 'default', [570, 830]),
-            ('app_size', 'size', [570, 830]),
-            ('app_config', 'config_filename', 'bahai.toml'),
+            ('app-size', 'default', scaled),
+            ('app-size', 'size', scaled),
+            ('app-size', 'scale-factor', self._tac.scale_factor),
+            ('app-config', 'config-filename', 'bahai.toml'),
             )
-        msg = "Expected {}, found {}."
+        msg = "Expected {} for {}, found {}."
         ret = self._create_config()
-        self.assertTrue(ret, msg.format(True, ret))
+        self.assertTrue(ret)
 
         for table, key, expected in data:
             doc = self._tac.app_config
             result = doc[table][key]
-            self.assertEqual(expected, result, msg.format(expected, result))
+            self.assertEqual(expected, result, msg.format(
+                expected, key, result))
 
     #@unittest.skip("Temporarily skipped")
     @patch('src.config.TomlAppConfig.user_app_config_fullpath',
@@ -1217,10 +1236,10 @@ class TestTomlAppConfig(BaseTomlTest):
         Test that a value can be found.
 
         File should contain the following data:
-        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        {'app-size': {'default': [530, 830], 'size': [530, 830]}}
         """
         self._create_config()
-        value = self._tac.get_value('app_size', 'default')
+        value = self._tac.get_value('app-size', 'default')
         msg = f"Value should be a list, found '{value}'."
         self.assertTrue(isinstance(value, list), msg)
 
@@ -1232,13 +1251,13 @@ class TestTomlAppConfig(BaseTomlTest):
         Test that an invalid key is logged.
 
         File should contain the following data:
-        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        {'app-size': {'default': [530, 830], 'size': [530, 830]}}
         """
         self._create_config()
         invalid_key = 'invalid'
 
         with self.assertRaises(AssertionError) as cm:
-            self._tac.get_value('app_size', invalid_key)
+            self._tac.get_value('app-size', invalid_key)
 
         ex = str(cm.exception)
         msg = f"The key '{invalid_key}' was found, {ex}"
@@ -1250,21 +1269,11 @@ class TestTomlAppConfig(BaseTomlTest):
     def test_update_app_config(self):
         """
         Test that a value can be updated.
-
-        File should contain the following data:
-        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
         """
         self._create_config()
-        # Test that the 'default' value is the default.
-        value = self._tac.get_value('app_size', 'default')
-        expected = TomlAppConfig._DEFAULT_SCREEN_SIZE
-        msg = f"Expected '{expected}' found '{value}'."
-        self.assertEqual(expected, value, msg)
-
-        # Test that the update works properly.
         changed_value = [600, 900]
-        self._tac.update_app_config('app_size', 'default', changed_value)
-        value = self._tac.get_value('app_size', 'default')
+        self._tac.update_app_config('app-size', 'default', changed_value)
+        value = self._tac.get_value('app-size', 'default')
         msg = f"Expected '{changed_value}' found '{value}'."
         self.assertEqual(changed_value, value, msg)
 
@@ -1276,14 +1285,14 @@ class TestTomlAppConfig(BaseTomlTest):
         Test that a value for a new key gets added properly.
 
         File should contain the following data:
-        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        {'app-size': {'default': [530, 830], 'size': [530, 830]}}
         """
         self._create_config()
         # Test that the new key does not exist yet.
         new_key = 'test_key'
 
         with self.assertRaises(AssertionError) as cm:
-            value = self._tac.get_value('app_size', new_key)
+            value = self._tac.get_value('app-size', new_key)
 
         ex = str(cm.exception)
         msg = f"The key '{new_key}' was found, {ex}"
@@ -1291,8 +1300,8 @@ class TestTomlAppConfig(BaseTomlTest):
 
         # Test that the new key can be added and found.
         new_value = 'Test Value'
-        self._tac.update_app_config('app_size', new_key, new_value)
-        value = self._tac.get_value('app_size', new_key)
+        self._tac.update_app_config('app-size', new_key, new_value)
+        value = self._tac.get_value('app-size', new_key)
         msg = f"Expected '{new_value}' found '{value}'."
         self.assertEqual(new_value, value, msg)
 
@@ -1304,7 +1313,7 @@ class TestTomlAppConfig(BaseTomlTest):
         Test that a value for a new table and key gets added properly.
 
         File should contain the following data:
-        {'app_size': {'default': [530, 830], 'size': [530, 830]}}
+        {'app-size': {'default': [530, 830], 'size': [530, 830]}}
         """
         self._create_config()
         # Test that the new table is not found.

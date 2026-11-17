@@ -20,6 +20,7 @@ from src.ledger_entry import SearchDialog
 from src.ledger_transaction import LedgerTransaction
 
 from . import LOGFILE_NAME, check_flag, patchers
+from .fixtures import FakePanel
 from .base_database_test import BaseAsyncTests
 
 
@@ -893,7 +894,8 @@ class TestPopulateCollect(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         with patch.object(self.db, 'mf', self.frame):
-            panel = SearchDialog(self.frame)
+            parent = FakePanel(self.frame)
+            panel = SearchDialog(parent)
 
             for test_data, expected in data:
                 self.db.clear_panel(panel)

@@ -674,10 +674,16 @@ class TomlAppConfig(BaseSystemData):
     Read and write the TOML app config file.
     """
     _FILE_LIST = ('user_app_config_fullpath',)
-    _DEFAULT_SCREEN_SIZE = [570, 830]
+    _DEFAULT_SCREEN_SIZE = (645, 850)
+    BASE_WIDTH = 1920
+    BASE_HEIGHT = 1080
+    MIN_SCALE = 0.8
+    MAX_SCALE = 1.5
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._scale: int
+        self.scaled_screen_size: tuple
 
     @property
     def _has_app_user_config(self) -> bool:
@@ -694,10 +700,24 @@ class TomlAppConfig(BaseSystemData):
 
         return has
 
-    def initializing_config(self) -> None:
+    @property
+    def scale_factor(self) -> float:
+        return self._scale
+
+    def initializing_config(self, width: int, height: int) -> None:
         """
         Initialize the config files.
+
+        My 30" monitor 2560x1396
         """
+        scale_x = width / self.BASE_WIDTH
+        scale_y = height / self.BASE_HEIGHT
+        scale = (scale_x * scale_y) ** 0.5
+        scale = scale ** 0.3
+        self._scale = max(self.MIN_SCALE, min(scale, self.MAX_SCALE))
+        a_w, a_h = self._DEFAULT_SCREEN_SIZE
+        self.scaled_screen_size = (int(round(a_w * self._scale)),
+                                   int(round(a_h * self._scale)))
         if not self._has_app_user_config:
             self._create_app_config()
 
@@ -752,13 +772,14 @@ class TomlAppConfig(BaseSystemData):
         doc.add(tk.nl())
         # Create app size
         app_size = tk.table()
-        app_size.add('default', self._DEFAULT_SCREEN_SIZE)
-        app_size.add('size', self._DEFAULT_SCREEN_SIZE)
-        doc.add('app_size', app_size)
+        app_size.add('default', self.scaled_screen_size)
+        app_size.add('size', self.scaled_screen_size)
+        app_size.add('scale-factor', self.scale_factor)
+        doc.add('app-size', app_size)
         # Create filename
         app_config = tk.table()
-        app_config.add('config_filename', self.get_filename())
-        doc.add('app_config', app_config)
+        app_config.add('config-filename', self.get_filename())
+        doc.add('app-config', app_config)
         self._write_file(tk.dumps(doc))
 
     def get_filename(self) -> str:

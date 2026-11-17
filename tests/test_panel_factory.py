@@ -160,12 +160,13 @@ class TestPanelFactory(BaseAsyncTests):
                     'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP',
                             6], 'pos': [1, 0], 'span': [1, 1],
                     'callback': 'locality_prefix', 'update': 'widget_02'}]
+        ps = self.frame.get_font_size(10)
         expect0 = ("        widget_01 = wx.RadioBox(self, wx.ID_ANY, "
                    "'Locality Prefix', style=wx.RA_SPECIFY_ROWS, "
                    "choices=['LSA', 'Group'], majorDimension=1)\n"
                    "        widget_01.SetForegroundColour("
                    "wx.Colour(*[50, 50, 204]))\n"
-                   "        widget_01.SetFont(wx.Font(10, "
+                   f"        widget_01.SetFont(wx.Font({ps}, "
                    "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                    "wx.FONTWEIGHT_BOLD, 0, ''))\n"
                    "        widget_01.SetToolTip('Choose if your community "
@@ -193,7 +194,7 @@ class TestPanelFactory(BaseAsyncTests):
                    "choices=['LSA', 'Group'], majorDimension=1)\n"
                    "        widget_01.SetForegroundColour("
                    "wx.Colour(*[50, 50, 204]))\n"
-                   "        widget_01.SetFont(wx.Font(10, "
+                   f"        widget_01.SetFont(wx.Font({ps}, "
                    "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                    "wx.FONTWEIGHT_BOLD, 0, ''))\n"
                    "        widget_01.SetToolTip('Choose if your community is "
@@ -209,7 +210,7 @@ class TestPanelFactory(BaseAsyncTests):
 
         data = (
             ('organization', 'widget_01', values0, expect0),
-            ('organization', 'widget_01', values1, expect1)
+            ('organization', 'widget_01', values1, expect1),
             )
         msg = "Expected '{}', found '{}'."
 
@@ -263,16 +264,18 @@ class TestPanelFactory(BaseAsyncTests):
                    'pos': [1, 1], 'span': [1, 1], 'instance': True,
                    'dirty_event': False, 'financial': False,
                    'mandatory': False}]
+        ps = self.frame.get_font_size(10)
+        min_size = self.frame.get_size((260, 26))
         expected = ("        widget_02 = wx.TextCtrl(self, wx.ID_ANY, "
                     "'''''', style=wx.TE_READONLY)\n"
                     "        widget_02.SetBackgroundColour("
                     "wx.Colour(*[222, 237, 230]))\n"
                     "        widget_02.SetForegroundColour("
                     "wx.Colour(*[50, 50, 204]))\n"
-                    "        widget_02.SetFont(wx.Font(10, "
+                    f"        widget_02.SetFont(wx.Font({ps}, "
                     "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                     "wx.FONTWEIGHT_NORMAL, 0, ''))\n"
-                    "        widget_02.SetMinSize([260, 26])\n"
+                    f"        widget_02.SetMinSize({min_size})\n"
                     "        sizer_1.Add(widget_02, [1, 1], [1, 1], "
                     "wx.ALIGN_BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP, 6)\n"
                     "        self.widget_02 = widget_02\n"
@@ -297,13 +300,14 @@ class TestPanelFactory(BaseAsyncTests):
                   {'args': ['self', 'ID_ANY', ''], 'min': [130, 26],
                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
                    'pos': [5, 1], 'span': [1, 1], 'mandatory': False}]
+        min_size = self.frame.get_size((130, 26))
         expected = ("        widget_10 = wx.adv.DatePickerCtrl(self, "
                     "wx.ID_ANY)\n"
                     "        widget_10.SetBackgroundColour("
                     "wx.Colour(*[222, 237, 230]))\n"
                     "        widget_10.SetForegroundColour("
                     "wx.Colour(*[50, 50, 204]))\n"
-                    "        widget_10.SetMinSize([130, 26])\n"
+                    f"        widget_10.SetMinSize({min_size})\n"
                     "        widget_10.Bind(wx.adv.EVT_DATE_CHANGED, "
                     "self.set_dirty_flag)\n"
                     "        widget_10.mandatory = False\n"
@@ -329,12 +333,13 @@ class TestPanelFactory(BaseAsyncTests):
                   {'args': ['self', 'ID_ANY', ''], 'min': [130, 26],
                    'add': [0, 'ALIGN_CENTER_VERTICAL | LEFT | RIGHT | TOP', 6],
                    'pos': [5, 1], 'span': [1, 1], 'mandatory': False}]
+        min_size = self.frame.get_size((130, 26))
         expected = ("        widget_10 = BadiDatePickerCtrl(self, wx.ID_ANY)\n"
                     "        widget_10.SetBackgroundColour("
                     "wx.Colour(*[222, 237, 230]))\n"
                     "        widget_10.SetForegroundColour("
                     "wx.Colour(*[50, 50, 204]))\n"
-                    "        widget_10.SetMinSize([130, 26])\n"
+                    f"        widget_10.SetMinSize({min_size})\n"
                     "        widget_10.Bind(EVT_BADI_DATE_CHANGED, "
                     "self.set_dirty_flag)\n"
                     "        widget_10.mandatory = False\n"
@@ -362,6 +367,7 @@ class TestPanelFactory(BaseAsyncTests):
                    'style': 'CB_READONLY', 'min': [228, 26],
                    'add': [0, 'ALIGN_BOTTOM | ALL', 10], 'pos': [1, 0],
                    'span': [1, 1], 'dirty_event': True, 'mandatory': True}]
+        min_size = self.frame.get_size((228, 26))
         expected = ("        widget_01 = wx.ComboBox(self, wx.ID_ANY, "
                     "value='''183-03 Jamál''', choices=['183-03 Jamál', "
                     "\"183-04 'Aẓamat\", '183-05 Núr', '183-06 Raḥmat', "
@@ -376,7 +382,7 @@ class TestPanelFactory(BaseAsyncTests):
                     "wx.Colour(*[222, 237, 230]))\n"
                     "        widget_01.SetForegroundColour("
                     "wx.Colour(*[50, 50, 204]))\n"
-                    "        widget_01.SetMinSize([228, 26])\n"
+                    f"        widget_01.SetMinSize({min_size})\n"
                     "        widget_01.Bind(wx.EVT_COMBOBOX, "
                     "self.set_dirty_flag)\n"
                     "        widget_01.mandatory = True\n"
@@ -403,13 +409,14 @@ class TestPanelFactory(BaseAsyncTests):
                    'add': [0, 'ALIGN_BOTTOM | LEFT | RIGHT | TOP', 6],
                    'pos': [4, 1], 'span': [1, 1], 'dirty_event': True,
                    'financial': False, 'mandatory': False}]
+        min_size = self.frame.get_size((20, 20))
         expected = ("        widget_04 = ColorCheckBox(self, wx.ID_ANY, "
                     "label='fiscal_current', name='current')\n"
                     "        widget_04.SetBackgroundColour("
                     "wx.Colour(*[210, 190, 255]))\n"
                     "        widget_04.SetForegroundColour("
                     "wx.Colour(*[50, 50, 204]))\n"
-                    "        widget_04.SetMinSize([20, 20])\n"
+                    f"        widget_04.SetMinSize({min_size})\n"
                     "        widget_04.Bind(EVT_COLOR_CHECKBOX, "
                     "self.set_dirty_flag)\n"
                     "        widget_04.Enable(False)\n"
@@ -634,7 +641,8 @@ class TestPanelFactory(BaseAsyncTests):
         Test that the _set_font method returns a string representing
         the given font.
         """
-        expected = ("        widget_00.SetFont(wx.Font(16, "
+        ps = self.frame.get_font_size(16)
+        expected = (f"        widget_00.SetFont(wx.Font({ps}, "
                     "wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, "
                     "wx.FONTWEIGHT_BOLD, 0, ''))\n")
         dict_ = {'args': ['self', 'ID_ANY', 'Organization Information'],
@@ -654,7 +662,8 @@ class TestPanelFactory(BaseAsyncTests):
         Test that the _parse_font method returns the parts of the font
         when given the fond string.
         """
-        expected = (12, 'wx.FONTFAMILY_DEFAULT', 'wx.FONTSTYLE_NORMAL',
+        ps = self.frame.get_font_size(12)
+        expected = (ps, 'wx.FONTFAMILY_DEFAULT', 'wx.FONTSTYLE_NORMAL',
                     'wx.FONTWEIGHT_NORMAL', 0, '')
         font_type = 'font_12_normal'
         result = self.pf._parse_font(font_type)

@@ -83,6 +83,7 @@ if __name__ == "__main__":
         settings.debug = True
 
     if options.run:
+        app = wx.App()
         settings.create_dirs()
         Logger().config(logger_name=settings.logger_name,
                         file_path=settings.user_log_fullpath)
@@ -93,7 +94,10 @@ if __name__ == "__main__":
 
         tpc.initializing_config()
         tac = TomlAppConfig()
-        tac.initializing_config()
+        # Find the display pixal size.
+        display = wx.Display()
+        rect = display.GetClientArea()
+        tac.initializing_config(rect.width, rect.height)
 
         if not tac.is_valid:
             tac.recover_config()
@@ -114,7 +118,6 @@ if __name__ == "__main__":
         else:
             suppress_gtk_style_context_warnings()
             # Run the application.
-            app = wx.App()
             mf = MainFrame(options=options)
             icon_path = os.path.join(settings.base_dir(), 'images',
                                      'bookkeeper-48x48.ico')

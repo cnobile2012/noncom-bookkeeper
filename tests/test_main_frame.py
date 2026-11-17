@@ -26,6 +26,7 @@ class TestMainFrame(BaseAsyncTests):
 
     def tearDown(self):
         self.mf = None
+        self.tac = None
 
     @unittest.skip("Temporarily skipped")
     async def test_start(self):
