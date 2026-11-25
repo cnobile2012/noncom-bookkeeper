@@ -15,7 +15,6 @@ from src.config import Settings
 
 tracemalloc.start()
 
-
 start = time.perf_counter()
 _test_times = {}
 SLOW_THRESHOLD = 1.5  # seconds
@@ -82,3 +81,5 @@ TMP_LOCAL_CONFIG_FILE = os.path.join(s._testing_data_dir, 'default_bahai.toml')
 TMP_LOCAL_DOES_NOT_EXIST = os.path.join(s._testing_data_dir,
                                         'non_existing.toml')
 TMP_TESTING_DATA_DIR = s.data_dir
+TMP_TESTING_FACTORY_DIR = os.path.join(s._testing_data_dir,
+                                       s.panel_factory_name)

@@ -829,4 +829,9 @@ class Database(BaseDatabase):
         return data
 
     def convert_str_date(self, date_str: str) -> tuple:
-        return tuple([int(d) for d in date_str.split(' ')[0].split('-')])
+        ret = None
+
+        if [True for c in date_str if c.isdecimal()]:
+            ret = tuple([int(d) for d in date_str.split(' ')[0].split('-')])
+
+        return ret

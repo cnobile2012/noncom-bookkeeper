@@ -478,7 +478,7 @@ class BaseDatabase(PopulateCollect, Settings):
         :param str panel_name: The internal name of the current panel.
         :param wx.Panel panel: Any of the panels that have collected data.
         :returns: None if no errors, otherwise the error message.
-        :rtype: None or str
+        :rtype: None
 
         .. note::
 

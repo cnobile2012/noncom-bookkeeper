@@ -9,13 +9,11 @@ import copy
 import unittest
 import badidatetime
 
-from unittest.mock import patch
-
 from src.config import Settings
 from src.utilities import StoreObjects
 from src.custom_widgits import ordered_month
 
-from . import LOGFILE_NAME, check_flag, patchers
+from . import LOGFILE_NAME, check_flag
 from .base_database_test import BaseAsyncTests
 
 
@@ -26,7 +24,6 @@ class TestDatabase(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self._set = Settings()
         self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
 
@@ -64,8 +61,9 @@ class TestDatabase(BaseAsyncTests):
         badidatetime package has the locale set.
         """
         data = (
+            (*badidatetime.BADI_COORD[:2], False),  # Tehran
             (None, None, False),
-            (35.5894, -78.7792, True),
+            (40.7127281, -74.0060152, True),  # New York
             )
         msg = "Expected '{}' found '{}'"
 

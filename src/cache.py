@@ -71,7 +71,7 @@ class Cache(AsyncEventLoop):
 
     async def load(self) -> None:
         """
-        Call once at app startup to populate the cache from the DB.
+        Called once at app startup to populate the cache from the DB.
 
         .. note::
 
@@ -293,8 +293,8 @@ class Cache(AsyncEventLoop):
         Get records of the `table_name`. If a `r_type` is provided return
         just that record based on the `table_name` type.
 
-        :param int year: The fiscal year.
         :param str table_name: The DB table to query.
+        :param int year: The fiscal year.
         :param str r_type: This determines a specific record in the entity.
         :param int trans_id: The transaction ID. Only used for fetching
                              transactions.
@@ -347,6 +347,7 @@ class Cache(AsyncEventLoop):
                         if month[2] == r_type:
                             data = [month]
             case self.db._V_LEDGER_TRANSACTION:
+                # Used for caching a few records for the arrow buttons.
                 data = self._store.get(self.db._V_LEDGER_TRANSACTION, [])
                 trans_ids = [item[0] for item in data]
 

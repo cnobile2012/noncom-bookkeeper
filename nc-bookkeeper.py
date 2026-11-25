@@ -94,10 +94,6 @@ if __name__ == "__main__":
 
         tpc.initializing_config()
         tac = TomlAppConfig()
-        # Find the display pixal size.
-        display = wx.Display()
-        rect = display.GetClientArea()
-        tac.initializing_config(rect.width, rect.height)
 
         if not tac.is_valid:
             tac.recover_config()
@@ -116,6 +112,11 @@ if __name__ == "__main__":
                       file=sys.stderr)
                 status = 2
         else:
+            # Find the display pixal size.
+            display = wx.Display()
+            rect = display.GetClientArea()
+            tac.initializing_config(rect.width, rect.height)
+            # Get rid of GTK warnings.
             suppress_gtk_style_context_warnings()
             # Run the application.
             mf = MainFrame(options=options)

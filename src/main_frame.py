@@ -53,8 +53,8 @@ class MainFrame(wx.Frame, MenuBar):
 
         # All content panels switch within this panel.
         self.container = wx.Panel(self)
-        self.container_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.container.SetSizer(self.container_sizer)
+        self._container_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.container.SetSizer(self._container_sizer)
         sizer.Add(self.container, 1, wx.EXPAND)
 
         # Status Bar
@@ -74,7 +74,7 @@ class MainFrame(wx.Frame, MenuBar):
         # Create and store the Database
         if self.tac.config_type == 'bahai':
             from .bahai_database import Database
-        else:  # generic
+        else:  # pragma: no cover -- generic
             pass
 
         self.db = Database()
@@ -95,7 +95,7 @@ class MainFrame(wx.Frame, MenuBar):
             await self.db.cache.load()
 
         await self.db.rename_fields()
-        self.load_panels()
+        self._load_panels()
         await self.db.populate_panels()
 
         # *** TODO *** Display a panel that offers the user the ability
@@ -108,7 +108,6 @@ class MainFrame(wx.Frame, MenuBar):
             self.edit_budget(None)
         else:
             self.edit_monthly(None)
-            # self.edit_ledger_data(None)
 
         self._timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer_closure(), self._timer)
@@ -123,8 +122,7 @@ class MainFrame(wx.Frame, MenuBar):
             error = asyncio.run(self.db.save_to_database(name, panel),
                                 debug=self.options.debug)
 
-            if error is None:
-                panel.dirty = False
+            if error is None:  # Normal return path
                 c_name = name.capitalize()
                 self.statusbar_message = f"Finished saving {c_name} data."
             elif error and name == 'ledger':
@@ -135,12 +133,13 @@ class MainFrame(wx.Frame, MenuBar):
                     panel, error, cap, wrap=500, enable=False, bg_color=bg,
                     fg_color=panel.w_fg_color)
                 dlg.show()
-            else:
-                panel.dirty = False
+            else:  # Error return path for all panels except ledger.
                 self._log.warning(error)
                 self.statusbar_warning = error
                 data = self._reset_panel(name)
                 self.db.populate_panel_values(name, panel, data)
+
+            panel.dirty = False
 
         def on_timer(event):
             for name, panel in self.panels.items():
@@ -151,28 +150,42 @@ class MainFrame(wx.Frame, MenuBar):
                             do_save(name, panel)
 
                             if name == 'ledger':
+                                panel.initializing = True
                                 self.db.clear_panel(panel)
                                 panel.reset_buttons()
+                                panel.initializing = False
                         elif panel.cancel:
                             if name == 'ledger':
+                                panel.initializing = True
                                 self.db.clear_panel(panel)
                                 panel.reset_buttons()
+                                panel.initializing = False
                             else:
-                                panel.cancel = False
                                 data = self._reset_panel(name)
                                 self.db.populate_panel_values(
                                     name, panel, data)
-                                panel.dirty = False
                                 c_name = name.capitalize()
                                 self.statusbar_message = (
                                     f"Finished restoring {c_name} data.")
+
+                            panel.cancel = False
+                            panel.dirty = False
                     else:
                         self.statusbar_message = f"Saving {name} data."
                         do_save(name, panel)
 
         return on_timer
 
-    def _reset_panel(self, name) -> dict:
+    def _reset_panel(self, name: str) -> dict:
+        """
+        Reset the panel to empty.
+
+        :param str name: The panel name.
+        :returns: The empty panel data used to populate the panel.
+        :rtype: dict
+        """
+        data = {}
+
         match name:
             case 'organization':
                 data = self.db.dp.organization_data
@@ -183,7 +196,10 @@ class MainFrame(wx.Frame, MenuBar):
 
         return data
 
-    def load_panels(self):
+    def _load_panels(self):
+        """
+        Load and process the TOML file data into panels.
+        """
         # This makes the badidatetime package happy.
         self.db.set_local_coordinates()
         sf = PanelFactory()
@@ -211,13 +227,13 @@ class MainFrame(wx.Frame, MenuBar):
         self.__panel_classes['ledger'] = LedgerDataEntry(
             self.container, *self.args, **self.kwargs)
 
-    def set_size(self, size, key='size'):
+    def set_size(self, size: tuple | list, key: str='size') -> None:
         """
         Sets the size of the Frame.
 
         :param tuple or list size: The size to set as (width, height).
         :param str key: The key in the TOML config file. Can be 'size' or
-                        'default'. The default is 'size'.
+                        'default'. The key argument defaults to 'size'.
         """
         value = self.tac.get_value('app-size', key)
         self.SetSize(wx.Size(value if value else size))
@@ -259,7 +275,7 @@ class MainFrame(wx.Frame, MenuBar):
 
     @property
     def sizer(self):
-        return self.container_sizer
+        return self._container_sizer
 
     def statusbar_warning(self, value):
         self.__set_status(value, 'yellow')
@@ -285,9 +301,3 @@ class MainFrame(wx.Frame, MenuBar):
         self._statusbar.SetStatusText("", 0)
         self._statusbar.SetBackgroundColour(default_color)
         self._statusbar.SetForegroundColour(default_color)
-
-    def add_status(self, key, status):
-        self.statusbar_fields[key] = status
-
-    def remove_status(self, key):
-        self.statusbar_fields.pop(key, None)

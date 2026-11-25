@@ -13,6 +13,7 @@ import badidatetime
 from src.bahai_database import Database
 from src.utilities import StoreObjects
 
+from . import patchers
 from .sample_data import TEST_DATA
 from .fixtures import FakeMainFrame, Options
 
@@ -129,8 +130,8 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
                       'deposit': False, 'number': ''},
         'bank': {'deposit': False, 'withdrawal': False, 'amount': '',
                  'balance': ''},
-        'coh': {'replenishment': False, 'disbursement': False,
-                'amount': '', 'balance': ''},
+        'coh': {'replenishment': False, 'disbursement': False, 'amount': '',
+                'balance': ''},
         'income': {'local_fund': False, 'contributed_expense': False,
                    'other': False, 'amount': '', 'balance': ''},
         'expenses': {'administration': '', 'education': '', 'proclamation': '',
@@ -167,7 +168,9 @@ class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
 
     @classmethod
     def setUpClass(cls):
+        patchers(cls)
         cls._db = Database()
+        cls._db.set_local_coordinates(40.7127281, -74.0060152)  # New York
         StoreObjects().set_object(cls._db.__class__.__name__, cls._db)
         cls._db.testing = True
         cls._db.create_dirs()

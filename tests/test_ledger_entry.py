@@ -18,7 +18,7 @@ from src.ledger_entry import (_CreateWidgets, LedgerDataEntry, SearchDialog,
 from src.utilities import StoreObjects
 from src.custom_widgits import ColorCheckBox
 
-from . import LOGFILE_NAME, check_flag, patchers
+from . import LOGFILE_NAME, check_flag
 from .base_database_test import BaseAsyncTests
 from .fixtures import FakeEvent, FakePanel
 
@@ -38,7 +38,6 @@ class Test_CreateWidgets(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self.cw = CreateWidgetsPanel(self.frame)
 
     def tearDown(self):
@@ -233,7 +232,6 @@ class TestLedgerDataEntry(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self.frame.create_panels()
 
         with patch.object(self.db, 'mf', self.frame):
@@ -523,7 +521,6 @@ class TestSearchDialog(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self.frame.create_panels()
 
     def _setup_panel(self):

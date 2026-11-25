@@ -254,7 +254,10 @@ class MenuBar:
         self._do_panel_switch('monthly')
 
     def edit_ledger_data(self, event):
-        self.db.clear_panel(self.panels['ledger'])
+        panel = self.panels['ledger']
+        panel.initializing = True
+        self.db.clear_panel(panel)
+        panel.initializing = False
         self._do_panel_switch('ledger')
 
     def edit_fiscal_year(self, event):

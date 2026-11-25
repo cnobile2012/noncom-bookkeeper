@@ -30,9 +30,13 @@ class TestSettingsBorg(unittest.TestCase):
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        patchers(cls)
+
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self._set = Settings()
         self._set.testing = True
 
@@ -145,9 +149,13 @@ class TestSettings(unittest.TestCase):
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        patchers(cls)
+
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self._set = Settings()
         self._set.testing = True
 
@@ -404,9 +412,13 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        patchers(cls)
+
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self._bsd = BaseSystemData()
         self.log_path = os.path.join(self._bsd.user_log_fullpath, LOGFILE_NAME)
         self.backup_file = f"{TMP_USER_CONFIG_FILE}.bak"
@@ -449,6 +461,7 @@ class TestBaseSystemData(BaseTests, unittest.TestCase):
         """
         # Create or copy files to temporary locations.
         tac = TomlAppConfig()
+        tac.initializing_config(2560, 1396)
         tac._create_app_config()
         shutil.copy2(self._bsd.local_config_fullpath, TMP_USER_CONFIG_FILE)
         TOMLDocument = tk.toml_document.TOMLDocument
@@ -583,8 +596,10 @@ class BaseTomlTest(BaseTests, unittest.TestCase):
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
-    def setUp(self):
-        patchers(self)
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        patchers(cls)
 
     def _make_file(self, filename, data):
         with open(filename, 'w') as f:
@@ -606,7 +621,6 @@ class TestTomlMetaData(BaseTomlTest):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        super().setUp()
         self._tmd = TomlMetaData()
         self._tmd.panel_config = self._tmd.parse_toml(
             self._tmd.local_config_fullpath)
@@ -828,7 +842,6 @@ class TestTomlPanelConfig(BaseTomlTest):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        super().setUp()
         self._tpc = TomlPanelConfig()
         self.log_path = os.path.join(self._tpc.user_log_fullpath, LOGFILE_NAME)
         self.backup_file = f"{TMP_USER_CONFIG_FILE}.bak"
@@ -1051,6 +1064,8 @@ class TestTomlAppConfig(BaseTomlTest):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
+
         if not wx.GetApp():
             cls.app = wx.App(False)
 
@@ -1064,7 +1079,6 @@ class TestTomlAppConfig(BaseTomlTest):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        super().setUp()
         self._tac = TomlAppConfig()
         self.log_path = os.path.join(self._tac.user_log_fullpath, LOGFILE_NAME)
 
@@ -1130,6 +1144,7 @@ class TestTomlAppConfig(BaseTomlTest):
         Test that the recover_config method recovers from various error
         conditions.
         """
+        self._tac.initializing_config(2560, 1396)
         err_msg0 = "Cannot parse file '{}' may be corrupted,"
         err_msg1 = "Cannot parse zero length file .{}'."
         data0 = "[meta]\njunk = {key=value\n}"
@@ -1356,9 +1371,13 @@ class TestTomlAppConfigAsync(BaseAsyncTests):
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        patchers(cls)
+
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self._tac = TomlAppConfig()
 
     async def test_get_filename(self):

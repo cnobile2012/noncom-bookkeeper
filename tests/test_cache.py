@@ -5,7 +5,7 @@
 __docformat__ = "restructuredtext en"
 import unittest
 
-from . import LOGFILE_NAME, check_flag, patchers
+from . import LOGFILE_NAME, check_flag
 from .base_database_test import BaseAsyncTests
 
 
@@ -16,7 +16,6 @@ class TestCache(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
 
     async def asyncSetUp(self):
         await self.db.create_db()

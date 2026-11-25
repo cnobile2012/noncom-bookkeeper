@@ -19,7 +19,7 @@ from src.utilities import StoreObjects
 from src.ledger_entry import SearchDialog
 from src.ledger_transaction import LedgerTransaction
 
-from . import LOGFILE_NAME, check_flag, patchers
+from . import LOGFILE_NAME, check_flag
 from .fixtures import FakePanel
 from .base_database_test import BaseAsyncTests
 
@@ -31,7 +31,6 @@ class TestPopulateCollect(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self._set = Settings()
         self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
 
@@ -746,13 +745,6 @@ class TestPopulateCollect(BaseAsyncTests):
                 self.assertEqual(expected, result, msg.format(
                     expected, result))
                 self.db.clear_panel(panel)
-
-    @unittest.skip("Temporarily skipped")
-    def test_get_prev_and_next(self):
-        """
-        Test that the get_prev_and_next method
-        """
-        pass
 
     #@unittest.skip("Temporarily skipped")
     async def test_populate_fiscal_panel(self):

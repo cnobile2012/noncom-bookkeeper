@@ -90,7 +90,7 @@ class Settings(AppDirs, Borg):
                 os.makedirs(self.cached_factory_dir, mode=0o775, exist_ok=True)
 
             paths = (self._testing_data_dir, self.cached_factory_dir)
-        else:
+        else:  # Production dirs
             if not os.path.exists(self.user_data_dir):  # pragma: no cover
                 os.makedirs(self.user_data_dir, mode=0o775, exist_ok=True)
 
@@ -464,7 +464,8 @@ class TomlMetaData(BaseSystemData):
         .. note::
 
            Name,  Internal Name, Editable, Move Boundry
-           ex. ['Budget', 'budget', True, 8]
+           ex. [['Organization Info', 'organization', False, 0],
+                ['Budget', 'budget', True, 8], ...]
         """
         return self.panel_config.get('meta', {}).get('panels')
 
@@ -708,7 +709,7 @@ class TomlAppConfig(BaseSystemData):
         """
         Initialize the config files.
 
-        My 30" monitor 2560x1396
+        My 30" monitor 2560x1396 (2560x1440)
         """
         scale_x = width / self.BASE_WIDTH
         scale_y = height / self.BASE_HEIGHT
@@ -718,7 +719,13 @@ class TomlAppConfig(BaseSystemData):
         a_w, a_h = self._DEFAULT_SCREEN_SIZE
         self.scaled_screen_size = (int(round(a_w * self._scale)),
                                    int(round(a_h * self._scale)))
-        if not self._has_app_user_config:
+
+        if (config := self.app_config) is not None:
+            f_scale = config.get('app-size', {}).get('scale-factor')
+        else:
+            f_scale = 0
+
+        if not self._has_app_user_config or f_scale != self._scale:
             self._create_app_config()
 
     def recover_config(self) -> None:

@@ -18,7 +18,7 @@ from src.utilities import make_name, StoreObjects
 from src.base_database import BaseDatabase, adapt_tuple, convert_tuple
 from src.ledger_transaction import LedgerTransaction
 
-from . import LOGFILE_NAME, check_flag, patchers
+from . import LOGFILE_NAME, check_flag
 from .conftest import TMP_TESTING_DATA_DIR
 from .base_database_test import BaseAsyncTests
 
@@ -33,16 +33,14 @@ class TestBaseDatabase(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self._set = Settings()
         self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
-        self.fmf = StoreObjects().get_object('MainFrame')
 
     def tearDown(self):
         self.delete_files()
 
     async def asyncSetUp(self):
-        with patch.object(self.db, 'mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             await self.db.create_db()
 
         await self.insert_data()
@@ -250,7 +248,7 @@ class TestBaseDatabase(BaseAsyncTests):
             if not load:
                 await self.asyncTearDown()
 
-            with patch.object(self.db, 'mf', self.fmf):
+            with patch.object(self.db, 'mf', self.frame):
                 result = await self.db.populate_panels()
 
             if load:
@@ -273,7 +271,7 @@ class TestBaseDatabase(BaseAsyncTests):
         data = {4: 'New York', 6: '20', 8: 'Joe Schmo',
                 10: badidatetime.date(183, 3, 5), 14: 'New York'}
 
-        with patch.object(self.db, 'mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             await self.db._populate_config_data_panels(183, self.db.mf.panels)
             # Test that fields have be repopulated.
             self.assertTrue(self.db.cache.fields)
@@ -303,7 +301,7 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted {}, found {}."
 
-        with patch.object(self.db, 'mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             panel = self.db.mf.panels.get('monthly')
 
             for valid, expected in data:
@@ -329,7 +327,7 @@ class TestBaseDatabase(BaseAsyncTests):
         Test that the _populate_fiscal method sets the choices in the
         ComboBox widget in the fical panel.
         """
-        with patch.object(self.db, 'mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             self.db._populate_fiscal()
             panel = self.db.mf.panels.get('fiscal')
             self.assertEqual('183-184', panel.GetChildren()[3].GetString(1))
@@ -339,6 +337,9 @@ class TestBaseDatabase(BaseAsyncTests):
         """
         Test that the save_to_database method inserts or updates organization
         and budget panel data in the database.
+
+        NOTE: Do Not change ocs_holdings to
+              online_contribution_service_holdings it will break tests.
         """
         await self.asyncTearDown()
         await self.insert_months()
@@ -367,18 +368,18 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted '{}', found '{}'."
 
-        with patch.object(self.db, 'mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, pre_poplt, values, valid, expected in data:
                 panel = self.db.mf.panels.get(panel_name)
 
                 if valid:
                     self.db.populate_panel_values(panel_name, panel, values)
-                    items = self.db.collect_panel_values(panel)
                     error = await self.db.save_to_database(panel_name, panel)
                     self.assertIsNone(error, f"Expected 'none', found {error}")
                     result = self.db.cache.get(self.db._T_DATA, year=year,
                                                r_type=panel_name)
                     self.db.clear_panel(panel)
+                    items = self.db.collect_panel_values(panel)
 
                     for field, value in values.items():
                         for record in result:
@@ -413,7 +414,7 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted '{}', found '{}'."
 
-        with patch.object(self.db, 'mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, pre_poplt, values, valid, expected in data:
                 panel = self.db.mf.panels.get(panel_name)
 
@@ -451,7 +452,7 @@ class TestBaseDatabase(BaseAsyncTests):
             )
         msg = "Expexted '{}', field_name '{}', found '{}'."
 
-        with patch.object(self.db, 'mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, values, valid, expected in data:
                 panel = self.db.mf.panels.get(panel_name)
 
@@ -488,7 +489,7 @@ class TestBaseDatabase(BaseAsyncTests):
         await self.asyncTearDown()
         await self.insert_months()
         await self.insert_fiscal_year()
-        err_msg0 = "The 'date' field must not be empty."
+        err_msg0 = "Transaction Type fields are missing."
         lt = LedgerTransaction(self.db)
         date = badidatetime.date(183, 3, 5)
         bk_data = copy.deepcopy(self._LDG_DATA)
@@ -498,17 +499,15 @@ class TestBaseDatabase(BaseAsyncTests):
         bk_data['reference']['ocs'] = True
         bk_data['bank']['deposit'] = True
         bk_data['bank']['amount'] = 5000
-        bk_error = copy.deepcopy(bk_data)
-        bk_error['panel']['date'] = None
         expect0 = (1, 183, date, 'Description', 2, 1, '', 1, 5000, None, None,
                    None, None, 0)
         data = (
-            #('ledger', bk_data, 183, True, expect0),
-            ('ledger', bk_error, 183, False, err_msg0.format('date')),
+            ('ledger', bk_data, 183, True, expect0),
+            ('ledger', None, 183, False, err_msg0.format('date')),
             )
         msg = "Expexted '{}', found '{}'."
 
-        with patch.object(self.db, 'mf', self.fmf):
+        with patch.object(self.db, 'mf', self.frame):
             for panel_name, values, year, valid, expected in data:
                 panel = self.db.mf.panels.get(panel_name)
 

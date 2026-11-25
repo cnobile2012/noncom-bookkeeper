@@ -278,7 +278,8 @@ class PopulateCollect(AsyncEventLoop):
             elif name0 == 'StaticText':
                 if name1 == 'TextCtrl':
                     if balances and field_name == 'balance':
-                        widget1.SetValue(str(balances[widget1.category]))
+                        value = balances.get(widget1.category, '')
+                        widget1.SetValue(str(value))
                     elif field_name == 'transaction_id':
                         widget1.SetValue(str(trans_id))
                     else:

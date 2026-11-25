@@ -236,7 +236,7 @@ class DataPreperation:
         """
         # Only the date is mandatory, and it always defaults to today.
         error = ("The 'date' field must not be empty."
-                 if data['panel']['date'] in (None, '') else '')
+                 if data['panel']['date'] in (None, '') else None)
 
         if not error:
             pd = data['panel']['date']
@@ -621,7 +621,7 @@ class DataPreperation:
                 pk = items.get(field, None)    # pk
 
                 if pk is None:                 # Error condition
-                    error = f"Could not find field {field} in {data}."
+                    error = f"Could not find field '{field}' in {items}."
                     self.db.mf.statusbar_error = error
                     self._log.error(error)
                     break
@@ -694,9 +694,9 @@ class DataPreperation:
                 if key in ('pk', 'fy1fk', 'cal_year_month', 'ctime', 'mtime'):
                     continue
 
-                if key == 'outstanding':
-                    pass
+                #if key == 'outstanding':
+                #    pass
 
-                values[key] = items[idx]
+                values[key] = str(items[idx])
 
         return values

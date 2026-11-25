@@ -16,7 +16,7 @@ from src.config import Settings
 from src.ledger_transaction import LedgerTransaction
 from src.utilities import StoreObjects
 
-from . import LOGFILE_NAME, check_flag, patchers
+from . import LOGFILE_NAME, check_flag
 from .base_database_test import BaseAsyncTests
 
 
@@ -28,7 +28,6 @@ class TestLedgerTransaction(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         # Must be here to get logging capture to work.
         self._set = Settings()
         self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)

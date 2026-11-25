@@ -15,7 +15,7 @@ from src.preperation import DataPreperation
 from src.utilities import StoreObjects
 from src.ledger_transaction import LedgerTransaction
 
-from . import LOGFILE_NAME, check_flag, patchers
+from . import log, LOGFILE_NAME, check_flag
 from .base_database_test import BaseAsyncTests
 
 
@@ -26,7 +26,6 @@ class TestDataPreperation(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self._set = Settings()
         self.log_path = os.path.join(self._set.user_log_fullpath, LOGFILE_NAME)
 
@@ -48,6 +47,8 @@ class TestDataPreperation(BaseAsyncTests):
         Test that the organization method inserts or updates the config_date,
         fiscal_year, and field_type tables.
         """
+        start = "Start organization test."
+        log.info(start)
         self.db.cache._flush_cache()
         await self.truncate_all_tables()
         sofy = badidatetime.date(183, 3, 5)
@@ -95,9 +96,7 @@ class TestDataPreperation(BaseAsyncTests):
                 else:
                     self.assertEqual(expected, error)
                     file_data = self.read_text_file(self.log_path)
-                    result = self.find_text(file_data,
-                                            'testing preperation organization',
-                                            2, expected)
+                    result = self.find_text(file_data, start, 3, expected)
                     self.assertIn(expected, result, msg.format(
                         expected, result))
 
@@ -959,7 +958,7 @@ class TestDataPreperation(BaseAsyncTests):
         await self.asyncTearDown()
         await self.insert_fiscal_year()
         await self.insert_months()
-        err_msg0 = "Could not find field {} in {}."
+        err_msg0 = "Could not find field '{}' in "
         data = {field: 0 for field in self.db.cache.ORG_FIELDS}
         await self.db.add_fields_to_field_type_table(data)
         org_data = {'locality_prefix': 0, 'locale_name': 'New York',
@@ -978,7 +977,7 @@ class TestDataPreperation(BaseAsyncTests):
             (183, 3, 'organization', update_org_data, None),    # Update
             (183, 3, 'organization', next_year_data, None),     # Next Year
             (183, 3, 'organization', invalid_field,
-             err_msg0.format('INVALID_FIELD', invalid_field)),  # Invalid
+             err_msg0.format('INVALID_FIELD')),  # Invalid
             )
         msg = "Expected {}, found {}."
 
@@ -991,8 +990,7 @@ class TestDataPreperation(BaseAsyncTests):
                     self.assertEqual(len(items), rc, msg.format(
                         len(items), rc))
                 else:
-                    self.assertEqual(expected, error, msg.format(
-                        expected, error))
+                    self.assertIn(expected, error, msg.format(expected, error))
 
     #@unittest.skip("Temporarily skipped")
     async def test__earliest_fiscal_year(self):

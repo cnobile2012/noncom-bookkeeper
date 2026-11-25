@@ -11,10 +11,11 @@ import wx
 
 from io import StringIO
 from collections.abc import KeysView
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 
 from src.panel_factory import PanelFactory
-from . import BASE_DIR, check_flag, patchers
+
+from . import BASE_DIR, LOGFILE_NAME, log, check_flag
 from .base_database_test import BaseAsyncTests
 
 
@@ -25,8 +26,8 @@ class TestPanelFactory(BaseAsyncTests):
 
     def setUp(self):
         check_flag(self.__class__.__name__)
-        patchers(self)
         self.pf = PanelFactory()
+        self.log_path = os.path.join(self.pf.user_log_fullpath, LOGFILE_NAME)
         full_path = os.path.join(BASE_DIR, 'tests', 'panels.toml')
         self.pf.panel_config = self.pf.parse_toml(full_path)
         self.pf.parse()
@@ -71,26 +72,24 @@ class TestPanelFactory(BaseAsyncTests):
         result = self.pf.get_panel_code('organization')
         self.assertIn(expected, result)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test_parse(self):
         """
-        Test that the parse method 
+        Test that the parse method raises an exception with invalid
+        panel names.
         """
+        start = "Start test_parse test."
+        log.info(start)
+        err_msg0 = ("Critical error, cannot start application please contact "
+                    "the developer for help, ")
+        panels = [('Invalid', 'invalid', False, 0),]
 
-
-    @unittest.skip("Temporarily skipped")
-    def test__setup_panel(self):
-        """
-        Test that the _setup_panel method 
-        """
-        
-
-    @unittest.skip("Temporarily skipped")
-    def test__process_widgets(self):
-        """
-        Test that the _process_widgets method 
-        """
-
+        with patch.object(PanelFactory, 'panels', new_callable=PropertyMock,
+                          return_value=panels):
+            self.pf.parse()
+            file_data = self.read_text_file(self.log_path)
+            result = self.find_text(file_data, start, 2, err_msg0)
+            self.assertIn(err_msg0, result)
 
     #@unittest.skip("Temporarily skipped")
     def test_box_sizer(self):

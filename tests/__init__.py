@@ -4,6 +4,8 @@ import os
 import sys
 import logging
 
+from src.config import Settings
+
 from unittest.mock import patch, PropertyMock
 
 from .fixtures import FakeFrame, FakeWidget, FakeEvent, FakePanel
@@ -90,21 +92,11 @@ def check_flag(name):
 
 
 def patchers(self):
-    sys.modules.pop('src', None)
-    logger_name_patcher = patch('src.config.Settings._LOGGER_NAME',
-                                new_callable=PropertyMock)
-    mock_name_patcher = logger_name_patcher.start()
-    self.addCleanup(logger_name_patcher.stop)
-    mock_name_patcher.return_value = LOGGER_NAME
+    patches = {'_LOGGER_NAME': LOGGER_NAME, 'user_log_fullpath': PATH,
+               '_LOGFILE_NAME': LOGFILE_NAME}
 
-    logfile_path_patcher = patch('src.config.Settings.user_log_fullpath',
-                                 new_callable=PropertyMock)
-    mock_logfile_path = logfile_path_patcher.start()
-    self.addCleanup(logfile_path_patcher.stop)
-    mock_logfile_path.return_value = PATH
-
-    logfile_name_patcher = patch('src.config.Settings._LOGFILE_NAME',
-                                 new_callable=PropertyMock)
-    mock_logfile_name = logfile_name_patcher.start()
-    self.addCleanup(logfile_name_patcher.stop)
-    mock_logfile_name.return_value = LOGFILE_NAME
+    for name, value in patches.items():
+        patcher = patch.object(Settings, name, new_callable=PropertyMock)
+        mock = patcher.start()
+        mock.return_value = value
+        self.addClassCleanup(patcher.stop)
